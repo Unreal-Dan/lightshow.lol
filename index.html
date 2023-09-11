@@ -2,48 +2,92 @@
 <html>
   <head>
     <title>Lightshow</title>
-    <script src="vortex.js"></script> <!-- Make sure this is the correct path to your generated JS file -->
+    <script src="vortex.js"></script>  <!-- Linking the generated JS -->
+    <style>
+      body, html, canvas {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+      }
+    </style>
   </head>
   <body>
-    <canvas id="lightshowCanvas" width="800" height="600"></canvas>
+    <canvas id="lightshowCanvas"></canvas>
     <script>
-      // Initialize canvas and drawing context
       const canvas = document.getElementById('lightshowCanvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
       const ctx = canvas.getContext('2d');
+      let angle = 0;  // Initial angle
+      const history = [];  // To store previous dots
 
-      // Load WebAssembly module
-      const Module = {
-        onRuntimeInitialized() {
-          // Initialize Vortex and its WASM callback
-          _VortexInit();
-
-          // Start drawing loop
-          draw();
-        }
+      Module.onRuntimeInitialized = function() {
+        console.log("WASM initialized.");
+        Module.VortexInit();
+        draw();
       };
 
-      // Main drawing loop
       function draw() {
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Tick the engine
-        _VortexTick();
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 100;
 
-        // Fetch LED data from the WASM module. Assume an API for this.
-        // const leds = _fetchLeds();
+        const led = Module.VortexTick();
 
-        // Draw LEDs - here I'm making assumptions about how your LEDs should be rendered.
-        // Replace with your actual drawing code based on the `leds` array.
-        // leds.forEach((led, index) => {
-        //   ctx.fillStyle = `rgb(${led.red}, ${led.green}, ${led.blue})`;
-        //   ctx.fillRect(index * 10, 0, 10, 10);
-        // });
+        angle += 0.04;
+        if (angle >= 2 * Math.PI) {
+          angle = 0;
+        }
 
-        // Continue the drawing loop
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+
+        if(led) {
+          history.push({ x, y, color: led[0] });
+        }
+
+        history.forEach((point, index) => {
+          ctx.fillStyle = `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${(1 - index / history.length).toFixed(2)})`;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+
+        if (history.length > 100) {
+          history.shift();
+        }
+
         requestAnimationFrame(draw);
       }
+
+      // Event listener for spacebar keydown
+      document.addEventListener('keydown', function(event) {
+        if(event.code === 'Space') {
+          Module.VortexPress();
+        }
+      });
+
+      // Event listener for spacebar keyup
+      document.addEventListener('keyup', function(event) {
+        if(event.code === 'Space') {
+          Module.VortexRelease();
+        }
+      });
+
+      // Event listener for mouse mousedown
+      canvas.addEventListener('mousedown', function(event) {
+        Module.VortexPress();
+      });
+
+      // Event listener for mouse mouseup
+      canvas.addEventListener('mouseup', function(event) {
+        Module.VortexRelease();
+      });
     </script>
   </body>
 </html>
-
