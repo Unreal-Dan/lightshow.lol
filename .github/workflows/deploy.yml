@@ -1,0 +1,21 @@
+name: Deploy Website
+
+on:
+  push:
+    branches:
+      - main  # Or your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository with website code
+      uses: actions/checkout@v3
+
+    - name: Checkout repository with Emscripten tool
+      uses: actions/checkout@v3
+      with:
+        repository: 'StoneOrbits/VortexEngine'  # Replace with the actual repo name
+        path: 'VortexEngine'
+      
