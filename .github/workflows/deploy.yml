@@ -41,7 +41,6 @@ jobs:
         cd VortexEngine/VortexEngine
         make wasm
 
-    steps:
     - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.5.3
       with:
