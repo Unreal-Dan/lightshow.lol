@@ -16,11 +16,48 @@ jobs:
     - name: Checkout repository with Emscripten tool
       uses: actions/checkout@v3
       with:
-<<<<<<< HEAD
-        repository: 'username/emscripten-repo'  # Replace with the actual repo name
-        path: 'emscripten-repo'
-=======
-        repository: 'StoneOrbits/VortexEngine'  # Replace with the actual repo name
+        repository: 'StoneOrbits/VortexEngine'
         path: 'VortexEngine'
-      
->>>>>>> d416f022d95da8a6895d638f2e4953273bc5fd74
+
+    # Install Emscripten dependencies
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 nodejs cmake
+
+    # Install Emscripten
+    - name: Install Emscripten
+      run: |
+        git clone https://github.com/emscripten-core/emsdk.git
+        cd emsdk
+        ./emsdk install latest
+        ./emsdk activate latest
+        source ./emsdk_env.sh
+
+    # Build using Emscripten
+    - name: Build WebAssembly with Emscripten
+      run: |
+        source emsdk/emsdk_env.sh
+        cd VortexEngine/VortexEngine
+        make wasm
+
+    steps:
+    - name: Setup SSH Agent
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+    - name: Add Linode to known_hosts
+      run: ssh-keyscan 172.232.170.43 >> ~/.ssh/known_hosts
+
+    - name: Deploy to Linode
+      run: |
+        ssh vortex@172.232.170.43 'sudo systemctl stop lightshow.lol'
+        ssh vortex@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
+        ssh vortex@172.232.170.43 'sudo systemctl start lightshow.lol'
+
+    # Deploy Emscripten output and website to server
+    - name: Deploy to server
+      run: |
+        scp -r lightshow.lol/* root@172.232.170.43:~
+        scp VortexEngine/VortexEngine/VortexCLI/vortex root@172.232.170.43:~/vortex
