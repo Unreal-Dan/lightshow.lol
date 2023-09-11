@@ -2,137 +2,14 @@
 <html>
   <head>
     <title>Lightshow</title>
-    <script src="vortex.js"></script>  <!-- Linking the generated JS -->
-    <style>
-      #controlPanel {
-        position: absolute;
-        z-index: 2;
-        top: 10px;
-        left: 10px;
-        background-color: white;
-        padding: 10px;
-        border-radius: 5px;
-      }
-      canvas {
-        background-color: #1e;
-        position: absolute;
-        z-index: 1;
-      }
-    </style>
+    <script src="js/vortex.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/styles.css">
   </head>
-  <body style="margin:0; padding:0; background-color:black;">
+  <body>
     <div id="controlPanel">
-      <label for="dotSize">Dot Size:</label>
-      <input type="range" id="dotSize" min="5" max="50" value="25" onchange="clearCanvas()">
-      <br>
-      <label for="animationSpeed">Animation Speed:</label>
-      <input type="range" id="animationSpeed" min="1" max="100" value="100" onchange="clearCanvas()">
-      <br>
-      <br>
-      <label for="Controls">Spacebar - Next</label>
-      <br>
-      <br>
-      <label for="Credits">Made with Vortex Engine</label>
-      <br>
-      <label for="Credits">Updates Coming - Check back soon!</label>
+      <!-- Control panel content -->
     </div>
     <canvas id="lightshowCanvas" width="800" height="600"></canvas>
-    <script>
-      let dotSize = 25;
-      let animationSpeed = 100;
-      const canvas = document.getElementById('lightshowCanvas');
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      const ctx = canvas.getContext('2d');
-      let angle = 0;  // Initial angle
-      const history = [];  // To store previous dots
-
-      Module.onRuntimeInitialized = function() {
-        console.log("WASM initialized.");
-        Module.VortexInit();
-        draw();
-      };
-
-      // Listen for changes on sliders
-      document.getElementById('dotSize').addEventListener('input', function() {
-        dotSize = this.value;
-      });
-      document.getElementById('animationSpeed').addEventListener('input', function() {
-        animationSpeed = this.value;
-      });
-
-      function draw() {
-          // Clear the canvas with a slight fade effect
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          const centerX = canvas.width / 2;
-          const centerY = canvas.height / 2;
-          const radius = Math.min(centerX, centerY) - 50;
-
-          const led = Module.VortexTick();
-
-          angle -= 0.02;
-          if (angle >= 2 * Math.PI) {
-              angle = 0;
-          }
-
-          const x = centerX + radius * Math.cos(angle);
-          const y = centerY + radius * Math.sin(angle);
-
-          if (led) {
-              history.push({ x, y, color: led[0] });
-          }
-
-          history.forEach((point, index) => {
-              if (!point.color.red && !point.color.green && !point.color.blue) {
-                  return;
-              }
-
-              // Create radial gradient for soft circles
-              const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, dotSize);
-
-              const innerAlpha = (1 - index / history.length).toFixed(2);
-              const outerAlpha = (innerAlpha / 2).toFixed(2);
-
-              gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
-              gradient.addColorStop(0.5, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
-              gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Fade to transparent at the outer edge
-
-              ctx.fillStyle = gradient;
-              ctx.beginPath();
-              ctx.arc(point.x, point.y, dotSize, 0, 2 * Math.PI);
-              ctx.fill();
-          });
-
-          if (history.length > 100) {
-              history.shift();
-          }
-
-          setTimeout(() => requestAnimationFrame(draw), 100 - animationSpeed);
-      }
-
-      function clearCanvas() {
-        // Clear entire canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Update dot size from the slider
-        dotSize = document.getElementById('dotSize').value;
-      }
-
-      // Event listener for spacebar keydown
-      document.addEventListener('keydown', function(event) {
-        if(event.code === 'Space') {
-          Module.VortexClick();
-        }
-      });
-
-      canvas.addEventListener('touchstart', function(e) {
-          // Prevent the default scrolling action to happen
-          e.preventDefault();
-          // Call your engine function for handling clicks
-          Module.VortexClick();
-      });
-    </script>
+    <script src="js/main.js"></script>
   </body>
 </html>
