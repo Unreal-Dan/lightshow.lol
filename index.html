@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Lightshow</title>
+    <script src="vortex.js"></script> <!-- Make sure this is the correct path to your generated JS file -->
   </head>
   <body>
     <canvas id="lightshowCanvas" width="800" height="600"></canvas>
@@ -11,35 +12,38 @@
       const ctx = canvas.getContext('2d');
 
       // Load WebAssembly module
-      fetch('vortex.wasm')
-        .then(response => response.arrayBuffer())
-        .then(bytes => WebAssembly.instantiate(bytes))
-        .then(results => {
-          const { instance } = results;
-          // Call a function from the wasm module if needed
-          // instance.exports.someFunction();
-        })
-        .catch(err => console.error(err));
+      const Module = {
+        onRuntimeInitialized() {
+          // Initialize Vortex and its WASM callback
+          _VortexInit();
+
+          // Start drawing loop
+          draw();
+        }
+      };
 
       // Main drawing loop
       function draw() {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Here you'd call into the WebAssembly module to update the state and draw
-        // For now, just draw a test circle
-        ctx.beginPath();
-        ctx.arc(400, 300, 50, 0, Math.PI * 2);
-        ctx.fillStyle = 'green';
-        ctx.fill();
-        ctx.stroke();
+        // Tick the engine
+        _VortexTick();
+
+        // Fetch LED data from the WASM module. Assume an API for this.
+        // const leds = _fetchLeds();
+
+        // Draw LEDs - here I'm making assumptions about how your LEDs should be rendered.
+        // Replace with your actual drawing code based on the `leds` array.
+        // leds.forEach((led, index) => {
+        //   ctx.fillStyle = `rgb(${led.red}, ${led.green}, ${led.blue})`;
+        //   ctx.fillRect(index * 10, 0, 10, 10);
+        // });
 
         // Continue the drawing loop
         requestAnimationFrame(draw);
       }
-
-      // Start drawing loop
-      draw();
     </script>
   </body>
 </html>
+
