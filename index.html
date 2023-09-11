@@ -112,7 +112,6 @@
           setTimeout(() => requestAnimationFrame(draw), 100 - animationSpeed);
       }
 
-
       function clearCanvas() {
         // Clear entire canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -126,6 +125,13 @@
         if(event.code === 'Space') {
           Module.VortexClick();
         }
+      });
+
+      canvas.addEventListener('touchstart', function(e) {
+          // Prevent the default scrolling action to happen
+          e.preventDefault();
+          // Call your engine function for handling clicks
+          Module.VortexClick();
       });
     </script>
   </body>
