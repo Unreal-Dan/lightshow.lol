@@ -51,12 +51,7 @@ jobs:
 
     - name: Deploy to Linode
       run: |
-        ssh vortex@172.232.170.43 'sudo systemctl stop lightshow.lol'
-        ssh vortex@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
-        ssh vortex@172.232.170.43 'sudo systemctl start lightshow.lol'
-
-    # Deploy Emscripten output and website to server
-    - name: Deploy to server
-      run: |
-        scp -r lightshow.lol/* root@172.232.170.43:~
-        scp VortexEngine/VortexEngine/VortexCLI/vortex root@172.232.170.43:~/vortex
+        scp VortexEngine/VortexEngine/VortexCLI/vortex lightshow@172.232.170.43:~/vortex
+        ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
+        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
+        ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
