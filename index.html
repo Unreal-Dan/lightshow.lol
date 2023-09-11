@@ -68,25 +68,13 @@
       // Event listener for spacebar keydown
       document.addEventListener('keydown', function(event) {
         if(event.code === 'Space') {
-          Module.VortexPress();
-        }
-      });
-
-      // Event listener for spacebar keyup
-      document.addEventListener('keyup', function(event) {
-        if(event.code === 'Space') {
-          Module.VortexRelease();
+          Module.VortexClick();
         }
       });
 
       // Event listener for mouse mousedown
       canvas.addEventListener('mousedown', function(event) {
-        Module.VortexPress();
-      });
-
-      // Event listener for mouse mouseup
-      canvas.addEventListener('mouseup', function(event) {
-        Module.VortexRelease();
+        Module.VortexClick();
       });
     </script>
   </body>
