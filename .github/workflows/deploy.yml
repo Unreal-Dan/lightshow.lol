@@ -16,5 +16,11 @@ jobs:
     - name: Checkout repository with Emscripten tool
       uses: actions/checkout@v3
       with:
+<<<<<<< HEAD
         repository: 'username/emscripten-repo'  # Replace with the actual repo name
         path: 'emscripten-repo'
+=======
+        repository: 'StoneOrbits/VortexEngine'  # Replace with the actual repo name
+        path: 'VortexEngine'
+      
+>>>>>>> d416f022d95da8a6895d638f2e4953273bc5fd74
