@@ -18,7 +18,7 @@ jobs:
       with:
         repository: 'StoneOrbits/VortexEngine'
         path: 'VortexEngine'
-        ref: 'daniel/core/dynamic_led/count'
+        ref: 'daniel/core/dynamic_led_count'
 
     # Install Emscripten dependencies
     - name: Install dependencies
