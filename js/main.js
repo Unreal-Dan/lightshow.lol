@@ -1,1 +1,1 @@
-// Your JavaScript content
+// Add your JS content here
