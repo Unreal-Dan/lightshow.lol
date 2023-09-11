@@ -52,6 +52,7 @@ jobs:
 
     - name: Deploy to Linode
       run: |
+        scp VortexEngine/VortexEngine/VortexCLI/vortex root@172.232.170.43:~/vortex
         ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
         ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
         ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
