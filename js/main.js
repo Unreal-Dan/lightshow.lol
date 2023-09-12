@@ -72,7 +72,7 @@ function draw() {
 
       const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, dotSize);
       const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
-      const outerAlpha = (innerAlpha / blurFactor).toFixed(2); // Using blurFactor here
+      const outerAlpha = (innerAlpha / blurFac).toFixed(2); // Using blurFac here
 
       gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
       gradient.addColorStop(0.5, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
