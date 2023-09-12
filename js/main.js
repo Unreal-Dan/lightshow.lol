@@ -1,8 +1,8 @@
 let dotSize = 25;
 let blurFac = 5;
-let tickRate = 1;
+let tickRate = 10;
 let fadeRate = 10;
-let trailSize = 50;
+let trailSize = 100;
 const canvas = document.getElementById('lightshowCanvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -16,6 +16,7 @@ Module.onRuntimeInitialized = function() {
     draw();
 };
 
+// fadeRate unused atm, not working so great
 //document.getElementById('fadeRate').addEventListener('input', function() {
 //    fadeRate = this.value;
 //});
