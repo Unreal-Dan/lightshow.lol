@@ -9,7 +9,7 @@
   <body style="margin:0; padding:0; background-color:black;">
     <div id="controlPanel">
       <label for="tickRate">Speed:</label>
-      <input type="range" id="tickRate" min="1" max="30" value="10" onchange="clearCanvas()">
+      <input type="range" id="tickRate" min="1" max="30" value="3" onchange="clearCanvas()">
       <br>
       <label for="trailSize">Trail:</label>
       <input type="range" id="trailSize" min="1" max="300" value="100" onchange="clearCanvas()">
@@ -26,7 +26,11 @@
       <br>
       <label for="Credits">Made with Vortex Engine</label>
       <br>
-      <label for="Credits">Updates Coming - Check back soon!</label>
+      <label for="Credits">More Updates Coming Soon!</label>
+    </div>
+    <div id="modeInfoPanel">
+      <div id="pattern"></div>
+      <div id="colorset"></div>
     </div>
     <canvas id="lightshowCanvas" width="800" height="600"></canvas>
     <script src="js/main.js"></script>

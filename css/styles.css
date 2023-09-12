@@ -1,6 +1,6 @@
 #controlPanel {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   top: 10px;
   left: 10px;
   background-color: white;
@@ -8,8 +8,26 @@
   border-radius: 5px;
 }
 
+#modeInfoPanel {
+  position: absolute;
+  z-index: 3;  /* To keep it on the same layer as the control panel */
+  top: 220px;  /* Adjust this value to place it below your control panel */
+  left: 10px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.color-box {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  margin-right: 5px;
+}
+
 canvas {
-  background-color: #1e;
+  background-color: #1e1e1e;
   position: absolute;
   z-index: 1;
 }
+
