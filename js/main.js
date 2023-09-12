@@ -1,4 +1,5 @@
 let dotSize = 25;
+let blurFac = 5;
 let tickRate = 1;
 let fadeRate = 10;
 let trailSize = 50;
@@ -15,9 +16,6 @@ Module.onRuntimeInitialized = function() {
     draw();
 };
 
-document.getElementById('dotSize').addEventListener('input', function() {
-  dotSize = this.value;
-});
 //document.getElementById('fadeRate').addEventListener('input', function() {
 //    fadeRate = this.value;
 //});
@@ -31,6 +29,12 @@ document.getElementById('trailSize').addEventListener('input', function() {
         const itemsToRemove = history.length - trailSize;
         history.splice(0, itemsToRemove);
     }
+});
+document.getElementById('dotSize').addEventListener('input', function() {
+  dotSize = this.value;
+});
+document.getElementById('blurFac').addEventListener('input', function() {
+  blurFac = this.value;
 });
 
 function draw() {
@@ -61,23 +65,23 @@ function draw() {
     }
 
     for (let index = history.length - 1; index >= 0; index--) {
-        const point = history[index];
-        if (!point.color.red && !point.color.green && !point.color.blue) {
-            continue;
-        }
+      const point = history[index];
+      if (!point.color.red && !point.color.green && !point.color.blue) {
+        continue;
+      }
 
-        const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, dotSize);
-        const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
-        const outerAlpha = (innerAlpha / 2).toFixed(2);
+      const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, dotSize);
+      const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
+      const outerAlpha = (innerAlpha / blurFactor).toFixed(2); // Using blurFactor here
 
-        gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
-        gradient.addColorStop(0.5, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
+      gradient.addColorStop(0.5, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, dotSize, 0, 2 * Math.PI);
-        ctx.fill();
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, dotSize, 0, 2 * Math.PI);
+      ctx.fill();
     }
 
     if (history.length > trailSize) {
