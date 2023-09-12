@@ -1,1 +1,15 @@
-/* Add your CSS content here */
+#controlPanel {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+canvas {
+  background-color: #1e;
+  position: absolute;
+  z-index: 1;
+}
