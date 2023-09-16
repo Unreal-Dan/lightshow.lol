@@ -142,7 +142,10 @@ function updateModeInfo() {
       for (var i = 0; i < set.numColors(); ++i) {
         let col = set.get(i);
         const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`;
-        colorsetHtml += `<div><span class="color-box" style="background-color: ${hexColor};"></span>${hexColor}</div>`;
+        colorsetHtml += `
+          <div>
+            <input class="color-picker" type="color" value="${hexColor}" onchange="updateColor(${i}, this.value)"> ${hexColor}
+          </div>`;
       }
     } else {
       colorsetHtml = 'Unknown';
@@ -161,7 +164,7 @@ function populatePatternDropdown() {
   // Assume `Module.PatternID` has the patterns you want to display
   for(let pattern in Module.PatternID) {
     // idk why this is in there
-    if (pattern === 'values' || 
+    if (pattern === 'values' ||
         Module.PatternID[pattern] === Module.PatternID.PATTERN_NONE ||
         Module.PatternID[pattern].value > Module.PatternID.PATTERN_SOLID.value) {
       continue;
@@ -184,4 +187,21 @@ function updatePattern() {
   demoMode.setPattern(selectedPattern, Module.LedPos.LED_ALL, null, null);
   // re-initialize the demo mode so it takes the new args into consideration
   demoMode.init();
+}
+
+// color update
+function updateColor(index, newColor) {
+  let demoMode = Module.Vortex.getMenuDemoMode();
+  set = demoMode.getColorset(Module.LedPos.LED_0);
+  let bigint = parseInt(newColor.replace(/^#/, ''), 16);
+  let r = (bigint >> 16) & 255;
+  let g = (bigint >> 8) & 255;
+  let b = bigint & 255;
+  console.log(r);
+  console.log(g);
+  console.log(b);
+  set.set(index, new Module.RGBColor(r, g, b)); // Assumes setColor is a function you have to update the color in your engine
+  demoMode.setColorset(set, Module.LedPos.LED_0);
+  demoMode.init();
+  updateModeInfo(); // Refresh the display after changing the color
 }
