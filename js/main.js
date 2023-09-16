@@ -68,7 +68,6 @@ function draw() {
   const radius = Math.min(centerX, centerY) - 50;
 
   for (let i = 0; i < tickRate; i++) {
-    // Note: Led will be an array but we only used first one
     const led = Module.Tick();
     if (!led) {
       continue;
@@ -82,7 +81,6 @@ function draw() {
     history.push({ x, y, color: led[0] });
   }
 
-  // iterate the history and rewrite the extra stuff
   for (let index = history.length - 1; index >= 0; index--) {
     const point = history[index];
     if (!point.color.red && !point.color.green && !point.color.blue) {
@@ -91,10 +89,10 @@ function draw() {
 
     const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, dotSize);
     const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
-    const outerAlpha = (innerAlpha / blurFac).toFixed(2); // Using blurFac here
+    const outerAlpha = blurFac !== 0 ? (innerAlpha / blurFac).toFixed(2) : innerAlpha;
 
     gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
-    gradient.addColorStop(0.5, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
+    gradient.addColorStop(0.8, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
     gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = gradient;
@@ -104,11 +102,10 @@ function draw() {
   }
 
   if (history.length > trailSize) {
-    history.splice(0, tickRate); // Remove 'tickRate' number of points from the beginning
+    history.splice(0, tickRate);
   }
 
   if (needRefresh) {
-    // refresh the mode info
     updateModeInfo();
     needRefresh = false;
   }
