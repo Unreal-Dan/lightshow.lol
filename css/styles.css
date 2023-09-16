@@ -1,21 +1,22 @@
-#controlPanel {
+#controlPanel, #modeInfoPanel {
   position: absolute;
+  background-color: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: Arial, sans-serif;
+}
+
+#controlPanel {
   z-index: 3;
   top: 10px;
   left: 10px;
-  background-color: white;
-  padding: 10px;
-  border-radius: 5px;
 }
 
 #modeInfoPanel {
-  position: absolute;
-  z-index: 3;  /* To keep it on the same layer as the control panel */
-  top: 220px;  /* Adjust this value to place it below your control panel */
+  z-index: 3;
+  top: 220px;
   left: 10px;
-  background-color: white;
-  padding: 10px;
-  border-radius: 5px;
 }
 
 #patternDropdown {
@@ -24,11 +25,33 @@
   width:auto;
 }
 
-.color-box {
-  width: 20px;
-  height: 20px;
-  display: inline-block;
+.color-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.color-picker {
   margin-right: 5px;
+}
+
+.delete-color {
+  cursor: pointer;
+  margin-top: 2px;
+  border-radius: 3px;
+}
+
+.add-color {
+  cursor: pointer;
+  width: 50px;
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #e1e1e1;
+  border-radius: 3px;
+  margin-top: 5px;
+  margin-left: 15px;
 }
 
 canvas {

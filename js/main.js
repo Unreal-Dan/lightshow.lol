@@ -143,8 +143,16 @@ function updateModeInfo() {
         let col = set.get(i);
         const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`;
         colorsetHtml += `
-          <div>
-            <input class="color-picker" type="color" value="${hexColor}" onchange="updateColor(${i}, this.value)"> ${hexColor}
+          <div class="color-container">
+            <span class="delete-color" onclick="deleteColor(${i})">X</span>
+            <input class="color-picker" type="color" value="${hexColor}" onchange="updateColor(${i}, this.value)">
+            ${hexColor}
+          </div>`;
+      }
+      if(set.numColors() < 8) {
+          colorsetHtml += `
+          <div class="color-container add-color" onclick="addColor()">
+            +
           </div>`;
       }
     } else {
@@ -204,4 +212,23 @@ function updateColor(index, newColor) {
   demoMode.setColorset(set, Module.LedPos.LED_0);
   demoMode.init();
   updateModeInfo(); // Refresh the display after changing the color
+}
+
+function deleteColor(index) {
+    let demoMode = Module.Vortex.getMenuDemoMode();
+    let set = demoMode.getColorset(Module.LedPos.LED_0);
+    set.removeColor(index); // Assumes remove is a function you have to delete the color in your engine. If it's not, you might need to replace it with the appropriate function call.
+    demoMode.setColorset(set, Module.LedPos.LED_0);
+    demoMode.init();
+    updateModeInfo(); // Refresh the display after deleting the color
+}
+
+function addColor() {
+    // Here, you can add a new color to your set. Assuming a default color of white.
+    let demoMode = Module.Vortex.getMenuDemoMode();
+    let set = demoMode.getColorset(Module.LedPos.LED_0);
+    set.addColor(new Module.RGBColor(255, 255, 255)); // Assumes add is a function to add a new color to your engine.
+    demoMode.setColorset(set, Module.LedPos.LED_0);
+    demoMode.init();
+    updateModeInfo(); // Refresh the display after adding the color
 }
