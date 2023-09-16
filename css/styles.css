@@ -5,10 +5,9 @@ a:hover {
 #aboutPanel, #controlPanel, #modeInfoPanel {
   position: absolute;
   background-color: #181a1b;
-  border-color: #443e46;
-  color: #e8e6e3;
+  color: #d8d4cf;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid #3e4446;
   border-radius: 5px;
   font-family: Arial, sans-serif;
 }
@@ -69,7 +68,6 @@ a:hover {
 }
 
 canvas {
-  background-color: #1e1e1e;
   position: absolute;
   z-index: 1;
 }
