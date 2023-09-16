@@ -1,4 +1,8 @@
-#controlPanel, #modeInfoPanel {
+a:hover {
+    cursor: pointer;
+}
+
+#aboutPanel, #controlPanel, #modeInfoPanel {
   position: absolute;
   background-color: white;
   padding: 10px;
@@ -7,15 +11,22 @@
   font-family: Arial, sans-serif;
 }
 
-#controlPanel {
+#aboutPanel {
+  text-align: center;
   z-index: 3;
   top: 10px;
   left: 10px;
 }
 
+#controlPanel {
+  z-index: 3;
+  top: 140px;
+  left: 10px;
+}
+
 #modeInfoPanel {
   z-index: 3;
-  top: 220px;
+  top: 263px;
   left: 10px;
 }
 

@@ -3,10 +3,23 @@
   <head>
     <title>Lightshow</title>
     <script src="js/vortex.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="css/styles.css">
   </head>
   <body>
   <body style="margin:0; padding:0; background-color:black;">
+    <div id="aboutPanel">
+      <label for="Credits1">Made with Vortex Engine</label>
+      <a href="https://github.com/StoneOrbits/VortexEngine" target="_blank" aria-label="View on GitHub">
+        <i class="fab fa-github"></i>
+      </a>
+      <br>
+      <br>
+      <label for="Credits2">Check in soon for updates!</label>
+      <br>
+      <br>
+      <button for="Controls" onclick="randomize()">Click Me</button>
+    </div>
     <div id="controlPanel">
       <label for="tickRate">Speed:</label>
       <input type="range" id="tickRate" min="1" max="30" value="3" onchange="clearCanvas()">
@@ -19,14 +32,6 @@
       <br>
       <label for="blurFac">Blur:</label>
       <input type="range" id="blurFac" min="1" max="100" value="5" onchange="clearCanvas()">
-      <br>
-      <br>
-      <label for="Controls">Spacebar - Next</label>
-      <br>
-      <br>
-      <label for="Credits1">Made with Vortex Engine</label>
-      <br>
-      <label for="Credits2">More Updates Coming Soon!</label>
     </div>
     <div id="modeInfoPanel">
       <select id="patternDropdown" onchange="updatePattern()"></select>

@@ -40,21 +40,21 @@ document.getElementById('blurFac').addEventListener('input', function() {
 
 // ========================================================================
 //  Input Callbacks
-document.addEventListener('keydown', function(event) {
-  if(event.code === 'Space') {
-    Module.Vortex.shortClick(0);
-    // refresh the mode information next tick
-    needRefresh = true;
-  }
-});
-canvas.addEventListener('touchstart', function(e) {
-  // Prevent the default scrolling action to happen
-  e.preventDefault();
-  // Call your engine function for handling clicks
-  Module.Vortex.shortClick(0);
-  // refresh the mode information next tick
-  needRefresh = true;
-});
+//document.addEventListener('keydown', function(event) {
+//  if(event.code === 'Space') {
+//    Module.Vortex.shortClick(0);
+//    // refresh the mode information next tick
+//    needRefresh = true;
+//  }
+//});
+//canvas.addEventListener('touchstart', function(e) {
+//  // Prevent the default scrolling action to happen
+//  e.preventDefault();
+//  // Call your engine function for handling clicks
+//  Module.Vortex.shortClick(0);
+//  // refresh the mode information next tick
+//  needRefresh = true;
+//});
 
 // ========================================================================
 //  Draw Handler
@@ -184,6 +184,12 @@ function populatePatternDropdown() {
   }
 }
 
+// randomize just send a click
+function randomize() {
+  Module.Vortex.shortClick(0);
+  needRefresh = true;
+}
+
 // pattern update
 function updatePattern() {
   // the selected dropdown pattern
@@ -211,24 +217,27 @@ function updateColor(index, newColor) {
   set.set(index, new Module.RGBColor(r, g, b)); // Assumes setColor is a function you have to update the color in your engine
   demoMode.setColorset(set, Module.LedPos.LED_0);
   demoMode.init();
-  updateModeInfo(); // Refresh the display after changing the color
+  needRefresh = true;
 }
 
 function deleteColor(index) {
-    let demoMode = Module.Vortex.getMenuDemoMode();
-    let set = demoMode.getColorset(Module.LedPos.LED_0);
-    set.removeColor(index); // Assumes remove is a function you have to delete the color in your engine. If it's not, you might need to replace it with the appropriate function call.
-    demoMode.setColorset(set, Module.LedPos.LED_0);
-    demoMode.init();
-    updateModeInfo(); // Refresh the display after deleting the color
+  let demoMode = Module.Vortex.getMenuDemoMode();
+  let set = demoMode.getColorset(Module.LedPos.LED_0);
+  if (set.numColors() <= 1) {
+    return;
+  }
+  set.removeColor(index); // Assumes remove is a function you have to delete the color in your engine. If it's not, you might need to replace it with the appropriate function call.
+  demoMode.setColorset(set, Module.LedPos.LED_0);
+  demoMode.init();
+  needRefresh = true;
 }
 
 function addColor() {
-    // Here, you can add a new color to your set. Assuming a default color of white.
-    let demoMode = Module.Vortex.getMenuDemoMode();
-    let set = demoMode.getColorset(Module.LedPos.LED_0);
-    set.addColor(new Module.RGBColor(255, 255, 255)); // Assumes add is a function to add a new color to your engine.
-    demoMode.setColorset(set, Module.LedPos.LED_0);
-    demoMode.init();
-    updateModeInfo(); // Refresh the display after adding the color
+  // Here, you can add a new color to your set. Assuming a default color of white.
+  let demoMode = Module.Vortex.getMenuDemoMode();
+  let set = demoMode.getColorset(Module.LedPos.LED_0);
+  set.addColor(new Module.RGBColor(255, 255, 255)); // Assumes add is a function to add a new color to your engine.
+  demoMode.setColorset(set, Module.LedPos.LED_0);
+  demoMode.init();
+  needRefresh = true;
 }
