@@ -59,6 +59,7 @@ a:hover {
   width: 50px;
   height: 25px;
   display: flex;
+  background-color: #292c2e;
   justify-content: center;
   align-items: center;
   background: #e1e1e1;
