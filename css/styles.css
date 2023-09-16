@@ -4,7 +4,9 @@ a:hover {
 
 #aboutPanel, #controlPanel, #modeInfoPanel {
   position: absolute;
-  background-color: white;
+  background-color: #181a1b;
+  border-color: #443e46;
+  color: #e8e6e3;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
