@@ -18,6 +18,12 @@
   border-radius: 5px;
 }
 
+#patternDropdown {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  width:auto;
+}
+
 .color-box {
   width: 20px;
   height: 20px;

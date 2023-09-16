@@ -11,7 +11,10 @@ const history = [];
 let needRefresh = true;
 
 Module.onRuntimeInitialized = function() {
-  Module.VortexInit();
+  Module.Init();
+  Module.Vortex.openRandomizer();
+  Module.Vortex.longClick(0);
+  populatePatternDropdown();
   draw();
 };
 
@@ -39,7 +42,7 @@ document.getElementById('blurFac').addEventListener('input', function() {
 //  Input Callbacks
 document.addEventListener('keydown', function(event) {
   if(event.code === 'Space') {
-    Module.VortexClick();
+    Module.Vortex.shortClick(0);
     // refresh the mode information next tick
     needRefresh = true;
   }
@@ -48,7 +51,7 @@ canvas.addEventListener('touchstart', function(e) {
   // Prevent the default scrolling action to happen
   e.preventDefault();
   // Call your engine function for handling clicks
-  Module.VortexClick();
+  Module.Vortex.shortClick(0);
   // refresh the mode information next tick
   needRefresh = true;
 });
@@ -66,7 +69,7 @@ function draw() {
 
   for (let i = 0; i < tickRate; i++) {
     // Note: Led will be an array but we only used first one
-    const led = Module.VortexTick();
+    const led = Module.Tick();
     if (!led) {
       continue;
     }
@@ -121,25 +124,64 @@ function clearCanvas() {
 // ========================================================================
 //  Mode Information Handler
 function updateModeInfo() {
-  const modeInfo = Module.VortexDemoMode();
+  let demoMode = Module.Vortex.getMenuDemoMode();
+
   const patternElement = document.getElementById("pattern");
   const colorsetElement = document.getElementById("colorset");
 
-  if (modeInfo) {
-    patternElement.textContent = modeInfo.pattern || 'Unknown';
+  if (demoMode) {
+    //patternElement.textContent = Module.Vortex.patternToString(demoMode.getPatternID(0)) || 'Unknown';
+    let dropdown = document.getElementById('patternDropdown');
+    const pat = demoMode.getPatternID(Module.LedPos.LED_0);
+    dropdown.value = pat.value;
+
+    const set = demoMode.getColorset(Module.LedPos.LED_0);
 
     let colorsetHtml = '';
-    if (modeInfo.colorset) {
-      modeInfo.colorset.forEach((color) => {
-        const hexColor = `#${((1 << 24) + (color.red << 16) + (color.green << 8) + color.blue).toString(16).slice(1)}`;
+    if (set.numColors()) {
+      for (var i = 0; i < set.numColors(); ++i) {
+        let col = set.get(i);
+        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`;
         colorsetHtml += `<div><span class="color-box" style="background-color: ${hexColor};"></span>${hexColor}</div>`;
-      });
+      }
     } else {
       colorsetHtml = 'Unknown';
     }
     colorsetElement.innerHTML = colorsetHtml;
   } else {
-    patternElement.textContent = 'Unknown';
+    //patternElement.textContent = 'Unknown';
     colorsetElement.textContent = 'Unknown';
   }
+}
+
+// fill pattern dropdown box
+function populatePatternDropdown() {
+  const dropdown = document.getElementById('patternDropdown');
+
+  // Assume `Module.PatternID` has the patterns you want to display
+  for(let pattern in Module.PatternID) {
+    // idk why this is in there
+    if (pattern === 'values' || 
+        Module.PatternID[pattern] === Module.PatternID.PATTERN_NONE ||
+        Module.PatternID[pattern].value > Module.PatternID.PATTERN_SOLID.value) {
+      continue;
+    }
+    let option = document.createElement('option');
+    option.text = Module.Vortex.patternToString(Module.PatternID[pattern]);  // Using the key name as the display text
+    option.value = Module.PatternID[pattern].value;
+    dropdown.appendChild(option);
+  }
+}
+
+// pattern update
+function updatePattern() {
+  // the selected dropdown pattern
+  const selectedPattern = Module.PatternID.values[document.getElementById('patternDropdown').value];
+  // grab the 'preview' mode for the current mode (randomizer)
+  let demoMode = Module.Vortex.getMenuDemoMode();
+  // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
+  // with null args and null colorset (so they are defaulted and won't change)
+  demoMode.setPattern(selectedPattern, Module.LedPos.LED_ALL, null, null);
+  // re-initialize the demo mode so it takes the new args into consideration
+  demoMode.init();
 }
