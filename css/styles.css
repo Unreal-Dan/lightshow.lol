@@ -106,6 +106,12 @@ legend {
   margin-top: 4px;
 }
 
+.color-container label {
+  font-family:monospace;
+  font-size: 17px;
+  margin-left: 5px;
+}
+
 /* Button and Interaction Styles */
 .add-color {
   align-items: center;

@@ -118,12 +118,12 @@ function updateModeInfo() {
     if (set.numColors()) {
       for (var i = 0; i < set.numColors(); ++i) {
         let col = set.get(i);
-        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`;
+        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
         colorsetHtml += `
           <div class="color-container">
             <span class="delete-color" onclick="deleteColor(${i})">X</span>
             <input class="color-picker" type="color" value="${hexColor}" onchange="updateColor(${i}, this.value)">
-            ${hexColor}
+            <label>${hexColor}</label>
           </div>`;
       }
       if(set.numColors() < 8) {
