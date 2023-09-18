@@ -13,7 +13,6 @@
             <i class="fab fa-github"></i>
         </a>
     </div>
-    <button id="randomizeButton" onclick="randomize()">Click Me</button>
     <div id="controlPanel">
         <fieldset>
           <legend>Animation</legend>
@@ -36,7 +35,9 @@
                 </div>
             </div>
         </fieldset>
-
+        <div id="randomizeContainer">
+          <button id="randomizeButton" onclick="randomize()">Randomize</button>
+        </div>
         <fieldset>
             <legend>Pattern</legend>
             <select id="patternDropdown" onchange="updatePattern()"></select>

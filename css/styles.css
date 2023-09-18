@@ -15,8 +15,12 @@ canvas {
   z-index: 1;
 }
 
+#randomizeContainer {
+  text-align: center;
+}
+
 #randomizeButton {
-  float: right;
+  margin-bottom: 5px;
 }
 
 /* Panels */
