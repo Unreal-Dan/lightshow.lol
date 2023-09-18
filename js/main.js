@@ -12,8 +12,6 @@ let needRefresh = true;
 
 Module.onRuntimeInitialized = function() {
   Module.Init();
-  Module.Vortex.openRandomizer();
-  Module.Vortex.longClick(0);
   populatePatternDropdown();
   updatePatternParameters();
   draw();
@@ -101,7 +99,7 @@ function clearCanvas() {
 // ========================================================================
 //  Mode Information Handler
 function updateModeInfo() {
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
 
   const patternElement = document.getElementById("pattern");
   const colorsetElement = document.getElementById("colorset");
@@ -168,7 +166,10 @@ function populatePatternDropdown() {
 
 // randomize just send a click
 function randomize() {
+  Module.Vortex.openRandomizer();
+  Module.Vortex.longClick(0);
   Module.Vortex.shortClick(0);
+  Module.Vortex.longClick(0);
   needRefresh = true;
 }
 
@@ -177,7 +178,7 @@ function updatePattern() {
   // the selected dropdown pattern
   const selectedPattern = Module.PatternID.values[document.getElementById('patternDropdown').value];
   // grab the 'preview' mode for the current mode (randomizer)
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
   // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
   // with null args and null colorset (so they are defaulted and won't change)
   demoMode.setPattern(selectedPattern, Module.LedPos.LED_ALL, null, null);
@@ -197,7 +198,7 @@ function updatePatternParameters() {
   // Clear existing parameters
   paramsDiv.innerHTML = '';
 
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
 
   function camelCaseToSpaces(str) {
     return str
@@ -240,7 +241,7 @@ function updatePatternParameters() {
 
       displayValue.textContent = event.target.value;  // Update the displayed value
 
-      let demoMode = Module.Vortex.getMenuDemoMode();
+      let demoMode = Module.Modes.curMode();
       let pat = demoMode.getPattern(Module.LedPos.LED_0);
       pat.setArg(i, event.target.value);
       demoMode.init();
@@ -250,7 +251,7 @@ function updatePatternParameters() {
 
 // color update
 function updateColor(index, newColor) {
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
   set = demoMode.getColorset(Module.LedPos.LED_0);
   let bigint = parseInt(newColor.replace(/^#/, ''), 16);
   let r = (bigint >> 16) & 255;
@@ -267,7 +268,7 @@ function updateColor(index, newColor) {
 
 // handle clicking the delete color button
 function deleteColor(index) {
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
   let set = demoMode.getColorset(Module.LedPos.LED_0);
   if (set.numColors() <= 1) {
     return;
@@ -281,7 +282,7 @@ function deleteColor(index) {
 // handle clicking the add color button
 function addColor() {
   // Here, you can add a new color to your set. Assuming a default color of white.
-  let demoMode = Module.Vortex.getMenuDemoMode();
+  let demoMode = Module.Modes.curMode();
   let set = demoMode.getColorset(Module.LedPos.LED_0);
   set.addColor(new Module.RGBColor(255, 255, 255)); // Assumes add is a function to add a new color to your engine.
   demoMode.setColorset(set, Module.LedPos.LED_0);
