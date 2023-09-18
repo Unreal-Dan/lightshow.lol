@@ -15,51 +15,31 @@ Module.onRuntimeInitialized = function() {
   Module.Vortex.openRandomizer();
   Module.Vortex.longClick(0);
   populatePatternDropdown();
+  updatePatternParameters();
   draw();
 };
 
-// ========================================================================
-//  Control Panel Callbacks
 document.getElementById('tickRate').addEventListener('input', function() {
-  tickRate = this.value;
+  tickRate = parseInt(this.value, 10);
 });
+
 document.getElementById('trailSize').addEventListener('input', function() {
-  trailSize = this.value;
-  // Trim history if new trail size is smaller
+  trailSize = parseInt(this.value, 10);
   if (history.length > trailSize) {
     const itemsToRemove = history.length - trailSize;
     history.splice(0, itemsToRemove);
   }
 });
+
 document.getElementById('dotSize').addEventListener('input', function() {
-  dotSize = this.value;
+  dotSize = parseInt(this.value, 10);
 });
+
 document.getElementById('blurFac').addEventListener('input', function() {
-  blurFac = this.value;
+  blurFac = parseInt(this.value, 10);
 });
 
-// ========================================================================
-//  Input Callbacks
-//document.addEventListener('keydown', function(event) {
-//  if(event.code === 'Space') {
-//    Module.Vortex.shortClick(0);
-//    // refresh the mode information next tick
-//    needRefresh = true;
-//  }
-//});
-//canvas.addEventListener('touchstart', function(e) {
-//  // Prevent the default scrolling action to happen
-//  e.preventDefault();
-//  // Call your engine function for handling clicks
-//  Module.Vortex.shortClick(0);
-//  // refresh the mode information next tick
-//  needRefresh = true;
-//});
-
-// ========================================================================
-//  Draw Handler
 function draw() {
-  // Clear canvas with a stronger fade effect
   ctx.fillStyle = `rgba(0, 0, 0, 1)`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -160,6 +140,7 @@ function updateModeInfo() {
     //patternElement.textContent = 'Unknown';
     colorsetElement.textContent = 'Unknown';
   }
+	updatePatternParameters();
 }
 
 // fill pattern dropdown box
@@ -175,7 +156,11 @@ function populatePatternDropdown() {
       continue;
     }
     let option = document.createElement('option');
-    option.text = Module.Vortex.patternToString(Module.PatternID[pattern]);  // Using the key name as the display text
+    let str = Module.Vortex.patternToString(Module.PatternID[pattern]);  // Using the key name as the display text
+    if (str.startsWith("complementary")) {
+      str = "comp. " + str.slice(14);
+    }
+    option.text = str;
     option.value = Module.PatternID[pattern].value;
     dropdown.appendChild(option);
   }
@@ -198,6 +183,69 @@ function updatePattern() {
   demoMode.setPattern(selectedPattern, Module.LedPos.LED_ALL, null, null);
   // re-initialize the demo mode so it takes the new args into consideration
   demoMode.init();
+	// re-initialize the params list
+	updatePatternParameters();
+}
+
+// update the params fields of pattern
+function updatePatternParameters() {
+  const patternID = Module.PatternID.values[document.getElementById('patternDropdown').value];
+  const numOfParams = Module.Vortex.numCustomParams(patternID);
+  const paramsDiv = document.getElementById('patternParams');
+  let customParams = Module.Vortex.getCustomParams(patternID);
+
+  // Clear existing parameters
+  paramsDiv.innerHTML = '';
+
+  let demoMode = Module.Vortex.getMenuDemoMode();
+
+  function camelCaseToSpaces(str) {
+    return str
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+      .toLowerCase();
+  }
+
+  for (let i = 0; i < numOfParams; i++) {
+    const container = document.createElement('div');
+    container.className = 'param-container';
+
+    const label = document.createElement('label');
+    let str = camelCaseToSpaces(customParams.get(i).slice(2));
+    label.textContent = str;
+
+    // Create the slider
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'param-slider';
+    slider.min = '0';       // Adjust as necessary
+    slider.max = '100';     // Adjust as necessary
+    slider.step = '1';    // Adjust as necessary
+    slider.value = demoMode.getArg(i, Module.LedPos.LED_0) || '0';
+
+    // Display value
+    const displayValue = document.createElement('span');
+    displayValue.className = 'slider-value';
+    displayValue.textContent = slider.value;
+
+    container.appendChild(label);
+    container.appendChild(slider);
+    container.appendChild(displayValue);
+    paramsDiv.appendChild(container);
+
+    // Event for slider
+    slider.addEventListener('input', function(event) {
+      const paramName = camelCaseToSpaces(label.textContent);
+      console.log(`Parameter: ${paramName}, New Value: ${event.target.value}`);
+
+      displayValue.textContent = event.target.value;  // Update the displayed value
+
+      let demoMode = Module.Vortex.getMenuDemoMode();
+      let pat = demoMode.getPattern(Module.LedPos.LED_0);
+      pat.setArg(i, event.target.value);
+      demoMode.init();
+    });
+  }
 }
 
 // color update
@@ -217,6 +265,7 @@ function updateColor(index, newColor) {
   needRefresh = true;
 }
 
+// handle clicking the delete color button
 function deleteColor(index) {
   let demoMode = Module.Vortex.getMenuDemoMode();
   let set = demoMode.getColorset(Module.LedPos.LED_0);
@@ -229,6 +278,7 @@ function deleteColor(index) {
   needRefresh = true;
 }
 
+// handle clicking the add color button
 function addColor() {
   // Here, you can add a new color to your set. Assuming a default color of white.
   let demoMode = Module.Vortex.getMenuDemoMode();

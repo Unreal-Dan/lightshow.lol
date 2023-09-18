@@ -1,74 +1,136 @@
-a:hover {
-    cursor: pointer;
-}
-
-#aboutPanel, #controlPanel, #modeInfoPanel {
-  position: absolute;
-  background-color: #181a1b;
-  color: #d8d4cf;
-  padding: 10px;
-  border: 1px solid #3e4446;
-  border-radius: 5px;
+/* Base Styles */
+body {
+  background-color: black;
   font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-#aboutPanel {
-  text-align: center;
-  z-index: 3;
-  top: 10px;
-  left: 10px;
-}
-
-#controlPanel {
-  z-index: 3;
-  top: 140px;
-  left: 10px;
-}
-
-#modeInfoPanel {
-  z-index: 3;
-  top: 263px;
-  left: 10px;
-}
-
-#patternDropdown {
-  margin-top: 5px;
-  margin-bottom: 10px;
-  width:auto;
-}
-
-.color-container {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.color-picker {
-  margin-right: 5px;
-}
-
-.delete-color {
+a:hover {
   cursor: pointer;
-  margin-top: 2px;
-  border-radius: 3px;
-}
-
-.add-color {
-  cursor: pointer;
-  width: 50px;
-  height: 25px;
-  display: flex;
-  background-color: #292c2e;
-  color: #d8d4cf;
-  justify-content: center;
-  align-items: center;
-  border-radius: 3px;
-  margin-top: 5px;
-  margin-left: 15px;
 }
 
 canvas {
   position: absolute;
   z-index: 1;
+}
+
+#randomizeButton {
+  float: right;
+}
+
+/* Panels */
+#aboutPanel, #controlPanel, #modeInfoPanel {
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  padding: 10px;
+  position: absolute;
+}
+
+#aboutPanel {
+  left: 10px;
+  text-align: center;
+  top: 10px;
+  z-index: 3;
+}
+
+#controlPanel {
+  left: 10px;
+  top: 60px;
+  z-index: 3;
+}
+
+#modeInfoPanel {
+  left: 10px;
+  top: 263px;
+  z-index: 3;
+}
+
+/* Form Elements */
+fieldset {
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 10px;
+}
+
+legend {
+  color: #d8d4cf;
+  padding: 0 5px;
+}
+
+#patternDropdown {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: auto;
+}
+
+#patternParams {
+  margin-top: 10px;
+}
+
+.param-container {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.param-container label {
+  display:flex;
+  margin-left: 5px;
+  margin-bottom: 2px;
+}
+
+.param-textbox {
+  background-color: #292c2e;
+  border: 1px solid #3e4446;
+  border-radius: 3px;
+  color: #d8d4cf;
+  padding: 3px;
+  width: 60px; /* Adjust width as needed */
+  margin-left: 15px;
+  margin-right: 10px;
+}
+
+.param-slider {
+  width:150px;
+  margin-right: 10px;
+}
+
+.color-container {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+/* Button and Interaction Styles */
+.add-color {
+  align-items: center;
+  background-color: #292c2e;
+  border: 1px solid #3e4446;
+  border-radius: 3px;
+  color: #d8d4cf;
+  cursor: pointer;
+  display: flex;
+  height: 15px;
+  justify-content: center;
+  margin-left: 15px;
+  margin-top: 5px;
+  padding: 5px 10px;
+  transition: background-color 0.2s; /* Smooth transition for hover effect */
+  width: 30px;
+}
+
+.add-color:hover {
+  background-color: #3e4446; /* Darken the button on hover */
+}
+
+.delete-color {
+  border-radius: 3px;
+  cursor: pointer;
+  margin-top: 2px;
 }
 
