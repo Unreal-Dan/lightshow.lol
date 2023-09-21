@@ -76,15 +76,23 @@ legend {
 }
 
 .param-container {
-  align-items: center;
+  display:flex;
+  flex-direction: column;
   justify-content: space-between;
   margin-bottom: 2px;
 }
 
 .param-container label {
-  display:flex;
+  display:inline;
   margin-left: 5px;
+  margin-right: 5px;
   margin-bottom: 2px;
+}
+
+.label-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .param-textbox {
@@ -144,3 +152,40 @@ legend {
   margin-top: 2px;
 }
 
+.help-icon {
+  cursor: pointer;
+  position: relative;
+}
+
+.tooltip {
+  position: absolute;
+  background-color: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #ccc transparent;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  margin-left: -4px;
+  border-top-color: #333;
+  border-width: 4px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+}

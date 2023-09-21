@@ -145,6 +145,14 @@ function updateModeInfo() {
 function populatePatternDropdown() {
   const dropdown = document.getElementById('patternDropdown');
 
+  // Create optgroups for each pattern type
+  const strobeGroup = document.createElement('optgroup');
+  strobeGroup.label = "Strobe Patterns";
+  const blendGroup = document.createElement('optgroup');
+  blendGroup.label = "Blend Patterns";
+  const solidGroup = document.createElement('optgroup');
+  solidGroup.label = "Solid Patterns";
+
   // Assume `Module.PatternID` has the patterns you want to display
   for(let pattern in Module.PatternID) {
     // idk why this is in there
@@ -161,7 +169,20 @@ function populatePatternDropdown() {
     option.text = str;
     option.value = Module.PatternID[pattern].value;
     dropdown.appendChild(option);
+
+    if (str.includes("blend")) {
+      blendGroup.appendChild(option);
+    } else if (str.includes("solid")) {
+      solidGroup.appendChild(option);
+    } else {
+      strobeGroup.appendChild(option);
+    }
   }
+
+  // Append the groups to the dropdown
+  dropdown.appendChild(strobeGroup);
+  dropdown.appendChild(blendGroup);
+  dropdown.appendChild(solidGroup);
 }
 
 // randomize just send a click
@@ -207,21 +228,31 @@ function updatePatternParameters() {
       .toLowerCase();
   }
 
+  const descriptions = {
+    "on duration": "This determines how long the LED light stays 'on' during each blink. Think of it like the length of time each color shows up when the LED is cycling through colors.",
+    "off duration": "This is the amount of time the LED light stays 'off' between each blink. It's like the pause or gap between each color as the LED cycles.",
+    "gap duration": "After the LED completes one full cycle of colors, this sets the length of the pause before it starts the next cycle.",
+    "dash duration": "After the main gap, this adds an extra 'on' period. Imagine it as an additional burst of light after the cycle completes.",
+    "group size": "This is the amount of on-off blinks in a cycle. If this is 0, it will use the number of colors. This will do nothing if gap is 0",
+    "blend speed": "This controls the speed at which the LED transitions or blends from one color to the next. If it's set to 0, the LED will stay on a single color without moving to the next.",
+    "num flips": "Every other blink the LED will show a hue that's related to the current color. This setting controls how many times that happens.",
+    "col index": "If you're using a solid pattern, this decides which specific color from the colorset will be displayed. For example, if you set it to 0, it will pick the first color; if 1, the second, and so on.",
+  };
+
   for (let i = 0; i < numOfParams; i++) {
     const container = document.createElement('div');
     container.className = 'param-container';
 
     const label = document.createElement('label');
-    let str = camelCaseToSpaces(customParams.get(i).slice(2));
-    label.textContent = str;
+    let sliderName = camelCaseToSpaces(customParams.get(i).slice(2));
+    label.textContent = sliderName;
 
-    // Create the slider
     const slider = document.createElement('input');
     slider.type = 'range';
     slider.className = 'param-slider';
     slider.min = '0';       // Adjust as necessary
     slider.max = '100';     // Adjust as necessary
-    slider.step = '1';    // Adjust as necessary
+    slider.step = '1';      // Adjust as necessary
     slider.value = demoMode.getArg(i, Module.LedPos.LED_0) || '0';
 
     // Display value
@@ -229,18 +260,34 @@ function updatePatternParameters() {
     displayValue.className = 'slider-value';
     displayValue.textContent = slider.value;
 
-    container.appendChild(label);
-    container.appendChild(slider);
-    container.appendChild(displayValue);
+    // Description of what the slider does
+    const helpIcon = document.createElement('i');
+    helpIcon.className = 'fas fa-question-circle help-icon';
+    helpIcon.setAttribute('data-tooltip', descriptions[sliderName]);  // Modify this line for each slider's specific tooltip content.
+    helpIcon.onclick = function() { toggleTooltip(helpIcon); };
+
+    helpIcon.addEventListener('click', function(event) {
+      event.stopPropagation();  // Prevent the document click event from immediately hiding the tooltip
+    });
+
+    const labelContainer = document.createElement('div');
+    labelContainer.className = 'label-container';
+    labelContainer.appendChild(label);
+    labelContainer.appendChild(helpIcon);
+
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'slider-container';
+    sliderContainer.appendChild(slider);
+    sliderContainer.appendChild(displayValue);
+
+    container.appendChild(labelContainer);
+    container.appendChild(sliderContainer);
     paramsDiv.appendChild(container);
 
     // Event for slider
     slider.addEventListener('input', function(event) {
       const paramName = camelCaseToSpaces(label.textContent);
-      console.log(`Parameter: ${paramName}, New Value: ${event.target.value}`);
-
       displayValue.textContent = event.target.value;  // Update the displayed value
-
       let demoMode = Module.Modes.curMode();
       let pat = demoMode.getPattern(Module.LedPos.LED_0);
       pat.setArg(i, event.target.value);
@@ -289,3 +336,63 @@ function addColor() {
   demoMode.init();
   needRefresh = true;
 }
+
+// Sample code to create a slider with a tooltip
+function createSliderWithTooltip(sliderId, tooltipText) {
+  const sliderContainer = document.createElement('div');
+  sliderContainer.className = 'tooltip';
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.id = sliderId;
+  sliderContainer.appendChild(slider);
+
+  const tooltipSpan = document.createElement('span');
+  tooltipSpan.className = 'tooltiptext';
+  tooltipSpan.textContent = tooltipText;
+  sliderContainer.appendChild(tooltipSpan);
+
+  return sliderContainer;
+}
+
+let currentTooltip = null;
+
+function toggleTooltip(element) {
+  let tooltipText = element.getAttribute('data-tooltip');
+  if (!tooltipText) return;
+
+  // Check if a tooltip is currently displayed
+  if (currentTooltip) {
+    currentTooltip.style.display = 'none';
+  }
+
+  let tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  tooltip.textContent = tooltipText;
+
+  // Position tooltip near the help icon
+  tooltip.style.left = (element.getBoundingClientRect().left + window.scrollX + 30) + 'px';
+  tooltip.style.top = (element.getBoundingClientRect().top + window.scrollY - 5) + 'px';
+
+  document.body.appendChild(tooltip);
+
+  if (currentTooltip) {
+    currentTooltip.remove();
+  }
+  currentTooltip = tooltip;
+}
+
+// This function will hide the currently displayed tooltip
+function hideTooltip() {
+  if (currentTooltip) {
+    currentTooltip.remove();
+    currentTooltip = null;
+  }
+}
+
+document.addEventListener('click', function(event) {
+  // If the clicked element is not a help icon, hide any displayed tooltip
+  if (!event.target.classList.contains('help-icon')) {
+    hideTooltip();
+  }
+});
