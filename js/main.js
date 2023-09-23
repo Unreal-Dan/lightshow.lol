@@ -191,6 +191,7 @@ function randomize() {
   Module.Vortex.longClick(0);
   Module.Vortex.shortClick(0);
   Module.Vortex.longClick(0);
+  //Module.Vortex.setLedCount(1);
   needRefresh = true;
 }
 
@@ -390,9 +391,230 @@ function hideTooltip() {
   }
 }
 
-document.addEventListener('click', function(event) {
-  // If the clicked element is not a help icon, hide any displayed tooltip
-  if (!event.target.classList.contains('help-icon')) {
-    hideTooltip();
+// ==================================================================
+//  Code for connecting to Serial
+// Helper functions and event listeners
+
+// the hello from the editor to the gloves
+const EDITOR_VERB_HELLO             = 'a';
+
+// the response from the gloveset when it's ready to receive something
+// after the editor has given it a command to do something the gloveset
+// will respond with this then once it's done doing the action it will
+// send a different finished response for each action
+const EDITOR_VERB_READY             = 'b';
+
+// the command from the editor to send modes over
+const EDITOR_VERB_PULL_MODES        = 'c';
+// the response from the editor once modes are received
+const EDITOR_VERB_PULL_MODES_DONE   = 'd';
+// the response from the gloves once it acknowledges the editor got the modes
+const EDITOR_VERB_PULL_MODES_ACK    = 'e';
+
+// the command from the editor to send modes over
+const EDITOR_VERB_PUSH_MODES        = 'f';
+// the response from the gloveset when it received the mode
+const EDITOR_VERB_PUSH_MODES_ACK    = 'g';
+
+// the command from the editor to tell the gloveset to demo a mode
+const EDITOR_VERB_DEMO_MODE         = 'h';
+// the response from the gloveset when it's received the mode to demo
+const EDITOR_VERB_DEMO_MODE_ACK     = 'i';
+
+// the command from the editor to tell the gloveset to clear the demo
+const EDITOR_VERB_CLEAR_DEMO        = 'j';
+// the response from the gloveset when it's received disabled the demo
+const EDITOR_VERB_CLEAR_DEMO_ACK    = 'k';
+
+// when the gloveset is leaving the menu and needs to tell the editor
+// that it's no longer listening
+const EDITOR_VERB_GOODBYE           = 'l';
+
+
+class VortexPort {
+  accumulatedData = ""; // A buffer to store partial lines.
+
+  constructor() {
+    this.serialPort = null;
+    this.portActive = false;
+    this.debugSending = false;
   }
-});
+
+  isActive = () => {
+    return this.portActive;
+  }
+
+  async requestDevice() {
+    try {
+      console.log('Requesting device...');
+      this.serialPort = await navigator.serial.requestPort();
+      await this.serialPort.open({ baudRate: 9600 });
+      await this.serialPort.setSignals({ dataTerminalReady: true });
+
+      console.log('Port opened:', this.serialPort);
+      console.log('Starting to listen for greetings...');
+      this.listenForGreeting();
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+
+  async writeData(data) {
+    if (!this.serialPort || !this.serialPort.writable) {
+      console.error('Port is not writable.');
+      return;
+    }
+
+    const writer = this.serialPort.writable.getWriter();
+    const encoded = new TextEncoder().encode(data);
+
+    try {
+      await writer.write(encoded);
+    } catch (error) {
+      console.error('Error writing data:', error);
+    } finally {
+      writer.releaseLock();
+    }
+  }
+
+  listenForGreeting = async () => {
+    while (!this.portActive) {
+      if (this.serialPort) {
+        try {
+          // Read data from the serial port
+          const response = await this.readData();
+
+          const responseRegex = /^== Vortex Engine v(\d+\.\d+) '(\w+)' \( built (.*)\) ==$/;
+          const match = response.match(responseRegex);
+
+          if (match) {
+            const version = match[1]; // Capturing the version number
+            const name = match[2];    // Capturing the name
+            const buildDate = match[3]; // Capturing the build date
+
+            console.log('Received greeting from Vortex Device:');
+            console.log('Device Type:', name);
+            console.log('Version:', version);
+            console.log('Date:', buildDate);
+            this.portActive = true;
+          }
+        } catch (err) {
+          console.error('Error reading data:', err);
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  async readData() {
+    if (!this.serialPort || !this.serialPort.readable) {
+      console.error('Port is not readable.');
+      return null;
+    }
+
+    const reader = this.serialPort.readable.getReader();
+    let accumulatedData = ''; // Create a local buffer to store partial lines.
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          reader.releaseLock();
+          break;
+        }
+
+        const text = new TextDecoder().decode(value);
+        accumulatedData += text; // Accumulate incoming data
+
+        // Look for the start and end delimiter for a full message
+        const startIndex = accumulatedData.indexOf('==');
+        const endIndex = accumulatedData.indexOf('==', startIndex + 2); // Search for the second '==' after the first one.
+
+        // If both start and end delimiters are found, process the message.
+        if (startIndex >= 0 && endIndex >= 0) {
+          const fullMessage = accumulatedData.substring(startIndex, endIndex + 2).trim();
+          accumulatedData = accumulatedData.substring(endIndex + 2); // Trim accumulatedData
+
+          return fullMessage; // Return the full message
+        }
+      }
+    } catch (error) {
+      console.error('Error reading data:', error);
+      return null;
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  async demoCurMode() {
+    // Unserialize the stream of data
+    const curMode = new Module.ByteStream();
+    if (!Module.Vortex.getCurMode(curMode)) {
+      console.log("Failed to get cur mode");
+      // Error handling - abort or handle as needed
+      return;
+    }
+    console.log("Sending demo command...");
+    await this.sendCommand(EDITOR_VERB_DEMO_MODE);
+    console.log("Waiting for ready response...");
+    const readyByte = new Uint8Array([0x62]);
+    await this.expectData(readyByte);
+    console.log("Device is ready, sending mode...");
+    await port.writeData(combinedArray);
+    console.log("Sent Mode, waiting for ack...");
+    await this.expectData(EDITOR_VERB_DEMO_MODE_ACK);
+    console.log("Success!");
+  }
+
+  async expectData(expectedResponse, timeoutMs = 10000) {
+    const startTime = Date.now();
+    while (Date.now() - startTime < timeoutMs) {
+      const response = await this.readData();
+      if (response === expectedResponse) {
+        return; // Expected response received
+      }
+      // You can log the received response here for debugging:
+      console.log('Received:', response);
+    }
+    throw new Error('Timeout: Expected response not received');
+  }
+
+  async closePort() {
+    if (this.serialPort) {
+      await this.serialPort.close();
+      this.serialPort = null;
+      console.log('Port closed.');
+    }
+  }
+
+  async sendCommand(verb) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot send command.');
+      return;
+    }
+    const writer = this.serialPort.writable.getWriter();
+    const commandByte = new Uint8Array([0x68]);
+    try {
+      // Write the command and immediately flush it
+      await writer.write(commandByte);
+      await writer.releaseLock();
+      console.log("Sent Command:", verb);
+    } catch (error) {
+      console.error('Error writing data:', error);
+    }
+  }
+}
+
+const vortexPort = new VortexPort();
+
+const handleDeviceRequest = () => {
+  vortexPort.requestDevice();
+};
+const handleDemoMode = () => {
+  vortexPort.demoCurMode();
+}
+
+document.getElementById('requestDeviceButton').addEventListener('click', handleDeviceRequest);
+document.getElementById('demoModeButton').addEventListener('click', handleDemoMode);
+
