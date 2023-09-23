@@ -514,7 +514,6 @@ class VortexPort {
     }
 
     const reader = this.serialPort.readable.getReader();
-    let accumulatedData = ''; // Create a local buffer to store partial lines.
 
     try {
       while (true) {
@@ -525,18 +524,23 @@ class VortexPort {
         }
 
         const text = new TextDecoder().decode(value);
-        accumulatedData += text; // Accumulate incoming data
+        this.accumulatedData += text;
 
-        // Look for the start and end delimiter for a full message
-        const startIndex = accumulatedData.indexOf('==');
-        const endIndex = accumulatedData.indexOf('==', startIndex + 2); // Search for the second '==' after the first one.
+        // If it starts with '=' or '==', look for the end delimiter '=='
+        if (this.accumulatedData.startsWith('=') || this.accumulatedData.startsWith('==')) {
+          const endIndex = this.accumulatedData.indexOf('==', 2); // Search for '==' after the first one.
 
-        // If both start and end delimiters are found, process the message.
-        if (startIndex >= 0 && endIndex >= 0) {
-          const fullMessage = accumulatedData.substring(startIndex, endIndex + 2).trim();
-          accumulatedData = accumulatedData.substring(endIndex + 2); // Trim accumulatedData
+          if (endIndex >= 0) {
+            const fullMessage = this.accumulatedData.substring(0, endIndex + 2).trim();
+            this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
+            return fullMessage; // Return the full message
+          }
 
-          return fullMessage; // Return the full message
+        } else {
+          // Return any single byte
+          const singleByte = this.accumulatedData[0];
+          this.accumulatedData = this.accumulatedData.substring(1);
+          return singleByte;
         }
       }
     } catch (error) {
@@ -555,13 +559,29 @@ class VortexPort {
       // Error handling - abort or handle as needed
       return;
     }
+
+    // Create the custom array with size and rawData
+    const size = curMode.rawSize();
+    const sizeArray = new Uint32Array([size]); // No byte swapping
+    const rawDataArray = Module.getRawDataArray(curMode);
+    // Combine sizeArray and rawDataArray into a single array
+    const combinedArray = new Uint8Array(sizeArray.length * 4 + rawDataArray.length);
+    combinedArray.set(new Uint8Array(sizeArray.buffer), 0); // Copy sizeArray bytes
+    combinedArray.set(rawDataArray, sizeArray.length * 4); // Copy rawDataArray bytes
+
     console.log("Sending demo command...");
     await this.sendCommand(EDITOR_VERB_DEMO_MODE);
     console.log("Waiting for ready response...");
-    const readyByte = new Uint8Array([0x62]);
-    await this.expectData(readyByte);
+    await this.expectData('b');
     console.log("Device is ready, sending mode...");
-    await port.writeData(combinedArray);
+    const writer = this.serialPort.writable.getWriter();
+    try {
+      await writer.write(combinedArray);
+    } catch (error) {
+      console.error('Error writing data:', error);
+    } finally {
+      writer.releaseLock();
+    }
     console.log("Sent Mode, waiting for ack...");
     await this.expectData(EDITOR_VERB_DEMO_MODE_ACK);
     console.log("Success!");
@@ -575,7 +595,7 @@ class VortexPort {
         return; // Expected response received
       }
       // You can log the received response here for debugging:
-      console.log('Received:', response);
+      console.log('Received:', response, ' (expected: ', expectedResponse, ')');
     }
     throw new Error('Timeout: Expected response not received');
   }
