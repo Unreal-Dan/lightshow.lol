@@ -1,54 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Lightshow</title>
+    <title>Lightshowz lol</title>
     <script type="module" src="js/Main.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="css/styles.css">
   </head>
   <body>
-    <div id="aboutPanel">
-      <label>Made with Vortex Engine&nbsp;&nbsp;</label>
-      <a href="https://github.com/StoneOrbits/VortexEngine" target="_blank" aria-label="View on GitHub">
-        <i class="fab fa-github"></i>
-      </a>
-    </div>
-    <div id="controlPanel">
-      <fieldset>
-        <legend>Animation</legend>
-        <div class="flex-container">
-          <div>
-            <input type="range" id="tickRate" min="1" max="30" value="3" onchange="clearCanvas()">
-            <label for="tickRate">Speed</label>
-          </div>
-          <div>
-            <input type="range" id="trailSize" min="1" max="300" value="100" onchange="clearCanvas()">
-            <label for="trailSize">Trail</label>
-          </div>
-          <div>
-            <input type="range" id="dotSize" min="5" max="50" value="25" onchange="clearCanvas()">
-            <label for="dotSize">Size</label>
-          </div>
-          <div>
-            <input type="range" id="blurFac" min="1" max="10" value="5" onchange="clearCanvas()">
-            <label for="blurFac">Blur</label>
-          </div>
-        </div>
-      </fieldset>
-      <div id="randomizeContainer">
-        <button id="randomizeButton" onclick="randomize()">Randomize</button>
-        <!--<button id="requestDeviceButton" onclick="connect()">Connect</button>-->
-      </div>
-      <fieldset>
-        <legend>Pattern</legend>
-        <select id="patternDropdown" onchange="updatePattern()"></select>
-        <div id="patternParams"></div>
-      </fieldset>
-      <fieldset>
-        <legend>Colorset</legend>
-        <div id="colorset"></div>
-      </fieldset>
-    </div>
     <canvas id="lightshowCanvas" width="800" height="600"></canvas>
   </body>
 </html>

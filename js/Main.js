@@ -1,14 +1,33 @@
+import VortexLib from './VortexLib.js';
 import Lightshow from './Lightshow.js';
+import AboutPanel from './AboutPanel.js';
+import ControlPanel from './ControlPanel.js';
 
-// instantiate the lightshow
-let lightshow = new Lightshow();
+// instantiate VortexLib webassembly module
+VortexLib().then(vortexLib => {
+  // finish initializing vortex lib
+  vortexLib.Init();
 
-// bind functions for access from html
-window.randomize = lightshow.randomize.bind(lightshow);
-window.updatePattern = lightshow.updatePattern.bind(lightshow);
-window.clearCanvas = lightshow.clearCanvas.bind(lightshow);
-window.delColor = lightshow.delColor.bind(lightshow);
-window.addColor = lightshow.addColor.bind(lightshow);
-window.updateColor = lightshow.updateColor.bind(lightshow);
-window.toggleTooltip = lightshow.toggleTooltip.bind(lightshow);
-window.connect = lightshow.connectDevice.bind(lightshow);
+  // instantiate the lightshow
+  let lightshow = new Lightshow(vortexLib);
+  // initialize the lightshow
+  lightshow.init();
+
+  // create panels for the lightshow
+  let aboutPanel = new AboutPanel(lightshow);
+  let controlPanel = new ControlPanel(lightshow);
+
+  // Append panels to the body
+  aboutPanel.appendTo(document.body);
+  controlPanel.appendTo(document.body);
+  controlPanel.initialize();
+
+  // resize the lightshow when window drags
+  window.addEventListener('resize', () => {
+    lightshow.width = window.innerWidth;
+    lightshow.height = window.innerHeight;
+  });
+
+  window.randomize = controlPanel.randomize.bind(controlPanel);
+});
+
