@@ -52,8 +52,8 @@ jobs:
 
     - name: Deploy to Linode
       run: |
-        scp VortexEngine/VortexEngine/VortexLib/vortex.js lightshow@172.232.170.43:~/lightshow.lol/js/vortex.js
-        scp VortexEngine/VortexEngine/VortexLib/vortex.wasm lightshow@172.232.170.43:~/lightshow.lol/js/vortex.wasm
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js lightshow@172.232.170.43:~/lightshow.lol/js/VortexLib.js
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm lightshow@172.232.170.43:~/lightshow.lol/js/VortexLib.wasm
         ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
         ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
         ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'

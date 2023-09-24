@@ -166,26 +166,3 @@ legend {
   font-size: 14px;
   z-index: 1000;
 }
-
-.tooltip::before {
-  content: "";
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: transparent transparent #ccc transparent;
-}
-
-.tooltip::after {
-  content: "";
-  position: absolute;
-  bottom: -9px;
-  left: 50%;
-  margin-left: -4px;
-  border-top-color: #333;
-  border-width: 4px;
-  border-style: solid;
-  border-color: transparent transparent #333 transparent;
-}
