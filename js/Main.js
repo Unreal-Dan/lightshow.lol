@@ -11,4 +11,4 @@ window.delColor = lightshow.delColor.bind(lightshow);
 window.addColor = lightshow.addColor.bind(lightshow);
 window.updateColor = lightshow.updateColor.bind(lightshow);
 window.toggleTooltip = lightshow.toggleTooltip.bind(lightshow);
-window.connect = lightshow.connectDevice.bind(lightshow)
+window.connect = lightshow.connectDevice.bind(lightshow);
