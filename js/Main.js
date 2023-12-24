@@ -5,10 +5,24 @@ import ControlPanel from './ControlPanel.js';
 
 // instantiate VortexLib webassembly module
 VortexLib().then(vortexLib => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const encodedData = urlParams.get('data');
   const canvas = document.getElementById('lightshowCanvas');
 
+  let modeData = null;
+  let decodedData = null;
+  if (encodedData) {
+    try {
+      // Decode the Base64 string and parse the JSON data
+      decodedData = atob(encodedData);
+      modeData = JSON.parse(decodedData);
+    } catch (error) {
+      console.error('Error parsing mode data:', error);
+    }
+  }
+
   // instantiate the lightshow
-  let lightshow = new Lightshow(vortexLib, canvas.getAttribute('id'));
+  let lightshow = new Lightshow(vortexLib, canvas.getAttribute('id'), modeData);
   // initialize the lightshow
   lightshow.start();
 

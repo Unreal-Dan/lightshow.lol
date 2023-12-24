@@ -2,7 +2,7 @@ export default class Lightshow {
   static instanceCount = 0;
 
   // constructor for draw6
-  constructor(vortexLib, canvasId, configurableSectionCount = 100) {
+  constructor(vortexLib, canvasId, modeData = null, configurableSectionCount = 100) {
     this.id = Lightshow.instanceCount++;
     this.canvas = document.getElementById(canvasId);
     if (!this.canvas) {
@@ -33,6 +33,8 @@ export default class Lightshow {
     this.boundDraw = this.draw.bind(this);
     this.ctx.fillStyle = 'rgba(0, 0, 0)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    this.modeData = modeData;
+    this.applyModeData();
   }
 
   applyModeData() {

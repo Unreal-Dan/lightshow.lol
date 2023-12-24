@@ -117,7 +117,6 @@ export default class ControlPanel extends Panel {
           patternEnum[pattern].value > patternEnum.PATTERN_SOLID.value) {
           continue;
         }
-        console.log(typeof pattern);
         let option = document.createElement('option');
         let str = this.lightshow.vortex.patternToString(patternEnum[pattern]);
         if (str.startsWith("complementary")) {
@@ -306,10 +305,8 @@ export default class ControlPanel extends Panel {
         const paramName = camelCaseToSpaces(label.textContent);
         displayValue.textContent = event.target.value;  // Update the displayed value
         let demoMode = this.lightshow.vortex.engine().modes().curMode();
-        for (let j = 0; j < 10; ++j) {
-          let pat = demoMode.getPattern(j);
-          pat.setArg(i, event.target.value);
-        }
+        let pat = demoMode.getPattern(0);
+        pat.setArg(i, event.target.value);
         demoMode.init();
       });
       slider.addEventListener('change', async () => {
