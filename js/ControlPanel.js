@@ -107,36 +107,42 @@ export default class ControlPanel extends Panel {
     const solidGroup = document.createElement('optgroup');
     solidGroup.label = "Solid Patterns";
 
-    // Assume `this.lightshow.vortexLib.PatternID` has the patterns you want to display
-    for(let pattern in this.lightshow.vortexLib.PatternID) {
-      if (pattern === 'values' ||
-        pattern === this.lightshow.vortexLib.PatternID.PATTERN_NONE ||
-        pattern.value > this.lightshow.vortexLib.PatternID.PATTERN_SOLID.value) {
-        continue;
-      }
-      let option = document.createElement('option');
-      let str = this.lightshow.vortex.patternToString(pattern);
-      if (str.startsWith("complementary")) {
-        str = "comp. " + str.slice(14);
-      }
-      option.text = str;
-      option.value = this.lightshow.vortexLib.PatternID[pattern].value;
-      dropdown.appendChild(option);
+    // Get the PatternID enum values from your wasm module
+    const patternEnum = this.lightshow.vortexLib.PatternID;
 
-      if (str.includes("blend")) {
-        blendGroup.appendChild(option);
-      } else if (str.includes("solid")) {
-        solidGroup.appendChild(option);
-      } else {
-        strobeGroup.appendChild(option);
+    for (let pattern in patternEnum) {
+      if (patternEnum.hasOwnProperty(pattern)) {
+        if (pattern === 'values' ||
+          patternEnum[pattern] === patternEnum.PATTERN_NONE ||
+          patternEnum[pattern].value > patternEnum.PATTERN_SOLID.value) {
+          continue;
+        }
+        console.log(typeof pattern);
+        let option = document.createElement('option');
+        let str = this.lightshow.vortex.patternToString(patternEnum[pattern]);
+        if (str.startsWith("complementary")) {
+          str = "comp. " + str.slice(14);
+        }
+        option.text = str;
+        option.value = patternEnum[pattern].value;
+        dropdown.appendChild(option);
+
+        if (str.includes("blend")) {
+          blendGroup.appendChild(option);
+        } else if (str.includes("solid")) {
+          solidGroup.appendChild(option);
+        } else {
+          strobeGroup.appendChild(option);
+        }
       }
     }
 
-    // Append the groups to the dropdown
+    // Append the optgroups to the dropdown
     dropdown.appendChild(strobeGroup);
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
   }
+
 
   attachPatternDropdownListener() {
     const dropdown = document.getElementById('patternDropdown');
