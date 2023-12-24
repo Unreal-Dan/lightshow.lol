@@ -305,9 +305,9 @@ export default class ControlPanel extends Panel {
       slider.addEventListener('input', (event) => {
         const paramName = camelCaseToSpaces(label.textContent);
         displayValue.textContent = event.target.value;  // Update the displayed value
-        let demoMode = this.lightshow.vortexLib.Modes.curMode();
+        let demoMode = this.lightshow.vortex.engine().modes().curMode();
         for (let j = 0; j < 10; ++j) {
-          let pat = demoMode.getPattern(this.lightshow.vortexLib.LedPos.values[j]);
+          let pat = demoMode.getPattern(j);
           pat.setArg(i, event.target.value);
         }
         demoMode.init();
