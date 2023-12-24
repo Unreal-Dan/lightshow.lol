@@ -7,18 +7,21 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - name: Checkout repository with website code
-      uses: actions/checkout@v3
-
-    - name: Checkout repository with Emscripten tool
+    - name: Checkout Vortex Engine
       uses: actions/checkout@v3
       with:
         repository: 'StoneOrbits/VortexEngine'
         path: 'VortexEngine'
-        ref: 'daniel/core/dynamic_led_count'
+        ref: 'desktop'
+
+    # Build Vortex cli tool
+    - name: Build Vortex CLI Tool
+      run: |
+        cd VortexEngine/VortexEngine/VortexCLI
+        make -j
 
     # Install Emscripten dependencies
     - name: Install dependencies
@@ -40,7 +43,8 @@ jobs:
       run: |
         source emsdk/emsdk_env.sh
         cd VortexEngine/VortexEngine/VortexLib
-        make wasm
+        make clean
+        make -j wasm
 
     - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.5.3
@@ -52,8 +56,10 @@ jobs:
 
     - name: Deploy to Linode
       run: |
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js lightshow@172.232.170.43:~/lightshow.lol/js/VortexLib.js
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm lightshow@172.232.170.43:~/lightshow.lol/js/VortexLib.wasm
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/VortexLib.js
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/VortexLib.wasm
+        scp VortexEngine/VortexEngine/VortexCLI/vortex lightshow@172.232.170.43:/home/lightshow/vortex
+        ssh lightshow@172.232.170.43 'sudo /usr/bin/mv /home/lightshow/vortex /usr/local/bin/vortex'
         ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
         ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
         ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'

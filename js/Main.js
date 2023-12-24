@@ -5,13 +5,12 @@ import ControlPanel from './ControlPanel.js';
 
 // instantiate VortexLib webassembly module
 VortexLib().then(vortexLib => {
-  // finish initializing vortex lib
-  vortexLib.Init();
+  const canvas = document.getElementById('lightshowCanvas');
 
   // instantiate the lightshow
-  let lightshow = new Lightshow(vortexLib);
+  let lightshow = new Lightshow(vortexLib, canvas.getAttribute('id'));
   // initialize the lightshow
-  lightshow.init();
+  lightshow.start();
 
   // create panels for the lightshow
   let aboutPanel = new AboutPanel(lightshow);

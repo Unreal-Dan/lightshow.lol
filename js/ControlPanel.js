@@ -110,12 +110,12 @@ export default class ControlPanel extends Panel {
     // Assume `this.lightshow.vortexLib.PatternID` has the patterns you want to display
     for(let pattern in this.lightshow.vortexLib.PatternID) {
       if (pattern === 'values' ||
-        this.lightshow.vortexLib.PatternID[pattern] === this.lightshow.vortexLib.PatternID.PATTERN_NONE ||
-        this.lightshow.vortexLib.PatternID[pattern].value > this.lightshow.vortexLib.PatternID.PATTERN_SOLID.value) {
+        pattern === this.lightshow.vortexLib.PatternID.PATTERN_NONE ||
+        pattern.value > this.lightshow.vortexLib.PatternID.PATTERN_SOLID.value) {
         continue;
       }
       let option = document.createElement('option');
-      let str = this.lightshow.vortexLib.Vortex.patternToString(this.lightshow.vortexLib.PatternID[pattern]);
+      let str = this.lightshow.vortex.patternToString(pattern);
       if (str.startsWith("complementary")) {
         str = "comp. " + str.slice(14);
       }
@@ -153,7 +153,7 @@ export default class ControlPanel extends Panel {
   }
 
   updateModeInfo() {
-    let demoMode = this.lightshow.vortexLib.Modes.curMode();
+    let demoMode = this.lightshow.vortex.engine().modes().curMode();
 
     const patternElement = document.getElementById("pattern");
     const colorsetElement = document.getElementById("colorset");
@@ -162,10 +162,10 @@ export default class ControlPanel extends Panel {
 
     if (demoMode) {
       let dropdown = document.getElementById('patternDropdown');
-      const pat = demoMode.getPatternID(this.lightshow.vortexLib.LedPos.LED_0);
+      const pat = demoMode.getPatternID(0);
       dropdown.value = pat.value;
 
-      const set = demoMode.getColorset(this.lightshow.vortexLib.LedPos.LED_0);
+      const set = demoMode.getColorset(0);
 
       if (set.numColors()) {
         for (var i = 0; i < set.numColors(); ++i) {
@@ -218,14 +218,14 @@ export default class ControlPanel extends Panel {
 
   updatePatternParameters() {
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
-    const numOfParams = this.lightshow.vortexLib.Vortex.numCustomParams(patternID);
+    const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
     const paramsDiv = document.getElementById('patternParams');
-    let customParams = this.lightshow.vortexLib.Vortex.getCustomParams(patternID);
+    let customParams = this.lightshow.vortex.getCustomParams(patternID);
 
     // Clear existing parameters
     paramsDiv.innerHTML = '';
 
-    let demoMode = this.lightshow.vortexLib.Modes.curMode();
+    let demoMode = this.lightshow.vortex.engine().modes().curMode();
 
     function camelCaseToSpaces(str) {
       return str
@@ -264,7 +264,7 @@ export default class ControlPanel extends Panel {
       }
       slider.max = '100';
       slider.step = '1';
-      slider.value = demoMode.getArg(i, this.lightshow.vortexLib.LedPos.LED_0) || '0';
+      slider.value = demoMode.getArg(i, 0) || '0';
 
       // Display value
       const displayValue = document.createElement('span');
