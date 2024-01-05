@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 
 export default class ControlPanel extends Panel {
-  constructor(lightshow) {
+  constructor(lightshow, vortexPort) {
     const controls = [
       {
         id: 'tickRate',
@@ -65,6 +65,7 @@ export default class ControlPanel extends Panel {
     super('controlPanel', content);
     this.lightshow = lightshow;
     this.controls = controls;
+    this.vortexPort = vortexPort;
   }
 
   static generateControlsContent(controls) {
@@ -81,10 +82,17 @@ export default class ControlPanel extends Panel {
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
+
+    // Listen for the modeChange event
+    document.addEventListener('modeChange', (event) => {
+      console.log("Mode change detected by control panel, refreshing");
+      this.refresh();
+    });
   }
 
   refresh() {
     this.updatePatternParameters();
+    //this.updatePatternDropdown();
     this.updateModeInfo();
   }
 
@@ -106,15 +114,15 @@ export default class ControlPanel extends Panel {
     blendGroup.label = "Blend Patterns";
     const solidGroup = document.createElement('optgroup');
     solidGroup.label = "Solid Patterns";
+    const multiGroup = document.createElement('optgroup');
+    multiGroup.label = "MultiLed Patterns";
 
     // Get the PatternID enum values from your wasm module
     const patternEnum = this.lightshow.vortexLib.PatternID;
 
     for (let pattern in patternEnum) {
       if (patternEnum.hasOwnProperty(pattern)) {
-        if (pattern === 'values' ||
-          patternEnum[pattern] === patternEnum.PATTERN_NONE ||
-          patternEnum[pattern].value > patternEnum.PATTERN_SOLID.value) {
+        if (pattern === 'values' || patternEnum[pattern] === patternEnum.PATTERN_NONE) {
           continue;
         }
         let option = document.createElement('option');
@@ -130,6 +138,8 @@ export default class ControlPanel extends Panel {
           blendGroup.appendChild(option);
         } else if (str.includes("solid")) {
           solidGroup.appendChild(option);
+        } else if (patternEnum[pattern].value > patternEnum.PATTERN_SOLID.value) {
+          multiGroup.appendChild(option);
         } else {
           strobeGroup.appendChild(option);
         }
@@ -140,12 +150,23 @@ export default class ControlPanel extends Panel {
     dropdown.appendChild(strobeGroup);
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
+    dropdown.appendChild(multiGroup);
   }
 
 
   attachPatternDropdownListener() {
     const dropdown = document.getElementById('patternDropdown');
     dropdown.addEventListener('change', this.updatePattern.bind(this));
+  }
+
+  updatePatternDropdown() {
+    let demoMode = this.lightshow.vortex.engine().modes().curMode();
+    if (!demoMode) {
+      return;
+    }
+    let dropdown = document.getElementById('patternDropdown');
+    const pat = demoMode.getPatternID(this.lightshow.vortex.engine().leds().ledAny());
+    dropdown.value = pat.value;
   }
 
   updatePattern() {
@@ -167,10 +188,10 @@ export default class ControlPanel extends Panel {
 
     if (demoMode) {
       let dropdown = document.getElementById('patternDropdown');
-      const pat = demoMode.getPatternID(0);
+      const pat = demoMode.getPatternID(this.lightshow.vortex.engine().leds().ledAny());
       dropdown.value = pat.value;
 
-      const set = demoMode.getColorset(0);
+      const set = demoMode.getColorset(this.lightshow.vortex.engine().leds().ledAny());
 
       if (set.numColors()) {
         for (var i = 0; i < set.numColors(); ++i) {
@@ -197,6 +218,8 @@ export default class ControlPanel extends Panel {
       colorPickers.forEach((picker, idx) => {
         picker.addEventListener('change', (event) => {
           this.updateColor(idx, event.target.value);
+          // Dispatch a custom event
+          document.dispatchEvent(new CustomEvent('patternChange'));
         });
       });
 
@@ -205,17 +228,23 @@ export default class ControlPanel extends Panel {
       deleteButtons.forEach(button => {
         button.addEventListener('click', () => {
           this.delColor(Number(button.getAttribute('data-index')));
+          // Dispatch a custom event
+          document.dispatchEvent(new CustomEvent('patternChange'));
         });
       });
 
       // Attach event listeners for add col button
       const addButton = colorsetElement.querySelector('.add-color');
       if (addButton) {
-        addButton.addEventListener('click', this.addColor.bind(this));
+        addButton.addEventListener('click', () => {
+          // Dispatch a custom event
+          this.addColor.bind(this);
+          document.dispatchEvent(new CustomEvent('patternChange'));
+        });
       }
 
       this.updatePatternParameters();
-      //this.lightshow.port.demoCurMode();
+      this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } else {
       colorsetElement.textContent = 'Unknown';
     }
@@ -223,6 +252,9 @@ export default class ControlPanel extends Panel {
 
   updatePatternParameters() {
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
+    if (!patternID) {
+      return;
+    }
     const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
     const paramsDiv = document.getElementById('patternParams');
     let customParams = this.lightshow.vortex.getCustomParams(patternID);
@@ -305,12 +337,13 @@ export default class ControlPanel extends Panel {
         const paramName = camelCaseToSpaces(label.textContent);
         displayValue.textContent = event.target.value;  // Update the displayed value
         let demoMode = this.lightshow.vortex.engine().modes().curMode();
-        let pat = demoMode.getPattern(0);
+        let pat = demoMode.getPattern(this.lightshow.vortex.engine().leds().ledAny());
         pat.setArg(i, event.target.value);
         demoMode.init();
       });
       slider.addEventListener('change', async () => {
-        //await this.lightshow.port.demoCurMode();
+        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+        document.dispatchEvent(new CustomEvent('patternChange'));
       });
     }
   }

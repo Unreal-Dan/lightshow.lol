@@ -2,15 +2,14 @@ export default class Lightshow {
   static instanceCount = 0;
 
   // constructor for draw6
-  constructor(vortexLib, canvasId, modeData = null, configurableSectionCount = 100) {
+  constructor(vortexLib, canvas, modeData = null, configurableSectionCount = 100) {
     this.id = Lightshow.instanceCount++;
-    this.canvas = document.getElementById(canvasId);
+    this.canvas = canvas;
     if (!this.canvas) {
       throw new Error(`Canvas with ID ${canvasId} not found`);
     }
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
-    this.modeId = canvasId.split('_')[1];
     this.ctx = this.canvas.getContext('2d');
     this.dotSize = 25;
     this.blurFac = 5;
@@ -22,7 +21,6 @@ export default class Lightshow {
     this.vortex = new vortexLib.Vortex();
     this.vortex.init();
     this.vortex.setLedCount(1);
-    this.modes = this.vortex.engine().modes();
     // Run the first tick, at the moment I'm not quite sure why this first
     // tick is spitting out the color red instead of whatever it's supposed to be
     // I think it's just a wasm thing though so I'll find it later
@@ -54,7 +52,7 @@ export default class Lightshow {
       }
     });
     // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.modes.curMode();
+    let demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return;
     }
@@ -161,7 +159,7 @@ export default class Lightshow {
 
   // get the pattern
   getPattern() {
-    const demoMode = this.modes.curMode();
+    const demoMode = this.vortex.engine().modes().curMode();
     return demoMode.getPattern(0);
   }
 
@@ -170,7 +168,7 @@ export default class Lightshow {
     // the selected dropdown pattern
     const selectedPattern = this.vortexLib.PatternID.values[patternIDValue];
     // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.modes.curMode();
+    let demoMode = this.vortex.engine().modes().curMode();
     // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
     // with null args and null colorset (so they are defaulted and won't change)
     demoMode.setPattern(selectedPattern, this.ledCount(), null, null);
@@ -180,17 +178,17 @@ export default class Lightshow {
 
   // get colorset
   getColorset() {
-    const demoMode = this.modes.curMode();
+    const demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return new this.vortexLib.Colorset();
     }
-    return demoMode.getColorset(0);
+    return demoMode.getColorset(this.vortex.engine().leds().ledAny());
   }
 
   // update colorset
   setColorset(colorset) {
     // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.modes.curMode();
+    let demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return;
     }
@@ -202,14 +200,14 @@ export default class Lightshow {
 
   // add a color to the colorset
   addColor(r, g, b) {
-    let set = this.getColorset();
+    let set = this.getColorset(this.vortex.engine().leds().ledAny());
     set.addColor(new this.vortexLib.RGBColor(r, g, b));
     this.setColorset(set);
   }
 
   // delete a color from the colorset
   delColor(index) {
-    let set = this.getColorset();
+    let set = this.getColorset(this.vortex.engine().leds().ledAny());
     if (set.numColors() <= 1) {
       return;
     }
@@ -219,7 +217,7 @@ export default class Lightshow {
 
   // update a color in the colorset
   updateColor(index, r, g, b) {
-    let set = this.getColorset();
+    let set = this.getColorset(this.vortex.engine().leds().ledAny());
     set.set(index, new this.vortexLib.RGBColor(r, g, b));
     this.setColorset(set);
   }

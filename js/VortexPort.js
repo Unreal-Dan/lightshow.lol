@@ -19,13 +19,17 @@ export default class VortexPort {
     this.serialPort = null;
     this.portActive = false;
     this.debugSending = false;
+    // recovered from the device at connect
+    this.name = '';
+    this.verson = 0;
+    this.buildDate = '';
   }
 
   isActive = () => {
     return this.portActive;
   }
 
-  async requestDevice() {
+  async requestDevice(callback) {
     try {
       if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
@@ -34,7 +38,7 @@ export default class VortexPort {
         await this.serialPort.open({ baudRate: 9600 });
       }
       await this.serialPort.setSignals({ dataTerminalReady: true });
-      this.listenForGreeting();
+      this.listenForGreeting(callback);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -58,7 +62,7 @@ export default class VortexPort {
     }
   }
 
-  listenForGreeting = async () => {
+  listenForGreeting = async (callback) => {
     while (!this.portActive) {
       if (this.serialPort) {
         try {
@@ -69,16 +73,18 @@ export default class VortexPort {
           const match = response.match(responseRegex);
 
           if (match) {
-            const version = match[1]; // Capturing the version number
-            const name = match[2];    // Capturing the name
-            const buildDate = match[3]; // Capturing the build date
+            this.version = match[1]; // Capturing the version number
+            this.name = match[2];    // Capturing the name
+            this.buildDate = match[3]; // Capturing the build date
 
-            console.log('Received greeting from Vortex Device:');
-            console.log('Device Type:', name);
-            console.log('Version:', version);
-            console.log('Date:', buildDate);
+            console.log('Successfully Received greeting from Vortex Device');
+            console.log('Device Type:', this.name);
+            console.log('Version:', this.version);
+            console.log('Date:', this.buildDate);
             this.portActive = true;
-            await this.demoCurMode();
+            if (callback && typeof callback === 'function') {
+              callback();
+            }
           }
         } catch (err) {
           console.error('Error reading data:', err);
@@ -131,11 +137,11 @@ export default class VortexPort {
     }
   }
 
-  constructCustomBuffer(curMode) {
+  constructCustomBuffer(vortexLib, curMode) {
     // Create the custom array with size and rawData
     const size = curMode.rawSize();
     const sizeArray = new Uint32Array([size]); // No byte swapping
-    const rawDataArray = Module.getRawDataArray(curMode);
+    const rawDataArray = vortexLib.getRawDataArray(curMode);
 
     // Combine sizeArray and rawDataArray into a single array
     const combinedArray = new Uint8Array(sizeArray.length * 4 + rawDataArray.length);
@@ -145,13 +151,13 @@ export default class VortexPort {
     return combinedArray;
   }  
 
-  async demoCurMode() {
+  async demoCurMode(vortexLib, vortex) {
     if (!this.isActive()) {
       return;
     }
     // Unserialize the stream of data
-    const curMode = new Module.ByteStream();
-    if (!Module.Vortex.getCurMode(curMode)) {
+    const curMode = new vortexLib.ByteStream();
+    if (!vortex.getCurMode(curMode)) {
       console.log("Failed to get cur mode");
       // Error handling - abort or handle as needed
       return;
@@ -161,7 +167,7 @@ export default class VortexPort {
     // wait for the device to say it's ready
     await this.expectData(this.EDITOR_VERB_READY);
     // send over the mode
-    await this.sendRaw(this.constructCustomBuffer(curMode));
+    await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
     // wait for the acknolwedgement of the mode
     await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
   }
@@ -177,8 +183,7 @@ export default class VortexPort {
       if (!response) {
         return;
       }
-      // You can log the received response here for debugging:
-      console.log('Received:', response, ' (expected: ', expectedResponse, ')');
+      //console.log('Received:', response, ' (expected: ', expectedResponse, ')');
     }
     throw new Error('Timeout: Expected response not received');
   }

@@ -24,7 +24,7 @@ canvas {
 }
 
 /* Panels */
-#aboutPanel, #controlPanel, #modeInfoPanel {
+#modesPanel, #aboutPanel, #controlPanel, #modeInfoPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -52,6 +52,18 @@ canvas {
   z-index: 3;
 }
 
+#modesPanel {
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+}
+
+#modesPanel .flex-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Adjust the space between items */
+}
+
 /* Form Elements */
 fieldset {
   border: 1px solid #3e4446;
@@ -73,6 +85,14 @@ legend {
 
 #patternParams {
   margin-top: 10px;
+}
+
+#connectDevice {
+  margin: 10px;
+}
+
+#statusMessage {
+  margin: 10px;
 }
 
 .param-container {
