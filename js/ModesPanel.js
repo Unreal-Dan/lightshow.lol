@@ -53,9 +53,9 @@ export default class ModesPanel extends Panel {
   }
 
   refreshModeList() {
-    //const modeList = document.getElementById('modeList');
-    //modeList.innerHTML = '';
-    //this.populateModeList();
+    const modeList = document.getElementById('modeList');
+    modeList.innerHTML = '';
+    this.populateModeList();
   }
 
   populateLedList() {

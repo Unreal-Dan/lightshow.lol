@@ -174,6 +174,8 @@ export default class Lightshow {
     demoMode.setPattern(selectedPattern, this.ledCount(), null, null);
     // re-initialize the demo mode so it takes the new args into consideration
     demoMode.init();
+    // save
+    this.vortex.engine().modes().saveCurMode();
   }
 
   // get colorset
@@ -196,6 +198,8 @@ export default class Lightshow {
     demoMode.setColorset(colorset, this.ledCount());
     // re-initialize the demo mode because num colors may have changed
     demoMode.init();
+    // save
+    this.vortex.engine().modes().saveCurMode();
   }
 
   // add a color to the colorset
@@ -233,5 +237,6 @@ export default class Lightshow {
     for (let i = 0; i < 3; ++i) {
       this.vortexLib.RunTick(this.vortex);
     }
+    this.vortex.engine().modes().saveCurMode();
   }
 }

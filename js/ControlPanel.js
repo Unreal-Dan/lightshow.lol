@@ -193,8 +193,10 @@ export default class ControlPanel extends Panel {
 
       const set = demoMode.getColorset(this.lightshow.vortex.engine().leds().ledAny());
 
-      if (set.numColors()) {
-        for (var i = 0; i < set.numColors(); ++i) {
+      let numCol = set.numColors();
+
+      if (numCol) {
+        for (var i = 0; i < numCol; ++i) {
           let col = set.get(i);
           const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
           colorsetHtml += `<div class="color-container">
@@ -203,12 +205,12 @@ export default class ControlPanel extends Panel {
                              <label>${hexColor}</label>
                            </div>`;
         }
-        if (set.numColors() < 8) {
-          colorsetHtml += `
+      }
+      if (!numCol || numCol < 8) {
+        colorsetHtml += `
                     <div class="color-container add-color">
                         +
                     </div>`;
-        }
       }
 
       colorsetElement.innerHTML = colorsetHtml;
@@ -238,13 +240,14 @@ export default class ControlPanel extends Panel {
       if (addButton) {
         addButton.addEventListener('click', () => {
           // Dispatch a custom event
-          this.addColor.bind(this);
+          this.addColor();
           document.dispatchEvent(new CustomEvent('patternChange'));
         });
       }
 
       this.updatePatternParameters();
       this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      document.dispatchEvent(new CustomEvent('patternChange'));
     } else {
       colorsetElement.textContent = 'Unknown';
     }
@@ -301,7 +304,7 @@ export default class ControlPanel extends Panel {
       }
       slider.max = '100';
       slider.step = '1';
-      slider.value = demoMode.getArg(i, 0) || '0';
+      slider.value = demoMode.getArg(i, this.lightshow.vortex.engine().leds().ledAny()) || '0';
 
       // Display value
       const displayValue = document.createElement('span');
@@ -339,9 +342,13 @@ export default class ControlPanel extends Panel {
         let demoMode = this.lightshow.vortex.engine().modes().curMode();
         let pat = demoMode.getPattern(this.lightshow.vortex.engine().leds().ledAny());
         pat.setArg(i, event.target.value);
-        demoMode.init();
       });
       slider.addEventListener('change', async () => {
+        // init
+        demoMode.init();
+        // save
+        this.lightshow.vortex.engine().modes().saveCurMode();
+        // send to device
         await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
