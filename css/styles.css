@@ -65,23 +65,72 @@ canvas {
 }
 
 #deviceConnectionSection {
-  background-color: #090909;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Adjusts button positioning */
+  align-items: center;
+  background-color: #080a0b;
   padding: 10px;
   margin-bottom: 20px;
   border-radius: 5px;
+  margin: 2px;
 }
 
-#modesAndLedsSection {
-  /* Optional: Additional styling for the modes and LEDs section if needed */
+#modeButtonsSection {
+  display: flex;
+  flex-direction: row;
 }
 
-#connectDevice {
-  /* Styling for the connect device button */
+/* Connection Buttons */
+#saveModeButton, #loadModeButton, #shareModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 8px 15px;
+  margin: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
 }
 
+#saveModeButton, #loadModeButton, #addModeButton, #shareModeButton {
+  margin-bottom: 10px;
+}
+
+#saveModeButton:hover, #loadModeButton:hover, #shareModeButton:hover, #addModeButton:hover, #connectDevice:hover, #pushToDevice:hover, #pullFromDevice:hover {
+  background-color: #3e4446;
+}
+
+#deviceStatusContainer {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  margin: 10px;
+  user-select: none;
+  width: 94%;
+}
+
+#statusLabel {
+  flex-shrink: 0; /* Prevents the label from shrinking */
+  margin-right: 10px; /* Adds some space between the label and the status box */
+  white-space: nowrap; /* Prevents the label from wrapping */
+}
+
+#deviceStatus {
+  flex-grow: 1; /* Allows the status box to grow and fill the remaining space */
+  background-color: #101010;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #d8d4cf;
+  padding: 5px 10px;
+  text-align: left; /* Aligns text to the left */
+}
+
+/* Status Message */
 #statusMessage {
+  color: #d8d4cf;
   margin-top: 10px;
-  /* Additional styling for status message */
 }
 
 /* Form Elements */
@@ -105,10 +154,6 @@ legend {
 
 #patternParams {
   margin-top: 10px;
-}
-
-#connectDevice {
-  margin: 10px;
 }
 
 #statusMessage {
@@ -218,7 +263,7 @@ legend {
 
 #modesListContainer {
   height: 310px;
-  width: 320px;
+  width: 95%;
 }
 
 .mode-entry {
@@ -227,10 +272,11 @@ legend {
   padding: 5px;
   border: 1px solid #454545;
   margin: 5px 0;
-  width: 300px;
+  width: 100%;
   height: 30px;
   border-radius: 4px; /* Slightly rounded corners */
   transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+  cursor: pointer;
 }
 
 @-moz-document url-prefix() {
@@ -252,26 +298,8 @@ legend {
   transition: background-color 0.1s ease; /* Quick transition for responsiveness */
 }
 
-#addModeButton {
-  background-color: #303030;
-  display: flex;
-  justify-content: space-between;
-  padding: 5px;
-  border: 1px solid #454545;
-  margin: 5px 0;
-  width: 300px;
-  height: 30px;
-  cursor: pointer;
-  border-radius: 4px; /* Slightly rounded corners */
-  width: 100px;
-}
-
 .mode-name {
   user-select: none;
-}
-
-#addModeName {
-  margin: 6px;
 }
 
 .delete-mode-btn {
@@ -284,4 +312,10 @@ legend {
   cursor: pointer;
 }
 
+.status-success {
+  color: green !important;
+}
 
+.status-failure {
+  color: red !important;
+}

@@ -4,12 +4,22 @@ export default class ModesPanel extends Panel {
   constructor(lightshow, vortexPort) {
     const content = `
       <div id="deviceConnectionSection">
+        <div>
         <button id="connectDevice">Connect Vortex Device</button>
-        <div id="statusMessage"></div>
+        <button id="pullFromDevice">Pull Save</button>
+        <button id="pushToDevice">Push Save</button>
+        </div>
+        <div id="deviceStatusContainer">
+          <span id="statusLabel">Device Status:</span>
+          <span id="deviceStatus">Waiting for Connection...</span>
+        </div>
       </div>
       <div id="modesAndLedsSection">
-        <div id="addModeButton">
-          <span id="addModeName">Add Mode</span>
+        <div id="modeButtonsSection">
+          <button id="addModeButton">Add Mode</button>
+          <button id="shareModeButton">Share Mode</button>
+          <button id="saveModeButton">Save Mode</button>
+          <button id="loadModeButton">Load Mode</button>
         </div>
         <div id="modesListScrollContainer">
           <div id="modesListContainer">
@@ -17,9 +27,9 @@ export default class ModesPanel extends Panel {
           </div>
         </div>
         <fieldset>
-          <legend>Leds</legend>
+          <legend style="user-select:none;padding-top:15px;">Leds</legend>
           <div class="flex-container">
-             <select id="ledList" size="16"></select>
+             <select id="ledList" size="16" multiple></select>
           </div>
         </fieldset>
       </div>
@@ -52,10 +62,63 @@ export default class ModesPanel extends Panel {
     addModeButton.addEventListener('click', event => {
       this.addMode();
     });
-
+    const shareModeButton = document.getElementById('shareModeButton');
+    shareModeButton.shareEventListener('click', event => {
+      this.shareMode();
+    });
+    const saveModeButton = document.getElementById('saveModeButton');
+    saveModeButton.saveEventListener('click', event => {
+      this.saveMode();
+    });
+    const loadModeButton = document.getElementById('loadModeButton');
+    loadModeButton.loadEventListener('click', event => {
+      this.loadMode();
+    });
+    const pushButton = document.getElementById('pushToDevice');
+    pushButton.addEventListener('click', event => {
+      this.pushToDevice();
+    });
+    const pullButton = document.getElementById('pullFromDevice');
+    pullButton.addEventListener('click', event => {
+      this.pullFromDevice();
+    });
     document.addEventListener('patternChange', (event) => {
       //console.log("Pattern change detected by modes panel, refreshing");
       this.refresh(true);
+    });
+    document.getElementById('connectDevice').addEventListener('click', async () => {
+      let statusMessage = document.getElementById('deviceStatus');
+      try {
+        await this.vortexPort.requestDevice(() => {
+          console.log("name: " + this.vortexPort.name);
+          const deviceLedCountMap = {
+            'Gloves': 10,
+            'Orbit': 28,
+            'Handle': 3,
+            'Duo': 2,
+            'Chromadeck': 20,
+            'Spark': 6
+          };
+          const ledCount = deviceLedCountMap[this.vortexPort.name];
+          if (ledCount !== undefined) {
+            this.lightshow.vortex.setLedCount(ledCount);
+            console.log(`Set led count to ${ledCount} for ${this.vortexPort.name}`);
+          } else {
+            console.log(`Device name ${this.vortexPort.name} not recognized`);
+          }
+          document.dispatchEvent(new CustomEvent('modeChange'));
+          document.dispatchEvent(new CustomEvent('patternChange'));
+          statusMessage.textContent = 'Succes ' + this.vortexPort.name + ' Connected!';
+          statusMessage.classList.add('status-success');
+          statusMessage.classList.remove('status-failure');
+        });
+        // Additional logic to handle successful connection
+      } catch (error) {
+        statusMessage.textContent = 'Failed to connect: ' + error.message;
+        statusMessage.classList.remove('status-success');
+        statusMessage.classList.add('status-failure');
+        // Handle errors
+      }
     });
   }
 
@@ -208,6 +271,18 @@ export default class ModesPanel extends Panel {
     this.refreshLedList();
   }
 
+  shareMode() {
+    // give url text box popup?
+  }
+
+  saveMode() {
+    // give json text box popup?
+  }
+
+  loadMode() {
+    // json text box input popup?
+  }
+
   deleteMode(index) {
     // due to the way vortex engine works internally you can only delete
     // the current mode you are on, but you can very secretly and quickly
@@ -233,6 +308,17 @@ export default class ModesPanel extends Panel {
   selectMode(index) {
     // Implement logic to select and show details of the mode at the given index
     this.lightshow.vortex.setCurMode(index, true);
+    this.refreshLedList();
+    this.refreshPatternControlPanel();
+  }
+
+  pushToDevice() {
+    this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+  }
+
+  async pullFromDevice() {
+    await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+    this.refreshModeList();
     this.refreshLedList();
     this.refreshPatternControlPanel();
   }

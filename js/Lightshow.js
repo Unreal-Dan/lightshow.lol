@@ -97,9 +97,11 @@ export default class Lightshow {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    const centerX = this.canvas.width / 2;
+    // - 100 to shift it left because right side panel is bigger
+    const centerX = (this.canvas.width / 2) - 100;
     const centerY = this.canvas.height / 2;
-    const radius = Math.min(centerX, centerY) - 50;
+    // - 55 to adjust the size of circle
+    const radius = Math.min(centerX, centerY) - 55;
 
     for (let i = 0; i < this.tickRate; i++) {
       const led = this.vortexLib.RunTick(this.vortex);

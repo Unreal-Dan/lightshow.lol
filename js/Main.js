@@ -46,37 +46,6 @@ VortexLib().then(vortexLib => {
   controlPanel.initialize();
   modesPanel.initialize();
 
-  document.getElementById('connectDevice').addEventListener('click', async () => {
-    let statusMessage = document.getElementById('statusMessage');
-    try {
-      await vortexPort.requestDevice(() => {
-        console.log("name: " + vortexPort.name);
-        const deviceLedCountMap = {
-          'Gloves': 10,
-          'Orbit': 28,
-          'Handle': 3,
-          'Duo': 2,
-          'Chromadeck': 20,
-          'Spark': 6
-        };
-        const ledCount = deviceLedCountMap[vortexPort.name];
-        if (ledCount !== undefined) {
-          lightshow.vortex.setLedCount(ledCount);
-          console.log(`Set led count to ${ledCount} for ${vortexPort.name}`);
-        } else {
-          console.log(`Device name ${vortexPort.name} not recognized`);
-        }
-        document.dispatchEvent(new CustomEvent('modeChange'));
-        document.dispatchEvent(new CustomEvent('patternChange'));
-        statusMessage.textContent = 'Device Connected!';
-      });
-      // Additional logic to handle successful connection
-    } catch (error) {
-      statusMessage.textContent = 'Failed to connect: ' + error.message;
-      // Handle errors
-    }
-  });
-
   // resize the lightshow when window drags
   window.addEventListener('resize', () => {
     lightshow.width = window.innerWidth;

@@ -172,6 +172,98 @@ export default class VortexPort {
     await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
   }
 
+  async pushToDevice(vortexLib, vortex) {
+    if (!this.isActive()) {
+      return;
+    }
+    // Unserialize the stream of data
+    const modes = new vortexLib.ByteStream();
+    if (!vortex.getModes(modes)) {
+      console.log("Failed to get cur mode");
+      // Error handling - abort or handle as needed
+      return;
+    }
+    await this.sendCommand(this.EDITOR_VERB_PUSH_MODES);
+    await this.expectData(this.EDITOR_VERB_READY);
+    await this.sendRaw(this.constructCustomBuffer(vortexLib, modes));
+    await this.expectData(this.EDITOR_VERB_PUSH_MODES_ACK);
+  }
+
+  async pullFromDevice(vortexLib, vortex) {
+    if (!this.isActive()) {
+      return;
+    }
+    // Unserialize the stream of data
+    await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
+    const modes = await this.readModes(vortexLib);
+    // Call the Wasm function
+    let modesStream = new vortexLib.ByteStream();
+    vortexLib.createByteStreamFromData(modes, modesStream);
+    vortex.matchLedCount(modesStream, false);
+    vortex.setModes(modesStream, true);
+    await this.sendCommand(this.EDITOR_VERB_PULL_MODES_DONE);
+    await this.expectData(this.EDITOR_VERB_PULL_MODES_ACK);
+  }
+
+  async readFromSerialPort() {
+    if (!this.serialPort || !this.serialPort.readable) {
+      throw new Error('Serial port is not readable');
+    }
+
+    const reader = this.serialPort.readable.getReader();
+    try {
+      return await reader.read();
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  async readModes(vortexLib) {
+    if (!this.isActive()) {
+      console.error('Port is not active. Cannot read modes.');
+      return null;
+    }
+
+    try {
+      // Function to append new data to existing data
+      const appendData = (existing, newData) => {
+        const combined = new Uint8Array(existing.length + newData.length);
+        combined.set(existing);
+        combined.set(newData, existing.length);
+        return combined;
+      };
+
+      // Read the initial 4 bytes for size
+      let sizeData = new Uint8Array(0);
+      while (sizeData.length < 4) {
+        const data = await this.readFromSerialPort();
+        sizeData = appendData(sizeData, data.value);
+      }
+
+      // Interpret the first 4 bytes as size
+      const size = new DataView(sizeData.buffer).getUint32(0, true); 
+
+      // Read the remaining data
+      let accumulatedData = sizeData.slice(4);
+      while (accumulatedData.length < size) {
+        const data = await this.readFromSerialPort();
+        accumulatedData = appendData(accumulatedData, data.value);
+      }
+
+      // Validate the size of the accumulated data
+      if (accumulatedData.length === size) {
+        return new Uint8Array(accumulatedData);
+      } else {
+        console.error("Data size mismatch.");
+        return null;
+      }
+    } catch (error) {
+      console.error('Error reading modes:', error);
+      return null;
+    }
+  }
+
+
   // wait for a specific response
   async expectData(expectedResponse, timeoutMs = 10000) {
     const startTime = Date.now();
