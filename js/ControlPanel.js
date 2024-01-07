@@ -86,14 +86,14 @@ export default class ControlPanel extends Panel {
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
       console.log("Mode change detected by control panel, refreshing");
-      this.refresh();
+      this.refresh(true);
     });
   }
 
-  refresh() {
-    this.updatePatternParameters();
-    //this.updatePatternDropdown();
-    this.updateModeInfo();
+  refresh(fromEvent = false) {
+    this.updatePatternParameters(fromEvent);
+    //this.updatePatternDropdown(fromEvent);
+    this.updateModeInfo(fromEvent);
   }
 
   attachEventListeners() {
@@ -253,7 +253,7 @@ export default class ControlPanel extends Panel {
     }
   }
 
-  updatePatternParameters() {
+  updatePatternParameters(fromEvent) {
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
     if (!patternID) {
       return;
@@ -351,6 +351,7 @@ export default class ControlPanel extends Panel {
         // send to device
         await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
         document.dispatchEvent(new CustomEvent('patternChange'));
+        console.log("slider change");
       });
     }
   }

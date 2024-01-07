@@ -64,6 +64,26 @@ canvas {
   gap: 10px; /* Adjust the space between items */
 }
 
+#deviceConnectionSection {
+  background-color: #090909;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+#modesAndLedsSection {
+  /* Optional: Additional styling for the modes and LEDs section if needed */
+}
+
+#connectDevice {
+  /* Styling for the connect device button */
+}
+
+#statusMessage {
+  margin-top: 10px;
+  /* Additional styling for status message */
+}
+
 /* Form Elements */
 fieldset {
   border: 1px solid #3e4446;
@@ -186,3 +206,62 @@ legend {
   font-size: 14px;
   z-index: 1000;
 }
+
+#modesListScrollContainer {
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+#modesListContainer {
+  min-height: 310px;
+  min-width: 320px;
+}
+
+.mode-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border: 1px solid #454545;
+  margin: 5px 0;
+  min-width: 300px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: 4px; /* Slightly rounded corners */
+}
+
+#addModeButton {
+  background-color: #303030;
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border: 1px solid #454545;
+  margin: 5px 0;
+  min-width: 300px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: 4px; /* Slightly rounded corners */
+  min-width: 100px;
+  width: 100px;
+}
+
+.mode-name {
+}
+
+#addModeName {
+  margin: 6px;
+}
+
+.delete-mode-btn {
+  max-height: 20px; /* Set the minimum width as needed */
+  color: red;
+  background-color: transparent; /* Background set to transparent */
+  margin-left: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+
