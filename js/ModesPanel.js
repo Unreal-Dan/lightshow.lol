@@ -19,7 +19,7 @@ export default class ModesPanel extends Panel {
         <fieldset>
           <legend>Leds</legend>
           <div class="flex-container">
-             <select id="ledList" size="20"></select>
+             <select id="ledList" size="16"></select>
           </div>
         </fieldset>
       </div>
@@ -54,6 +54,7 @@ export default class ModesPanel extends Panel {
     });
 
     document.addEventListener('patternChange', (event) => {
+      //console.log("Pattern change detected by modes panel, refreshing");
       this.refresh(true);
     });
   }
@@ -63,16 +64,16 @@ export default class ModesPanel extends Panel {
     this.refreshModeList(fromEvent);
   }
 
-  refreshLedList() {
+  refreshLedList(fromEvent = false) {
     const ledList = document.getElementById('ledList');
     ledList.innerHTML = '';
-    this.populateLedList();
+    this.populateLedList(fromEvent);
   }
 
-  refreshModeList() {
+  refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     modesListContainer.innerHTML = '';
-    this.populateModeList();
+    this.populateModeList(fromEvent);
   }
 
   refreshPatternControlPanel() {
@@ -80,7 +81,7 @@ export default class ModesPanel extends Panel {
     document.dispatchEvent(new CustomEvent('modeChange'));
   }
 
-  populateLedList() {
+  populateLedList(fromEvent = false) {
     const ledList = document.getElementById('ledList');
     //vector<int> sels;
     //m_ledsMultiListBox.getSelections(sels);
@@ -110,7 +111,7 @@ export default class ModesPanel extends Panel {
     //}
   }
 
-  populateModeList() {
+  populateModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     modesListContainer.innerHTML = '';
 
@@ -125,13 +126,17 @@ export default class ModesPanel extends Panel {
       //option.value = i;
       //option.textContent = modeStr;
       //modesListContainer.appendChild(option);
+      let isSelected = (i == curSel);
 
       const modeDiv = document.createElement('div');
       modeDiv.className = 'mode-entry';
       modeDiv.setAttribute('mode-index', i);  // Set the mode-index attribute here
+      if (isSelected) {
+        modeDiv.classList.add('selected');  // Set the mode-index attribute here
+      }
       modeDiv.innerHTML = `
-        <span class="mode-name" mode-index="${i}">Mode ${i} - ${this.lightshow.vortex.getModeName()}</span>
-        <button class="delete-mode-btn" mode-index="${i}">X</button>
+        <span class="mode-name">Mode ${i} - ${this.lightshow.vortex.getModeName()}</span>
+        <button class="delete-mode-btn">X</button>
       `;
 
       modesListContainer.appendChild(modeDiv);
@@ -153,12 +158,35 @@ export default class ModesPanel extends Panel {
   attachModeEventListeners() {
     const modesListContainer = document.getElementById('modesListContainer');
 
-    // Select Mode
+    // click on mode
     modesListContainer.querySelectorAll('.mode-entry').forEach(modeEntry => {
+      modeEntry.addEventListener('mousedown', event => {
+        const modeElement = event.target.closest('.mode-entry');
+        modeElement.classList.add('pressed');
+      });
+
+      modeEntry.addEventListener('mouseup', event => {
+        const modeElement = event.target.closest('.mode-entry');
+        modeElement.classList.remove('pressed');
+      });
       modeEntry.addEventListener('click', event => {
-        const index = event.target.getAttribute('mode-index');
-        console.log("Select " + index);
+        const modeElement = event.target.closest('.mode-entry');
+        const index = modeElement.getAttribute('mode-index');
         this.selectMode(index);
+
+        // Clear previously selected mode entries
+        document.querySelectorAll('.mode-entry.selected').forEach(selected => {
+          selected.classList.remove('selected');
+        });
+
+        // Add 'selected' class to the clicked mode entry
+        modeElement.classList.add('selected');
+
+        // Add 'click-animation' class and then remove it after animation
+        modeElement.classList.add('click-animation');
+        setTimeout(() => {
+          modeElement.classList.remove('click-animation');
+        }, 100); // 100ms matches the CSS transition time
       });
     });
 
@@ -166,7 +194,7 @@ export default class ModesPanel extends Panel {
     modesListContainer.querySelectorAll('.delete-mode-btn').forEach(deleteBtn => {
       deleteBtn.addEventListener('click', event => {
         event.stopPropagation(); // Prevent click from bubbling up to the parent element
-        const index = event.target.getAttribute('mode-index');
+        const index = event.currentTarget.closest('.mode-entry').getAttribute('mode-index');
         this.deleteMode(index);
       });
     });

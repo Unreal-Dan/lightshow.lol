@@ -208,17 +208,17 @@ legend {
 }
 
 #modesListScrollContainer {
-  max-height: 300px;
+  height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
   border-radius: 4px;
-  padding: 5px;
+  padding-left: 5px;
 }
 
 #modesListContainer {
-  min-height: 310px;
-  min-width: 320px;
+  height: 310px;
+  width: 320px;
 }
 
 .mode-entry {
@@ -227,10 +227,29 @@ legend {
   padding: 5px;
   border: 1px solid #454545;
   margin: 5px 0;
-  min-width: 300px;
+  width: 300px;
   height: 30px;
-  cursor: pointer;
   border-radius: 4px; /* Slightly rounded corners */
+  transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+}
+
+@-moz-document url-prefix() {
+  #modesListContainer {
+    padding-right: 17px; /* Additional padding for Firefox */
+  }
+}
+
+.mode-entry.selected {
+  background-color: #333; /* Highlight color for selected item */
+}
+
+.mode-entry.click-animation {
+  background-color: #444; /* Temporary darker color on click */
+}
+
+.mode-entry.pressed {
+  background-color: #333; /* Color change for pressed state */
+  transition: background-color 0.1s ease; /* Quick transition for responsiveness */
 }
 
 #addModeButton {
@@ -240,15 +259,15 @@ legend {
   padding: 5px;
   border: 1px solid #454545;
   margin: 5px 0;
-  min-width: 300px;
+  width: 300px;
   height: 30px;
   cursor: pointer;
   border-radius: 4px; /* Slightly rounded corners */
-  min-width: 100px;
   width: 100px;
 }
 
 .mode-name {
+  user-select: none;
 }
 
 #addModeName {
@@ -256,7 +275,8 @@ legend {
 }
 
 .delete-mode-btn {
-  max-height: 20px; /* Set the minimum width as needed */
+  user-select: none;
+  height: 20px; /* Set the minimum width as needed */
   color: red;
   background-color: transparent; /* Background set to transparent */
   margin-left: 12px;
