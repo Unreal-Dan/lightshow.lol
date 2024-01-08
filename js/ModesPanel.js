@@ -114,7 +114,7 @@ export default class ModesPanel extends Panel {
           statusMessage.textContent = this.vortexPort.name + ' Connected!';
           statusMessage.classList.add('status-success');
           statusMessage.classList.remove('status-failure');
-          Notification.show("Successfully Connected " + this.vortexPort.name);
+          Notification.success("Successfully Connected " + this.vortexPort.name);
         });
         // Additional logic to handle successful connection
       } catch (error) {
@@ -299,10 +299,15 @@ export default class ModesPanel extends Panel {
   addMode() {
     // Implement logic to add a new mode
     // ...
-    this.lightshow.vortex.addNewMode(true);
+    let modeCount = this.lightshow.vortex.numModes();
+    if (!this.lightshow.vortex.addNewMode(true)) {
+      Notification.failure("Cannot add another mode");
+      return;
+    }
     this.refreshModeList();
     this.refreshLedList();
-    Notification.show("Successfully Added Mode " + (this.lightshow.vortex.numModes() - 1));
+    this.refreshPatternControlPanel();
+    Notification.success("Successfully Added Mode " + modeCount);
   }
 
   shareMode() {
@@ -379,7 +384,7 @@ export default class ModesPanel extends Panel {
     // refresh
     this.refresh();
     this.refreshPatternControlPanel();
-    Notification.show("Successfully Loaded mode from URL");
+    Notification.success("Successfully Loaded mode from URL");
   }
 
   deleteMode(index) {
@@ -404,7 +409,7 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
     this.refreshLedList();
     this.refreshPatternControlPanel();
-    Notification.show("Successfully Deleted Mode " + index);
+    Notification.success("Successfully Deleted Mode " + index);
   }
 
   selectMode(index) {
@@ -416,7 +421,7 @@ export default class ModesPanel extends Panel {
 
   pushToDevice() {
     this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
-    Notification.show("Successfully pushed save");
+    Notification.success("Successfully pushed save");
   }
 
   async pullFromDevice() {
@@ -424,6 +429,6 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
     this.refreshLedList();
     this.refreshPatternControlPanel();
-    Notification.show("Successfully pulled save");
+    Notification.success("Successfully pulled save");
   }
 }
