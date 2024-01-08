@@ -1,4 +1,5 @@
 import Panel from './Panel.js';
+import Notification from './Notification.js';
 
 export default class ControlPanel extends Panel {
   constructor(lightshow, vortexPort) {
@@ -107,7 +108,7 @@ export default class ControlPanel extends Panel {
       } else {
         this.setTargetSingles(selectedLeds);
       }
-      console.log('LEDs changed:', this.targetLeds);
+      //console.log('LEDs changed:', this.targetLeds);
       this.refresh(true);
     });
     document.addEventListener('deviceConnected', (event) => {
@@ -323,7 +324,12 @@ export default class ControlPanel extends Panel {
       }
 
       this.updatePatternParameters();
-      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      try {
+        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      } catch (error) {
+        Notification.failure("Failed to demo current mode on device, connection may be broken");
+      }
+
       if (!fromEvent) {
         document.dispatchEvent(new CustomEvent('patternChange'));
       }
@@ -496,9 +502,9 @@ export default class ControlPanel extends Panel {
     if (!cur) {
       return;
     }
+    let set = cur.getColorset(this.targetLed);
+    set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
     this.targetLeds.forEach((led) => {
-      let set = cur.getColorset(led);
-      set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
       // set the colorset of the demo mode
       cur.setColorset(set, led);
     });

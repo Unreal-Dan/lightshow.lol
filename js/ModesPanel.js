@@ -124,6 +124,11 @@ export default class ModesPanel extends Panel {
         // Handle errors
       }
     });
+    // led list changes
+    const ledList = document.getElementById('ledList');
+    ledList.addEventListener('change', () => {
+      this.handleLedSelectionChange();
+    });
   }
 
   refresh(fromEvent = false) {
@@ -202,21 +207,21 @@ export default class ModesPanel extends Panel {
       ledList.appendChild(option);
       // TODO: support both rendering multi and single at same time... not for now
     }
-    // led list changes
-    ledList.addEventListener('change', (event) => {
-      // Check the number of selected options
-      const selectedOptions = Array.from(ledList.selectedOptions);
-      if (selectedOptions.length === 0) {
-        // If no option is selected, reselect the last option that was selected
-        selectedOptions[selectedOptions.length - 1].selected = true;
-      }
-      this.lightshow.targetLed  = selectedOptions[0].value;
-      document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.getSelectedLeds() }));
-    });
     this.applyLedSelections(selectedLeds);
     if (!selectedLeds.length && ledList.options.length > 0) {
       ledList.options[0].selected = true;
     }
+  }
+
+  handleLedSelectionChange() {
+    const selectedOptions = Array.from(ledList.selectedOptions).map(option => option.value);
+    // Check the number of selected options
+    if (selectedOptions.length === 0) {
+      // If no option is selected, reselect the last option that was selected
+      selectedOptions[selectedOptions.length - 1].selected = true;
+    }
+    this.lightshow.targetLed = selectedOptions[0].value;
+    document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.getSelectedLeds() }));
   }
 
   populateModeList(fromEvent = false) {

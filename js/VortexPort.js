@@ -38,6 +38,7 @@ export default class VortexPort {
         await this.serialPort.open({ baudRate: 9600 });
       }
       await this.serialPort.setSignals({ dataTerminalReady: true });
+      this.portActive = false;
       this.listenForGreeting(callback);
     } catch (error) {
       console.error('Error:', error);
