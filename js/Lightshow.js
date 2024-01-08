@@ -20,7 +20,7 @@ export default class Lightshow {
     this.vortexLib = vortexLib;
     this.vortex = new vortexLib.Vortex();
     this.vortex.init();
-    this.vortex.setLedCount(5);
+    this.vortex.setLedCount(1);
     // Run the first tick, at the moment I'm not quite sure why this first
     // tick is spitting out the color red instead of whatever it's supposed to be
     // I think it's just a wasm thing though so I'll find it later
