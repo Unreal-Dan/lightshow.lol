@@ -33,6 +33,7 @@ export default class Lightshow {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.modeData = modeData;
     this.applyModeData();
+    this.targetLed = 0;
   }
 
   applyModeData() {
@@ -80,6 +81,14 @@ export default class Lightshow {
     return this._tickRate || 1;
   }
 
+  set targetLed(value) {
+    this._targetLed = value;
+  }
+
+  get targetLed() {
+    return this._targetLed;
+  }
+
   set trailSize(value) {
     const intValue = parseInt(value, 10);
     this._trailSize = intValue > 0 ? intValue : 1;
@@ -97,8 +106,8 @@ export default class Lightshow {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // - 100 to shift it left because right side panel is bigger
-    const centerX = (this.canvas.width / 2) - 100;
+    // - 90 to shift it left because right side panel is bigger
+    const centerX = (this.canvas.width / 2) - 80;
     const centerY = this.canvas.height / 2;
     // - 55 to adjust the size of circle
     const radius = Math.min(centerX, centerY) - 55;
@@ -114,7 +123,11 @@ export default class Lightshow {
       }
       const x = centerX + radius * Math.cos(this.angle);
       const y = centerY + radius * Math.sin(this.angle);
-      this.history.push({ x, y, color: led[0] });
+      let col = led[this.targetLed];
+      if (!col) {
+        col = led[0];
+      }
+      this.history.push({ x, y, color: col });
     }
 
     for (let index = this.history.length - 1; index >= 0; index--) {

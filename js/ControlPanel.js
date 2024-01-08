@@ -66,6 +66,10 @@ export default class ControlPanel extends Panel {
     this.lightshow = lightshow;
     this.controls = controls;
     this.vortexPort = vortexPort;
+    this.targetLed = 0;
+    this.targetLeds = [ this.targetLed ];
+    this.isMulti = false;
+    this.multiEnabled = false;
   }
 
   static generateControlsContent(controls) {
@@ -82,17 +86,53 @@ export default class ControlPanel extends Panel {
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
-
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
       //console.log("Mode change detected by control panel, refreshing");
+      const selectedLeds = event.detail;
+      // if array is just multi do this:
+      if (selectedLeds.includes('multi')) {
+        this.setTargetMulti();
+      } else {
+        this.setTargetSingles(selectedLeds);
+      }
+      //console.log('mode changed:', selectedLeds);
+      this.refresh(true);
+    });
+    document.addEventListener('ledsChange', (event) => {
+      const selectedLeds = event.detail;
+      // if array is just multi do this:
+      if (selectedLeds.includes('multi')) {
+        this.setTargetMulti();
+      } else {
+        this.setTargetSingles(selectedLeds);
+      }
+      console.log('LEDs changed:', this.targetLeds);
+      this.refresh(true);
+    });
+    document.addEventListener('deviceConnected', (event) => {
+      //console.log("Control Panel detected device conneted");
+      this.multiEnabled = true;
+      this.populatePatternDropdown();
       this.refresh(true);
     });
   }
 
+  setTargetSingles(selectedLeds) {
+    this.targetLeds = selectedLeds.map(led => parseInt(led, 10));;
+    this.targetLed = this.targetLeds[0];
+    this.isMulti = false;
+  }
+
+  setTargetMulti() {
+    this.targetLed = this.lightshow.vortex.engine().leds().ledMulti();
+    this.targetLeds = [ this.targetLed ];
+    this.isMulti = true;
+  }
+
   refresh(fromEvent = false) {
     this.updatePatternParameters(fromEvent);
-    //this.updatePatternDropdown(fromEvent);
+    this.updatePatternDropdown(fromEvent);
     this.updateModeInfo(fromEvent);
   }
 
@@ -106,6 +146,7 @@ export default class ControlPanel extends Panel {
 
   populatePatternDropdown() {
     const dropdown = document.getElementById('patternDropdown');
+    dropdown.innerHTML = '';
 
     // Create optgroups for each pattern type
     const strobeGroup = document.createElement('optgroup');
@@ -150,9 +191,10 @@ export default class ControlPanel extends Panel {
     dropdown.appendChild(strobeGroup);
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
-    dropdown.appendChild(multiGroup);
+    if (this.multiEnabled) {
+      dropdown.appendChild(multiGroup);
+    }
   }
-
 
   attachPatternDropdownListener() {
     const dropdown = document.getElementById('patternDropdown');
@@ -165,20 +207,58 @@ export default class ControlPanel extends Panel {
       return;
     }
     let dropdown = document.getElementById('patternDropdown');
-    const pat = demoMode.getPatternID(this.lightshow.vortex.engine().leds().ledAny());
+    const pat = demoMode.getPatternID(this.targetLed);
     dropdown.value = pat.value;
   }
 
   updatePattern() {
     const dropdown = document.getElementById('patternDropdown');
+    if (!dropdown) {
+      return;
+    }
     const selectedPattern = dropdown.value;
-    // Now, you can use the selectedPattern value to update your lightshow or do whatever you need.
-    // For example:
-    this.lightshow.setPattern(selectedPattern);
+    if (!selectedPattern) {
+      return;
+    }
+    // the selected dropdown pattern
+    const patID = this.lightshow.vortexLib.PatternID.values[selectedPattern];
+    // grab the 'preview' mode for the current mode (randomizer)
+    let cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
+    const set = cur.getColorset(this.targetLed);
+    // we are trying to set a single led pattern
+    if (this.lightshow.vortexLib.isSingleLedPatternID(patID)) {
+      // clear any multis manually when switching from multi to single
+      cur.clearPattern(this.lightshow.vortex.engine().leds().ledMulti());
+      // but we selected multi from the led list
+      if (this.isMulti) {
+        // just set the single pat ID on all
+        cur.setPattern(patID, this.lightshow.vortex.engine().leds().ledCount(), null, null);
+        cur.setColorset(set, this.lightshow.vortex.engine().leds().ledCount());
+        // switch the led target because we switched the pattern
+        this.setTargetSingles([ "0" ]);
+      } else {
+        // otherwise we selected some singles to apply to
+        this.targetLeds.forEach((led) => {
+          cur.setPattern(patID, led, null, null);
+          cur.setColorset(set, led);
+        });
+      }
+    } else {
+      // or we are actually applying a multi and it doesn't matter just apply the multi
+      cur.setPattern(patID, this.lightshow.vortex.engine().leds().ledMulti(), null, null);
+      cur.setColorset(set, this.lightshow.vortex.engine().leds().ledMulti());
+    }
+    // re-initialize the demo mode so it takes the new args into consideration
+    cur.init();
+    // save
+    this.lightshow.vortex.engine().modes().saveCurMode();
     this.updateModeInfo();  // Refresh the display if needed
   }
 
-  updateModeInfo(fromEvent = false) {
+  async updateModeInfo(fromEvent = false) {
     let demoMode = this.lightshow.vortex.engine().modes().curMode();
 
     const patternElement = document.getElementById("pattern");
@@ -188,13 +268,10 @@ export default class ControlPanel extends Panel {
 
     if (demoMode) {
       let dropdown = document.getElementById('patternDropdown');
-      const pat = demoMode.getPatternID(this.lightshow.vortex.engine().leds().ledAny());
+      const pat = demoMode.getPatternID(this.targetLed);
       dropdown.value = pat.value;
-
-      const set = demoMode.getColorset(this.lightshow.vortex.engine().leds().ledAny());
-
+      const set = demoMode.getColorset(this.targetLed);
       let numCol = set.numColors();
-
       if (numCol) {
         for (var i = 0; i < numCol; ++i) {
           let col = set.get(i);
@@ -246,7 +323,7 @@ export default class ControlPanel extends Panel {
       }
 
       this.updatePatternParameters();
-      this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
       if (!fromEvent) {
         document.dispatchEvent(new CustomEvent('patternChange'));
       }
@@ -306,7 +383,7 @@ export default class ControlPanel extends Panel {
       }
       slider.max = '100';
       slider.step = '1';
-      slider.value = demoMode.getArg(i, this.lightshow.vortex.engine().leds().ledAny()) || '0';
+      slider.value = demoMode.getArg(i, this.targetLed) || '0';
 
       // Display value
       const displayValue = document.createElement('span');
@@ -342,8 +419,10 @@ export default class ControlPanel extends Panel {
         const paramName = camelCaseToSpaces(label.textContent);
         displayValue.textContent = event.target.value;  // Update the displayed value
         let demoMode = this.lightshow.vortex.engine().modes().curMode();
-        let pat = demoMode.getPattern(this.lightshow.vortex.engine().leds().ledAny());
-        pat.setArg(i, event.target.value);
+        this.targetLeds.forEach((led) => {
+          let pat = demoMode.getPattern(led);
+          pat.setArg(i, event.target.value);
+        });
       });
       slider.addEventListener('change', async () => {
         // init
@@ -351,7 +430,6 @@ export default class ControlPanel extends Panel {
         // save
         this.lightshow.vortex.engine().modes().saveCurMode();
         // send to device
-        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
     }
@@ -387,7 +465,24 @@ export default class ControlPanel extends Panel {
   }
 
   delColor(index) {
-    this.lightshow.delColor(index);
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
+    let set = cur.getColorset(this.targetLed);
+    if (set.numColors() <= 1) {
+      return;
+    }
+    set.removeColor(index);
+    this.targetLeds.forEach((led) => {
+      // set the colorset of the demo mode
+      cur.setColorset(set, led);
+    });
+    // re-initialize the demo mode because num colors may have changed
+    cur.init();
+    // save
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    // refresh
     this.updateModeInfo();
   }
 
@@ -397,7 +492,20 @@ export default class ControlPanel extends Panel {
     let r = (bigint >> 16) & 255;
     let g = (bigint >> 8) & 255;
     let b = bigint & 255;
-    this.lightshow.updateColor(index, r, g, b);
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
+    this.targetLeds.forEach((led) => {
+      let set = cur.getColorset(led);
+      set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
+      // set the colorset of the demo mode
+      cur.setColorset(set, led);
+    });
+    // re-initialize the demo mode because num colors may have changed
+    cur.init();
+    // save
+    this.lightshow.vortex.engine().modes().saveCurMode();
     this.updateModeInfo();
   }
 

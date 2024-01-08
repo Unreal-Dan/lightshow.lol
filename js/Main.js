@@ -10,24 +10,14 @@ const vortexPort = new VortexPort();
 // instantiate VortexLib webassembly module
 VortexLib().then(vortexLib => {
   const urlParams = new URLSearchParams(window.location.search);
-  const encodedData = urlParams.get('data');
+  //const encodedData = urlParams.get('data');
 
-  let modeData = null;
-  let decodedData = null;
-  if (encodedData) {
-    try {
-      // Decode the Base64 string and parse the JSON data
-      decodedData = atob(encodedData);
-      modeData = JSON.parse(decodedData);
-    } catch (error) {
-      console.error('Error parsing mode data:', error);
-    }
-  }
+  const encodedData="eyJhcmdzIjpbNCwxLDEwLDE4LDBdLCJjb2xvcnNldCI6WyIweDUyMDA0MiIsIjB4ZmYwMGNmIiwiMHg1NTFjNGEiLCIweDU1Mzg0ZiIsIjB4NTUxYzRhIiwiMHhmZjAwY2YiLCIweDUyMDA0MiJdLCJmbGFncyI6MCwibnVtQ29sb3JzIjo3LCJwYXR0ZXJuX2lkIjoxOH0=";
 
   // the lightshow needs the canvas id to operate on
   const canvas = document.getElementById('lightshowCanvas');
   // instantiate the lightshow
-  let lightshow = new Lightshow(vortexLib, canvas, modeData);
+  let lightshow = new Lightshow(vortexLib, canvas);
   // initialize the lightshow
   lightshow.start();
 
@@ -45,6 +35,20 @@ VortexLib().then(vortexLib => {
   aboutPanel.initialize();
   controlPanel.initialize();
   modesPanel.initialize();
+
+  // finally import the modedata on the url if there is any
+  let modeData = null;
+  let decodedData = null;
+  if (encodedData) {
+    try {
+      // Decode the Base64 string and parse the JSON data
+      decodedData = atob(encodedData);
+      modeData = JSON.parse(decodedData);
+      modesPanel.importModeFromData(modeData);
+    } catch (error) {
+      console.error('Error parsing mode data:', error);
+    }
+  }
 
   // resize the lightshow when window drags
   window.addEventListener('resize', () => {

@@ -98,9 +98,7 @@ export default class VortexPort {
     if (!this.serialPort || !this.serialPort.readable) {
       return null;
     }
-
     const reader = this.serialPort.readable.getReader();
-
     try {
       while (true) {
         const { value, done } = await reader.read();
@@ -149,7 +147,7 @@ export default class VortexPort {
     combinedArray.set(rawDataArray, sizeArray.length * 4); // Copy rawDataArray bytes
 
     return combinedArray;
-  }  
+  }
 
   async demoCurMode(vortexLib, vortex) {
     if (!this.isActive()) {
@@ -241,7 +239,7 @@ export default class VortexPort {
       }
 
       // Interpret the first 4 bytes as size
-      const size = new DataView(sizeData.buffer).getUint32(0, true); 
+      const size = new DataView(sizeData.buffer).getUint32(0, true);
 
       // Read the remaining data
       let accumulatedData = sizeData.slice(4);
