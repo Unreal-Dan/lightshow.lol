@@ -1,7 +1,7 @@
 import Panel from './Panel.js'
 
 export default class AboutPanel extends Panel {
-  constructor(lightshow) {
+  constructor(lightshow, vortexPort) {
     const content = `
             <label>Made with Vortex Engine&nbsp;&nbsp;</label>
             <a href="https://github.com/StoneOrbits/VortexEngine" target="_blank" aria-label="View on GitHub">
@@ -10,5 +10,10 @@ export default class AboutPanel extends Panel {
         `;
     super('aboutPanel', content);
     this.lightshow = lightshow
+    this.vortexPort = vortexPort;
+  }
+
+  initialize() {
+    // ...
   }
 }

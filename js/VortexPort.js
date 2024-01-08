@@ -19,13 +19,17 @@ export default class VortexPort {
     this.serialPort = null;
     this.portActive = false;
     this.debugSending = false;
+    // recovered from the device at connect
+    this.name = '';
+    this.verson = 0;
+    this.buildDate = '';
   }
 
   isActive = () => {
     return this.portActive;
   }
 
-  async requestDevice() {
+  async requestDevice(callback) {
     try {
       if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
@@ -34,7 +38,7 @@ export default class VortexPort {
         await this.serialPort.open({ baudRate: 9600 });
       }
       await this.serialPort.setSignals({ dataTerminalReady: true });
-      this.listenForGreeting();
+      this.listenForGreeting(callback);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -58,7 +62,7 @@ export default class VortexPort {
     }
   }
 
-  listenForGreeting = async () => {
+  listenForGreeting = async (callback) => {
     while (!this.portActive) {
       if (this.serialPort) {
         try {
@@ -69,16 +73,18 @@ export default class VortexPort {
           const match = response.match(responseRegex);
 
           if (match) {
-            const version = match[1]; // Capturing the version number
-            const name = match[2];    // Capturing the name
-            const buildDate = match[3]; // Capturing the build date
+            this.version = match[1]; // Capturing the version number
+            this.name = match[2];    // Capturing the name
+            this.buildDate = match[3]; // Capturing the build date
 
-            console.log('Received greeting from Vortex Device:');
-            console.log('Device Type:', name);
-            console.log('Version:', version);
-            console.log('Date:', buildDate);
+            console.log('Successfully Received greeting from Vortex Device');
+            console.log('Device Type:', this.name);
+            console.log('Version:', this.version);
+            console.log('Date:', this.buildDate);
             this.portActive = true;
-            await this.demoCurMode();
+            if (callback && typeof callback === 'function') {
+              callback();
+            }
           }
         } catch (err) {
           console.error('Error reading data:', err);
@@ -92,9 +98,7 @@ export default class VortexPort {
     if (!this.serialPort || !this.serialPort.readable) {
       return null;
     }
-
     const reader = this.serialPort.readable.getReader();
-
     try {
       while (true) {
         const { value, done } = await reader.read();
@@ -131,11 +135,11 @@ export default class VortexPort {
     }
   }
 
-  constructCustomBuffer(curMode) {
+  constructCustomBuffer(vortexLib, curMode) {
     // Create the custom array with size and rawData
     const size = curMode.rawSize();
     const sizeArray = new Uint32Array([size]); // No byte swapping
-    const rawDataArray = Module.getRawDataArray(curMode);
+    const rawDataArray = vortexLib.getRawDataArray(curMode);
 
     // Combine sizeArray and rawDataArray into a single array
     const combinedArray = new Uint8Array(sizeArray.length * 4 + rawDataArray.length);
@@ -143,15 +147,15 @@ export default class VortexPort {
     combinedArray.set(rawDataArray, sizeArray.length * 4); // Copy rawDataArray bytes
 
     return combinedArray;
-  }  
+  }
 
-  async demoCurMode() {
+  async demoCurMode(vortexLib, vortex) {
     if (!this.isActive()) {
       return;
     }
     // Unserialize the stream of data
-    const curMode = new Module.ByteStream();
-    if (!Module.Vortex.getCurMode(curMode)) {
+    const curMode = new vortexLib.ByteStream();
+    if (!vortex.getCurMode(curMode)) {
       console.log("Failed to get cur mode");
       // Error handling - abort or handle as needed
       return;
@@ -161,10 +165,102 @@ export default class VortexPort {
     // wait for the device to say it's ready
     await this.expectData(this.EDITOR_VERB_READY);
     // send over the mode
-    await this.sendRaw(this.constructCustomBuffer(curMode));
+    await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
     // wait for the acknolwedgement of the mode
     await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
   }
+
+  async pushToDevice(vortexLib, vortex) {
+    if (!this.isActive()) {
+      return;
+    }
+    // Unserialize the stream of data
+    const modes = new vortexLib.ByteStream();
+    if (!vortex.getModes(modes)) {
+      console.log("Failed to get cur mode");
+      // Error handling - abort or handle as needed
+      return;
+    }
+    await this.sendCommand(this.EDITOR_VERB_PUSH_MODES);
+    await this.expectData(this.EDITOR_VERB_READY);
+    await this.sendRaw(this.constructCustomBuffer(vortexLib, modes));
+    await this.expectData(this.EDITOR_VERB_PUSH_MODES_ACK);
+  }
+
+  async pullFromDevice(vortexLib, vortex) {
+    if (!this.isActive()) {
+      return;
+    }
+    // Unserialize the stream of data
+    await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
+    const modes = await this.readModes(vortexLib);
+    // Call the Wasm function
+    let modesStream = new vortexLib.ByteStream();
+    vortexLib.createByteStreamFromData(modes, modesStream);
+    vortex.matchLedCount(modesStream, false);
+    vortex.setModes(modesStream, true);
+    await this.sendCommand(this.EDITOR_VERB_PULL_MODES_DONE);
+    await this.expectData(this.EDITOR_VERB_PULL_MODES_ACK);
+  }
+
+  async readFromSerialPort() {
+    if (!this.serialPort || !this.serialPort.readable) {
+      throw new Error('Serial port is not readable');
+    }
+
+    const reader = this.serialPort.readable.getReader();
+    try {
+      return await reader.read();
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  async readModes(vortexLib) {
+    if (!this.isActive()) {
+      console.error('Port is not active. Cannot read modes.');
+      return null;
+    }
+
+    try {
+      // Function to append new data to existing data
+      const appendData = (existing, newData) => {
+        const combined = new Uint8Array(existing.length + newData.length);
+        combined.set(existing);
+        combined.set(newData, existing.length);
+        return combined;
+      };
+
+      // Read the initial 4 bytes for size
+      let sizeData = new Uint8Array(0);
+      while (sizeData.length < 4) {
+        const data = await this.readFromSerialPort();
+        sizeData = appendData(sizeData, data.value);
+      }
+
+      // Interpret the first 4 bytes as size
+      const size = new DataView(sizeData.buffer).getUint32(0, true);
+
+      // Read the remaining data
+      let accumulatedData = sizeData.slice(4);
+      while (accumulatedData.length < size) {
+        const data = await this.readFromSerialPort();
+        accumulatedData = appendData(accumulatedData, data.value);
+      }
+
+      // Validate the size of the accumulated data
+      if (accumulatedData.length === size) {
+        return new Uint8Array(accumulatedData);
+      } else {
+        console.error("Data size mismatch.");
+        return null;
+      }
+    } catch (error) {
+      console.error('Error reading modes:', error);
+      return null;
+    }
+  }
+
 
   // wait for a specific response
   async expectData(expectedResponse, timeoutMs = 10000) {
@@ -177,8 +273,7 @@ export default class VortexPort {
       if (!response) {
         return;
       }
-      // You can log the received response here for debugging:
-      console.log('Received:', response, ' (expected: ', expectedResponse, ')');
+      //console.log('Received:', response, ' (expected: ', expectedResponse, ')');
     }
     throw new Error('Timeout: Expected response not received');
   }
