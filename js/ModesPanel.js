@@ -422,8 +422,10 @@ export default class ModesPanel extends Panel {
       Notification.failure("Invalid mode data");
       return;
     }
-    const pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
-    if (!pat) {
+    let pat;
+    if (modeData.single_pats && modeData.multi_pat) {
+      pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
+    } else {
       pat = modeData;
     }
     if (!pat.colorset) {
