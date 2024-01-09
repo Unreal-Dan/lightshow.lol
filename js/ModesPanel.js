@@ -423,6 +423,13 @@ export default class ModesPanel extends Panel {
       return;
     }
     const pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
+    if (!pat) {
+      pat = modeData;
+    }
+    if (!pat.colorset) {
+      Notification.failure("Invalid pattern data");
+      return;
+    }
     var set = new this.lightshow.vortexLib.Colorset();
     pat.colorset.forEach(hexCode => {
       const normalizedHex = hexCode.replace('0x', '#');
