@@ -407,7 +407,7 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  importModeFromData(modeJson) {
+  importModeFromData(modeJson, addNew = true) {
     if (!modeJson) {
       Notification.failure("No mode data");
       return;
@@ -444,14 +444,16 @@ export default class ModesPanel extends Panel {
         ));
       }
     });
-    let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
-    // grab the 'preview' mode for the current mode (randomizer)
-    let modeCount = this.lightshow.vortex.numModes();
-    if (!this.lightshow.vortex.addNewMode(true)) {
-      Notification.failure("Cannot add another mode");
-      return;
+    if (addNew) {
+      let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
+      // grab the 'preview' mode for the current mode (randomizer)
+      let modeCount = this.lightshow.vortex.numModes();
+      if (!this.lightshow.vortex.addNewMode(true)) {
+        Notification.failure("Cannot add another mode");
+        return;
+      }
+      this.lightshow.vortex.setCurMode(modeCount, false);
     }
-    this.lightshow.vortex.setCurMode(modeCount, false);
     const cur = this.lightshow.vortex.engine().modes().curMode();
     // set the colorset of the demo mode
     cur.setColorset(set, 0);
@@ -467,7 +469,9 @@ export default class ModesPanel extends Panel {
     // re-initialize the demo mode so it takes the new args into consideration
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
-    this.lightshow.vortex.setCurMode(curSel, false);
+    if (addNew) {
+      this.lightshow.vortex.setCurMode(curSel, false);
+    }
     // refresh
     this.refreshPatternControlPanel();
     this.refresh();

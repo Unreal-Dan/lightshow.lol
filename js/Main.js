@@ -37,7 +37,7 @@ VortexLib().then(vortexLib => {
   if (encodedData) {
     try {
       // Decode the Base64 string and parse the JSON data
-      modesPanel.importModeFromData(atob(encodedData));
+      modesPanel.importModeFromData(atob(encodedData), false);
     } catch (error) {
       console.error('Error parsing mode data:', error);
     }
