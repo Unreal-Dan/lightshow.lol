@@ -381,8 +381,7 @@ export default class ModesPanel extends Panel {
         //{ label: 'Binary Format', onClick: () => this.handleExportBinary() }
       ],
       defaultValue: modeJson,
-      placeholder: 'Export Mode',
-      title: 'Export Mode',
+      title: 'Export Current Mode',
     });
     this.exportModal.selectAndCopyText();
     Notification.success("Copied JSON mode to clipboard");
@@ -400,7 +399,7 @@ export default class ModesPanel extends Panel {
     // json text box input popup?
     this.importModal.show({
       placeholder: 'Paste a json mode',
-      title: 'Import Mode',
+      title: 'Import New Mode',
       onInput: (event) => {
         this.importModeFromData(event.target.value);
       }
