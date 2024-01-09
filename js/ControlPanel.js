@@ -116,6 +116,7 @@ export default class ControlPanel extends Panel {
       this.multiEnabled = true;
       this.populatePatternDropdown();
       this.refresh(true);
+      this.vortexPort.startReading();
     });
   }
 
@@ -278,7 +279,7 @@ export default class ControlPanel extends Panel {
           let col = set.get(i);
           const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
           colorsetHtml += `<div class="color-container">
-                             <span class="delete-color" data-index="${i}">X</span>
+                             <span class="delete-color" data-index="${i}">&times;</span>
                              <input class="color-picker" type="color" value="${hexColor}">
                              <label>${hexColor}</label>
                            </div>`;
@@ -351,6 +352,9 @@ export default class ControlPanel extends Panel {
     paramsDiv.innerHTML = '';
 
     let demoMode = this.lightshow.vortex.engine().modes().curMode();
+    if (!demoMode) {
+      return;
+    }
 
     function camelCaseToSpaces(str) {
       return str

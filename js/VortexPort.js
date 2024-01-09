@@ -14,15 +14,25 @@ export default class VortexPort {
   EDITOR_VERB_GOODBYE = 'l';
 
   accumulatedData = ""; // A buffer to store partial lines.
+  reader = null;
+  isReading = false;
 
   constructor() {
+    this.debugSending = false;
+    this.quitCommandCallback = null;
+    this.isPeriodicCheckActive = false;
+    this.periodicCheckInterval = null;
+    this.resetState();
+  }
+
+  resetState() {
+    // Reset properties to default state
     this.serialPort = null;
     this.portActive = false;
-    this.debugSending = false;
-    // recovered from the device at connect
     this.name = '';
-    this.verson = 0;
+    this.version = 0;
     this.buildDate = '';
+    // Further state reset logic if necessary
   }
 
   isActive = () => {
@@ -83,8 +93,14 @@ export default class VortexPort {
             console.log('Version:', this.version);
             console.log('Date:', this.buildDate);
             this.portActive = true;
+            this.serialPort.addEventListener("disconnect", (event) => {
+              this.resetState(); // Reset the state of the class
+              if (callback && typeof callback === 'function') {
+                callback('disconnect');
+              }
+            });
             if (callback && typeof callback === 'function') {
-              callback();
+              callback('connect');
             }
           }
         } catch (err) {
@@ -93,6 +109,14 @@ export default class VortexPort {
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
+  }
+
+  startReading() {
+    // todo: imlplement async read waiting for quit that can be canceled
+  }
+
+  cancelReading() {
+    // todo: imlplement async read cancel
   }
 
   async readData() {
@@ -161,14 +185,12 @@ export default class VortexPort {
       // Error handling - abort or handle as needed
       return;
     }
-    // send the command to indicate we will send over a demo mode
+    await this.cancelReading();
     await this.sendCommand(this.EDITOR_VERB_DEMO_MODE);
-    // wait for the device to say it's ready
     await this.expectData(this.EDITOR_VERB_READY);
-    // send over the mode
     await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
-    // wait for the acknolwedgement of the mode
     await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
+    this.startReading();
   }
 
   async pushToDevice(vortexLib, vortex) {
@@ -182,10 +204,12 @@ export default class VortexPort {
       // Error handling - abort or handle as needed
       return;
     }
+    await this.cancelReading();
     await this.sendCommand(this.EDITOR_VERB_PUSH_MODES);
     await this.expectData(this.EDITOR_VERB_READY);
     await this.sendRaw(this.constructCustomBuffer(vortexLib, modes));
     await this.expectData(this.EDITOR_VERB_PUSH_MODES_ACK);
+    this.startReading();
   }
 
   async pullFromDevice(vortexLib, vortex) {
@@ -193,6 +217,7 @@ export default class VortexPort {
       return;
     }
     // Unserialize the stream of data
+    await this.cancelReading();
     await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
     const modes = await this.readModes(vortexLib);
     // Call the Wasm function
@@ -202,6 +227,7 @@ export default class VortexPort {
     vortex.setModes(modesStream, true);
     await this.sendCommand(this.EDITOR_VERB_PULL_MODES_DONE);
     await this.expectData(this.EDITOR_VERB_PULL_MODES_ACK);
+    this.startReading();
   }
 
   async readFromSerialPort() {
@@ -261,7 +287,6 @@ export default class VortexPort {
       return null;
     }
   }
-
 
   // wait for a specific response
   async expectData(expectedResponse, timeoutMs = 10000) {

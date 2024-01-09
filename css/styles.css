@@ -220,7 +220,7 @@ legend {
   display: flex;
   height: 15px;
   justify-content: center;
-  margin-left: 15px;
+  margin-left: 20px;
   margin-top: 5px;
   padding: 5px 10px;
   transition: background-color 0.2s; /* Smooth transition for hover effect */
@@ -232,9 +232,19 @@ legend {
 }
 
 .delete-color {
-  border-radius: 3px;
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  user-select:none;
+}
+
+.delete-color:hover,
+.delete-color:focus {
+  color: red;
+  text-decoration: none;
   cursor: pointer;
-  margin-top: 2px;
+  user-select:none;
 }
 
 .help-icon {
@@ -299,21 +309,36 @@ legend {
 }
 
 .mode-name {
+  margin-top: 6px;
   user-select: none;
 }
 
 .delete-mode-btn {
-  user-select: none;
-  height: 20px; /* Set the minimum width as needed */
-  color: red;
+  position: relative;
+  top: -2px; /* it's a button so it has extra space on the top */
   background-color: transparent; /* Background set to transparent */
-  margin-left: 12px;
   border: none;
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  user-select: none;
+}
+
+.delete-mode-btn:hover,
+.delete-mode-btn:focus {
+  color: red;
+  text-decoration: none;
   cursor: pointer;
+  user-select: none;
 }
 
 .status-success {
   color: #66FF00 !important; /* Text color */
+}
+
+.status-pending {
+  color: #ABAA00 !important; /* Text color */
 }
 
 .status-failure {
@@ -329,6 +354,7 @@ legend {
   width: 100%;
   height: 100%;
   overflow: auto;
+  padding: 10px;
   background-color: rgb(0,0,0);
   background-color: rgba(0,0,0,0.4);
 }
@@ -345,11 +371,18 @@ legend {
 
 .modal-content input[type="text"] {
   width: 100%;
-  padding: 10px 5px;
+  padding: 10px;
+  padding-right: 0px;
+  margin: 10px 0px;
   border: 1px solid #454545;
   border-radius: 4px;
   background-color: #292c2e;
   color: #d8d4cf;
+  user-select: none;
+}
+
+.modal-title {
+  user-select: none;
 }
 
 .modal-content button {
@@ -363,6 +396,10 @@ legend {
   transition: background-color 0.2s;
 }
 
+#modalInput {
+  width: 98%;
+}
+
 .modal-content button:hover {
   background-color: #3e4446;
 }
@@ -372,11 +409,12 @@ legend {
   float: right;
   font-size: 28px;
   font-weight: bold;
+  user-select: none;
 }
 
 .close:hover,
 .close:focus {
-  color: black;
+  color: red;
   text-decoration: none;
   cursor: pointer;
 }
@@ -419,3 +457,7 @@ legend {
   to {top: 0; opacity: 0;}
 }
 
+.modal-buttons button {
+  /* Add your button styling here */
+  margin-top: 15px;
+}

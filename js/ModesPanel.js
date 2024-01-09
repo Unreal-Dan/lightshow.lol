@@ -13,7 +13,7 @@ export default class ModesPanel extends Panel {
         </div>
         <div id="deviceStatusContainer">
           <span id="statusLabel">Device Status:</span>
-          <span id="deviceStatus">Waiting for Connection...</span>
+          <span id="deviceStatus">Idle</span>
         </div>
       </div>
       <div id="modesAndLedsSection">
@@ -40,6 +40,9 @@ export default class ModesPanel extends Panel {
     super('modesPanel', content);
     this.lightshow = lightshow;
     this.vortexPort = vortexPort;
+    this.shareModal = new Modal();
+    this.exportModal = new Modal();
+    this.importModal = new Modal();
   }
 
   initialize() {
@@ -90,36 +93,21 @@ export default class ModesPanel extends Panel {
     });
     document.getElementById('connectDevice').addEventListener('click', async () => {
       let statusMessage = document.getElementById('deviceStatus');
+      statusMessage.textContent = 'Waiting for connection...';
+      statusMessage.classList.add('status-pending');
+      statusMessage.classList.remove('status-success');
+      statusMessage.classList.remove('status-failure');
+
       try {
-        await this.vortexPort.requestDevice(() => {
-          console.log("name: " + this.vortexPort.name);
-          const deviceLedCountMap = {
-            'Gloves': 10,
-            'Orbit': 28,
-            'Handle': 3,
-            'Duo': 2,
-            'Chromadeck': 20,
-            'Spark': 6
-          };
-          const ledCount = deviceLedCountMap[this.vortexPort.name];
-          if (ledCount !== undefined) {
-            //this.changeLedListHeight(newHeight);
-            this.lightshow.vortex.setLedCount(ledCount);
-            console.log(`Set led count to ${ledCount} for ${this.vortexPort.name}`);
-          } else {
-            console.log(`Device name ${this.vortexPort.name} not recognized`);
-          }
-          document.dispatchEvent(new CustomEvent('deviceConnected'));
-          this.refresh(true);
-          statusMessage.textContent = this.vortexPort.name + ' Connected!';
-          statusMessage.classList.add('status-success');
-          statusMessage.classList.remove('status-failure');
-          Notification.success("Successfully Connected " + this.vortexPort.name);
+        await this.vortexPort.requestDevice((deviceEvent) => {
+          this.deviceChange(deviceEvent);
         });
         // Additional logic to handle successful connection
       } catch (error) {
+        let statusMessage = document.getElementById('deviceStatus');
         statusMessage.textContent = 'Failed to connect: ' + error.message;
         statusMessage.classList.remove('status-success');
+        statusMessage.classList.remove('status-pending');
         statusMessage.classList.add('status-failure');
         // Handle errors
       }
@@ -129,6 +117,52 @@ export default class ModesPanel extends Panel {
     ledList.addEventListener('change', () => {
       this.handleLedSelectionChange();
     });
+  }
+
+  deviceChange(deviceEvent) {
+    if (deviceEvent === 'connect') {
+      this.onDeviceConnect();
+    }
+    if (deviceEvent === 'disconnect') {
+      this.onDeviceDisconnect();
+    }
+  }
+
+  onDeviceConnect() {
+    console.log("name: " + this.vortexPort.name);
+    const deviceLedCountMap = {
+      'Gloves': 10,
+      'Orbit': 28,
+      'Handle': 3,
+      'Duo': 2,
+      'Chromadeck': 20,
+      'Spark': 6
+    };
+    const ledCount = deviceLedCountMap[this.vortexPort.name];
+    if (ledCount !== undefined) {
+      //this.changeLedListHeight(newHeight);
+      this.lightshow.vortex.setLedCount(ledCount);
+      console.log(`Set led count to ${ledCount} for ${this.vortexPort.name}`);
+    } else {
+      console.log(`Device name ${this.vortexPort.name} not recognized`);
+    }
+    document.dispatchEvent(new CustomEvent('deviceConnected'));
+    this.refresh(true);
+    let statusMessage = document.getElementById('deviceStatus');
+    statusMessage.textContent = this.vortexPort.name + ' Connected!';
+    statusMessage.classList.add('status-success');
+    statusMessage.classList.remove('status-pending');
+    statusMessage.classList.remove('status-failure');
+    Notification.success("Successfully Connected " + this.vortexPort.name);
+  }
+
+  onDeviceDisconnect() {
+    console.log("Device disconnected");
+    let statusMessage = document.getElementById('deviceStatus');
+    statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
+    statusMessage.classList.remove('status-success');
+    statusMessage.classList.remove('status-pending');
+    statusMessage.classList.add('status-failure');
   }
 
   refresh(fromEvent = false) {
@@ -241,7 +275,7 @@ export default class ModesPanel extends Panel {
       }
       modeDiv.innerHTML = `
         <span class="mode-name">Mode ${i} - ${this.lightshow.vortex.getModeName()}</span>
-        <button class="delete-mode-btn">X</button>
+        <button class="delete-mode-btn">&times;</button>
       `;
       modesListContainer.appendChild(modeDiv);
       // go to next mode
@@ -316,47 +350,81 @@ export default class ModesPanel extends Panel {
   }
 
   shareMode() {
-    const modal = new Modal();
+    if (!this.lightshow.vortex.engine().modes().curMode()) {
+      Notification.failure("Must select a mode to share");
+      return;
+    }
     const modeJson = this.lightshow.vortex.printModeJson(false);
     const modeData = JSON.parse(modeJson);
     const pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
     const base64EncodedData = btoa(JSON.stringify(pat));
     const lightshowUrl = `https://lightshow.lol/importMode?data=${base64EncodedData}`;
-    modal.show({
+    this.shareModal.show({
       defaultValue: lightshowUrl,
       placeholder: 'Share URL',
-      title: 'Share Mode'
+      title: 'Share Mode',
     });
+    this.shareModal.selectAndCopyText();
+    Notification.success("Copied mode URL to clipboard");
     // give url text box popup?
   }
 
   exportMode() {
-    const modal = new Modal();
+    if (!this.lightshow.vortex.engine().modes().curMode()) {
+      Notification.failure("Must select a mode to export");
+      return;
+    }
     const modeJson = this.lightshow.vortex.printModeJson(false);
-    modal.show({
+    this.exportModal.show({
+      buttons: [
+        //{ label: 'JSON Format', onClick: () => this.handleExportJson() },
+        //{ label: 'Binary Format', onClick: () => this.handleExportBinary() }
+      ],
       defaultValue: modeJson,
       placeholder: 'Export Mode',
-      title: 'Export Mode'
+      title: 'Export Mode',
     });
+    this.exportModal.selectAndCopyText();
+    Notification.success("Copied JSON mode to clipboard");
+  }
+
+  handleExportJson() {
+
+  }
+
+  handleExportBinary() {
+
   }
 
   importMode() {
     // json text box input popup?
-    const modal = new Modal();
-    modal.show({
-      defaultValue: '',
-      placeholder: '',
-      title: 'Importing modes will be added soon'
+    this.importModal.show({
+      placeholder: 'Paste a json mode',
+      title: 'Import Mode',
+      onInput: (event) => {
+        this.importModeFromData(event.target.value);
+      }
     });
-    // TODO: importModeFromData() the text data the modal returns
   }
 
-  importModeFromData(modeData) {
-    if (!modeData) {
+  importModeFromData(modeJson) {
+    if (!modeJson) {
+      Notification.failure("No mode data");
       return;
     }
+    let modeData;
+    try {
+      modeData = JSON.parse(modeJson);
+    } catch (error) {
+      Notification.failure("Invalid JSON mode");
+    }
+    if (!modeData) {
+      Notification.failure("Invalid mode data");
+      return;
+    }
+    const pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
     var set = new this.lightshow.vortexLib.Colorset();
-    modeData.colorset.forEach(hexCode => {
+    pat.colorset.forEach(hexCode => {
       const normalizedHex = hexCode.replace('0x', '#');
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
       if (result) {
@@ -367,29 +435,34 @@ export default class ModesPanel extends Panel {
         ));
       }
     });
+    let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
     // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.lightshow.vortex.engine().modes().curMode();
-    if (!demoMode) {
+    let modeCount = this.lightshow.vortex.numModes();
+    if (!this.lightshow.vortex.addNewMode(true)) {
+      Notification.failure("Cannot add another mode");
       return;
     }
+    this.lightshow.vortex.setCurMode(modeCount, false);
+    const cur = this.lightshow.vortex.engine().modes().curMode();
     // set the colorset of the demo mode
-    demoMode.setColorset(set, 0);
+    cur.setColorset(set, 0);
     // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
     // with null args and null colorset (so they are defaulted and won't change)
-    let patID = this.lightshow.vortexLib.intToPatternID(modeData.pattern_id);
-    demoMode.setPattern(patID, 0, null, null);
+    let patID = this.lightshow.vortexLib.intToPatternID(pat.pattern_id);
+    cur.setPattern(patID, 0, null, null);
     let args = new this.lightshow.vortexLib.PatternArgs();
-    for (let i = 0; i < modeData.args.length; ++i) {
-      args.addArgs(modeData.args[i]);
+    for (let i = 0; i < pat.args.length; ++i) {
+      args.addArgs(pat.args[i]);
     }
     this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, false);
     // re-initialize the demo mode so it takes the new args into consideration
-    demoMode.init();
+    cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
+    this.lightshow.vortex.setCurMode(curSel, false);
     // refresh
-    this.refresh();
     this.refreshPatternControlPanel();
-    Notification.success("Successfully Loaded mode from URL");
+    this.refresh();
+    Notification.success("Successfully imported mode");
   }
 
   deleteMode(index) {
