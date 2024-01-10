@@ -213,11 +213,14 @@ export default class ControlPanel extends Panel {
   }
 
   refreshPatternDropdown() {
+    const dropdown = document.getElementById('patternDropdown');
     let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
+      dropdown.value = -1;
+      dropdown.disabled = true;
       return;
     }
-    let dropdown = document.getElementById('patternDropdown');
+    dropdown.disabled = false
     const pat = cur.getPatternID(this.targetLed);
     dropdown.value = pat.value;
   }
@@ -276,12 +279,12 @@ export default class ControlPanel extends Panel {
   }
 
   async refreshColorset(fromEvent = false) {
+    const colorsetElement = document.getElementById("colorset");
     let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
       colorsetElement.textContent = '';
       return;
     }
-    const colorsetElement = document.getElementById("colorset");
     let colorsetHtml = '';
     let dropdown = document.getElementById('patternDropdown');
     const pat = cur.getPatternID(this.targetLed);
@@ -364,17 +367,21 @@ export default class ControlPanel extends Panel {
   }
 
   async refreshPatternArgs(fromEvent = false) {
+    const paramsDiv = document.getElementById('patternParams');
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
     if (!patternID) {
+      // Clear existing parameters
+      paramsDiv.innerHTML = '';
       return;
     }
     const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
-    const paramsDiv = document.getElementById('patternParams');
     let customParams = this.lightshow.vortex.getCustomParams(patternID);
     // Clear existing parameters
     paramsDiv.innerHTML = '';
     let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
+      // Clear existing parameters
+      paramsDiv.innerHTML = '';
       return;
     }
 

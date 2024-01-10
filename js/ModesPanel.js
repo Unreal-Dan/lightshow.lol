@@ -180,7 +180,8 @@ export default class ModesPanel extends Panel {
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
-       return;
+      ledList.innerHTML = '';
+      return;
     }
     this.clearLedList();
     this.clearLedSelections();
@@ -273,6 +274,10 @@ export default class ModesPanel extends Panel {
   refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     this.clearModeList();
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
     let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
     // We have to actually iterate the modes with nextmode because Vortex can't just
     // instantiate one and return it which is kinda dumb but just how it works for now
@@ -416,6 +421,7 @@ export default class ModesPanel extends Panel {
         this.importModeFromData(event.target.value);
       }
     });
+    this.importModal.selectText();
   }
 
   importModeFromData(modeJson, addNew = true) {

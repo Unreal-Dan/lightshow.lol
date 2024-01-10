@@ -83,6 +83,10 @@ export default class Modal {
     }
   }
 
+  selectText() {
+    this.modalInput.select();
+  }
+
   selectAndCopyText() {
     this.modalInput.select();
     document.execCommand('copy');
