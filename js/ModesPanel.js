@@ -46,8 +46,8 @@ export default class ModesPanel extends Panel {
   }
 
   initialize() {
-    this.populateLedList();
-    this.populateModeList();
+    this.refreshLedList();
+    this.refreshModeList();
     const modesListContainer = document.getElementById('modesListContainer');
     //modesListContainer.addEventListener('change', (event) => {
     //  const selectedMode = event.target.value;
@@ -166,8 +166,8 @@ export default class ModesPanel extends Panel {
   }
 
   refresh(fromEvent = false) {
-    this.refreshLedList(fromEvent);
     this.refreshModeList(fromEvent);
+    this.refreshLedList(fromEvent);
   }
 
   changeLedListHeight(newHeight) {
@@ -177,14 +177,42 @@ export default class ModesPanel extends Panel {
 
   refreshLedList(fromEvent = false) {
     const ledList = document.getElementById('ledList');
-    ledList.innerHTML = '';
-    this.populateLedList(fromEvent);
-  }
-
-  refreshModeList(fromEvent = false) {
-    const modesListContainer = document.getElementById('modesListContainer');
-    modesListContainer.innerHTML = '';
-    this.populateModeList(fromEvent);
+    let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+       return;
+    }
+    this.clearLedList();
+    this.clearLedSelections();
+    if (!cur.isMultiLed()) {
+      //this.changeLedListHeight(this.lightshow.vortex.numLedsInMode());
+      for (let pos = 0; pos < this.lightshow.vortex.numLedsInMode(); ++pos) {
+        let ledName = this.lightshow.vortex.ledToString(pos) + " (" + this.lightshow.vortex.getPatternName(pos) + ")";
+        const option = document.createElement('option');
+        option.value = pos;
+        option.textContent = ledName;
+        ledList.appendChild(option);
+      }
+      console.log("selected fater refresh: ");
+      console.log(selectedLeds);
+      if (selectedLeds.includes("multi")) {
+        this.selectAllLeds();
+        selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
+      }
+    } else {
+      //this.changeLedListHeight(1);
+      let ledName = "Multi led (" + this.lightshow.vortex.getPatternName(this.lightshow.vortex.engine().leds().ledMulti()) + ")";
+      const option = document.createElement('option');
+      option.value = 'multi';
+      option.textContent = ledName;
+      ledList.appendChild(option);
+      selectedLeds = [ "multi" ];
+      // TODO: support both rendering multi and single at same time... not for now
+    }
+    if (!selectedLeds.length && ledList.options.length > 0) {
+      selectedLeds = [ "0" ];
+    }
+    this.applyLedSelections(selectedLeds);
   }
 
   refreshPatternControlPanel() {
@@ -192,11 +220,24 @@ export default class ModesPanel extends Panel {
     document.dispatchEvent(new CustomEvent('modeChange', { detail: this.getSelectedLeds() }));
   }
 
+  clearLedList() {
+    const ledList = document.getElementById('ledList');
+    ledList.innerHTML = '';
+  }
+
   clearLedSelections() {
     const ledList = document.getElementById('ledList');
     // Iterate over each option and set 'selected' to false
     for (let option of ledList.options) {
       option.selected = false;
+    }
+  }
+
+  selectAllLeds() {
+    const ledList = document.getElementById('ledList');
+    // Iterate over each option and set 'selected' to false
+    for (let option of ledList.options) {
+      option.selected = true;
     }
   }
 
@@ -215,38 +256,6 @@ export default class ModesPanel extends Panel {
     }
   }
 
-  populateLedList(fromEvent = false) {
-    const ledList = document.getElementById('ledList');
-    const selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-       return;
-    }
-    this.clearLedSelections();
-    if (!cur.isMultiLed()) {
-      //this.changeLedListHeight(this.lightshow.vortex.numLedsInMode());
-      for (let pos = 0; pos < this.lightshow.vortex.numLedsInMode(); ++pos) {
-        let ledName = this.lightshow.vortex.ledToString(pos) + " (" + this.lightshow.vortex.getPatternName(pos) + ")";
-        const option = document.createElement('option');
-        option.value = pos;
-        option.textContent = ledName;
-        ledList.appendChild(option);
-      }
-    } else {
-      //this.changeLedListHeight(1);
-      let ledName = "Multi led (" + this.lightshow.vortex.getPatternName(this.lightshow.vortex.engine().leds().ledMulti()) + ")";
-      const option = document.createElement('option');
-      option.value = 'multi';
-      option.textContent = ledName;
-      ledList.appendChild(option);
-      // TODO: support both rendering multi and single at same time... not for now
-    }
-    this.applyLedSelections(selectedLeds);
-    if (!selectedLeds.length && ledList.options.length > 0) {
-      ledList.options[0].selected = true;
-    }
-  }
-
   handleLedSelectionChange() {
     const selectedOptions = Array.from(ledList.selectedOptions).map(option => option.value);
     // Check the number of selected options
@@ -258,9 +267,14 @@ export default class ModesPanel extends Panel {
     document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.getSelectedLeds() }));
   }
 
-  populateModeList(fromEvent = false) {
+  clearModeList() {
     const modesListContainer = document.getElementById('modesListContainer');
     modesListContainer.innerHTML = '';
+  }
+
+  refreshModeList(fromEvent = false) {
+    const modesListContainer = document.getElementById('modesListContainer');
+    this.clearModeList();
     let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
     // We have to actually iterate the modes with nextmode because Vortex can't just
     // instantiate one and return it which is kinda dumb but just how it works for now

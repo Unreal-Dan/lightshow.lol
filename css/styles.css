@@ -1,3 +1,7 @@
+* {
+  user-select:none;
+}
+
 /* Base Styles */
 body {
   background-color: black;
@@ -460,4 +464,30 @@ legend {
 .modal-buttons button {
   /* Add your button styling here */
   margin-top: 15px;
+}
+
+/* Styling for the select box */
+#ledList {
+  background-color: #181a1b;  /* Dark background */
+  border: 1px solid #555;  /* Dark border */
+  border-radius: 4px;      /* Optional: rounded corners */
+  padding: 5px;            /* Some padding inside the select box */
+  width: 100%;             /* Optional: making the select box full width */
+  height: auto;            /* Adjust height as needed */
+  user-select: none;
+}
+
+/* Styling for options */
+#ledList option {
+  background-color: #181a1b;  /* Dark background for options */
+  color: #ccc;            /* Light text color for options */
+}
+
+#ledList option:checked {
+  background-color: #444;  /* Dark background for options */
+  color: #ccc;            /* Light text color for options */
+}
+
+#ledList:focus {
+  outline: none;
 }

@@ -99,6 +99,7 @@ export default class ControlPanel extends Panel {
       }
       //console.log('mode changed:', selectedLeds);
       this.refresh(true);
+      this.demoModeOnDevice();
     });
     document.addEventListener('ledsChange', (event) => {
       const selectedLeds = event.detail;
@@ -117,10 +118,18 @@ export default class ControlPanel extends Panel {
       this.populatePatternDropdown();
       this.refresh(true);
       this.vortexPort.startReading();
+      this.demoModeOnDevice();
     });
   }
 
-  setTargetSingles(selectedLeds) {
+  setTargetSingles(selectedLeds = null) {
+    if (!selectedLeds) {
+      const ledCount = this.lightshow.vortex.engine().leds().ledCount();
+      const ledStrings = [];
+      for (let i = 0; i < ledCount; i++) {
+        selectedLeds.push(i.toString());
+      }
+    }
     this.targetLeds = selectedLeds.map(led => parseInt(led, 10));;
     this.targetLed = this.targetLeds[0];
     this.isMulti = false;
@@ -133,9 +142,9 @@ export default class ControlPanel extends Panel {
   }
 
   refresh(fromEvent = false) {
-    this.updatePatternParameters(fromEvent);
-    this.updatePatternDropdown(fromEvent);
-    this.updateModeInfo(fromEvent);
+    this.refreshPatternDropdown(fromEvent);
+    this.refreshPatternArgs(fromEvent);
+    this.refreshColorset(fromEvent);
   }
 
   attachEventListeners() {
@@ -200,20 +209,20 @@ export default class ControlPanel extends Panel {
 
   attachPatternDropdownListener() {
     const dropdown = document.getElementById('patternDropdown');
-    dropdown.addEventListener('change', this.updatePattern.bind(this));
+    dropdown.addEventListener('change', this.handlePatternSelect.bind(this));
   }
 
-  updatePatternDropdown() {
-    let demoMode = this.lightshow.vortex.engine().modes().curMode();
-    if (!demoMode) {
+  refreshPatternDropdown() {
+    let cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
       return;
     }
     let dropdown = document.getElementById('patternDropdown');
-    const pat = demoMode.getPatternID(this.targetLed);
+    const pat = cur.getPatternID(this.targetLed);
     dropdown.value = pat.value;
   }
 
-  updatePattern() {
+  handlePatternSelect() {
     const dropdown = document.getElementById('patternDropdown');
     if (!dropdown) {
       return;
@@ -240,7 +249,7 @@ export default class ControlPanel extends Panel {
         cur.setPattern(patID, this.lightshow.vortex.engine().leds().ledCount(), null, null);
         cur.setColorset(set, this.lightshow.vortex.engine().leds().ledCount());
         // switch the led target because we switched the pattern
-        this.setTargetSingles([ "0" ]);
+        this.setTargetSingles();
       } else {
         // otherwise we selected some singles to apply to
         this.targetLeds.forEach((led) => {
@@ -252,117 +261,93 @@ export default class ControlPanel extends Panel {
       // or we are actually applying a multi and it doesn't matter just apply the multi
       cur.setPattern(patID, this.lightshow.vortex.engine().leds().ledMulti(), null, null);
       cur.setColorset(set, this.lightshow.vortex.engine().leds().ledMulti());
+      this.setTargetMulti();
     }
     // re-initialize the demo mode so it takes the new args into consideration
     cur.init();
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
-    this.updateModeInfo();  // Refresh the display if needed
+    // notify the modes panel that we changed
+    document.dispatchEvent(new CustomEvent('patternChange'));
+    this.refreshPatternArgs();
+    this.refreshColorset();  // Refresh the display if needed
+    // demo on device
+    this.demoModeOnDevice();
   }
 
-  async updateModeInfo(fromEvent = false) {
-    let demoMode = this.lightshow.vortex.engine().modes().curMode();
-
-    const patternElement = document.getElementById("pattern");
+  async refreshColorset(fromEvent = false) {
+    let cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      colorsetElement.textContent = '';
+      return;
+    }
     const colorsetElement = document.getElementById("colorset");
-
     let colorsetHtml = '';
-
-    if (demoMode) {
-      let dropdown = document.getElementById('patternDropdown');
-      const pat = demoMode.getPatternID(this.targetLed);
-      dropdown.value = pat.value;
-      const set = demoMode.getColorset(this.targetLed);
-      let numCol = set.numColors();
-      if (numCol) {
-        for (var i = 0; i < numCol; ++i) {
-          let col = set.get(i);
-          const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
-          colorsetHtml += `<div class="color-container">
+    let dropdown = document.getElementById('patternDropdown');
+    const pat = cur.getPatternID(this.targetLed);
+    dropdown.value = pat.value;
+    const set = cur.getColorset(this.targetLed);
+    let numCol = set.numColors();
+    if (numCol) {
+      for (var i = 0; i < numCol; ++i) {
+        let col = set.get(i);
+        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
+        colorsetHtml += `<div class="color-container">
                              <span class="delete-color" data-index="${i}">&times;</span>
                              <input class="color-picker" type="color" value="${hexColor}">
                              <label>${hexColor}</label>
                            </div>`;
-        }
       }
-      if (!numCol || numCol < 8) {
-        colorsetHtml += `
+    }
+    if (!numCol || numCol < 8) {
+      colorsetHtml += `
                     <div class="color-container add-color">
                         +
                     </div>`;
-      }
+    }
 
-      colorsetElement.innerHTML = colorsetHtml;
+    colorsetElement.innerHTML = colorsetHtml;
 
-      // Attach event listeners for color pickers
-      const colorPickers = colorsetElement.querySelectorAll('.color-picker');
-      colorPickers.forEach((picker, idx) => {
-        picker.addEventListener('change', (event) => {
-          this.updateColor(idx, event.target.value);
-          // Dispatch a custom event
-          document.dispatchEvent(new CustomEvent('patternChange'));
-        });
-      });
-
-      // Attach event listeners for del col buttons
-      const deleteButtons = colorsetElement.querySelectorAll('.delete-color');
-      deleteButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          this.delColor(Number(button.getAttribute('data-index')));
-          // Dispatch a custom event
-          document.dispatchEvent(new CustomEvent('patternChange'));
-        });
-      });
-
-      // Attach event listeners for add col button
-      const addButton = colorsetElement.querySelector('.add-color');
-      if (addButton) {
-        addButton.addEventListener('click', () => {
-          // Dispatch a custom event
-          this.addColor();
-          document.dispatchEvent(new CustomEvent('patternChange'));
-        });
-      }
-
-      this.updatePatternParameters();
-      try {
-        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
-      } catch (error) {
-        Notification.failure("Failed to demo current mode on device, connection may be broken");
-      }
-
-      if (!fromEvent) {
+    // Attach event listeners for color pickers
+    const colorPickers = colorsetElement.querySelectorAll('.color-picker');
+    colorPickers.forEach((picker, idx) => {
+      picker.addEventListener('change', (event) => {
+        this.updateColor(idx, event.target.value);
+        // Dispatch a custom event
         document.dispatchEvent(new CustomEvent('patternChange'));
-      }
-    } else {
-      colorsetElement.textContent = 'Unknown';
+      });
+    });
+
+    // Attach event listeners for del col buttons
+    const deleteButtons = colorsetElement.querySelectorAll('.delete-color');
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        this.delColor(Number(button.getAttribute('data-index')));
+        // Dispatch a custom event
+        document.dispatchEvent(new CustomEvent('patternChange'));
+      });
+    });
+
+    // Attach event listeners for add col button
+    const addButton = colorsetElement.querySelector('.add-color');
+    if (addButton) {
+      addButton.addEventListener('click', () => {
+        // Dispatch a custom event
+        this.addColor();
+        document.dispatchEvent(new CustomEvent('patternChange'));
+      });
     }
   }
 
-  updatePatternParameters(fromEvent = false) {
-    const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
-    if (!patternID) {
-      return;
+  async demoModeOnDevice() {
+    try {
+      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+    } catch (error) {
+      Notification.failure("Failed to demo current mode on device, connection may be broken");
     }
-    const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
-    const paramsDiv = document.getElementById('patternParams');
-    let customParams = this.lightshow.vortex.getCustomParams(patternID);
+  }
 
-    // Clear existing parameters
-    paramsDiv.innerHTML = '';
-
-    let demoMode = this.lightshow.vortex.engine().modes().curMode();
-    if (!demoMode) {
-      return;
-    }
-
-    function camelCaseToSpaces(str) {
-      return str
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
-        .toLowerCase();
-    }
-
+  getTooltipText(sliderName) {
     const descriptions = {
       "on duration": "This determines how long the LED light stays 'on' during each blink. Think of it like the length of time each color shows up when the LED is cycling through colors.",
       "off duration": "This is the amount of time the LED light stays 'off' between each blink. It's like the pause or gap between each color as the LED cycles.",
@@ -372,16 +357,36 @@ export default class ControlPanel extends Panel {
       "blend speed": "This controls the speed at which the LED transitions or blends from one color to the next. If it's set to 0, the LED will stay on a single color without moving to the next.",
       "num flips": "Every other blink the LED will show a hue that's related to the current color. This setting controls how many times that happens.",
       "col index": "If you're using a solid pattern, this decides which specific color from the colorset will be displayed. For example, if you set it to 0, it will pick the first color; if 1, the second, and so on.",
+      // Add more slider names and their descriptions as needed
     };
+
+    return descriptions[sliderName] || "Description not available"; // Default text if no description is found
+  }
+
+  async refreshPatternArgs(fromEvent = false) {
+    const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
+    if (!patternID) {
+      return;
+    }
+    const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
+    const paramsDiv = document.getElementById('patternParams');
+    let customParams = this.lightshow.vortex.getCustomParams(patternID);
+    // Clear existing parameters
+    paramsDiv.innerHTML = '';
+    let cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
 
     for (let i = 0; i < numOfParams; i++) {
       const container = document.createElement('div');
       container.className = 'param-container';
-
       const label = document.createElement('label');
-      let sliderName = camelCaseToSpaces(customParams.get(i).slice(2));
+      let sliderName = customParams.get(i).slice(2)
+                                          .replace(/([a-z])([A-Z])/g, '$1 $2')
+                                          .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                                          .toLowerCase();
       label.textContent = sliderName;
-
       const slider = document.createElement('input');
       slider.type = 'range';
       slider.className = 'param-slider';
@@ -393,7 +398,7 @@ export default class ControlPanel extends Panel {
       }
       slider.max = '100';
       slider.step = '1';
-      slider.value = demoMode.getArg(i, this.targetLed) || '0';
+      slider.value = cur.getArg(i, this.targetLed) || '0';
 
       // Display value
       const displayValue = document.createElement('span');
@@ -403,7 +408,7 @@ export default class ControlPanel extends Panel {
       // Description of what the slider does
       const helpIcon = document.createElement('i');
       helpIcon.className = 'fas fa-question-circle help-icon';
-      helpIcon.setAttribute('data-tooltip', descriptions[sliderName]);  // Modify this line for each slider's specific tooltip content.
+      helpIcon.setAttribute('data-tooltip', this.getTooltipText(sliderName));  // Modify this line for each slider's specific tooltip content.
       helpIcon.onclick = () => { this.toggleTooltip(helpIcon); };
 
       helpIcon.addEventListener('click', function(event) {
@@ -426,21 +431,25 @@ export default class ControlPanel extends Panel {
 
       // Event for slider
       slider.addEventListener('input', (event) => {
-        const paramName = camelCaseToSpaces(label.textContent);
+        const paramName = label.textContent.replace(/([a-z])([A-Z])/g, '$1 $2')
+                                           .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                                           .toLowerCase();
         displayValue.textContent = event.target.value;  // Update the displayed value
-        let demoMode = this.lightshow.vortex.engine().modes().curMode();
+        let cur = this.lightshow.vortex.engine().modes().curMode();
         this.targetLeds.forEach((led) => {
-          let pat = demoMode.getPattern(led);
+          let pat = cur.getPattern(led);
           pat.setArg(i, event.target.value);
         });
       });
       slider.addEventListener('change', async () => {
         // init
-        demoMode.init();
+        cur.init();
         // save
         this.lightshow.vortex.engine().modes().saveCurMode();
         // send to device
         document.dispatchEvent(new CustomEvent('patternChange'));
+        // demo on device
+        this.demoModeOnDevice();
       });
     }
   }
@@ -471,7 +480,9 @@ export default class ControlPanel extends Panel {
 
   addColor() {
     this.lightshow.addColor(255, 255, 255);
-    this.updateModeInfo();
+    this.refreshColorset();
+    // demo on device
+    this.demoModeOnDevice();
   }
 
   delColor(index) {
@@ -493,7 +504,9 @@ export default class ControlPanel extends Panel {
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
     // refresh
-    this.updateModeInfo();
+    this.refreshColorset();
+    // demo on device
+    this.demoModeOnDevice();
   }
 
   updateColor(index, hexValue) {
@@ -516,12 +529,20 @@ export default class ControlPanel extends Panel {
     cur.init();
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
-    this.updateModeInfo();
+    // refresh
+    this.refreshColorset();
+    // demo on device
+    this.demoModeOnDevice();
   }
 
   randomize() {
     this.lightshow.randomize();
-    this.updateModeInfo();
+    // refresh
+    this.refreshPatternDropdown();
+    this.refreshPatternArgs();
+    this.refreshColorset();
+    // demo on device
+    this.demoModeOnDevice();
   }
 }
 
