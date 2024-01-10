@@ -93,7 +93,7 @@ export default class ModesPanel extends Panel {
     });
     document.getElementById('connectDevice').addEventListener('click', async () => {
       let statusMessage = document.getElementById('deviceStatus');
-      statusMessage.textContent = 'Waiting for connection...';
+      statusMessage.textContent = 'Device selection...';
       statusMessage.classList.add('status-pending');
       statusMessage.classList.remove('status-success');
       statusMessage.classList.remove('status-failure');
@@ -120,12 +120,23 @@ export default class ModesPanel extends Panel {
   }
 
   deviceChange(deviceEvent) {
+    if (deviceEvent === 'waiting') {
+      this.onDeviceWaiting();
+    }
     if (deviceEvent === 'connect') {
       this.onDeviceConnect();
     }
     if (deviceEvent === 'disconnect') {
       this.onDeviceDisconnect();
     }
+  }
+
+  onDeviceWaiting() {
+    let statusMessage = document.getElementById('deviceStatus');
+    statusMessage.textContent = 'Waiting for device...';
+    statusMessage.classList.add('status-pending');
+    statusMessage.classList.remove('status-success');
+    statusMessage.classList.remove('status-failure');
   }
 
   onDeviceConnect() {
@@ -530,11 +541,19 @@ export default class ModesPanel extends Panel {
   }
 
   pushToDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
     this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
     Notification.success("Successfully pushed save");
   }
 
   async pullFromDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
     await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
     this.refreshModeList();
     this.refreshLedList();

@@ -49,6 +49,9 @@ export default class VortexPort {
       }
       await this.serialPort.setSignals({ dataTerminalReady: true });
       this.portActive = false;
+      if (callback && typeof callback === 'function') {
+        callback('waiting');
+      }
       this.listenForGreeting(callback);
     } catch (error) {
       console.error('Error:', error);

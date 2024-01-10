@@ -23,8 +23,28 @@ canvas {
   text-align: center;
 }
 
-#randomizeButton {
-  margin-bottom: 5px;
+#randomizePattern {
+  margin-right: -2px;
+  float: right;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#randomizeColorset {
+  margin-bottom: 0px;
+  float: right;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 /* Panels */
@@ -42,6 +62,7 @@ canvas {
   text-align: center;
   top: 10px;
   z-index: 3;
+  width: 334px;
 }
 
 #controlPanel {
@@ -95,14 +116,21 @@ canvas {
   margin: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
-  user-select: none;
 }
 
 #exportModeButton, #importModeButton, #addModeButton, #shareModeButton {
   margin-bottom: 10px;
 }
 
-#exportModeButton:hover, #importModeButton:hover, #shareModeButton:hover, #addModeButton:hover, #connectDevice:hover, #pushToDevice:hover, #pullFromDevice:hover {
+#randomizeColorset:hover,
+#randomizePattern:hover,
+#exportModeButton:hover,
+#importModeButton:hover,
+#shareModeButton:hover,
+#addModeButton:hover,
+#connectDevice:hover,
+#pushToDevice:hover,
+#pullFromDevice:hover {
   background-color: #3e4446;
 }
 
@@ -151,9 +179,24 @@ legend {
 }
 
 #patternDropdown {
-  margin-top: 5px;
   margin-bottom: 5px;
-  width: auto;
+  margin-right: 10px;
+  width: 200px;
+  background-color: #333; /* Dark background */
+  color: #fff; /* Light text color for contrast */
+  border: 1px solid #555; /* Dark border for distinction */
+  padding: 5px; /* Padding for aesthetic spacing */
+  border-radius: 4px; /* Rounded corners for a modern look */
+
+  /* Additional styles for a more polished look */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* subtle shadow for depth */
+  font-size: 1rem; /* Adjust font size as needed */
+}
+
+/* Styling for options in the dropdown */
+#patternDropdown option {
+  background-color: #444; /* Slightly lighter background for options */
+  color: white; /* Light text color for options */
 }
 
 #patternParams {
@@ -196,7 +239,7 @@ legend {
 }
 
 .param-slider {
-  width:150px;
+  width:255px;
   margin-right: 10px;
 }
 
@@ -354,7 +397,7 @@ legend {
   position: fixed;
   z-index: 1;
   left: 0;
-  top: 0;
+  top: -50px;
   width: 100%;
   height: 100%;
   overflow: auto;
@@ -426,7 +469,7 @@ legend {
 .notification {
   visibility: hidden; /* Hidden by default */
   min-width: 250px; /* Set a minimum width */
-  margin-left: -225px; /* Negative half of the width to center the div */
+  margin-left: -125px; /* Negative half of the width to center the div */
   background-color: #333; /* Dark background color */
   color: #ccc;
   text-align: center; /* Centered text */

@@ -9,8 +9,9 @@ export default class Modal {
     const html = `
       <div id="modal" class="modal">
         <div class="modal-content">
-          <span class="modal-title" style="font-size: 20px; font-weight: bold;"></span>
           <span class="close">&times;</span>
+          <span class="modal-title" style="font-size: 20px; font-weight: bold;"></span>
+          <div class="modal-blurb"></div>
           <input type="text" id="modalInput">
           <div class="modal-buttons"></div>
         </div>
@@ -58,9 +59,19 @@ export default class Modal {
     }
 
     // Update modal content
-    this.modalInput.value = config.defaultValue || '';
-    this.modalInput.placeholder = config.placeholder || 'Enter text';
-    this.modalTitle.textContent = config.title || '';
+    if (config.defaultValue || config.placeholder) {
+      this.modalInput.value = config.defaultValue || '';
+      this.modalInput.placeholder = config.placeholder || 'Enter text';
+      this.modalInput.style.display = 'block';
+    } else {
+      this.modalInput.style.display = 'none';
+    }
+
+    // Set the blurb text
+    const blurbElement = this.modal.querySelector('.modal-blurb');
+    blurbElement.innerHTML = config.blurb || '';
+
+    this.modalTitle.innerHTML = config.title || '';
     this.modal.style.display = 'block';
 
     // Populate buttons if provided

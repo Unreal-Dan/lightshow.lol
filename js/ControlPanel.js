@@ -49,16 +49,15 @@ export default class ControlPanel extends Panel {
                     ${ControlPanel.generateControlsContent(controls)}
                 </div>
             </fieldset>
-            <div id="randomizeContainer">
-                <button id="randomizeButton" onclick="randomize()">Randomize</button>
-            </div>
             <fieldset>
                 <legend>Pattern</legend>
                 <select id="patternDropdown"></select>
+                <button id="randomizePattern">Randomize</button>
                 <div id="patternParams"></div>
             </fieldset>
             <fieldset>
                 <legend>Colorset</legend>
+                <button id="randomizeColorset">Randomize</button>
                 <div id="colorset"></div>
             </fieldset>
         `;
@@ -76,7 +75,7 @@ export default class ControlPanel extends Panel {
   static generateControlsContent(controls) {
     return controls.map(control => `
             <div>
-                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}">
+                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%;">
                 <label for="${control.id}">${control.label}</label>
             </div>
         `).join('');
@@ -152,6 +151,28 @@ export default class ControlPanel extends Panel {
       this.panel.querySelector(`#${control.id}`).addEventListener('input', (event) => {
         control.update(event.target.value);
       });
+    });
+    const randomizePatternButton = document.getElementById('randomizePattern');
+    randomizePatternButton.addEventListener('click', () => {
+      this.lightshow.randomizePattern();
+      document.dispatchEvent(new CustomEvent('patternChange'));
+      // refresh
+      this.refreshPatternDropdown();
+      this.refreshPatternArgs();
+      this.refreshColorset();
+      // demo on device
+      this.demoModeOnDevice();
+    });
+    const randomizeColorsetButton = document.getElementById('randomizeColorset');
+    randomizeColorsetButton.addEventListener('click', () => {
+      this.lightshow.randomizeColorset();
+      document.dispatchEvent(new CustomEvent('patternChange'));
+      // refresh
+      this.refreshPatternDropdown();
+      this.refreshPatternArgs();
+      this.refreshColorset();
+      // demo on device
+      this.demoModeOnDevice();
     });
   }
 
@@ -361,9 +382,24 @@ export default class ControlPanel extends Panel {
       "num flips": "Every other blink the LED will show a hue that's related to the current color. This setting controls how many times that happens.",
       "col index": "If you're using a solid pattern, this decides which specific color from the colorset will be displayed. For example, if you set it to 0, it will pick the first color; if 1, the second, and so on.",
       // Add more slider names and their descriptions as needed
-    };
-
+    }
     return descriptions[sliderName] || "Description not available"; // Default text if no description is found
+  }
+
+  getTooltipNiceName(sliderName) {
+    // these names come from vortexlib we give them nicer names for labaels
+    const nicerNames = {
+      "on duration": "Blink On Duration",
+      "off duration": "Blink Off Duration",
+      "gap duration": "Blink Gap Duration",
+      "dash duration": "Blink Dash Duration",
+      "group size": "Blink Group Size",
+      "blend speed": "Blend Speed",
+      "num flips": "Blend Flip Count",
+      "col index": "Solid Color Index",
+      // Add more slider names and their descriptions as needed
+    };
+    return nicerNames[sliderName] || "Name not available"; // Default text if no description is found
   }
 
   async refreshPatternArgs(fromEvent = false) {
@@ -393,7 +429,7 @@ export default class ControlPanel extends Panel {
                                           .replace(/([a-z])([A-Z])/g, '$1 $2')
                                           .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
                                           .toLowerCase();
-      label.textContent = sliderName;
+      label.textContent = this.getTooltipNiceName(sliderName);
       const slider = document.createElement('input');
       slider.type = 'range';
       slider.className = 'param-slider';
@@ -403,7 +439,7 @@ export default class ControlPanel extends Panel {
       } else {
         slider.min = '0';
       }
-      slider.max = '100';
+      slider.max = '255';
       slider.step = '1';
       slider.value = cur.getArg(i, this.targetLed) || '0';
 
@@ -498,7 +534,7 @@ export default class ControlPanel extends Panel {
       return;
     }
     let set = cur.getColorset(this.targetLed);
-    if (set.numColors() <= 1) {
+    if (set.numColors() <= 0) {
       return;
     }
     set.removeColor(index);

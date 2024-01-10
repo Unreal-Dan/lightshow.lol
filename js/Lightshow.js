@@ -106,8 +106,8 @@ export default class Lightshow {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // - 90 to shift it left because right side panel is bigger
-    const centerX = (this.canvas.width / 2) - 80;
+    // - 10 to shift it left because right side panel is bigger
+    const centerX = (this.canvas.width / 2) - 10;
     const centerY = this.canvas.height / 2;
     // - 55 to adjust the size of circle
     const radius = Math.min(centerX, centerY) - 55;
@@ -243,13 +243,50 @@ export default class Lightshow {
 
   // randomize the pattern
   randomize() {
-    this.vortex.openRandomizer();
+    this.vortex.openRandomizer(false);
+    // select leds
     this.vortex.longClick(0);
+    // randomize
+    this.vortex.shortClick(0);
+    // save
+    this.vortex.longClick(0);
+    // need to run 1 tick per command
+    for (let i = 0; i < 3; ++i) {
+      this.vortexLib.RunTick(this.vortex);
+    }
+    this.vortex.engine().modes().saveCurMode();
+  }
+
+  randomizeColorset() {
+    this.vortex.openRandomizer(true);
+    // select leds
+    this.vortex.longClick(0);
+    // select colorset
+    this.vortex.longClick(0);
+    // randomize
+    this.vortex.shortClick(0);
+    // save
+    this.vortex.longClick(0);
+    // need to run 1 tick per command
+    for (let i = 0; i < 4; ++i) {
+      this.vortexLib.RunTick(this.vortex);
+    }
+    this.vortex.engine().modes().saveCurMode();
+  }
+
+  randomizePattern() {
+    this.vortex.openRandomizer(true);
+    // select leds
+    this.vortex.longClick(0);
+    // select pattern
     this.vortex.shortClick(0);
     this.vortex.longClick(0);
-    // whatever reason we need 3 ticks to clear through the longClick
-    // randomize idk it really shouldn't take that long
-    for (let i = 0; i < 3; ++i) {
+    // randomize
+    this.vortex.shortClick(0);
+    // save
+    this.vortex.longClick(0);
+    // need to run 1 tick per command
+    for (let i = 0; i < 5; ++i) {
       this.vortexLib.RunTick(this.vortex);
     }
     this.vortex.engine().modes().saveCurMode();
