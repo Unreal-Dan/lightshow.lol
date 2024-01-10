@@ -125,7 +125,7 @@ export default class ControlPanel extends Panel {
   setTargetSingles(selectedLeds = null) {
     if (!selectedLeds) {
       const ledCount = this.lightshow.vortex.engine().leds().ledCount();
-      const ledStrings = [];
+      selectedLeds = []
       for (let i = 0; i < ledCount; i++) {
         selectedLeds.push(i.toString());
       }
