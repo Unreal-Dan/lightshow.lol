@@ -434,13 +434,14 @@ export default class ModesPanel extends Panel {
       return;
     }
     let pat;
-    if (modeData.single_pats && modeData.multi_pat) {
+    if (modeData.single_pats || modeData.multi_pat) {
       pat = (modeData.single_pats[0]) ? modeData.single_pats[0] : modeData.multi_pat;
     } else {
       pat = modeData;
     }
     if (!pat.colorset) {
       Notification.failure("Invalid pattern data");
+      console.log(pat);
       return;
     }
     var set = new this.lightshow.vortexLib.Colorset();
@@ -455,8 +456,9 @@ export default class ModesPanel extends Panel {
         ));
       }
     });
+    let curSel;
     if (addNew) {
-      let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
+      curSel = this.lightshow.vortex.engine().modes().curModeIndex();
       // grab the 'preview' mode for the current mode (randomizer)
       let modeCount = this.lightshow.vortex.numModes();
       if (!this.lightshow.vortex.addNewMode(true)) {
