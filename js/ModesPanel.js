@@ -193,8 +193,6 @@ export default class ModesPanel extends Panel {
         option.textContent = ledName;
         ledList.appendChild(option);
       }
-      console.log("selected fater refresh: ");
-      console.log(selectedLeds);
       if (selectedLeds.includes("multi")) {
         this.selectAllLeds();
         selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
