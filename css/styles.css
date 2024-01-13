@@ -357,6 +357,9 @@ legend {
 
 .mode-name {
   margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   user-select: none;
 }
 

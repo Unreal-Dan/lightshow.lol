@@ -521,7 +521,7 @@ export default class ModesPanel extends Panel {
     // delete this mode (save)
     this.lightshow.vortex.delCurMode(true);
     // if this was the mode we were on, shift down one, if possible
-    if (cur && cur == index) {
+    if (cur && cur >= index) {
       cur--;
     }
     // then switch back to that mode without saving (invisible switch)
