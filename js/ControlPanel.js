@@ -154,7 +154,7 @@ export default class ControlPanel extends Panel {
     });
     const randomizePatternButton = document.getElementById('randomizePattern');
     randomizePatternButton.addEventListener('click', () => {
-      this.lightshow.randomizePattern();
+      this.lightshow.randomizePattern(this.targetLeds);
       document.dispatchEvent(new CustomEvent('patternChange'));
       // refresh
       this.refreshPatternDropdown();
@@ -165,7 +165,7 @@ export default class ControlPanel extends Panel {
     });
     const randomizeColorsetButton = document.getElementById('randomizeColorset');
     randomizeColorsetButton.addEventListener('click', () => {
-      this.lightshow.randomizeColorset();
+      this.lightshow.randomizeColorset(this.targetLeds);
       document.dispatchEvent(new CustomEvent('patternChange'));
       // refresh
       this.refreshPatternDropdown();

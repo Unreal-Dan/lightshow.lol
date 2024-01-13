@@ -257,10 +257,22 @@ export default class Lightshow {
     this.vortex.engine().modes().saveCurMode();
   }
 
-  randomizeColorset() {
+  randomizeColorset(targetLeds = []) {
     this.vortex.openRandomizer(true);
+    let numCmds = 3;
+    if (targetLeds.length > 0) {
+      this.vortex.clearMenuTargetLeds();
+      targetLeds.forEach(led => {
+        // by adding or setting our own target leds it will skip led selection in the menu
+        this.vortex.addMenuTargetLeds(led);
+      });
+    } else {
+      // otherwise input long click to select all leds
+      this.vortex.longClick(0);
+      numCmds++;
+    }
     // select leds
-    this.vortex.longClick(0);
+    //this.vortex.longClick(0);
     // select colorset
     this.vortex.longClick(0);
     // randomize
@@ -268,16 +280,26 @@ export default class Lightshow {
     // save
     this.vortex.longClick(0);
     // need to run 1 tick per command
-    for (let i = 0; i < 4; ++i) {
+    for (let i = 0; i < numCmds; ++i) {
       this.vortexLib.RunTick(this.vortex);
     }
     this.vortex.engine().modes().saveCurMode();
   }
 
-  randomizePattern() {
+  randomizePattern(targetLeds = []) {
     this.vortex.openRandomizer(true);
-    // select leds
-    this.vortex.longClick(0);
+    let numCmds = 4;
+    if (targetLeds.length > 0) {
+      this.vortex.clearMenuTargetLeds();
+      targetLeds.forEach(led => {
+        // by adding or setting our own target leds it will skip led selection in the menu
+        this.vortex.addMenuTargetLeds(led);
+      });
+    } else {
+      // otherwise input long click to select all leds
+      this.vortex.longClick(0);
+      numCmds++;
+    }
     // select pattern
     this.vortex.shortClick(0);
     this.vortex.longClick(0);
@@ -286,7 +308,7 @@ export default class Lightshow {
     // save
     this.vortex.longClick(0);
     // need to run 1 tick per command
-    for (let i = 0; i < 5; ++i) {
+    for (let i = 0; i < numCmds; ++i) {
       this.vortexLib.RunTick(this.vortex);
     }
     this.vortex.engine().modes().saveCurMode();
