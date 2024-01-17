@@ -107,7 +107,7 @@ canvas {
 }
 
 /* Connection Buttons */
-#exportModeButton, #importModeButton, #shareModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
+#transmitVL, #exportModeButton, #importModeButton, #shareModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -536,4 +536,27 @@ legend {
 
 #ledList:focus {
   outline: none;
+}
+
+#deviceImageContainer {
+  position: relative;
+  width: 100%; /* Take full width of the container */
+  height: auto; /* Adjust height automatically */
+  max-width: 334px;
+}
+
+#deviceImageContainer img {
+  width: 100%; /* Scale image to container width */
+  height: auto; /* Maintain aspect ratio */
+  display: block; /* Remove extra space below image */
+}
+
+.led-indicator {
+  position: absolute;
+  width: 13px; /* Adjust size */
+  height: 13px; /* Adjust size */
+  background-color: red; /* Or any indicator color */
+  border-radius: 50%; /* Circular indicators */
+  cursor: pointer; /* Change cursor on hover */
+  transform: translate(-50%, -50%);
 }

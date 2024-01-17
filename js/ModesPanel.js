@@ -7,9 +7,10 @@ export default class ModesPanel extends Panel {
     const content = `
       <div id="deviceConnectionSection">
         <div>
-        <button id="connectDevice">Connect Device</button>
-        <button id="pullFromDevice">Pull Save</button>
-        <button id="pushToDevice">Push Save</button>
+        <button id="connectDevice">Connect</button>
+        <button id="pullFromDevice">Pull</button>
+        <button id="pushToDevice">Push</button>
+        <button id="transmitVL">Transmit</button>
         </div>
         <div id="deviceStatusContainer">
           <span id="statusLabel">Device Status:</span>
@@ -31,11 +32,14 @@ export default class ModesPanel extends Panel {
         <fieldset>
           <legend style="user-select:none;padding-top:15px;">Leds</legend>
           <div class="flex-container">
-             <select id="ledList" size="8" multiple></select>
+            <select id="ledList" size="8" multiple></select>
           </div>
         </fieldset>
       </div>
     `;
+
+          // <div id="deviceImageContainer">
+          //   <!-- Device image and LED indicators will be dynamically added here -->
 
     super('modesPanel', content);
     this.lightshow = lightshow;
@@ -48,6 +52,7 @@ export default class ModesPanel extends Panel {
   initialize() {
     this.refreshLedList();
     this.refreshModeList();
+    //this.renderLedIndicators();
     const modesListContainer = document.getElementById('modesListContainer');
     //modesListContainer.addEventListener('change', (event) => {
     //  const selectedMode = event.target.value;
@@ -87,6 +92,11 @@ export default class ModesPanel extends Panel {
     pullButton.addEventListener('click', event => {
       this.pullFromDevice();
     });
+    const transmitButton = document.getElementById('transmitVL');
+    transmitButton.addEventListener('click', event => {
+      this.transmitVL();
+    });
+
     document.addEventListener('patternChange', (event) => {
       //console.log("Pattern change detected by modes panel, refreshing");
       this.refresh(true);
@@ -166,6 +176,104 @@ export default class ModesPanel extends Panel {
     statusMessage.classList.remove('status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
   }
+
+  renderLedIndicators() {
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    // Clear previous content
+    deviceImageContainer.innerHTML = '';
+
+    // Add the device image
+    const deviceImage = document.createElement('img');
+    deviceImage.src = 'public/images/orbit.png'; // Update the path to your device image
+    deviceImageContainer.appendChild(deviceImage);
+
+    // Assuming you have a method to get LED positions
+    const ledPositions = this.getLedPositions();
+    ledPositions.forEach((position, index) => {
+      const ledIndicator = document.createElement('div');
+      ledIndicator.classList.add('led-indicator');
+      // Position your LED indicator based on the device image
+      ledIndicator.style.left = position.x + 'px';
+      ledIndicator.style.top = position.y + 'px';
+      ledIndicator.dataset.ledIndex = index;
+
+      ledIndicator.addEventListener('click', () => this.toggleLed(index));
+
+      deviceImageContainer.appendChild(ledIndicator);
+    });
+  }
+
+  toggleLed(index) {
+    // Logic to toggle LED on/off
+    // Update your internal state and UI accordingly
+  }
+
+  getLedPositions() {
+    const ledPositions = [];
+
+    // Example conversion for the first few LEDs
+    // You'll need to convert all LED positions similarly
+
+    // Quadrant 1 top
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 40 + (i * 11), y: 40 + (i * 11) });
+    }
+
+    // Quadrant 1 edge
+    ledPositions.push({ x: ledPositions[0].x - 17, y: ledPositions[0].y - 17 });
+
+    // Quadrant 1 bottom
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 130 - (i * 11), y: 40 + (i * 11) });
+    }
+
+    /*
+    // Quadrant 2 bottom
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 400 + (i * 11), y: 40 + (i * 11) });
+    }
+
+    // Quadrant 2 top
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 82 - (i * 11), y: 40 + (i * 11) });
+    }
+
+    // Quadrant 2 edge
+    ledPositions.push({ x: ledPositions[11].x - 25, y: ledPositions[11].y + 25 });
+
+    // Quadrant 3 top
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 82 - (i * 11), y: 113 - (i * 11) });
+    }
+
+    // Quadrant 3 edge
+    ledPositions.push({ x: ledPositions[16].x - 25, y: ledPositions[16].y - 25 });
+
+    // Quadrant 3 bottom
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 400 + (i * 11), y: 113 - (i * 11) });
+    }
+
+    // Quadrant 4 bottom
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 332 - (i * 11), y: 113 - (i * 11) });
+    }
+
+    // Quadrant 4 top
+    for (let i = 0; i < 3; ++i) {
+      ledPositions.push({ x: 40 + (i * 11), y: 113 - (i * 11) });
+    }
+
+    // Quadrant 4 edge
+    ledPositions.push({ x: ledPositions[25].x + 25, y: ledPositions[25].y - 25 });
+
+*/
+
+    // Add more LED positions here based on your C++ code
+
+    return ledPositions;
+  }
+
 
   onDeviceDisconnect() {
     console.log("Device disconnected");
@@ -560,4 +668,14 @@ export default class ModesPanel extends Panel {
     this.refreshPatternControlPanel();
     Notification.success("Successfully pulled save");
   }
+
+  async transmitVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    Notification.success("Successfully finished transmitting");
+  }
+
 }

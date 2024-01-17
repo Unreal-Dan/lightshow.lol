@@ -12,6 +12,8 @@ export default class VortexPort {
   EDITOR_VERB_CLEAR_DEMO = 'j';
   EDITOR_VERB_CLEAR_DEMO_ACK = 'k';
   EDITOR_VERB_GOODBYE = 'l';
+  EDITOR_VERB_TRANSMIT_VL = 'm';
+  EDITOR_VERB_TRANSMIT_VL_ACK = 'n';
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -175,6 +177,23 @@ export default class VortexPort {
     combinedArray.set(rawDataArray, sizeArray.length * 4); // Copy rawDataArray bytes
 
     return combinedArray;
+  }
+
+  async transmitVL(vortexLib, vortex) {
+    if (!this.isActive()) {
+      return;
+    }
+    // Unserialize the stream of data
+    const curMode = new vortexLib.ByteStream();
+    if (!vortex.getCurMode(curMode)) {
+      console.log("Failed to get cur mode");
+      // Error handling - abort or handle as needed
+      return;
+    }
+    await this.cancelReading();
+    await this.sendCommand(this.EDITOR_VERB_TRANSMIT_VL);
+    await this.expectData(this.EDITOR_VERB_TRANSMIT_VL_ACK);
+    this.startReading();
   }
 
   async demoCurMode(vortexLib, vortex) {
