@@ -55,6 +55,7 @@ canvas {
   color: #d8d4cf;
   padding: 10px;
   position: absolute;
+  width: 370px;
 }
 
 #aboutPanel {
@@ -62,7 +63,6 @@ canvas {
   text-align: center;
   top: 10px;
   z-index: 3;
-  width: 334px;
 }
 
 #controlPanel {
@@ -181,7 +181,7 @@ legend {
 #patternDropdown {
   margin-bottom: 5px;
   margin-right: 10px;
-  width: 200px;
+  width: 230px;
   background-color: #333; /* Dark background */
   color: #fff; /* Light text color for contrast */
   border: 1px solid #555; /* Dark border for distinction */
@@ -239,7 +239,7 @@ legend {
 }
 
 .param-slider {
-  width:255px;
+  width:305px;
   margin-right: 10px;
 }
 
