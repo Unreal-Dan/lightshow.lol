@@ -7,9 +7,10 @@ export default class ModesPanel extends Panel {
     const content = `
       <div id="deviceConnectionSection">
         <div>
-        <button id="connectDevice">Connect Device</button>
-        <button id="pullFromDevice">Pull Save</button>
-        <button id="pushToDevice">Push Save</button>
+        <button id="connectDevice">Connect</button>
+        <button id="pullFromDevice">Pull</button>
+        <button id="pushToDevice">Push</button>
+        <button id="transmitVL">Transmit</button>
         </div>
         <div id="deviceStatusContainer">
           <span id="statusLabel">Device Status:</span>
@@ -31,7 +32,7 @@ export default class ModesPanel extends Panel {
         <fieldset>
           <legend style="user-select:none;padding-top:15px;">Leds</legend>
           <div class="flex-container">
-             <select id="ledList" size="8" multiple></select>
+            <select id="ledList" size="8" multiple></select>
           </div>
         </fieldset>
       </div>
@@ -87,6 +88,11 @@ export default class ModesPanel extends Panel {
     pullButton.addEventListener('click', event => {
       this.pullFromDevice();
     });
+    const transmitButton = document.getElementById('transmitVL');
+    transmitButton.addEventListener('click', event => {
+      this.transmitVL();
+    });
+
     document.addEventListener('patternChange', (event) => {
       //console.log("Pattern change detected by modes panel, refreshing");
       this.refresh(true);
@@ -560,4 +566,14 @@ export default class ModesPanel extends Panel {
     this.refreshPatternControlPanel();
     Notification.success("Successfully pulled save");
   }
+
+  async transmitVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    Notification.success("Successfully finished transmitting");
+  }
+
 }
