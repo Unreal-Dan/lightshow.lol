@@ -91,6 +91,7 @@ export default class Lightshow {
 
   set trailSize(value) {
     const intValue = parseInt(value, 10);
+    this.history = [];
     this._trailSize = intValue > 0 ? intValue : 1;
   }
 
