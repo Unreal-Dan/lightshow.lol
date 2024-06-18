@@ -377,9 +377,12 @@ export default class ModesPanel extends Panel {
   handleLedSelectionChange() {
     const selectedOptions = Array.from(ledList.selectedOptions).map(option => option.value);
     // Check the number of selected options
-    if (selectedOptions.length === 0) {
-      // If no option is selected, reselect the last option that was selected
-      selectedOptions[selectedOptions.length - 1].selected = true;
+    if (selectedOptions && selectedOptions.length === 0) {
+    // TODO: idk what I was doing here, commenting it out for now
+    //  // If no option is selected, reselect the last option that was selected
+    //  selectedOptions[selectedOptions.length].selected = true;
+    //  console.log(selectedOptions);
+      return;
     }
     this.lightshow.targetLed = selectedOptions[0].value;
     document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.getSelectedLeds() }));
