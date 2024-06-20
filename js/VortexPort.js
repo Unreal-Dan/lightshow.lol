@@ -85,8 +85,13 @@ export default class VortexPort {
           // Read data from the serial port
           const response = await this.readData();
 
-          const responseRegex = /^== Vortex Engine v(\d+\.\d+) '(\w+)' \( built (.*)\) ==$/;
-          const match = response.match(responseRegex);
+          let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '(\w+)' \(built (.*)\) ==$/;
+          let match = response.match(responseRegex);
+          if (!match) {
+            // TODO: removeme later! backwards compatibility for old connection string
+            responseRegex = /^== Vortex Engine v(\d+\.\d+) '(\w+)' \( built (.*)\) ==$/;
+            match = response.match(responseRegex);
+          }
 
           if (match) {
             this.version = match[1]; // Capturing the version number
