@@ -30,15 +30,24 @@ export default class ModesPanel extends Panel {
           </div>
         </div>
         <fieldset id="ledsFieldset">
-          <legend style="user-select:none;padding-top:15px;">Leds</legend>
+          <legend style="user-select:none;padding-top:15px;">Select Leds</legend>
           <div class="flex-container">
             <div id="deviceImageContainer">
               <!-- Device image and LED indicators will be dynamically added here -->
+            </div>
+            <div id="ledControls">
+              <button id="selectAllLeds" title="Select All">All</button>
+              <button id="selectNoneLeds" title="Select None">None</button>
+              <button id="invertLeds" title="Invert Selection">Invert</button>
+              <button id="evenLeds" title="Invert Selection">Evens</button>
+              <button id="oddLeds" title="Invert Selection">Odds</button>
+              <button id="randomLeds" title="Invert Selection">Random</button>
             </div>
             <select id="ledList" size="8" multiple style="display:none;"></select>
           </div>
         </fieldset>
       </div>
+
     `;
 
     super('modesPanel', content);
@@ -52,7 +61,7 @@ export default class ModesPanel extends Panel {
   initialize() {
     this.refreshLedList();
     this.refreshModeList();
-    this.renderLedIndicators();
+    this.renderLedIndicators('Orbit');
     this.handleLedSelectionChange();
 
     const addModeButton = document.getElementById('addModeButton');
@@ -95,6 +104,14 @@ export default class ModesPanel extends Panel {
 
     const ledList = document.getElementById('ledList');
     ledList.addEventListener('change', () => this.handleLedSelectionChange());
+
+    // Add event listeners for select all, none, and invert buttons
+    document.getElementById('selectAllLeds').addEventListener('click', () => this.selectAllLeds());
+    document.getElementById('selectNoneLeds').addEventListener('click', () => this.selectNoneLeds());
+    document.getElementById('invertLeds').addEventListener('click', () => this.invertLeds());
+    document.getElementById('evenLeds').addEventListener('click', () => this.evenLeds());
+    document.getElementById('oddLeds').addEventListener('click', () => this.oddLeds());
+    document.getElementById('randomLeds').addEventListener('click', () => this.randomLeds());
   }
 
   deviceChange(deviceEvent) {
@@ -147,16 +164,23 @@ export default class ModesPanel extends Panel {
   }
 
   renderLedIndicators(deviceName = null) {
+    const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    deviceImageContainer.innerHTML = '';
+    const ledList = document.getElementById('ledList');
+    const ledControls = document.getElementById('ledControls');
 
     if (!deviceName) {
       ledsFieldset.style.display = 'none'; // Hide the entire fieldset
       return;
     }
 
+    ledsFieldset.style.display = 'block'; // Show the fieldset
+    deviceImageContainer.innerHTML = '';
+    ledList.style.display = 'block'; // Show the LED list
+    ledControls.style.display = 'flex'; // Show the LED controls
+
     const deviceImages = {
-      'Gloves': 'public/images/glove.png',
+      'Gloves': 'public/images/gloves.png',
       'Orbit': 'public/images/orbit.png',
       'Handle': 'public/images/handle.png',
       'Duo': 'public/images/duo.png',
@@ -188,6 +212,7 @@ export default class ModesPanel extends Panel {
       deviceImageContainer.appendChild(ledIndicator);
     });
   }
+
 
   toggleLed(index) {
     console.log('LED clicked:', index);
@@ -384,6 +409,54 @@ export default class ModesPanel extends Panel {
         option.selected = false;
       }
     }
+  }
+
+  selectAllLeds() {
+    const ledList = document.getElementById('ledList');
+    for (let option of ledList.options) {
+      option.selected = true;
+    }
+    this.handleLedSelectionChange();
+  }
+
+  selectNoneLeds() {
+    const ledList = document.getElementById('ledList');
+    for (let option of ledList.options) {
+      option.selected = false;
+    }
+    this.handleLedSelectionChange();
+  }
+
+  invertLeds() {
+    const ledList = document.getElementById('ledList');
+    for (let option of ledList.options) {
+      option.selected = !option.selected;
+    }
+    this.handleLedSelectionChange();
+  }
+
+  evenLeds() {
+    const ledList = document.getElementById('ledList');
+    for (let i = 0; i < ledList.options.length; i++) {
+      ledList.options[i].selected = (i % 2 === 0);
+    }
+    this.handleLedSelectionChange();
+  }
+
+  oddLeds() {
+    const ledList = document.getElementById('ledList');
+    for (let i = 0; i < ledList.options.length; i++) {
+      ledList.options[i].selected = (i % 2 !== 0);
+    }
+    this.handleLedSelectionChange();
+  }
+
+  randomLeds(probability = 0.5) {
+    const ledList = document.getElementById('ledList');
+    for (let option of ledList.options) {
+      option.selected = Math.random() < probability;
+    }
+    this.handleLedSelectionChange();
   }
 
   handleLedSelectionChange() {

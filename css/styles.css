@@ -310,7 +310,7 @@ legend {
 }
 
 #modesListScrollContainer {
-  height: 400px;
+  height: 260px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
@@ -563,5 +563,36 @@ legend {
 
 .led-indicator.selected {
   background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+#ledControls {
+  display: flex;
+  gap: 5px; /* Space between buttons */
+  margin-top: 10px; /* Space above the button group */
+}
+
+#ledControls button {
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as inline-block */
+  font-size: 14px; /* Font size */
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px 0px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#ledControls button:hover {
+  /*background-color: #45a049; /* Darker green on hover */
+  background-color: #3e4446;
+}
+
+#ledControls button:active {
+  /*background-color: #3e8e41; /* Even darker green on click */
+  background-color: #2e3436
 }
 
