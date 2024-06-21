@@ -33,7 +33,7 @@ export default class Lightshow {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.modeData = modeData;
     this.applyModeData();
-    this.targetLed = 0;
+    this.targetLeds = [0];
   }
 
   applyModeData() {
@@ -81,12 +81,12 @@ export default class Lightshow {
     return this._tickRate || 1;
   }
 
-  set targetLed(value) {
-    this._targetLed = value;
+  set targetLeds(value) {
+    this._targetLeds = value;
   }
 
-  get targetLed() {
-    return this._targetLed;
+  get targetLeds() {
+    return this._targetLeds || [];
   }
 
   set trailSize(value) {
@@ -123,7 +123,7 @@ export default class Lightshow {
       }
       const x = centerX + radius * Math.cos(this.angle);
       const y = centerY + radius * Math.sin(this.angle);
-      let col = led[this.targetLed];
+      let col = led[this.targetLeds[0]];
       if (!col) {
         col = led[0];
       }
@@ -194,23 +194,25 @@ export default class Lightshow {
   }
 
   // get colorset
-  getColorset() {
+  getColorset(led = this.vortex.engine().leds().ledAny()) {
     const demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return new this.vortexLib.Colorset();
     }
-    return demoMode.getColorset(this.vortex.engine().leds().ledAny());
+    return demoMode.getColorset(led);
   }
 
   // update colorset
-  setColorset(colorset) {
+  setColorset(colorset, leds = this.targetLeds) {
     // grab the 'preview' mode for the current mode (randomizer)
     let demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return;
     }
     // set the colorset of the demo mode
-    demoMode.setColorset(colorset, this.ledCount());
+    leds.forEach(ledIndex => {
+      demoMode.setColorset(colorset, ledIndex);
+    });
     // re-initialize the demo mode because num colors may have changed
     demoMode.init();
     // save
@@ -219,9 +221,12 @@ export default class Lightshow {
 
   // add a color to the colorset
   addColor(r, g, b) {
-    let set = this.getColorset(this.vortex.engine().leds().ledAny());
-    set.addColor(new this.vortexLib.RGBColor(r, g, b));
-    this.setColorset(set);
+    this.targetLeds.forEach(ledIndex => {
+      console.log("adding oclor to " + ledIndex);
+      let set = this.getColorset(ledIndex);
+      set.addColor(new this.vortexLib.RGBColor(r, g, b));
+      this.setColorset(set, [ ledIndex ]);
+    });
   }
 
   // delete a color from the colorset

@@ -555,26 +555,13 @@ legend {
   position: absolute;
   width: 13px; /* Adjust size */
   height: 13px; /* Adjust size */
-  background: radial-gradient(circle, rgba(100, 100, 100, 1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background: radial-gradient(circle, rgba(150, 0, 0, 1) 0%, rgba(150, 0, 0, 1) 10%, rgba(50, 0, 0, 0.3) 100%);
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
 }
 
 .led-indicator.selected {
-  background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.1) 100%);
+  background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
 }
 
-.outer-led-indicator {
-  position: absolute;
-  width: 13px; /* Adjust size */
-  height: 13px; /* Adjust size */
-  background: radial-gradient(circle, rgba(100, 100, 100, 1) 0%, rgba(0, 0, 0, 0.1) 100%);
-  border-radius: 50%; /* Circular indicators */
-  cursor: pointer; /* Change cursor on hover */
-  transform: translate(-50%, -50%);
-}
-
-.outer-led-indicator.selected {
-  background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.1) 100%);
-}

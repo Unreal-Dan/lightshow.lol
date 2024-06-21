@@ -29,7 +29,7 @@ export default class ModesPanel extends Panel {
             <!-- Dynamic list of modes will be populated here -->
           </div>
         </div>
-        <fieldset>
+        <fieldset id="ledsFieldset">
           <legend style="user-select:none;padding-top:15px;">Leds</legend>
           <div class="flex-container">
             <div id="deviceImageContainer">
@@ -138,17 +138,40 @@ export default class ModesPanel extends Panel {
     statusMessage.classList.add('status-success');
     statusMessage.classList.remove('status-pending', 'status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
+
+    // Render LED indicators for the connected device
+    this.renderLedIndicators(this.vortexPort.name);
+    this.handleLedSelectionChange();
+
+    ledsFieldset.style.display = 'block'; // Hide the entire fieldset
   }
 
-  renderLedIndicators() {
+  renderLedIndicators(deviceName = null) {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     deviceImageContainer.innerHTML = '';
 
-    const deviceImage = document.createElement('img');
-    deviceImage.src = 'public/images/orbit.png'; // Update the path to your device image
-    deviceImageContainer.appendChild(deviceImage);
+    if (!deviceName) {
+      ledsFieldset.style.display = 'none'; // Hide the entire fieldset
+      return;
+    }
 
-    const ledPositions = this.getLedPositions();
+    const deviceImages = {
+      'Gloves': 'public/images/glove.png',
+      'Orbit': 'public/images/orbit.png',
+      'Handle': 'public/images/handle.png',
+      'Duo': 'public/images/duo.png',
+      'Chromadeck': 'public/images/chromadeck.png',
+      'Spark': 'public/images/spark.png'
+    };
+
+    const deviceImageSrc = deviceImages[deviceName];
+    if (deviceImageSrc) {
+      const deviceImage = document.createElement('img');
+      deviceImage.src = deviceImageSrc;
+      deviceImageContainer.appendChild(deviceImage);
+    }
+
+    const ledPositions = this.getLedPositions(deviceName);
     ledPositions.forEach((position, index) => {
       const ledIndicator = document.createElement('div');
       ledIndicator.classList.add('led-indicator');
@@ -189,74 +212,81 @@ export default class ModesPanel extends Panel {
     this.handleLedSelectionChange();
   }
 
-  getLedPositions() {
+  getLedPositions(deviceName = 'Orbit') {
+    // Add logic to return LED positions based on the device name
     const ledPositions = [];
 
+    // Example logic for different devices
+    if (deviceName === 'Orbit') {
+      return this.getLedPositionsOrbit();
+    } else if (deviceName === 'Gloves') {
+      return this.getLedPositionsGlove();
+    } else if (deviceName === 'Handle') {
+      return this.getLedPositionsHandle();
+    } else if (deviceName === 'Duo') {
+      // Duo-specific positions
+    } else if (deviceName === 'Chromadeck') {
+      // Chromadeck-specific positions
+    } else if (deviceName === 'Spark') {
+      // Spark-specific positions
+    }
+
+    return ledPositions;
+  }
+
+  getLedPositionsHandle() {
+    const ledPositions = [
+      { x: 100, y: 125 }, // front
+      { x: 100, y: 160 }, // tip
+      { x: 233, y: 125 }, // back
+    ];
+    return ledPositions;
+
+  }
+
+  getLedPositionsGlove() {
+    const ledPositions = [
+      { x: 246, y: 45 }, // pinkie tip
+      { x: 246, y: 60 }, // pinkie top
+      { x: 207, y: 20 }, // ring tip
+      { x: 207, y: 35 }, // ring top
+      { x: 168, y: 9 },  // middle tip
+      { x: 168, y: 24 }, // middle top
+      { x: 128, y: 20 }, // index tip
+      { x: 128, y: 35 }, // index top
+      { x: 89, y: 86 },  // thumb tip
+      { x: 89, y: 101 }, // thumb top
+    ];
+    return ledPositions;
+  }
+
+  getLedPositionsOrbit() {
+    const ledPositions = [];
     let size = 11;
-
     // Quadrant 1 top
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 40 + (i * size) + 67, y: 108 + (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 40 + (i * size) + 67, y: 108 + (i * size) });
     // Quadrant 1 edge
-    ledPositions.push({
-      x: ledPositions[2].x + 16,
-      y: ledPositions[2].y + 16
-    });
-
+    ledPositions.push({ x: ledPositions[2].x + 16, y: ledPositions[2].y + 16 });
     // Quadrant 1 bottom
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 140 + (i * size) + 67, y: 129 - (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 140 + (i * size) + 67, y: 129 - (i * size) });
     // Quadrant 2 bottom
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 208 + (i * size) + 67, y: 108 + (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 208 + (i * size) + 67, y: 108 + (i * size) });
     // Quadrant 2 edge
-    ledPositions.push({
-      x: 23,
-      y: 146
-    });
-
+    ledPositions.push({ x: 23, y: 146 });
     // Quadrant 2 top
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 40 + (i * size), y: 129 - (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 40 + (i * size), y: 129 - (i * size) });
     // Quadrant 3 top
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 62 - (i * size), y: 62 - (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 62 - (i * size), y: 62 - (i * size) });
     // Quadrant 3 edge
-    ledPositions.push({
-      x: ledPositions[16].x - 17,
-      y: ledPositions[16].y - 18
-    });
-
+    ledPositions.push({ x: ledPositions[16].x - 17, y: ledPositions[16].y - 18 });
     // Quadrant 3 bottom
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 230 - (i * size) + 67, y: 40 + (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 297 - (i * size), y: 40 + (i * size) });
     // Quadrant 4 bottom
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 162 - (i * size) + 67, y: 62 - (i * size) });
-    }
-
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 162 - (i * size) + 67, y: 62 - (i * size) });
     // Quadrant 4 edge
-    ledPositions.push({
-      x: 145,
-      y: 24
-    });
-
+    ledPositions.push({ x: 145, y: 24 });
     // Quadrant 4 top
-    for (let i = 0; i < 3; ++i) {
-      ledPositions.push({ x: 130 - (i * size), y: 40 + (i * size) });
-    }
+    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 130 - (i * size), y: 40 + (i * size) });
     return ledPositions;
   }
 
@@ -362,7 +392,7 @@ export default class ModesPanel extends Panel {
     if (selectedOptions.length === 0) {
       return;
     }
-    this.lightshow.targetLed = selectedOptions[0];
+    this.lightshow.targetLeds = selectedOptions;
     document.dispatchEvent(new CustomEvent('ledsChange', { detail: selectedOptions }));
     this.updateLedIndicators();
   }
