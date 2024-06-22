@@ -205,51 +205,57 @@ export default class ModesPanel extends Panel {
 
     this.isDragging = false;
     const dragDuration = Date.now() - this.dragStartTime;
-    //if (dragDuration >= 10) {
-      const cur = this.lightshow.vortex.engine().modes().curMode();
-      if (cur.isMultiLed()) return; // Prevent selection if multi-LED pattern is applied
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (cur.isMultiLed()) return; // Prevent selection if multi-LED pattern is applied
 
-      const deviceImageContainer = document.getElementById('deviceImageContainer');
-      const rect = deviceImageContainer.getBoundingClientRect();
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    const rect = deviceImageContainer.getBoundingClientRect();
 
-      // Ensure values are within bounds of the container
-      let startX = Math.min(this.startX, this.currentX) - rect.left;
-      let startY = Math.min(this.startY, this.currentY) - rect.top;
-      let endX = Math.max(this.startX, this.currentX) - rect.left;
-      let endY = Math.max(this.startY, this.currentY) - rect.top;
-      // if we're just clicking then make a little circle of effect
-      if (Math.abs(startX - endX) < 5 && Math.abs(startY - endY) < 5) {
-        startX -= 5;
-        startY -= 5;
-        endX += 5;
-        endY += 5;
-      }
+    // Ensure values are within bounds of the container
+    let startX = Math.min(this.startX, this.currentX) - rect.left;
+    let startY = Math.min(this.startY, this.currentY) - rect.top;
+    let endX = Math.max(this.startX, this.currentX) - rect.left;
+    let endY = Math.max(this.startY, this.currentY) - rect.top;
+    // if we're just clicking then make a little circle of effect
+    if (Math.abs(startX - endX) < 10 && Math.abs(startY - endY) < 10) {
+      startX -= 5;
+      startY -= 5;
+      endX += 5;
+      endY += 5;
+    }
 
-      document.querySelectorAll('.led-indicator').forEach(indicator => {
-        const ledRect = indicator.getBoundingClientRect();
-        const ledX = ledRect.left - rect.left + (ledRect.width / 2);
-        const ledY = ledRect.top - rect.top + (ledRect.height / 2);
+    document.querySelectorAll('.led-indicator').forEach(indicator => {
+      const ledRect = indicator.getBoundingClientRect();
+      const ledX1 = ledRect.left - rect.left;
+      const ledY1 = ledRect.top - rect.top;
+      const ledX2 = ledRect.right - rect.left;
+      const ledY2 = ledRect.bottom - rect.top;
 
-        const ledList = document.getElementById('ledList');
-        let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
+      const ledList = document.getElementById('ledList');
+      let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
 
-        if (ledX >= startX && ledX <= endX && ledY >= startY && ledY <= endY) {
-          this.selectLed(indicator.dataset.ledIndex, !event.ctrlKey);
-          option.selected = !event.ctrlKey;
-          if (option.selected) {
-            indicator.classList.add('selected');
-          } else {
-            indicator.classList.remove('selected');
-          }
+      const withinBounds =
+        (ledX1 >= startX && ledX1 <= endX && ledY1 >= startY && ledY1 <= endY) ||
+        (ledX2 >= startX && ledX2 <= endX && ledY1 >= startY && ledY1 <= endY) ||
+        (ledX1 >= startX && ledX1 <= endX && ledY2 >= startY && ledY2 <= endY) ||
+        (ledX2 >= startX && ledX2 <= endX && ledY2 >= startY && ledY2 <= endY);
+
+      if (withinBounds) {
+        this.selectLed(indicator.dataset.ledIndex, !event.ctrlKey);
+        option.selected = !event.ctrlKey;
+        if (option.selected) {
+          indicator.classList.add('selected');
         } else {
-          if (!event.shiftKey && !event.ctrlKey) {
-            this.selectLed(indicator.dataset.ledIndex, false);
-            option.selected = false;
-            indicator.classList.remove('selected');
-          }
+          indicator.classList.remove('selected');
         }
-      });
-    //}
+      } else {
+        if (!event.shiftKey && !event.ctrlKey) {
+          this.selectLed(indicator.dataset.ledIndex, false);
+          option.selected = false;
+          indicator.classList.remove('selected');
+        }
+      }
+    });
   }
 
   selectLed(index, selected = true) {
