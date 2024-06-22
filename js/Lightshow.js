@@ -13,7 +13,7 @@ export default class Lightshow {
     this.ctx = this.canvas.getContext('2d');
     this.dotSize = 25;
     this.blurFac = 5;
-    this.circleRadius = 100;
+    this.circleRadius = 400;
     this.tickRate = 3;
     this.trailSize = 100;
     this.angle = 0;
