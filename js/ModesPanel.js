@@ -226,10 +226,10 @@ export default class ModesPanel extends Panel {
 
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       const ledRect = indicator.getBoundingClientRect();
-      const ledX1 = ledRect.left - rect.left;
-      const ledY1 = ledRect.top - rect.top;
-      const ledX2 = ledRect.right - rect.left;
-      const ledY2 = ledRect.bottom - rect.top;
+      const ledX1 = (ledRect.left - rect.left) + 2;
+      const ledY1 = (ledRect.top - rect.top) + 2;
+      const ledX2 = (ledRect.right - rect.left) - 2;
+      const ledY2 = (ledRect.bottom - rect.top) - 2;
 
       const ledList = document.getElementById('ledList');
       let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
