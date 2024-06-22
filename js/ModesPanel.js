@@ -189,12 +189,25 @@ export default class ModesPanel extends Panel {
     if (event.button !== 0) return; // Only react to left mouse button
     event.preventDefault();
 
+    if (!this.selectionBox) {
+      this.isDragging = false;
+      return;
+    }
+
     if (this.selectionBox) {
       document.body.removeChild(this.selectionBox);
       this.selectionBox = null;
     }
 
+    if (!this.isDragging) {
+      return;
+    }
+
     this.isDragging = false;
+    if (this.lightshow.vortex.engine().modes().curMode().isMultiLed()) {
+      // Prevent selection if multi-LED pattern is applied
+      return;
+    }
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     const rect = deviceImageContainer.getBoundingClientRect();
@@ -216,10 +229,10 @@ export default class ModesPanel extends Panel {
 
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       const ledRect = indicator.getBoundingClientRect();
-      const ledX1 = ledRect.left - rect.left;
-      const ledY1 = ledRect.top - rect.top;
-      const ledX2 = ledRect.right - rect.left;
-      const ledY2 = ledRect.bottom - rect.top;
+      const ledX1 = (ledRect.left - rect.left) + 1;
+      const ledY1 = (ledRect.top - rect.top) + 1;
+      const ledX2 = (ledRect.right - rect.left) - 1;
+      const ledY2 = (ledRect.bottom - rect.top) - 1;
       const ledMidX = ledX1 + (ledRect.width / 2);
       const ledMidY = ledY1 + (ledRect.height / 2);
 
