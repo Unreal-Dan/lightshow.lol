@@ -218,7 +218,7 @@ export default class ModesPanel extends Panel {
       let endX = Math.max(this.startX, this.currentX) - rect.left;
       let endY = Math.max(this.startY, this.currentY) - rect.top;
       // if we're just clicking then make a little circle of effect
-      if (startX == endX && startY == endY) {
+      if (Math.abs(startX - endX) < 5 && Math.abs(startY - endY) < 5) {
         startX -= 5;
         startY -= 5;
         endX += 5;
