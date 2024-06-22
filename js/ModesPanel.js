@@ -819,6 +819,59 @@ export default class ModesPanel extends Panel {
     this.importModal.selectText();
   }
 
+  importPatternFromData(patternJson) {
+    if (!patternJson) {
+      Notification.failure("No pattern data");
+      return;
+    }
+    let patternData;
+    try {
+      patternData = JSON.parse(patternJson);
+    } catch (error) {
+      Notification.failure("Invalid JSON pattern");
+      return;
+    }
+    if (!patternData) {
+      Notification.failure("Invalid pattern data");
+      return;
+    }
+
+    let curSel;
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+
+    if (!patternData.colorset) {
+      Notification.failure("Invalid pattern data");
+      return;
+    }
+
+    const set = new this.lightshow.vortexLib.Colorset();
+    patternData.colorset.forEach(hexCode => {
+      const normalizedHex = hexCode.replace('0x', '#');
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
+      if (result) {
+        set.addColor(new this.lightshow.vortexLib.RGBColor(
+          parseInt(result[1], 16),
+          parseInt(result[2], 16),
+          parseInt(result[3], 16)
+        ));
+      }
+    });
+
+    cur.setColorset(set, 0); // Assuming the pattern data is for the first pattern slot
+    const patID = this.lightshow.vortexLib.intToPatternID(patternData.pattern_id);
+    cur.setPattern(patID, 0, null, null);
+    const args = new this.lightshow.vortexLib.PatternArgs();
+    patternData.args.forEach(arg => args.addArgs(arg));
+    this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, 0);
+
+    cur.init();
+    this.lightshow.vortex.engine().modes().saveCurMode();
+
+    this.refreshPatternControlPanel();
+    this.refresh();
+    Notification.success("Successfully imported pattern");
+  }
+
   importModeFromData(modeJson, addNew = true) {
     if (!modeJson) {
       Notification.failure("No mode data");
