@@ -62,8 +62,7 @@ VortexLib().then(vortexLib => {
 
   // resize the lightshow when window drags
   window.addEventListener('resize', () => {
-    lightshow.width = window.innerWidth;
-    lightshow.height = window.innerHeight;
+    lightshow.resetToCenter();
   });
 
   window.randomize = controlPanel.randomize.bind(controlPanel);
