@@ -182,7 +182,7 @@ export default class ControlPanel extends Panel {
     clearTimeout(this.clickTimers[controlId]);
     this.clickTimers[controlId] = setTimeout(() => {
       this.clickCounts[controlId] = 0;
-    }, 500);
+    }, 300);
   }
 
   startSineWaveAnimation(controlId) {
