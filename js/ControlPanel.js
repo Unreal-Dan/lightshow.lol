@@ -39,6 +39,15 @@ export default class ControlPanel extends Panel {
         default: 5,
         label: 'Blur',
         update: value => lightshow.blurFac = value
+      },
+      {
+        id: 'circleRadius',
+        type: 'range',
+        min: 0,
+        max: 600,
+        default: 100,
+        label: 'Radius',
+        update: value => lightshow.circleRadius = value
       }
     ];
 
@@ -522,7 +531,7 @@ export default class ControlPanel extends Panel {
   }
 
   addColor() {
-    this.lightshow.addColor(255, 255, 255);
+    this.lightshow.addColor(255, 255, 255, this.targetLeds);
     this.refreshColorset();
     // demo on device
     this.demoModeOnDevice();
@@ -538,10 +547,7 @@ export default class ControlPanel extends Panel {
       return;
     }
     set.removeColor(index);
-    this.targetLeds.forEach((led) => {
-      // set the colorset of the demo mode
-      cur.setColorset(set, led);
-    });
+    cur.setColorset(set, this.targetLeds);
     // re-initialize the demo mode because num colors may have changed
     cur.init();
     // save
@@ -564,10 +570,7 @@ export default class ControlPanel extends Panel {
     }
     let set = cur.getColorset(this.targetLed);
     set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
-    this.targetLeds.forEach((led) => {
-      // set the colorset of the demo mode
-      cur.setColorset(set, led);
-    });
+    cur.setColorset(set, this.targetLeds);
     // re-initialize the demo mode because num colors may have changed
     cur.init();
     // save
