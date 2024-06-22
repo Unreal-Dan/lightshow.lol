@@ -62,7 +62,7 @@ export default class ModesPanel extends Panel {
     // HERE YOU CAN FORCE AN INITIAL DEVICE
     let initialDevice = '';
     // Uncomment one of these to pick an initial device:
-    // initialDevice = 'Orbit';
+    initialDevice = 'Orbit';
     // initialDevice = 'Handle';
     // initialDevice = 'Gloves';
     // initialDevice = 'Chromadeck';
@@ -189,56 +189,57 @@ export default class ModesPanel extends Panel {
     if (event.button !== 0) return; // Only react to left mouse button
     event.preventDefault();
 
-    if (!this.selectionBox) {
-      this.isDragging = false;
-      return;
-    }
-
     if (this.selectionBox) {
       document.body.removeChild(this.selectionBox);
       this.selectionBox = null;
     }
 
-    if (!this.isDragging) {
-      return;
-    }
-
     this.isDragging = false;
-    const dragDuration = Date.now() - this.dragStartTime;
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (cur.isMultiLed()) return; // Prevent selection if multi-LED pattern is applied
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     const rect = deviceImageContainer.getBoundingClientRect();
 
-    // Ensure values are within bounds of the container
     let startX = Math.min(this.startX, this.currentX) - rect.left;
     let startY = Math.min(this.startY, this.currentY) - rect.top;
     let endX = Math.max(this.startX, this.currentX) - rect.left;
     let endY = Math.max(this.startY, this.currentY) - rect.top;
-    // if we're just clicking then make a little circle of effect
-    if (Math.abs(startX - endX) < 10 && Math.abs(startY - endY) < 10) {
-      startX -= 5;
-      startY -= 5;
-      endX += 5;
-      endY += 5;
-    }
+
+    // Ensure values are within bounds of the container
+    startX = Math.max(startX, 0);
+    startY = Math.max(startY, 0);
+    endX = Math.min(endX, rect.width);
+    endY = Math.min(endY, rect.height);
+
+    const isClick = Math.abs(startX - endX) <= 3 && Math.abs(startY - endY) <= 3;
+    const clickX = (startX + endX) / 2;
+    const clickY = (startY + endY) / 2;
 
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       const ledRect = indicator.getBoundingClientRect();
-      const ledX1 = (ledRect.left - rect.left) + 2;
-      const ledY1 = (ledRect.top - rect.top) + 2;
-      const ledX2 = (ledRect.right - rect.left) - 2;
-      const ledY2 = (ledRect.bottom - rect.top) - 2;
+      const ledX1 = ledRect.left - rect.left;
+      const ledY1 = ledRect.top - rect.top;
+      const ledX2 = ledRect.right - rect.left;
+      const ledY2 = ledRect.bottom - rect.top;
+      const ledMidX = ledX1 + (ledRect.width / 2);
+      const ledMidY = ledY1 + (ledRect.height / 2);
 
       const ledList = document.getElementById('ledList');
       let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
 
-      const withinBounds =
-        (ledX1 >= startX && ledX1 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-        (ledX2 >= startX && ledX2 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-        (ledX1 >= startX && ledX1 <= endX && ledY2 >= startY && ledY2 <= endY) ||
-        (ledX2 >= startX && ledX2 <= endX && ledY2 >= startY && ledY2 <= endY);
+      let withinBounds = false;
+
+      if (isClick) {
+        // Check if click is within the bounds of the indicator
+        withinBounds = clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2;
+      } else {
+        // Check if any part of the indicator is within the selection box
+        withinBounds =
+          (ledX1 >= startX && ledX1 <= endX && ledY1 >= startY && ledY1 <= endY) ||
+          (ledX2 >= startX && ledX2 <= endX && ledY1 >= startY && ledY1 <= endY) ||
+          (ledX1 >= startX && ledX1 <= endX && ledY2 >= startY && ledY2 <= endY) ||
+          (ledX2 >= startX && ledX2 <= endX && ledY2 >= startY && ledY2 <= endY) ||
+          (ledMidX >= startX && ledMidX <= endX && ledMidY >= startY && ledMidY <= endY);
+      }
 
       if (withinBounds) {
         this.selectLed(indicator.dataset.ledIndex, !event.ctrlKey);
@@ -248,14 +249,15 @@ export default class ModesPanel extends Panel {
         } else {
           indicator.classList.remove('selected');
         }
-      } else {
-        if (!event.shiftKey && !event.ctrlKey) {
-          this.selectLed(indicator.dataset.ledIndex, false);
-          option.selected = false;
-          indicator.classList.remove('selected');
-        }
+      } else if (!event.shiftKey && !event.ctrlKey) {
+        this.selectLed(indicator.dataset.ledIndex, false);
+        option.selected = false;
+        indicator.classList.remove('selected');
       }
     });
+
+    // Manually call the handler
+    this.handleLedSelectionChange();
   }
 
   selectLed(index, selected = true) {
