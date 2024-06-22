@@ -310,7 +310,7 @@ legend {
 }
 
 #modesListScrollContainer {
-  height: 260px;
+  height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
