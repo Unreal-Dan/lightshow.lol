@@ -541,14 +541,17 @@ legend {
 #deviceImageContainer {
   position: relative;
   width: 100%; /* Take full width of the container */
-  height: auto; /* Adjust height automatically */
+  height: 100%; /* Adjust height automatically */
   max-width: 334px;
 }
 
 #deviceImageContainer img {
-  width: 100%; /* Scale image to container width */
-  height: auto; /* Maintain aspect ratio */
-  display: block; /* Remove extra space below image */
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .led-indicator {
@@ -596,3 +599,10 @@ legend {
   background-color: #2e3436
 }
 
+.selection-box {
+  position: absolute;
+  border: 2px dashed #000;
+  background-color: rgba(0, 0, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+}
