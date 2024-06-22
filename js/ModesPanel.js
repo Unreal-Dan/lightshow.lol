@@ -835,23 +835,8 @@ export default class ModesPanel extends Panel {
       Notification.failure("Invalid mode data");
       return;
     }
-    let pat = modeData.single_pats ? modeData.single_pats[0] : modeData.multi_pat;
-    if (!pat.colorset) {
-      Notification.failure("Invalid pattern data");
-      return;
-    }
-    const set = new this.lightshow.vortexLib.Colorset();
-    pat.colorset.forEach(hexCode => {
-      const normalizedHex = hexCode.replace('0x', '#');
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
-      if (result) {
-        set.addColor(new this.lightshow.vortexLib.RGBColor(
-          parseInt(result[1], 16),
-          parseInt(result[2], 16),
-          parseInt(result[3], 16)
-        ));
-      }
-    });
+
+    const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
     let curSel;
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
@@ -862,18 +847,43 @@ export default class ModesPanel extends Panel {
       }
       this.lightshow.vortex.setCurMode(modeCount, false);
     }
+
     const cur = this.lightshow.vortex.engine().modes().curMode();
-    cur.setColorset(set, 0);
-    const patID = this.lightshow.vortexLib.intToPatternID(pat.pattern_id);
-    cur.setPattern(patID, 0, null, null);
-    const args = new this.lightshow.vortexLib.PatternArgs();
-    pat.args.forEach(arg => args.addArgs(arg));
-    this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, false);
+
+    patterns.forEach((pat, index) => {
+      if (!pat.colorset) {
+        Notification.failure("Invalid pattern data");
+        return;
+      }
+
+      const set = new this.lightshow.vortexLib.Colorset();
+      pat.colorset.forEach(hexCode => {
+        const normalizedHex = hexCode.replace('0x', '#');
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
+        if (result) {
+          set.addColor(new this.lightshow.vortexLib.RGBColor(
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+          ));
+        }
+      });
+
+      cur.setColorset(set, index);
+      const patID = this.lightshow.vortexLib.intToPatternID(pat.pattern_id);
+      cur.setPattern(patID, index, null, null);
+      const args = new this.lightshow.vortexLib.PatternArgs();
+      pat.args.forEach(arg => args.addArgs(arg));
+      this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, index);
+    });
+
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
+
     if (addNew) {
       this.lightshow.vortex.setCurMode(curSel, false);
     }
+
     this.refreshPatternControlPanel();
     this.refresh();
     Notification.success("Successfully imported mode");
