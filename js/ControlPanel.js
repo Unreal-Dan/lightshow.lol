@@ -552,7 +552,9 @@ export default class ControlPanel extends Panel {
       return;
     }
     set.removeColor(index);
-    cur.setColorset(set, this.targetLeds);
+    this.targetLeds.forEach(led => {
+      cur.setColorset(set, led);
+    });
     // re-initialize the demo mode because num colors may have changed
     cur.init();
     // save
@@ -575,7 +577,9 @@ export default class ControlPanel extends Panel {
     }
     let set = cur.getColorset(this.targetLed);
     set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
-    cur.setColorset(set, this.targetLeds);
+    this.targetLeds.forEach(led => {
+      cur.setColorset(set, led);
+    });
     // re-initialize the demo mode because num colors may have changed
     cur.init();
     // save
