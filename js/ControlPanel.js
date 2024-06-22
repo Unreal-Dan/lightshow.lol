@@ -79,6 +79,14 @@ export default class ControlPanel extends Panel {
     this.targetLeds = [ this.targetLed ];
     this.isMulti = false;
     this.multiEnabled = false;
+    // Add click tracking variables for each control
+    this.clickCounts = {};
+    this.clickTimers = {};
+    this.sineWaveAnimations = {};
+    this.controls.forEach(control => {
+      this.clickCounts[control.id] = 0;
+      this.sineWaveAnimations[control.id] = false;
+    });
   }
 
   static generateControlsContent(controls) {
@@ -160,11 +168,59 @@ export default class ControlPanel extends Panel {
     this.refreshColorset(fromEvent);
   }
 
+  handleControlClick(event) {
+    const controlId = event.target.id;
+    this.clickCounts[controlId]++;
+    if (this.clickCounts[controlId] === 5) {
+      if (this.sineWaveAnimations[controlId]) {
+        this.stopSineWaveAnimation(controlId);
+      } else {
+        this.startSineWaveAnimation(controlId);
+      }
+      this.clickCounts[controlId] = 0;
+    }
+    clearTimeout(this.clickTimers[controlId]);
+    this.clickTimers[controlId] = setTimeout(() => {
+      this.clickCounts[controlId] = 0;
+    }, 500);
+  }
+
+  startSineWaveAnimation(controlId) {
+    this.sineWaveAnimations[controlId] = true;
+    const slider = this.panel.querySelector(`#${controlId}`);
+    const amplitude = (slider.max - slider.min) / 2; // Adjust as needed
+    const frequency = 0.002; // Adjust as needed
+    const centerValue = (parseInt(slider.min) + parseInt(slider.max)) / 2;
+    let startTime = null;
+
+    const animate = (timestamp) => {
+      if (!this.sineWaveAnimations[controlId]) return;
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+
+      const sineValue = Math.sin(elapsed * frequency) * amplitude;
+      const newValue = centerValue + sineValue;
+      slider.value = newValue;
+      slider.dispatchEvent(new Event('input'));
+
+      requestAnimationFrame(animate);
+    };
+
+    requestAnimationFrame(animate);
+  }
+
+  stopSineWaveAnimation(controlId) {
+    this.sineWaveAnimations[controlId] = false;
+  }
+
+
   attachEventListeners() {
     this.controls.forEach(control => {
-      this.panel.querySelector(`#${control.id}`).addEventListener('input', (event) => {
+      const element = this.panel.querySelector(`#${control.id}`);
+      element.addEventListener('input', (event) => {
         control.update(event.target.value);
       });
+      element.addEventListener('click', this.handleControlClick.bind(this));
     });
     const randomizePatternButton = document.getElementById('randomizePattern');
     randomizePatternButton.addEventListener('click', () => {
