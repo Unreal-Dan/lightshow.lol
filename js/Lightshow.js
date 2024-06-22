@@ -33,7 +33,7 @@ export default class Lightshow {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.modeData = modeData;
     this.applyModeData();
-    this.targetLed = 0;
+    this.targetLeds = [0];
   }
 
   applyModeData() {
@@ -81,12 +81,12 @@ export default class Lightshow {
     return this._tickRate || 1;
   }
 
-  set targetLed(value) {
-    this._targetLed = value;
+  set targetLeds(value) {
+    this._targetLeds = value;
   }
 
-  get targetLed() {
-    return this._targetLed;
+  get targetLeds() {
+    return this._targetLeds || [];
   }
 
   set trailSize(value) {
@@ -123,7 +123,7 @@ export default class Lightshow {
       }
       const x = centerX + radius * Math.cos(this.angle);
       const y = centerY + radius * Math.sin(this.angle);
-      let col = led[this.targetLed];
+      let col = led[this.targetLeds[0]];
       if (!col) {
         col = led[0];
       }
@@ -184,9 +184,11 @@ export default class Lightshow {
     const selectedPattern = this.vortexLib.PatternID.values[patternIDValue];
     // grab the 'preview' mode for the current mode (randomizer)
     let demoMode = this.vortex.engine().modes().curMode();
-    // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
-    // with null args and null colorset (so they are defaulted and won't change)
-    demoMode.setPattern(selectedPattern, this.ledCount(), null, null);
+    this.targetLeds.forEach(ledIndex => {
+      // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
+      // with null args and null colorset (so they are defaulted and won't change)
+      demoMode.setPattern(selectedPattern, ledIndex, null, null);
+    });
     // re-initialize the demo mode so it takes the new args into consideration
     demoMode.init();
     // save
@@ -194,23 +196,25 @@ export default class Lightshow {
   }
 
   // get colorset
-  getColorset() {
+  getColorset(led = this.vortex.engine().leds().ledAny()) {
     const demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return new this.vortexLib.Colorset();
     }
-    return demoMode.getColorset(this.vortex.engine().leds().ledAny());
+    return demoMode.getColorset(led);
   }
 
   // update colorset
-  setColorset(colorset) {
+  setColorset(colorset, leds = this.targetLeds) {
     // grab the 'preview' mode for the current mode (randomizer)
     let demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
       return;
     }
     // set the colorset of the demo mode
-    demoMode.setColorset(colorset, this.ledCount());
+    leds.forEach(ledIndex => {
+      demoMode.setColorset(colorset, ledIndex);
+    });
     // re-initialize the demo mode because num colors may have changed
     demoMode.init();
     // save
@@ -219,42 +223,36 @@ export default class Lightshow {
 
   // add a color to the colorset
   addColor(r, g, b) {
-    let set = this.getColorset(this.vortex.engine().leds().ledAny());
+    // there's two ways we could do this, we could actually add a color to each
+    // colorset regardless of whats there... or we could add a color to the displayed
+    // colorset (first selected led) then set that colorset on the rest thereby overwriting
+    // I think the more intuitive approach is the latter which overwrites
+    let set = this.getColorset(this.targetLeds[0]);
     set.addColor(new this.vortexLib.RGBColor(r, g, b));
-    this.setColorset(set);
+    this.targetLeds.forEach(ledIndex => {
+      this.setColorset(set, [ ledIndex ]);
+    });
   }
 
   // delete a color from the colorset
   delColor(index) {
-    let set = this.getColorset(this.vortex.engine().leds().ledAny());
+    let set = this.getColorset(this.targetLeds[0]);
     if (set.numColors() <= 1) {
       return;
     }
     set.removeColor(index);
-    this.setColorset(set);
+    this.targetLeds.forEach(ledIndex => {
+      this.setColorset(set, [ ledIndex ]);
+    });
   }
 
   // update a color in the colorset
   updateColor(index, r, g, b) {
-    let set = this.getColorset(this.vortex.engine().leds().ledAny());
+    let set = this.getColorset(this.targetLeds[0]);
     set.set(index, new this.vortexLib.RGBColor(r, g, b));
-    this.setColorset(set);
-  }
-
-  // randomize the pattern
-  randomize() {
-    this.vortex.openRandomizer(false);
-    // select leds
-    this.vortex.longClick(0);
-    // randomize
-    this.vortex.shortClick(0);
-    // save
-    this.vortex.longClick(0);
-    // need to run 1 tick per command
-    for (let i = 0; i < 3; ++i) {
-      this.vortexLib.RunTick(this.vortex);
-    }
-    this.vortex.engine().modes().saveCurMode();
+    this.targetLeds.forEach(ledIndex => {
+      this.setColorset(set, [ ledIndex ]);
+    });
   }
 
   randomizeColorset(targetLeds = []) {
@@ -271,8 +269,6 @@ export default class Lightshow {
       this.vortex.longClick(0);
       numCmds++;
     }
-    // select leds
-    //this.vortex.longClick(0);
     // select colorset
     this.vortex.longClick(0);
     // randomize

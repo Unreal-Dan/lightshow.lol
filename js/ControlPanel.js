@@ -367,7 +367,7 @@ export default class ControlPanel extends Panel {
     try {
       await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } catch (error) {
-      Notification.failure("Failed to demo current mode on device, connection may be broken");
+      Notification.failure("Failed to demo current mode on device, connection may be broken (" + error + ")");
     }
   }
 

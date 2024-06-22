@@ -310,7 +310,7 @@ legend {
 }
 
 #modesListScrollContainer {
-  height: 400px;
+  height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
@@ -541,22 +541,68 @@ legend {
 #deviceImageContainer {
   position: relative;
   width: 100%; /* Take full width of the container */
-  height: auto; /* Adjust height automatically */
+  height: 100%; /* Adjust height automatically */
   max-width: 334px;
 }
 
 #deviceImageContainer img {
-  width: 100%; /* Scale image to container width */
-  height: auto; /* Maintain aspect ratio */
-  display: block; /* Remove extra space below image */
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .led-indicator {
   position: absolute;
   width: 13px; /* Adjust size */
   height: 13px; /* Adjust size */
-  background-color: red; /* Or any indicator color */
+  background: radial-gradient(circle, rgba(150, 0, 0, 1) 0%, rgba(150, 0, 0, 1) 10%, rgba(50, 0, 0, 0.3) 100%);
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
+}
+
+.led-indicator.selected {
+  background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+#ledControls {
+  display: flex;
+  gap: 5px; /* Space between buttons */
+  margin-top: 10px; /* Space above the button group */
+}
+
+#ledControls button {
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as inline-block */
+  font-size: 14px; /* Font size */
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px 0px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#ledControls button:hover {
+  /*background-color: #45a049; /* Darker green on hover */
+  background-color: #3e4446;
+}
+
+#ledControls button:active {
+  /*background-color: #3e8e41; /* Even darker green on click */
+  background-color: #2e3436
+}
+
+.selection-box {
+  position: absolute;
+  border: 2px dashed #000;
+  background-color: rgba(0, 0, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
 }
