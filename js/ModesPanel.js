@@ -62,7 +62,7 @@ export default class ModesPanel extends Panel {
     // HERE YOU CAN FORCE AN INITIAL DEVICE
     let initialDevice = '';
     // Uncomment one of these to pick an initial device:
-    initialDevice = 'Orbit';
+    // initialDevice = 'Orbit';
     // initialDevice = 'Handle';
     // initialDevice = 'Gloves';
     // initialDevice = 'Chromadeck';
