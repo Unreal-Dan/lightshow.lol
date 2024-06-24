@@ -205,6 +205,7 @@ export default class ModesPanel extends Panel {
 
     this.isDragging = false;
     if (this.lightshow.vortex.engine().modes().curMode().isMultiLed()) {
+      Notification.failure("To select LEDs switch to a single led pattern.", 3000);
       // Prevent selection if multi-LED pattern is applied
       return;
     }
