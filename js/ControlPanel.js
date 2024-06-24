@@ -264,9 +264,8 @@ export default class ControlPanel extends Panel {
     const patternEnum = this.lightshow.vortexLib.PatternID;
 
     for (let pattern in patternEnum) {
-      console.log(JSON.stringify(patternEnum[pattern]));
       if (patternEnum.hasOwnProperty(pattern)) {
-        if (pattern === 'values' || patternEnum[pattern] === patternEnum.PATTERN_NONE) {
+        if (pattern === 'values' || patternEnum[pattern] === patternEnum.PATTERN_NONE || patternEnum[pattern] === patternEnum.PATTERN_COUNT) {
           continue;
         }
         let option = document.createElement('option');
@@ -276,9 +275,6 @@ export default class ControlPanel extends Panel {
         }
         option.text = str;
         option.value = patternEnum[pattern].value;
-        if (option.text == "none") {
-          continue;
-        }
         dropdown.appendChild(option);
 
         if (str.includes("blend")) {
