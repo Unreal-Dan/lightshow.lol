@@ -265,7 +265,9 @@ export default class ControlPanel extends Panel {
 
     for (let pattern in patternEnum) {
       if (patternEnum.hasOwnProperty(pattern)) {
-        if (pattern === 'values' || patternEnum[pattern] === patternEnum.PATTERN_NONE || patternEnum[pattern] === patternEnum.PATTERN_COUNT) {
+        if (pattern === 'values' ||
+            patternEnum[pattern] === patternEnum.PATTERN_NONE ||
+            patternEnum[pattern] === patternEnum.PATTERN_COUNT) {
           continue;
         }
         let option = document.createElement('option');
