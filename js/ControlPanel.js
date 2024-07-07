@@ -129,11 +129,6 @@ export default class ControlPanel extends Panel {
       this.refresh(true);
     });
     document.addEventListener('deviceConnected', (event) => {
-      // Change the height of the #modesListScrollContainer when the device connects
-      const modesListScrollContainer = document.getElementById('modesListScrollContainer');
-      if (modesListScrollContainer) {
-        modesListScrollContainer.style.height = '200px';
-      }
       //console.log("Control Panel detected device conneted");
       this.multiEnabled = true;
       this.populatePatternDropdown();

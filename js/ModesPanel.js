@@ -333,6 +333,12 @@ export default class ModesPanel extends Panel {
     this.handleLedSelectionChange();
 
     ledsFieldset.style.display = 'block'; // Hide the entire fieldset
+
+    // Change the height of the #modesListScrollContainer when the device connects
+    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
+    if (modesListScrollContainer) {
+      modesListScrollContainer.style.height = '200px';
+    }
   }
 
   toggleLed(index) {
@@ -836,6 +842,49 @@ export default class ModesPanel extends Panel {
       Notification.failure("Invalid pattern data");
       return;
     }
+    if ('num_leds' in patternData) {
+      let initialDevice = null;
+      switch (patternData.num_leds) {
+        case 28:
+          this.lightshow.vortex.setLedCount(28);
+          initialDevice = 'orbit';
+          break;
+        case 3:
+          this.lightshow.vortex.setLedCount(3);
+          initialDevice = 'Handle';
+          break;
+        case 10:
+          this.lightshow.vortex.setLedCount(10);
+          initialDevice = 'Gloves';
+          break;
+        case 20:
+          this.lightshow.vortex.setLedCount(20);
+          initialDevice = 'Chromadeck';
+          break;
+        case 6:
+          this.lightshow.vortex.setLedCount(6);
+          initialDevice = 'Spark';
+          break;
+        case 2:
+          this.lightshow.vortex.setLedCount(2);
+          initialDevice = 'Duo';
+          break;
+        default:
+          // technically this doesn't really need to be done, the engine starts at 1
+          this.lightshow.vortex.setLedCount(1);
+          break;
+      }
+      this.refreshLedList();
+      this.refreshModeList();
+      this.renderLedIndicators(initialDevice);
+      this.handleLedSelectionChange();
+      // Change the height of the #modesListScrollContainer when the device connects
+      const modesListScrollContainer = document.getElementById('modesListScrollContainer');
+      if (modesListScrollContainer) {
+        modesListScrollContainer.style.height = '200px';
+      }
+      return this.importModeFromData(patternJson, false);
+    }
 
     let curSel;
     const cur = this.lightshow.vortex.engine().modes().curMode();
@@ -928,7 +977,7 @@ export default class ModesPanel extends Panel {
       cur.setPattern(patID, index, null, null);
       const args = new this.lightshow.vortexLib.PatternArgs();
       pat.args.forEach(arg => args.addArgs(arg));
-      this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, index);
+      this.lightshow.vortex.setPatternArgs(index, args, true);
     });
 
     cur.init();
