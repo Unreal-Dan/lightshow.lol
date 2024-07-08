@@ -847,7 +847,7 @@ export default class ModesPanel extends Panel {
       switch (patternData.num_leds) {
         case 28:
           this.lightshow.vortex.setLedCount(28);
-          initialDevice = 'orbit';
+          initialDevice = 'Orbit';
           break;
         case 3:
           this.lightshow.vortex.setLedCount(3);
