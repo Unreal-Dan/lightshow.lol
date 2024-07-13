@@ -107,7 +107,7 @@ canvas {
 }
 
 /* Connection Buttons */
-#transmitVL, #exportModeButton, #importModeButton, #shareModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
+#transmitVL, #exportModeButton, #importModeButton, #shareModeButton, #linkModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -118,7 +118,7 @@ canvas {
   transition: background-color 0.2s;
 }
 
-#exportModeButton, #importModeButton, #addModeButton, #shareModeButton {
+#exportModeButton, #importModeButton, #addModeButton, #shareModeButton, #linkModeButton {
   margin-bottom: 10px;
 }
 
@@ -127,6 +127,7 @@ canvas {
 #exportModeButton:hover,
 #importModeButton:hover,
 #shareModeButton:hover,
+#linkModeButton:hover,
 #addModeButton:hover,
 #connectDevice:hover,
 #pushToDevice:hover,
