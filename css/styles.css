@@ -607,3 +607,22 @@ legend {
   pointer-events: none;
   z-index: 1000;
 }
+
+/* Container for the checkbox to help with positioning */
+.checkbox-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px; /* Adjust the margin to position it lower */
+}
+
+/* Label for the checkbox */
+.checkbox-container label {
+  font-size: 1rem;
+}
+
+/* Style for the checkbox itself */
+.checkbox-container input[type="checkbox"] {
+  margin-right: 10px;
+}
+

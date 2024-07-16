@@ -22,6 +22,10 @@ const welcomeBlurb = `
   <h2><strong>Modes & Leds</strong></h2>
   <p>Each mode allows for a different pattern and colorset combination, you can add more modes to the list, share a mode by URL, or export & import a mode in JSON format.
   If a Vortex Device is connected then alternative leds can be selected to target, otherwise only one led is available</p>
+
+  <div class="checkbox-container">
+    <label><input type="checkbox" id="doNotShowAgain"> Do not show this again</label>
+  </div>
 `;
 
 // instantiate VortexLib webassembly module
@@ -67,15 +71,26 @@ VortexLib().then(vortexLib => {
 
   window.randomize = controlPanel.randomize.bind(controlPanel);
 
-  // Create a new instance of the Modal class
-  const welcomeModal = new Modal();
+  // Check if the welcome modal should be shown
+  const showWelcome = localStorage.getItem('showWelcome') !== 'false';
 
-  // Configuration for the welcome modal
-  const welcomeConfig = {
-    title: welcomeTitle,
-    blurb: welcomeBlurb,
-  };
+  if (showWelcome) {
+    // Create a new instance of the Modal class
+    const welcomeModal = new Modal();
 
-  // Show the welcome modal
-  welcomeModal.show(welcomeConfig);
+    // Configuration for the welcome modal
+    const welcomeConfig = {
+      title: welcomeTitle,
+      blurb: welcomeBlurb,
+    };
+
+    // Show the welcome modal
+    welcomeModal.show(welcomeConfig);
+
+    // Add event listener to the checkbox
+    document.getElementById('doNotShowAgain').addEventListener('change', (event) => {
+      localStorage.setItem('showWelcome', !event.target.checked);
+    });
+  }
 });
+

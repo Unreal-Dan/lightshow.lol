@@ -17,14 +17,10 @@ export default class Lightshow {
     this.tickRate = 3;
     this.trailSize = 100;
     this.angle = 0;
-    this.history = [];
     this.vortexLib = vortexLib;
     this.vortex = new vortexLib.Vortex();
     this.vortex.init();
     this.vortex.setLedCount(1);
-    // Run the first tick, at the moment I'm not quite sure why this first
-    // tick is spitting out the color red instead of whatever it's supposed to be
-    // I think it's just a wasm thing though so I'll find it later
     this.vortexLib.RunTick(this.vortex);
     this.animationFrameId = null;
     this.configurableSectionCount = configurableSectionCount;
@@ -35,6 +31,9 @@ export default class Lightshow {
     this.modeData = modeData;
     this.applyModeData();
     this.targetLeds = [0];
+
+    // Initialize histories for each LED
+    this.updateHistories();
   }
 
   resetToCenter() {
@@ -43,7 +42,16 @@ export default class Lightshow {
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;
     this.ctx.fillStyle = 'rgba(0, 0, 0)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    this.history = [];
+    this.histories = this.histories.map(() => []);
+  }
+
+  // Method to update histories based on the LED count
+  updateHistories() {
+    const ledCount = this.ledCount();
+    this.histories = [];
+    for (let i = 0; i < ledCount; i++) {
+      this.histories.push([]);
+    }
   }
 
   applyModeData() {
@@ -113,56 +121,69 @@ export default class Lightshow {
     return this.vortex.engine().leds().ledCount();
   }
 
+
   draw() {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     const centerX = (this.canvas.width / 2);
     const centerY = this.canvas.height / 2;
-    // - 55 to adjust the size of circle
-    let radius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
+    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
-      const led = this.vortexLib.RunTick(this.vortex);
-      if (!led) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
         continue;
       }
+
+      // Ensure histories array has sub-arrays for each LED
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
       this.angle -= 0.02;
       if (this.angle >= 2 * Math.PI) {
         this.angle = 0;
       }
-      const x = centerX + radius * Math.cos(this.angle);
-      const y = centerY + radius * Math.sin(this.angle);
-      let col = led[this.targetLeds[0]];
-      if (!col) {
-        col = led[0];
+
+      leds.forEach((col, index) => {
+        let radius = baseRadius + index * 15; // Adjust this value to control the distance between rings
+        const x = centerX + radius * Math.cos(this.angle);
+        const y = centerY + radius * Math.sin(this.angle);
+        if (!col) {
+          col = { red: 0, green: 0, blue: 0 };
+        }
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+
+    this.histories.forEach(history => {
+      for (let index = history.length - 1; index >= 0; index--) {
+        const point = history[index];
+        if (!point.color.red && !point.color.green && !point.color.blue) {
+          continue;
+        }
+
+        const gradient = this.ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, this.dotSize);
+        const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
+        const outerAlpha = this.blurFac !== 0 ? (innerAlpha / this.blurFac).toFixed(2) : innerAlpha;
+
+        gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
+        gradient.addColorStop(0.8, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.beginPath();
+        this.ctx.arc(point.x, point.y, this.dotSize, 0, 2 * Math.PI);
+        this.ctx.fill();
       }
-      this.history.push({ x, y, color: col });
-    }
+    });
 
-    for (let index = this.history.length - 1; index >= 0; index--) {
-      const point = this.history[index];
-      if (!point.color.red && !point.color.green && !point.color.blue) {
-        continue;
+    this.histories.forEach(history => {
+      if (history.length > this.trailSize) {
+        history.splice(0, this.tickRate);
       }
-
-      const gradient = this.ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, this.dotSize);
-      const innerAlpha = (1 - ((this.history.length - 1 - index) / this.history.length)).toFixed(2);
-      const outerAlpha = this.blurFac !== 0 ? (innerAlpha / this.blurFac).toFixed(2) : innerAlpha;
-
-      gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
-      gradient.addColorStop(0.8, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${outerAlpha})`);
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-      this.ctx.fillStyle = gradient;
-      this.ctx.beginPath();
-      this.ctx.arc(point.x, point.y, this.dotSize, 0, 2 * Math.PI);
-      this.ctx.fill();
-    }
-
-    if (this.history.length > this.trailSize) {
-      this.history.splice(0, this.tickRate);
-    }
+    });
 
     requestAnimationFrame(this.draw.bind(this));
   }
