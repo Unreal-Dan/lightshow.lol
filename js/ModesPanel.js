@@ -19,10 +19,11 @@ export default class ModesPanel extends Panel {
       </div>
       <div id="modesAndLedsSection">
         <div id="modeButtonsSection">
-          <button id="addModeButton">Add Mode</button>
-          <button id="shareModeButton">Share Mode</button>
-          <button id="exportModeButton">Export</button>
+          <button id="addModeButton">Add</button>
+          <button id="shareModeButton">Share</button>
+          <button id="linkModeButton">Link</button>
           <button id="importModeButton">Import</button>
+          <button id="exportModeButton">Export</button>
         </div>
         <div id="modesListScrollContainer">
           <div id="modesListContainer">
@@ -102,6 +103,9 @@ export default class ModesPanel extends Panel {
 
     const shareModeButton = document.getElementById('shareModeButton');
     shareModeButton.addEventListener('click', () => this.shareMode());
+
+    const linkModeButton = document.getElementById('linkModeButton');
+    linkModeButton.addEventListener('click', () => this.linkMode());
 
     const exportModeButton = document.getElementById('exportModeButton');
     exportModeButton.addEventListener('click', () => this.exportMode());
@@ -786,6 +790,23 @@ export default class ModesPanel extends Panel {
       Notification.failure("Must select a mode to share");
       return;
     }
+
+    const modeJson = this.lightshow.vortex.printModeJson(false);
+    const modeData = JSON.parse(modeJson);
+    const base64EncodedData = btoa(JSON.stringify(modeData));
+
+    // Construct the URL with the mode data
+    const shareUrl = `https://vortex.community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+
+    // Open the URL in a new tab
+    window.open(shareUrl, '_blank');
+  }
+
+  linkMode() {
+    if (!this.lightshow.vortex.engine().modes().curMode()) {
+      Notification.failure("Must select a mode to share");
+      return;
+    }
     const modeJson = this.lightshow.vortex.printModeJson(false);
     const modeData = JSON.parse(modeJson);
     const pat = modeData.single_pats[0] ? modeData.single_pats[0] : modeData.multi_pat;
@@ -793,8 +814,8 @@ export default class ModesPanel extends Panel {
     const lightshowUrl = `https://lightshow.lol/importMode?data=${base64EncodedData}`;
     this.shareModal.show({
       defaultValue: lightshowUrl,
-      placeholder: 'Share URL',
-      title: 'Share Mode',
+      placeholder: 'Link URL',
+      title: 'Link Mode',
     });
     this.shareModal.selectAndCopyText();
     Notification.success("Copied mode URL to clipboard");
