@@ -796,7 +796,7 @@ export default class ModesPanel extends Panel {
     const base64EncodedData = btoa(JSON.stringify(modeData));
 
     // Construct the URL with the mode data
-    const shareUrl = `http://localhost:3000/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+    const shareUrl = `https://vortex.community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
 
     // Open the URL in a new tab
     window.open(shareUrl, '_blank');
@@ -811,7 +811,7 @@ export default class ModesPanel extends Panel {
     const modeData = JSON.parse(modeJson);
     const pat = modeData.single_pats[0] ? modeData.single_pats[0] : modeData.multi_pat;
     const base64EncodedData = btoa(JSON.stringify(pat));
-    const lightshowUrl = `http://localhost:3000/importMode?data=${base64EncodedData}`;
+    const lightshowUrl = `https://lightshow.lol/importMode?data=${base64EncodedData}`;
     this.shareModal.show({
       defaultValue: lightshowUrl,
       placeholder: 'Link URL',
