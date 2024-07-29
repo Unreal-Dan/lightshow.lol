@@ -1,3 +1,4 @@
+/* Panel.js */
 export default class Panel {
   constructor(id, content) {
     this.panel = document.createElement('div');

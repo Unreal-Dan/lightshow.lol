@@ -1,3 +1,4 @@
+/* Model.js */
 export default class Modal {
   constructor() {
     this.createModal();
