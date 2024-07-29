@@ -671,7 +671,7 @@ export default class ModesPanel extends Panel {
       'Orbit': 'public/images/orbit.png',
       'Handle': 'public/images/handle.png',
       'Duo': 'public/images/duo.png',
-      'Chromadeck': 'public/images/chromadeck-leds.png',
+      'Chromadeck': 'public/images/chromadeck.png',
       'Spark': 'public/images/spark.png'
     };
 
