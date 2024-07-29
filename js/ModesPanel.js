@@ -1,3 +1,4 @@
+/* ModesPanel.js */
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
@@ -5,16 +6,17 @@ import Notification from './Notification.js';
 export default class ModesPanel extends Panel {
   constructor(lightshow, vortexPort) {
     const content = `
-      <div id="deviceConnectionSection">
-        <div>
+      <div id="deviceConnectionSection" style="display:none;">
+        <div id="deviceStatusContainer">
+          <span id="statusLabel">Device Status:</span>
+          <span id="deviceStatus">Connect a Device</span>
+          <button id="hamburgerButton" class="hamburger-button">☰</button>
+        </div>
+        <div id="hamburgerMenu" class="hamburger-menu">
           <button id="connectDevice">Connect</button>
           <button id="pullFromDevice">Pull</button>
           <button id="pushToDevice">Push</button>
           <button id="transmitVL">Transmit</button>
-        </div>
-        <div id="deviceStatusContainer">
-          <span id="statusLabel">Device Status:</span>
-          <span id="deviceStatus">Idle</span>
         </div>
       </div>
       <div id="modesAndLedsSection">
@@ -30,7 +32,16 @@ export default class ModesPanel extends Panel {
             <!-- Dynamic list of modes will be populated here -->
           </div>
         </div>
-        <fieldset id="ledsFieldset">
+        <div id="deviceTypeContainer" class="custom-dropdown">
+          <div id="deviceTypeSelected" class="custom-dropdown-selected">Select Device</div>
+          <div id="deviceTypeOptions" class="custom-dropdown-options">
+            <div class="custom-dropdown-option" data-value="Orbit" data-icon="public/images/orbit-logo-square-64.png">
+              <img src="public/images/orbit-logo-square-64.png" alt="Orbit Logo">
+              Orbit
+            </div>
+          </div>
+        </div>
+        <fieldset id="ledsFieldset" style="display:none;">
           <legend style="user-select:none;padding-top:15px;">Select Leds</legend>
           <div class="flex-container">
             <div id="deviceImageContainer">
@@ -40,15 +51,14 @@ export default class ModesPanel extends Panel {
               <button id="selectAllLeds" title="Select All">All</button>
               <button id="selectNoneLeds" title="Select None">None</button>
               <button id="invertLeds" title="Invert Selection">Invert</button>
-              <button id="evenLeds" title="Invert Selection">Evens</button>
-              <button id="oddLeds" title="Invert Selection">Odds</button>
-              <button id="randomLeds" title="Invert Selection">Random</button>
+              <button id="evenLeds" title="Select Even">Evens</button>
+              <button id="oddLeds" title="Select Odd">Odds</button>
+              <button id="randomLeds" title="Select Random">Random</button>
             </div>
             <select id="ledList" size="8" multiple style="display:none;"></select>
           </div>
         </fieldset>
       </div>
-
     `;
 
     super('modesPanel', content);
@@ -60,43 +70,22 @@ export default class ModesPanel extends Panel {
   }
 
   initialize() {
-    // HERE YOU CAN FORCE AN INITIAL DEVICE
-    let initialDevice = '';
-    // Uncomment one of these to pick an initial device:
-    // initialDevice = 'Orbit';
-    // initialDevice = 'Handle';
-    // initialDevice = 'Gloves';
-    // initialDevice = 'Chromadeck';
-    // initialDevice = 'Spark';
-    // initialDevice = 'Duo';
-    switch (initialDevice) {
-      case 'Orbit':
-        this.lightshow.vortex.setLedCount(28);
-        break;
-      case 'Handle':
-        this.lightshow.vortex.setLedCount(3);
-        break;
-      case 'Gloves':
-        this.lightshow.vortex.setLedCount(10);
-        break;
-      case 'Chromadeck':
-        this.lightshow.vortex.setLedCount(20);
-        break;
-      case 'Spark':
-        this.lightshow.vortex.setLedCount(6);
-        break;
-      case 'Duo':
-        this.lightshow.vortex.setLedCount(2);
-        break;
-      default:
-        // technically this doesn't really need to be done, the engine starts at 1
-        this.lightshow.vortex.setLedCount(1);
-        break;
-    }
-    this.refreshLedList();
-    this.refreshModeList();
-    this.renderLedIndicators(initialDevice);
-    this.handleLedSelectionChange();
+    // Hide device connection section and leds fieldset initially
+    document.getElementById('deviceConnectionSection').style.display = 'block';
+    document.getElementById('ledsFieldset').style.display = 'none';
+
+    const hamburgerButton = document.getElementById('hamburgerButton');
+    const hamburgerMenu = document.getElementById('hamburgerMenu');
+
+    hamburgerButton.addEventListener('click', function() {
+      hamburgerMenu.style.display = hamburgerMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', function(event) {
+      if (!hamburgerButton.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+        hamburgerMenu.style.display = 'none';
+      }
+    });
 
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());
@@ -143,7 +132,6 @@ export default class ModesPanel extends Panel {
     ledList.addEventListener('change', () => this.handleLedSelectionChange());
     ledList.addEventListener('click', () => this.handleLedSelectionChange());
 
-    // Add event listeners for select all, none, and invert buttons
     document.getElementById('selectAllLeds').addEventListener('click', () => this.selectAllLeds());
     document.getElementById('selectNoneLeds').addEventListener('click', () => this.selectNoneLeds());
     document.getElementById('invertLeds').addEventListener('click', () => this.invertLeds());
@@ -155,8 +143,159 @@ export default class ModesPanel extends Panel {
     deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
+
+    document.addEventListener('deviceTypeChange', (event) => {
+      const selectedDevice = event.detail;
+      this.renderLedIndicators(selectedDevice);
+      this.handleLedSelectionChange();
+    });
+
+    // Initialize dropdown with icons
+    this.addIconsToDropdown();
+    // Add event listener for device type selection
+    document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
+      if (event.target && event.target.classList.contains('custom-dropdown-option')) {
+        const selectedValue = event.target.getAttribute('data-value');
+        const selectedIcon = event.target.getAttribute('data-icon');
+        this.updateSelectedDevice(selectedValue, selectedIcon);
+        document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: selectedValue }));
+      }
+    });
+
+    // Add event listener for the selected device type dropdown
+    document.getElementById('deviceTypeSelected').addEventListener('click', () => {
+      document.getElementById('deviceTypeOptions').classList.toggle('show');
+    });
+    this.refreshModeList();
+  }
+ 
+  updateSelectedDevice(selectedValue, selectedIcon) {
+    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
+    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
+
+    if (selectedValue === 'None') {
+      deviceTypeSelected.innerHTML = 'Select Device';
+      document.getElementById('deviceTypeOptions').classList.remove('show');
+      this.lightshow.setLedCount(1); // Reset to default LED count
+      modesListScrollContainer.style.height = '500px';
+
+      // Hide the LED selection fieldset
+      ledsFieldset.style.display = 'none';
+      return;
+    }
+    deviceTypeSelected.innerHTML = `
+      <img src="${selectedIcon}" alt="${selectedValue} Logo">
+      ${selectedValue}
+    `;
+
+    switch (selectedValue) {
+      case 'Orbit':
+        this.lightshow.setLedCount(28);
+        break;
+      case 'Handle':
+        this.lightshow.setLedCount(3);
+        break;
+      case 'Gloves':
+        this.lightshow.setLedCount(10);
+        break;
+      case 'Chromadeck':
+        this.lightshow.setLedCount(20);
+        break;
+      case 'Spark':
+        this.lightshow.setLedCount(6);
+        break;
+      case 'Duo':
+        this.lightshow.setLedCount(2);
+        break;
+      default:
+        // technically this doesn't really need to be done, the engine starts at 1
+        this.lightshow.setLedCount(1);
+        document.getElementById('deviceTypeOptions').classList.add('show');
+        if (modesListScrollContainer) {
+          modesListScrollContainer.style.height = '500px';
+        }
+        ledsFieldset.style.display = 'none';
+        return
+    }
+    if (modesListScrollContainer) {
+      modesListScrollContainer.style.height = '200px';
+    }
+    ledsFieldset.style.display = 'block'; // Show the fieldset for other devices
+    document.getElementById('deviceTypeOptions').classList.remove('show');
+    this.refreshModeList();
   }
 
+  addIconsToDropdown() {
+    const deviceTypeOptions = document.getElementById('deviceTypeOptions');
+    const devices = [
+      { value: 'None', icon: 'public/images/none-logo-square-64.png', label: 'None' },
+      { value: 'Orbit', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit' },
+      { value: 'Handle', icon: 'public/images/handle-logo-square-64.png', label: 'Handle' },
+      { value: 'Gloves', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves' },
+      { value: 'Chromadeck', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck' },
+      //{ value: 'Spark', icon: 'public/images/spark-logo-square-64.png', label: 'Spark' },
+      //{ value: 'Duo', icon: 'public/images/duo-logo-square-64.png', label: 'Duo' }
+    ];
+
+    deviceTypeOptions.innerHTML = devices.map(device => `
+    <div class="custom-dropdown-option" data-value="${device.value}" data-icon="${device.icon}">
+      <img src="${device.icon}" alt="${device.label} Logo">
+      ${device.label}
+    </div>
+  `).join('');
+  }
+
+  showDeviceConnectionSection() {
+    document.getElementById('deviceConnectionSection').style.display = 'block';
+    document.getElementById('ledsFieldset').style.display = 'block';
+  }
+
+  onDeviceConnect() {
+    console.log("Device connected: " + this.vortexPort.name);
+    const deviceLedCountMap = {
+      'Gloves': 10,
+      'Orbit': 28,
+      'Handle': 3,
+      'Duo': 2,
+      'Chromadeck': 20,
+      'Spark': 6
+    };
+    const ledCount = deviceLedCountMap[this.vortexPort.name];
+    if (ledCount !== undefined) {
+      this.lightshow.setLedCount(ledCount);
+      console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
+    } else {
+      console.log(`Device name ${this.vortexPort.name} not recognized`);
+    }
+    document.dispatchEvent(new CustomEvent('deviceConnected'));
+    this.refresh(true);
+    let statusMessage = document.getElementById('deviceStatus');
+    statusMessage.textContent = this.vortexPort.name + ' Connected!';
+    statusMessage.classList.add('status-success');
+    statusMessage.classList.remove('status-pending', 'status-failure');
+    Notification.success("Successfully Connected " + this.vortexPort.name);
+
+    // Render LED indicators for the connected device
+    this.renderLedIndicators(this.vortexPort.name);
+    this.handleLedSelectionChange();
+
+    // Show the device connection section and leds fieldset
+    document.getElementById('deviceConnectionSection').style.display = 'block';
+    document.getElementById('ledsFieldset').style.display = 'block';
+
+    // Lock the dropdown to the connected device
+    const deviceTypeSelect = document.getElementById('deviceType');
+    deviceTypeSelect.value = this.vortexPort.name;
+    deviceTypeSelect.disabled = true;
+
+    // Change the height of the #modesListScrollContainer when the device connects
+    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
+    if (modesListScrollContainer) {
+      modesListScrollContainer.style.height = '200px';
+    }
+  }
+
+  // Add the rest of the unchanged methods here...
   onMouseDown(event) {
     if (event.button !== 0) return; // Only react to left mouse button
     event.preventDefault();
@@ -307,44 +446,6 @@ export default class ModesPanel extends Panel {
     statusMessage.classList.remove('status-success', 'status-failure');
   }
 
-  onDeviceConnect() {
-    console.log("Device connected: " + this.vortexPort.name);
-    const deviceLedCountMap = {
-      'Gloves': 10,
-      'Orbit': 28,
-      'Handle': 3,
-      'Duo': 2,
-      'Chromadeck': 20,
-      'Spark': 6
-    };
-    const ledCount = deviceLedCountMap[this.vortexPort.name];
-    if (ledCount !== undefined) {
-      this.lightshow.vortex.setLedCount(ledCount);
-      console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
-    } else {
-      console.log(`Device name ${this.vortexPort.name} not recognized`);
-    }
-    document.dispatchEvent(new CustomEvent('deviceConnected'));
-    this.refresh(true);
-    let statusMessage = document.getElementById('deviceStatus');
-    statusMessage.textContent = this.vortexPort.name + ' Connected!';
-    statusMessage.classList.add('status-success');
-    statusMessage.classList.remove('status-pending', 'status-failure');
-    Notification.success("Successfully Connected " + this.vortexPort.name);
-
-    // Render LED indicators for the connected device
-    this.renderLedIndicators(this.vortexPort.name);
-    this.handleLedSelectionChange();
-
-    ledsFieldset.style.display = 'block'; // Hide the entire fieldset
-
-    // Change the height of the #modesListScrollContainer when the device connects
-    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
-    if (modesListScrollContainer) {
-      modesListScrollContainer.style.height = '200px';
-    }
-  }
-
   toggleLed(index) {
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (cur.isMultiLed()) return; // Prevent toggling if multi-LED pattern is applied
@@ -384,13 +485,12 @@ export default class ModesPanel extends Panel {
     } else if (deviceName === 'Handle') {
       return this.getLedPositionsHandle();
     } else if (deviceName === 'Duo') {
-      // Duo-specific positions
+      return this.getLedPositionsDuo();
     } else if (deviceName === 'Chromadeck') {
-      // Chromadeck-specific positions
+      return this.getLedPositionsChromadeck();
     } else if (deviceName === 'Spark') {
-      // Spark-specific positions
+      return this.getLedPositionsSpark();
     }
-
     return ledPositions;
   }
 
@@ -448,6 +548,39 @@ export default class ModesPanel extends Panel {
     // Quadrant 4 top
     for (let i = 0; i < 3; ++i) ledPositions.push({ x: 130 - (i * size), y: 40 + (i * size) });
     return ledPositions;
+  }
+
+  getLedPositionsChromadeck() {
+    const ledPositions = [
+        // lol poor mans scaling
+        {x: 250 * (334 / 500), y: 11  * (333 / 500)}, // Outer Ring 12 Oclock
+        {x: 318 * (334 / 500), y: 32  * (333 / 500)}, // Outer Ring 1 Oclock
+        {x: 360 * (334 / 500), y: 90  * (333 / 500)}, // Outer Ring 2 Oclock
+        {x: 360 * (334 / 500), y: 162 * (333 / 500) }, // Outer Ring 4 Oclock
+        {x: 318 * (334 / 500), y: 219 * (333 / 500) }, // Outer Ring 5 Oclock
+        {x: 250 * (334 / 500), y: 241 * (333 / 500) }, // Outer Ring 6 Oclock
+        {x: 183 * (334 / 500), y: 219 * (333 / 500) }, // Outer Ring 7 Oclock
+        {x: 141 * (334 / 500), y: 161 * (333 / 500) }, // Outer Ring 8 Oclock
+        {x: 141 * (334 / 500), y: 90  * (333 / 500) }, // Outer Ring 10 Oclock
+        {x: 183 * (334 / 500), y: 33  * (333 / 500) }, // Outer Ring 11 Oclock
+        {x: 250 * (334 / 500), y: 44  * (333 / 500) }, // Inner Ring 12 Oclock
+        {x: 298 * (334 / 500), y: 60  * (333 / 500) }, // Inner Ring 1 Oclock
+        {x: 328 * (334 / 500), y: 100 * (333 / 500) }, // Inner Ring 2 Oclock
+        {x: 328 * (334 / 500), y: 150 * (333 / 500) }, // Inner Ring 4 Oclock
+        {x: 298 * (334 / 500), y: 192 * (333 / 500) }, // Inner Ring 5 Oclock
+        {x: 250 * (334 / 500), y: 206 * (333 / 500) }, // Inner Ring 6 Oclock
+        {x: 203 * (334 / 500), y: 191 * (333 / 500) }, // Inner Ring 7 Oclock
+        {x: 173 * (334 / 500), y: 151 * (333 / 500) }, // Inner Ring 8 Oclock
+        {x: 173 * (334 / 500), y: 100 * (333 / 500) }, // Inner Ring 10 Oclock
+        {x: 203 * (334 / 500), y: 60  * (333 / 500) }, // Inner Ring 11 Oclock
+    ];
+    return ledPositions;
+  }
+
+  getLedPositionsSpark() {
+  }
+
+  getLedPositionsDuo() {
   }
 
   onDeviceDisconnect() {
@@ -523,13 +656,13 @@ export default class ModesPanel extends Panel {
     const ledList = document.getElementById('ledList');
     const ledControls = document.getElementById('ledControls');
 
-    if (!deviceName) {
+    if (!deviceName || deviceName === 'None') {
       ledsFieldset.style.display = 'none'; // Hide the entire fieldset
       return;
     }
 
     ledsFieldset.style.display = 'block'; // Show the fieldset
-    deviceImageContainer.innerHTML = '';
+    deviceImageContainer.innerHTML = ''; // Clear any existing content
     ledList.style.display = 'block'; // Show the LED list
     ledControls.style.display = 'flex'; // Show the LED controls
 
@@ -538,7 +671,7 @@ export default class ModesPanel extends Panel {
       'Orbit': 'public/images/orbit.png',
       'Handle': 'public/images/handle.png',
       'Duo': 'public/images/duo.png',
-      'Chromadeck': 'public/images/chromadeck.png',
+      'Chromadeck': 'public/images/chromadeck-leds.png',
       'Spark': 'public/images/spark.png'
     };
 
@@ -562,11 +695,6 @@ export default class ModesPanel extends Panel {
 
       if (isMultiLed) {
         ledIndicator.classList.add('selected');
-      } else {
-        //ledIndicator.addEventListener('click', (event) => {
-        //  event.stopPropagation(); // Prevent other click events
-        //  //this.toggleLed(index);
-        //});
       }
 
       deviceImageContainer.appendChild(ledIndicator);
@@ -579,7 +707,6 @@ export default class ModesPanel extends Panel {
       ledControls.style.display = 'flex';
     }
   }
-
 
   updateLedIndicators() {
     const selectedLeds = this.getSelectedLeds();
@@ -621,6 +748,7 @@ export default class ModesPanel extends Panel {
     for (let option of ledList.options) {
       option.selected = true;
     }
+    this.handleLedSelectionChange();
   }
 
   applyLedSelections(selectedLeds) {
@@ -796,7 +924,7 @@ export default class ModesPanel extends Panel {
     const base64EncodedData = btoa(JSON.stringify(modeData));
 
     // Construct the URL with the mode data
-    const shareUrl = `https://vortex.community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+    const shareUrl = `http://localhost:3000/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
 
     // Open the URL in a new tab
     window.open(shareUrl, '_blank');
@@ -811,7 +939,7 @@ export default class ModesPanel extends Panel {
     const modeData = JSON.parse(modeJson);
     const pat = modeData.single_pats[0] ? modeData.single_pats[0] : modeData.multi_pat;
     const base64EncodedData = btoa(JSON.stringify(pat));
-    const lightshowUrl = `https://lightshow.lol/importMode?data=${base64EncodedData}`;
+    const lightshowUrl = `http://localhost:8000/importMode?data=${base64EncodedData}`;
     this.shareModal.show({
       defaultValue: lightshowUrl,
       placeholder: 'Link URL',
@@ -867,32 +995,32 @@ export default class ModesPanel extends Panel {
       let initialDevice = null;
       switch (patternData.num_leds) {
         case 28:
-          this.lightshow.vortex.setLedCount(28);
+          this.lightshow.setLedCount(28);
           initialDevice = 'Orbit';
           break;
         case 3:
-          this.lightshow.vortex.setLedCount(3);
+          this.lightshow.setLedCount(3);
           initialDevice = 'Handle';
           break;
         case 10:
-          this.lightshow.vortex.setLedCount(10);
+          this.lightshow.setLedCount(10);
           initialDevice = 'Gloves';
           break;
         case 20:
-          this.lightshow.vortex.setLedCount(20);
+          this.lightshow.setLedCount(20);
           initialDevice = 'Chromadeck';
           break;
         case 6:
-          this.lightshow.vortex.setLedCount(6);
+          this.lightshow.setLedCount(6);
           initialDevice = 'Spark';
           break;
         case 2:
-          this.lightshow.vortex.setLedCount(2);
+          this.lightshow.setLedCount(2);
           initialDevice = 'Duo';
           break;
         default:
           // technically this doesn't really need to be done, the engine starts at 1
-          this.lightshow.vortex.setLedCount(1);
+          this.lightshow.setLedCount(1);
           break;
       }
       this.refreshLedList();

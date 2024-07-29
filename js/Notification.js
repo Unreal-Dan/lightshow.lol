@@ -1,5 +1,4 @@
-// Notification.js
-
+/* Notification.js */
 class Notification {
   static success(message, duration = 3000) {
     const notification = document.createElement("div");

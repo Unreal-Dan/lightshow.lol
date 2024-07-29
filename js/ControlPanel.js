@@ -1,3 +1,4 @@
+/* ControlPanel.js */
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 

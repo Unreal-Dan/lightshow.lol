@@ -107,7 +107,7 @@ canvas {
 }
 
 /* Connection Buttons */
-#transmitVL, #exportModeButton, #importModeButton, #shareModeButton, #linkModeButton, #addModeButton, #connectDevice, #pushToDevice, #pullFromDevice {
+#exportModeButton, #importModeButton, #shareModeButton, #linkModeButton, #addModeButton {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -138,10 +138,8 @@ canvas {
 #deviceStatusContainer {
   display: flex;
   align-items: center;
-  padding: 5px 10px;
-  margin: 10px;
   user-select: none;
-  width: 94%;
+  justify-content: space-between;
 }
 
 #statusLabel {
@@ -311,7 +309,7 @@ legend {
 }
 
 #modesListScrollContainer {
-  height: 600px;
+  height: 500px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
@@ -626,3 +624,106 @@ legend {
   margin-right: 10px;
 }
 
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.custom-dropdown-selected {
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  background-color: #181a1b;
+  display: flex;
+  align-items: center;
+}
+
+.custom-dropdown-selected img {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.custom-dropdown-options {
+  display: none;
+  position: absolute;
+  background-color: #121212;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  width: 100%;
+}
+
+.custom-dropdown-options.show {
+  display: block;
+}
+
+.custom-dropdown-option {
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.custom-dropdown-option img {
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+}
+
+.custom-dropdown-option:hover {
+  background-color: #252525;
+}
+
+/* Styles for the hamburger button */
+.hamburger-button {
+  background-color: transparent;
+  border: 1px solid #454545;
+  font-size: 20px;
+  cursor: pointer;
+  margin: 0px 10px;
+  color: #f1f1f1;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.hamburger-button:hover {
+  background-color: #3e4446;
+}
+
+/* Styles for the hamburger menu */
+.hamburger-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: #181a1b;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #454545;
+}
+
+.hamburger-menu button {
+  display: block;
+  width: 100%;
+  margin: 5px 0;
+  background-color: #202020;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 8px 15px;
+  text-align: left;
+  color: #d8d4cf;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.hamburger-menu button:hover {
+  background-color: #3e4446;
+}
+
+.hamburger-menu button:active {
+  background-color: #2e3436;
+}

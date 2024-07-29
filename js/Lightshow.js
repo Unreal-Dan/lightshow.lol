@@ -1,3 +1,4 @@
+/* Lightshow.js */
 export default class Lightshow {
   static instanceCount = 0;
 
@@ -33,6 +34,11 @@ export default class Lightshow {
     this.targetLeds = [0];
 
     // Initialize histories for each LED
+    this.updateHistories();
+  }
+
+  setLedCount(count) {
+    this.vortex.setLedCount(count);
     this.updateHistories();
   }
 

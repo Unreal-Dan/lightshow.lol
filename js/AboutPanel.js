@@ -1,3 +1,4 @@
+/* AboutPanel.js */
 import Panel from './Panel.js'
 
 export default class AboutPanel extends Panel {
