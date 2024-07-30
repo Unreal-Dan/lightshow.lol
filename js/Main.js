@@ -38,6 +38,24 @@ VortexLib().then(vortexLib => {
   // initialize the lightshow
   lightshow.start();
 
+  // Add key event listener for changing shapes
+  window.addEventListener('keydown', (event) => {
+    switch (event.key) {
+      case '1':
+        lightshow.setShape('circle');
+        break;
+      case '2':
+        lightshow.setShape('figure8');
+        break;
+      case '3':
+        lightshow.setShape('heart');
+        break;
+      case '4':
+        lightshow.setShape('box');
+        break;
+    }
+  });
+
   // create panels for the lightshow
   let aboutPanel = new AboutPanel(lightshow, vortexPort);
   let controlPanel = new ControlPanel(lightshow, vortexPort);
