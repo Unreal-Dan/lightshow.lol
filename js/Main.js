@@ -54,6 +54,7 @@ VortexLib().then(vortexLib => {
         lightshow.setShape('box');
         break;
     }
+    lightshow.angle = 0;
   });
 
   // create panels for the lightshow

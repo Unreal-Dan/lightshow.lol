@@ -227,7 +227,7 @@ export default class Lightshow {
   feedHeartPoints() {
     const centerX = (this.canvas.width / 2);
     const centerY = this.canvas.height / 2;
-    const scale = (this.circleRadius / 20);
+    const scale = (this.circleRadius / 20) + 1;
 
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
@@ -246,9 +246,10 @@ export default class Lightshow {
       }
 
       leds.forEach((col, index) => {
-        const t = this.angle + (index * (2 * Math.PI / leds.length));
-        const x = centerX + scale * 16 * Math.sin(t) ** 3;
-        const y = centerY - scale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        const radiusScale = 1 + index * this.spread / 100; // Modify this line to use spread to adjust the scale
+        const t = this.angle;
+        const x = centerX + scale * radiusScale * 16 * Math.pow(Math.sin(t), 3);
+        const y = centerY - scale * radiusScale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
         if (!col) {
           col = { red: 0, green: 0, blue: 0 };
         }
@@ -269,8 +270,7 @@ export default class Lightshow {
       }
 
       leds.forEach((col, index) => {
-        const squareIncrement = 30;  // Increment for each square's size based on the LED index
-        const boxSize = baseBoxSize + index * squareIncrement;  // Actual size of the square for this LED
+        const boxSize = baseBoxSize + index * this.spread;  // Actual size of the square for this LED
         const halfBoxSize = boxSize / 2;
         const fullPerimeter = 4 * boxSize;  // Total perimeter of the square
 
@@ -303,7 +303,6 @@ export default class Lightshow {
       });
     }
   }
-
 
   feedFigure8Points() {
     const centerX = (this.canvas.width / 2);
