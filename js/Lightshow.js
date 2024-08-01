@@ -212,7 +212,7 @@ export default class Lightshow {
         this.histories.push([]);
       }
 
-      this.angle -= ((0.02) * this.direction);
+      this.angle += ((0.02) * this.direction);
       if (this.angle >= 2 * Math.PI) {
         this.angle = 0;
       }
