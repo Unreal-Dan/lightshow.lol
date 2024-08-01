@@ -179,10 +179,17 @@ export default class ModesPanel extends Panel {
       this.lightshow.setLedCount(1); // Reset to default LED count
       modesListScrollContainer.style.height = '500px';
 
+      // hide the spread slider
+      document.getElementById('spread_div').style.display = 'block';
+
       // Hide the LED selection fieldset
       ledsFieldset.style.display = 'none';
       return;
     }
+
+    // display the spread slider
+    document.getElementById('spread_div').style.display = 'block';
+
     deviceTypeSelected.innerHTML = `
       <img src="${selectedIcon}" alt="${selectedValue} Logo">
       ${selectedValue}
@@ -287,6 +294,9 @@ export default class ModesPanel extends Panel {
     const deviceTypeSelect = document.getElementById('deviceType');
     deviceTypeSelect.value = this.vortexPort.name;
     deviceTypeSelect.disabled = true;
+
+    // display the spread slider
+    document.getElementById('spread_div').style.display = 'block';
 
     // Change the height of the #modesListScrollContainer when the device connects
     const modesListScrollContainer = document.getElementById('modesListScrollContainer');

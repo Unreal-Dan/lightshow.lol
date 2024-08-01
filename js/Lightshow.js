@@ -17,7 +17,9 @@ export default class Lightshow {
     this.circleRadius = 400;
     this.tickRate = 3;
     this.trailSize = 100;
+    this.spread = 15;
     this.angle = 0;
+    this.currentShape = 'circle'; // Default shape
     this.vortexLib = vortexLib;
     this.vortex = new vortexLib.Vortex();
     this.vortex.init();
@@ -127,41 +129,35 @@ export default class Lightshow {
     return this.vortex.engine().leds().ledCount();
   }
 
+  // function to set the shape
+  setShape(shape) {
+    this.currentShape = shape;
+  }
 
   draw() {
+    switch (this.currentShape) {
+      case 'circle':
+        this.feedCirclePoints();
+        break;
+      case 'figure8':
+        this.feedFigure8Points();
+        break;
+      case 'heart':
+        this.feedHeartPoints();
+        break;
+      case 'box':
+        this.feedBoxPoints();
+        break;
+      default:
+        console.warn('Unknown shape:', this.currentShape);
+        return;
+    }
+    this.drawHistories();
+  }
+
+  drawHistories() {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    const centerX = (this.canvas.width / 2);
-    const centerY = this.canvas.height / 2;
-    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
-
-    for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
-
-      // Ensure histories array has sub-arrays for each LED
-      while (this.histories.length < leds.length) {
-        this.histories.push([]);
-      }
-
-      this.angle -= 0.02;
-      if (this.angle >= 2 * Math.PI) {
-        this.angle = 0;
-      }
-
-      leds.forEach((col, index) => {
-        let radius = baseRadius + index * 15; // Adjust this value to control the distance between rings
-        const x = centerX + radius * Math.cos(this.angle);
-        const y = centerY + radius * Math.sin(this.angle);
-        if (!col) {
-          col = { red: 0, green: 0, blue: 0 };
-        }
-        this.histories[index].push({ x, y, color: col });
-      });
-    }
 
     this.histories.forEach(history => {
       for (let index = history.length - 1; index >= 0; index--) {
@@ -185,13 +181,160 @@ export default class Lightshow {
       }
     });
 
+    // Ensure histories do not exceed the trail size
     this.histories.forEach(history => {
-      if (history.length > this.trailSize) {
-        history.splice(0, this.tickRate);
+      while (history.length > this.trailSize) {
+        history.shift();
       }
     });
 
     requestAnimationFrame(this.draw.bind(this));
+  }
+
+  feedCirclePoints() {
+    const centerX = (this.canvas.width / 2);
+    const centerY = this.canvas.height / 2;
+    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
+        continue;
+      }
+
+      // Ensure histories array has sub-arrays for each LED
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
+      this.angle -= 0.02;
+      if (this.angle >= 2 * Math.PI) {
+        this.angle = 0;
+      }
+
+      leds.forEach((col, index) => {
+        let radius = baseRadius + index * this.spread; // Adjust this value to control the distance between rings
+        const x = centerX + radius * Math.cos(this.angle);
+        const y = centerY + radius * Math.sin(this.angle);
+        if (!col) {
+          col = { red: 0, green: 0, blue: 0 };
+        }
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
+  feedHeartPoints() {
+    const centerX = (this.canvas.width / 2);
+    const centerY = this.canvas.height / 2;
+    const scale = (this.circleRadius / 20) + 1;
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
+        continue;
+      }
+
+      // Ensure histories array has sub-arrays for each LED
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
+      this.angle += 0.05; // Adjust this value to control the speed of the heart shape
+      if (this.angle >= 2 * Math.PI) {
+        this.angle = 0;
+      }
+
+      leds.forEach((col, index) => {
+        const radiusScale = 1 + index * this.spread / 100; // Modify this line to use spread to adjust the scale
+        const t = this.angle;
+        const x = centerX + scale * radiusScale * 16 * Math.pow(Math.sin(t), 3);
+        const y = centerY - scale * radiusScale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        if (!col) {
+          col = { red: 0, green: 0, blue: 0 };
+        }
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
+  feedBoxPoints() {
+    const centerX = (this.canvas.width / 2);
+    const centerY = (this.canvas.height / 2);
+    const baseBoxSize = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));  // Start with a reasonable base size for visibility
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
+        continue;
+      }
+
+      leds.forEach((col, index) => {
+        const boxSize = baseBoxSize + index * this.spread;  // Actual size of the square for this LED
+        const halfBoxSize = boxSize / 2;
+        const fullPerimeter = 4 * boxSize;  // Total perimeter of the square
+
+        this.angle += (0.01 / leds.length) * (360 / fullPerimeter);  // Increment angle proportionally to the perimeter
+        if (this.angle >= 1) {  // Normalize the angle to prevent overflow
+          this.angle = 0;
+        }
+
+        const perimeterPosition = (this.angle * fullPerimeter) % fullPerimeter;  // Current position on the perimeter
+
+        let x = centerX, y = centerY;
+        if (perimeterPosition < boxSize) {
+          x = centerX - halfBoxSize + perimeterPosition;
+          y = centerY - halfBoxSize;
+        } else if (perimeterPosition < 2 * boxSize) {
+          x = centerX + halfBoxSize;
+          y = centerY - halfBoxSize + (perimeterPosition - boxSize);
+        } else if (perimeterPosition < 3 * boxSize) {
+          x = centerX + halfBoxSize - (perimeterPosition - 2 * boxSize);
+          y = centerY + halfBoxSize;
+        } else {
+          x = centerX - halfBoxSize;
+          y = centerY + halfBoxSize - (perimeterPosition - 3 * boxSize);
+        }
+
+        if (!col) {
+          col = { red: 0, green: 0, blue: 0 };
+        }
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
+  feedFigure8Points() {
+    const centerX = (this.canvas.width / 2);
+    const centerY = this.canvas.height / 2;
+    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
+        continue;
+      }
+
+      // Ensure histories array has sub-arrays for each LED
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
+      this.angle += 0.02;
+      if (this.angle >= 2 * Math.PI) {
+        this.angle = 0;
+      }
+
+      leds.forEach((col, index) => {
+        let radius = baseRadius + index * this.spread; // Adjust this value to control the distance between rings
+        const x = centerX + (radius * Math.sin(this.angle)) / (1 + Math.cos(this.angle) * Math.cos(this.angle));
+        const y = centerY + (radius * Math.sin(this.angle) * Math.cos(this.angle)) / (1 + Math.cos(this.angle) * Math.cos(this.angle));
+        if (!col) {
+          col = { red: 0, green: 0, blue: 0 };
+        }
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
   }
 
   start() {
@@ -267,7 +410,7 @@ export default class Lightshow {
     let set = this.getColorset(targetLeds[0]);
     set.addColor(new this.vortexLib.RGBColor(r, g, b));
     targetLeds.forEach(ledIndex => {
-      this.setColorset(set, [ ledIndex ]);
+      this.setColorset(set, [ledIndex]);
     });
   }
 
@@ -279,7 +422,7 @@ export default class Lightshow {
     }
     set.removeColor(index);
     targetLeds.forEach(ledIndex => {
-      this.setColorset(set, [ ledIndex ]);
+      this.setColorset(set, [ledIndex]);
     });
   }
 
@@ -288,7 +431,7 @@ export default class Lightshow {
     let set = this.getColorset(targetLeds[0]);
     set.set(index, new this.vortexLib.RGBColor(r, g, b));
     targetLeds.forEach(ledIndex => {
-      this.setColorset(set, [ ledIndex ]);
+      this.setColorset(set, [ledIndex]);
     });
   }
 

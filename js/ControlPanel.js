@@ -49,9 +49,19 @@ export default class ControlPanel extends Panel {
         default: 400,
         label: 'Radius',
         update: value => lightshow.circleRadius = value
+      },
+      {
+        id: 'spread',  // New Slider ID
+        type: 'range',
+        min: 0,
+        max: 100,
+        default: 15,
+        label: 'Spread',
+        display: 'none',
+        update: value => lightshow.spread = parseInt(value)  // Assume 'spread' is a new property in Lightshow
       }
     ];
-
+    
     const content = `
             <fieldset>
                 <legend>Animation</legend>
@@ -92,8 +102,8 @@ export default class ControlPanel extends Panel {
 
   static generateControlsContent(controls) {
     return controls.map(control => `
-            <div>
-                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%;">
+            <div id="${control.id}_div" style="display:${control.display}">
+                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%">
                 <label for="${control.id}">${control.label}</label>
             </div>
         `).join('');
