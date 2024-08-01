@@ -49,9 +49,19 @@ export default class ControlPanel extends Panel {
         default: 400,
         label: 'Radius',
         update: value => lightshow.circleRadius = value
+      },
+      {
+        id: 'spread',  // New Slider ID
+        type: 'range',
+        min: 0,
+        max: 100,
+        default: 15,
+        label: 'Spread',
+        hidden: true,
+        update: value => lightshow.spread = parseInt(value)  // Assume 'spread' is a new property in Lightshow
       }
     ];
-
+    
     const content = `
             <fieldset>
                 <legend>Animation</legend>
