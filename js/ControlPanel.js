@@ -57,7 +57,7 @@ export default class ControlPanel extends Panel {
         max: 100,
         default: 15,
         label: 'Spread',
-        hidden: true,
+        display: 'none',
         update: value => lightshow.spread = parseInt(value)  // Assume 'spread' is a new property in Lightshow
       }
     ];
@@ -102,8 +102,8 @@ export default class ControlPanel extends Panel {
 
   static generateControlsContent(controls) {
     return controls.map(control => `
-            <div>
-                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%;">
+            <div id="${control.id}_div" style="display:${control.display}">
+                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%">
                 <label for="${control.id}">${control.label}</label>
             </div>
         `).join('');
