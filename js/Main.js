@@ -53,6 +53,9 @@ VortexLib().then(vortexLib => {
       case '4':
         lightshow.setShape('box');
         break;
+      default:
+        // do nothing for all other keypresses
+        return;
     }
     lightshow.angle = 0;
   });
