@@ -20,6 +20,7 @@ export default class Lightshow {
     this.spread = 15;
     this.angle = 0;
     this.currentShape = 'circle'; // Default shape
+    this.direction = 1;
     this.vortexLib = vortexLib;
     this.vortex = new vortexLib.Vortex();
     this.vortex.init();
@@ -131,7 +132,11 @@ export default class Lightshow {
 
   // function to set the shape
   setShape(shape) {
-    this.currentShape = shape;
+    if (this.currentShape === shape) {
+      this.direction *= -1;
+    } else {
+      this.currentShape = shape;
+    }
   }
 
   draw() {
@@ -207,7 +212,7 @@ export default class Lightshow {
         this.histories.push([]);
       }
 
-      this.angle -= 0.02;
+      this.angle -= ((0.02) * this.direction);
       if (this.angle >= 2 * Math.PI) {
         this.angle = 0;
       }
@@ -240,7 +245,7 @@ export default class Lightshow {
         this.histories.push([]);
       }
 
-      this.angle += 0.05; // Adjust this value to control the speed of the heart shape
+      this.angle += (0.05 * this.direction); // Adjust this value to control the speed of the heart shape
       if (this.angle >= 2 * Math.PI) {
         this.angle = 0;
       }
@@ -274,9 +279,11 @@ export default class Lightshow {
         const halfBoxSize = boxSize / 2;
         const fullPerimeter = 4 * boxSize;  // Total perimeter of the square
 
-        this.angle += (0.01 / leds.length) * (360 / fullPerimeter);  // Increment angle proportionally to the perimeter
+        this.angle += (this.direction * (0.01 / leds.length) * (360 / fullPerimeter));  // Increment angle proportionally to the perimeter
         if (this.angle >= 1) {  // Normalize the angle to prevent overflow
           this.angle = 0;
+        } else if (this.angle < 0) {
+          this.angle = 1;
         }
 
         const perimeterPosition = (this.angle * fullPerimeter) % fullPerimeter;  // Current position on the perimeter
@@ -320,7 +327,7 @@ export default class Lightshow {
         this.histories.push([]);
       }
 
-      this.angle += 0.02;
+      this.angle += (0.02 * this.direction);
       if (this.angle >= 2 * Math.PI) {
         this.angle = 0;
       }
