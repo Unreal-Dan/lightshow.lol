@@ -72,7 +72,8 @@ export default class ModesPanel extends Panel {
       'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },
       'Handle': { image: 'public/images/handle.png', icon: 'public/images/handle-logo-square-64.png', label: 'Handle', ledCount: 3 },
       'Gloves': { image: 'public/images/gloves.png', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves', ledCount: 10 },
-      'Chromadeck': { image: 'public/images/chromadeck.png', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck', ledCount: 20 },
+      // TODO: uncomment these to make them available:
+      //'Chromadeck': { image: 'public/images/chromadeck.png', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck', ledCount: 20 },
       //'Spark': { image: 'public/images/spark.png', icon: 'public/images/spark-logo-square-64.png', label: 'Spark', ledCount: 6 },
       //'Duo': { image: 'public/images/duo.png', icon: 'public/images/duo-logo-square-64.png', label: 'Duo', ledCount: 2 }
     };
@@ -269,15 +270,7 @@ export default class ModesPanel extends Panel {
 
   onDeviceConnect() {
     console.log("Device connected: " + this.vortexPort.name);
-    const deviceLedCountMap = {
-      'Gloves': 10,
-      'Orbit': 28,
-      'Handle': 3,
-      'Duo': 2,
-      'Chromadeck': 20,
-      'Spark': 6
-    };
-    const ledCount = deviceLedCountMap[this.vortexPort.name];
+    const ledCount = this.devices[this.vortexPort.name].ledCount;
     if (ledCount !== undefined) {
       this.lightshow.setLedCount(ledCount);
       console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
@@ -597,9 +590,25 @@ export default class ModesPanel extends Panel {
   }
 
   getLedPositionsSpark() {
+    const ledPositions = [
+        // lol poor mans scaling
+        {x: 300 * (334 / 500), y: 40  * (333 / 500)}, // 1 oclock
+        {x: 350 * (334 / 500), y: 125  * (333 / 500)}, // 3 oclock
+        {x: 300 * (334 / 500), y: 212  * (333 / 500)}, // 5 oclock
+        {x: 200 * (334 / 500), y: 212  * (333 / 500)}, // 7 oclock
+        {x: 150 * (334 / 500), y: 125  * (333 / 500)}, // 9 oclock
+        {x: 200 * (334 / 500), y: 40  * (333 / 500)}, // 11 oclock
+    ];
+    return ledPositions;
   }
 
   getLedPositionsDuo() {
+    const ledPositions = [
+        // lol poor mans scaling
+        {x: 250 * (334 / 500), y: 25  * (333 / 500)}, // tip led
+        {x: 250 * (334 / 500), y: 140  * (333 / 500)}, // top led
+    ];
+    return ledPositions;
   }
 
   onDeviceDisconnect() {
