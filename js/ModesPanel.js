@@ -67,6 +67,15 @@ export default class ModesPanel extends Panel {
     this.shareModal = new Modal();
     this.exportModal = new Modal();
     this.importModal = new Modal();
+    this.devices = {
+      'None': { image: 'public/images/none-logo-square-512.png', icon: 'public/images/none-logo-square-64.png', label: 'None', ledCount: 1 },
+      'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },
+      'Handle': { image: 'public/images/handle.png', icon: 'public/images/handle-logo-square-64.png', label: 'Handle', ledCount: 3 },
+      'Gloves': { image: 'public/images/gloves.png', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves', ledCount: 10 },
+      'Chromadeck': { image: 'public/images/chromadeck.png', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck', ledCount: 20 },
+      //'Spark': { image: 'public/images/spark.png', icon: 'public/images/spark-logo-square-64.png', label: 'Spark', ledCount: 6 },
+      //'Duo': { image: 'public/images/duo.png', icon: 'public/images/duo-logo-square-64.png', label: 'Duo', ledCount: 2 }
+    };
   }
 
   initialize() {
@@ -78,7 +87,7 @@ export default class ModesPanel extends Panel {
     const hamburgerMenu = document.getElementById('hamburgerMenu');
 
     hamburgerButton.addEventListener('click', function() {
-      hamburgerMenu.style.display = hamburgerMenu.style.display === 'block' ? 'none' : 'block';
+      hamburgerMenu.style.display = (hamburgerMenu.style.display === 'block' ? 'none' : 'block');
     });
 
     document.addEventListener('click', function(event) {
@@ -119,6 +128,8 @@ export default class ModesPanel extends Panel {
       statusMessage.classList.add('status-pending');
       statusMessage.classList.remove('status-success', 'status-failure');
 
+      hamburgerMenu.style.display = 'none';
+
       try {
         await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
       } catch (error) {
@@ -156,24 +167,40 @@ export default class ModesPanel extends Panel {
     document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
       if (event.target && event.target.classList.contains('custom-dropdown-option')) {
         const selectedValue = event.target.getAttribute('data-value');
-        const selectedIcon = event.target.getAttribute('data-icon');
-        this.updateSelectedDevice(selectedValue, selectedIcon);
+        this.updateSelectedDevice(selectedValue);
         document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: selectedValue }));
       }
     });
 
     // Add event listener for the selected device type dropdown
     document.getElementById('deviceTypeSelected').addEventListener('click', () => {
+      if (event.currentTarget.classList.contains('locked')) {
+        event.stopPropagation(); // Prevent further propagation of the click event
+        event.preventDefault();  // Prevent the default action associated with the click event
+        return;
+      }
       document.getElementById('deviceTypeOptions').classList.toggle('show');
     });
     this.refreshModeList();
   }
+
+  lockDeviceSelection(locked) {
+    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
+
+    if (locked) {
+      deviceTypeSelected.classList.add('locked');
+    } else {
+      deviceTypeSelected.classList.remove('locked');
+    }
+  }
  
-  updateSelectedDevice(selectedValue, selectedIcon) {
+  updateSelectedDevice(device, lock = false) {
     const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const modesListScrollContainer = document.getElementById('modesListScrollContainer');
 
-    if (selectedValue === 'None') {
+    const deviceIcon = this.devices[device].icon;
+
+    if (device === 'None') {
       deviceTypeSelected.innerHTML = 'Select Device';
       document.getElementById('deviceTypeOptions').classList.remove('show');
       this.lightshow.setLedCount(1); // Reset to default LED count
@@ -184,6 +211,10 @@ export default class ModesPanel extends Panel {
 
       // Hide the LED selection fieldset
       ledsFieldset.style.display = 'none';
+
+      // set the lock
+      this.lockDeviceSelection(lock);
+
       return;
     }
 
@@ -191,65 +222,44 @@ export default class ModesPanel extends Panel {
     document.getElementById('spread_div').style.display = 'block';
 
     deviceTypeSelected.innerHTML = `
-      <img src="${selectedIcon}" alt="${selectedValue} Logo">
-      ${selectedValue}
+      <img src="${deviceIcon}" alt="${device} Logo">
+      ${device}
     `;
 
-    switch (selectedValue) {
-      case 'Orbit':
-        this.lightshow.setLedCount(28);
-        break;
-      case 'Handle':
-        this.lightshow.setLedCount(3);
-        break;
-      case 'Gloves':
-        this.lightshow.setLedCount(10);
-        break;
-      case 'Chromadeck':
-        this.lightshow.setLedCount(20);
-        break;
-      case 'Spark':
-        this.lightshow.setLedCount(6);
-        break;
-      case 'Duo':
-        this.lightshow.setLedCount(2);
-        break;
-      default:
-        // technically this doesn't really need to be done, the engine starts at 1
-        this.lightshow.setLedCount(1);
-        document.getElementById('deviceTypeOptions').classList.add('show');
-        if (modesListScrollContainer) {
-          modesListScrollContainer.style.height = '500px';
-        }
-        ledsFieldset.style.display = 'none';
-        return
+    this.lightshow.setLedCount(this.devices[device].ledCount);
+    if (device === 'None') {
+      document.getElementById('deviceTypeOptions').classList.add('show');
+      // make the modes list long again
+      if (modesListScrollContainer) {
+        modesListScrollContainer.style.height = '500px';
+      }
+      // hide led selection
+      ledsFieldset.style.display = 'none';
+      // all done
+      return
     }
+    
+    // otherwise handle all other devices with shorter modes list
     if (modesListScrollContainer) {
       modesListScrollContainer.style.height = '200px';
     }
     ledsFieldset.style.display = 'block'; // Show the fieldset for other devices
     document.getElementById('deviceTypeOptions').classList.remove('show');
+    this.lockDeviceSelection(lock);
     this.refreshModeList();
   }
 
   addIconsToDropdown() {
     const deviceTypeOptions = document.getElementById('deviceTypeOptions');
-    const devices = [
-      { value: 'None', icon: 'public/images/none-logo-square-64.png', label: 'None' },
-      { value: 'Orbit', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit' },
-      { value: 'Handle', icon: 'public/images/handle-logo-square-64.png', label: 'Handle' },
-      { value: 'Gloves', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves' },
-      { value: 'Chromadeck', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck' },
-      //{ value: 'Spark', icon: 'public/images/spark-logo-square-64.png', label: 'Spark' },
-      //{ value: 'Duo', icon: 'public/images/duo-logo-square-64.png', label: 'Duo' }
-    ];
-
-    deviceTypeOptions.innerHTML = devices.map(device => `
-    <div class="custom-dropdown-option" data-value="${device.value}" data-icon="${device.icon}">
+    deviceTypeOptions.innerHTML = Object.keys(this.devices).map(key => {
+      const device = this.devices[key];
+      return `
+    <div class="custom-dropdown-option" data-value="${key}">
       <img src="${device.icon}" alt="${device.label} Logo">
       ${device.label}
     </div>
-  `).join('');
+  `;
+    }).join('');
   }
 
   showDeviceConnectionSection() {
@@ -284,16 +294,10 @@ export default class ModesPanel extends Panel {
 
     // Render LED indicators for the connected device
     this.renderLedIndicators(this.vortexPort.name);
-    this.handleLedSelectionChange();
 
     // Show the device connection section and leds fieldset
     document.getElementById('deviceConnectionSection').style.display = 'block';
     document.getElementById('ledsFieldset').style.display = 'block';
-
-    // Lock the dropdown to the connected device
-    const deviceTypeSelect = document.getElementById('deviceType');
-    deviceTypeSelect.value = this.vortexPort.name;
-    deviceTypeSelect.disabled = true;
 
     // display the spread slider
     document.getElementById('spread_div').style.display = 'block';
@@ -303,6 +307,11 @@ export default class ModesPanel extends Panel {
     if (modesListScrollContainer) {
       modesListScrollContainer.style.height = '200px';
     }
+
+    // update device selection and lock it so it can't change
+    this.updateSelectedDevice(this.vortexPort.name, true);
+
+    this.selectAllLeds();
   }
 
   // Add the rest of the unchanged methods here...
@@ -599,6 +608,7 @@ export default class ModesPanel extends Panel {
     statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
     statusMessage.classList.remove('status-success', 'status-pending');
     statusMessage.classList.add('status-failure');
+    this.lockDeviceSelection(false);
   }
 
   refresh(fromEvent = false) {
@@ -676,16 +686,7 @@ export default class ModesPanel extends Panel {
     ledList.style.display = 'block'; // Show the LED list
     ledControls.style.display = 'flex'; // Show the LED controls
 
-    const deviceImages = {
-      'Gloves': 'public/images/gloves.png',
-      'Orbit': 'public/images/orbit.png',
-      'Handle': 'public/images/handle.png',
-      'Duo': 'public/images/duo.png',
-      'Chromadeck': 'public/images/chromadeck.png',
-      'Spark': 'public/images/spark.png'
-    };
-
-    const deviceImageSrc = deviceImages[deviceName];
+    const deviceImageSrc = this.devices[deviceName].image;
     if (deviceImageSrc) {
       const deviceImage = document.createElement('img');
       deviceImage.src = deviceImageSrc;

@@ -727,3 +727,8 @@ legend {
 .hamburger-menu button:active {
   background-color: #2e3436;
 }
+
+#deviceTypeSelected.locked {
+  cursor: default;
+  opacity: 0.6;
+}
