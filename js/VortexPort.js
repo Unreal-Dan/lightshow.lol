@@ -34,6 +34,10 @@ export default class VortexPort {
     this.name = '';
     this.version = 0;
     this.buildDate = '';
+    if (this.reader) {
+      this.reader.releaseLock();
+      this.reader = null;
+    }
     // Further state reset logic if necessary
   }
 
@@ -122,23 +126,27 @@ export default class VortexPort {
   }
 
   startReading() {
-    // todo: imlplement async read waiting for quit that can be canceled
+    // todo: implement async read waiting for quit that can be canceled
   }
 
   cancelReading() {
-    // todo: imlplement async read cancel
+    // todo: implement async read cancel
   }
 
   async readData() {
     if (!this.serialPort || !this.serialPort.readable) {
       return null;
     }
-    const reader = this.serialPort.readable.getReader();
+    if (this.reader) {
+      this.reader.releaseLock();
+    }
+    this.reader = this.serialPort.readable.getReader();
     try {
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } = await this.reader.read();
         if (done) {
-          reader.releaseLock();
+          this.reader.releaseLock();
+          this.reader = null;
           break;
         }
 
@@ -166,7 +174,8 @@ export default class VortexPort {
       console.error('Error reading data:', error);
       return null;
     } finally {
-      reader.releaseLock();
+      this.reader.releaseLock();
+      this.reader = null;
     }
   }
 
@@ -262,11 +271,16 @@ export default class VortexPort {
       throw new Error('Serial port is not readable');
     }
 
-    const reader = this.serialPort.readable.getReader();
+    if (this.reader) {
+      this.reader.releaseLock();
+    }
+    this.reader = this.serialPort.readable.getReader();
     try {
-      return await reader.read();
+      const result = await this.reader.read();
+      return result;
     } finally {
-      reader.releaseLock();
+      this.reader.releaseLock();
+      this.reader = null;
     }
   }
 
@@ -368,3 +382,4 @@ export default class VortexPort {
     await this.sendRaw(encodedVerb);
   }
 }
+
