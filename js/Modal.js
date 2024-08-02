@@ -1,43 +1,40 @@
-/* Model.js */
 export default class Modal {
-  constructor() {
-    this.createModal();
-    this.currentInputListener = null; // Store the current input listener
+  constructor(id) {
+    if (!document.getElementById("modal_" + id)) {
+      this.createModal(id);  // Ensure modal is created only once and not multiple times
+    }
+    this.currentInputListener = null;
   }
 
-  createModal() {
-    // Modal HTML structure
+  createModal(id) {
     const html = `
-      <div id="modal" class="modal">
+      <div id="modal_${id}" class="modal">
         <div class="modal-content">
           <span class="close">&times;</span>
           <span class="modal-title" style="font-size: 20px; font-weight: bold;"></span>
           <div class="modal-blurb"></div>
-          <input type="text" id="modalInput">
+          <input type="text" id="modalInput_${id}">
           <div class="modal-buttons"></div>
         </div>
       </div>
     `;
-
-    // Insert the modal into the document
     document.body.insertAdjacentHTML('beforeend', html);
-
-    // Cache DOM elements
-    this.modal = document.getElementById("modal");
-    this.modalInput = document.getElementById("modalInput");
-    this.modalTitle = this.modal.querySelector('.modal-title');
-    this.modalButtons = this.modal.querySelector('.modal-buttons');
-
-    // Setup event listeners
+    this.modalId = id;
+    this.cacheElements(id);
     this.setupEventListeners();
   }
 
+  cacheElements(id) {
+    this.modal = document.getElementById("modal_" + id);
+    this.modalInput = document.getElementById("modalInput_" + id);
+    this.modalTitle = this.modal.querySelector('.modal-title');
+    this.modalButtons = this.modal.querySelector('.modal-buttons');
+  }
+
   setupEventListeners() {
-    // Close button listener
     const closeButton = this.modal.querySelector('.close');
     closeButton.onclick = () => this.hide();
 
-    // Hide modal when clicking outside of it
     window.onclick = (event) => {
       if (event.target === this.modal) {
         this.hide();
@@ -46,12 +43,14 @@ export default class Modal {
   }
 
   show(config) {
-    // Remove the previous input event listener if it exists
+    if (!this.modal || !this.modalInput) {
+      this.cacheElements(this.modalId);
+    }
+
     if (this.currentInputListener) {
       this.modalInput.removeEventListener('input', this.currentInputListener);
     }
 
-    // Set the new input event listener if provided
     if (config.onInput) {
       this.currentInputListener = config.onInput;
       this.modalInput.addEventListener('input', this.currentInputListener);
@@ -59,7 +58,6 @@ export default class Modal {
       this.currentInputListener = null;
     }
 
-    // Update modal content
     if (config.defaultValue || config.placeholder) {
       this.modalInput.value = config.defaultValue || '';
       this.modalInput.placeholder = config.placeholder || 'Enter text';
@@ -68,14 +66,12 @@ export default class Modal {
       this.modalInput.style.display = 'none';
     }
 
-    // Set the blurb text
     const blurbElement = this.modal.querySelector('.modal-blurb');
     blurbElement.innerHTML = config.blurb || '';
 
     this.modalTitle.innerHTML = config.title || '';
     this.modal.style.display = 'block';
 
-    // Populate buttons if provided
     if (config.buttons) {
       this.populateButtons(config.buttons);
     } else {
@@ -84,10 +80,7 @@ export default class Modal {
   }
 
   hide() {
-    // Hide the modal
     this.modal.style.display = 'none';
-
-    // Clear buttons and remove the input event listener
     this.clearButtons();
     if (this.currentInputListener) {
       this.modalInput.removeEventListener('input', this.currentInputListener);
@@ -105,7 +98,7 @@ export default class Modal {
   }
 
   clearButtons() {
-    this.modalButtons.innerHTML = ''; // Clear all buttons
+    this.modalButtons.innerHTML = '';
   }
 
   createButton(buttonConfig) {
@@ -116,7 +109,7 @@ export default class Modal {
   }
 
   populateButtons(buttonConfigs) {
-    this.modalButtons.innerHTML = ''; // Clear existing buttons
+    this.modalButtons.innerHTML = '';
     buttonConfigs.forEach(config => {
       const button = this.createButton(config);
       this.modalButtons.appendChild(button);
