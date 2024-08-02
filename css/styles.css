@@ -870,7 +870,7 @@ legend {
   margin: 10px;
   position: fixed;
   left: 400px;
-  top: 500px;
+  top: 400px;
 }
 
 [id^="modal_color_"] .modal-content {

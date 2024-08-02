@@ -1,7 +1,7 @@
-/* ControlPanel.js */
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
+import ColorPicker from './ColorPicker.js';
 
 export default class ControlPanel extends Panel {
   constructor(lightshow, vortexPort) {
@@ -99,6 +99,9 @@ export default class ControlPanel extends Panel {
       this.clickCounts[control.id] = 0;
       this.sineWaveAnimations[control.id] = false;
     });
+
+    // Instantiate the ColorPicker
+    this.colorPicker = new ColorPicker(lightshow);
   }
 
   static generateControlsContent(controls) {
@@ -219,7 +222,6 @@ export default class ControlPanel extends Panel {
   stopSineWaveAnimation(controlId) {
     this.sineWaveAnimations[controlId] = false;
   }
-
 
   attachEventListeners() {
     this.controls.forEach(control => {
@@ -415,7 +417,12 @@ export default class ControlPanel extends Panel {
     const colorEntries = colorsetElement.querySelectorAll('.color-entry');
     colorEntries.forEach((entry, idx) => {
       entry.addEventListener('click', () => {
-        this.openColorPickerModal(idx);
+        const cur = this.lightshow.vortex.engine().modes().curMode();
+        if (!cur) {
+          return;
+        }
+        const set = cur.getColorset(this.targetLed);
+        this.colorPicker.openColorPickerModal(idx, set, (index, color) => this.updateColor(index, color));
       });
     });
 
@@ -437,263 +444,30 @@ export default class ControlPanel extends Panel {
       });
     }
   }
-  
-  rgbToHsv(r, g, b) {
-    // Create an RGBColor object
-    const RGBCol = new this.lightshow.vortexLib.RGBColor(r, g, b);
 
-    // Convert the RGB color to HSV
-    const HSVCol = this.lightshow.vortexLib.rgb_to_hsv_generic(RGBCol);
-    if (!HSVCol) {
-      return { h: 0, s: 0, v: 0 };
-    }
-
-    // Return the HSV values
-    return { h: HSVCol.hue, s: HSVCol.sat, v: HSVCol.val };
-  }
-
-  hsvToRgb(h, s, v) {
-    // Create an HSVColor object
-    const HSVCol = new this.lightshow.vortexLib.HSVColor(h, s, v);
-
-    // Convert the HSV color to RGB
-    const RGBCol = this.lightshow.vortexLib.hsv_to_rgb_generic(HSVCol);
-
-    // Extract the RGB values
-    const r = RGBCol.red;
-    const g = RGBCol.green;
-    const b = RGBCol.blue;
-
-    // Return the RGB values
-    return { r, g, b };
-  }
-
-  initColorPickerControls() {
-    const hueSlider = document.querySelector('.hue-slider');
-    const hueSelector = document.querySelector('.hue-selector');
-    const svBox = document.querySelector('.sv-box');
-    const svSelector = document.querySelector('.sv-selector');
-    const redSlider = document.getElementById('redSlider');
-    const greenSlider = document.getElementById('greenSlider');
-    const blueSlider = document.getElementById('blueSlider');
-
-    if (!hueSlider || !hueSelector || !svBox || !svSelector || !redSlider || !greenSlider || !blueSlider) {
-      console.error('One or more color picker elements are missing.');
-      return;
-    }
-
-    hueSlider.addEventListener('mousedown', (event) => {
-      this.handleHueChange(event, hueSlider, hueSelector);
-    });
-
-    svBox.addEventListener('mousedown', (event) => {
-      this.handleSvChange(event, svBox, svSelector);
-    });
-
-    redSlider.addEventListener('input', (event) => this.handleRgbChange(event));
-    greenSlider.addEventListener('input', (event) => this.handleRgbChange(event));
-    blueSlider.addEventListener('input', (event) => this.handleRgbChange(event));
-  }
-
-  setHueSlider(hue) {
-    const hueSlider = document.querySelector('.hue-slider');
-    const hueSelector = hueSlider.querySelector('.hue-selector');
-    const rect = hueSlider.getBoundingClientRect();
-
-    // Calculate the top position based on the hue value
-    const topPosition = (hue / 255) * rect.height;
-
-    // Set the top style of the hue selector
-    hueSelector.style.top = `${topPosition}px`;
-  }
-
-  getHue() {
-    const hueSlider = document.querySelector('.hue-slider');
-    const rect = hueSlider.getBoundingClientRect();
-    const y = hueSlider.querySelector('.hue-selector').offsetTop; // Add this element to track
-    const hue = (y / rect.height) * 255;
-    return hue;
-  }
-
-  getSv() {
-    const svSelector = document.querySelector('.sv-selector');
-    const svBox = document.querySelector('.sv-box');
-    const rect = svBox.getBoundingClientRect();
-    const s = (svSelector.offsetLeft / rect.width) * 255;
-    const v = (1 - svSelector.offsetTop / rect.height) * 255;
-    return { s, v };
-  }
-
-  handleRgbChange(event) {
-    const r = parseInt(document.getElementById('redSlider').value, 10);
-    const g = parseInt(document.getElementById('greenSlider').value, 10);
-    const b = parseInt(document.getElementById('blueSlider').value, 10);
-
-    this.updateColorPreview(r, g, b);
-  }
-
-  handleHueChange(event, hueSlider, hueSelector) {
-    const rect = hueSlider.getBoundingClientRect();
-    const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-    const hue = (y / rect.height) * 255; // Scale hue to 0-255
-
-    hueSelector.style.top = `${y}px`;
-
-    const { s, v } = this.getSv();
-    this.updateSvBoxBackground(hue);
-    this.updateColorPreviewHSV(hue, s, v);
-
-    const moveListener = (e) => {
-      const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-      const hue = (y / rect.height) * 255; // Scale hue to 0-255
-
-      hueSelector.style.top = `${y}px`;
-
-      const { s, v } = this.getSv();
-      this.updateSvBoxBackground(hue);
-      this.updateColorPreviewHSV(hue, s, v);
-    };
-
-    const upListener = () => {
-      document.removeEventListener('mousemove', moveListener);
-      document.removeEventListener('mouseup', upListener);
-    };
-
-    document.addEventListener('mousemove', moveListener);
-    document.addEventListener('mouseup', upListener);
-  }
-
-  handleSvChange(event, svBox, svSelector) {
-    const rect = svBox.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
-
-    const s = (x / rect.width) * 255; // Scale saturation to 0-255
-    const v = (1 - y / rect.height) * 255; // Scale value to 0-255
-
-    svSelector.style.left = `${x}px`;
-    svSelector.style.top = `${y}px`;
-
-    const h = this.getHue();
-    this.updateColorPreviewHSV(h, s, v);
-
-    const moveListener = (e) => {
-      const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-
-      const s = (x / rect.width) * 255; // Scale saturation to 0-255
-      const v = (1 - y / rect.height) * 255; // Scale value to 0-255
-
-      svSelector.style.left = `${x}px`;
-      svSelector.style.top = `${y}px`;
-
-      const h = this.getHue();
-      this.updateColorPreviewHSV(h, s, v);
-    };
-
-    const upListener = () => {
-      document.removeEventListener('mousemove', moveListener);
-      document.removeEventListener('mouseup', upListener);
-    };
-
-    document.addEventListener('mousemove', moveListener);
-    document.addEventListener('mouseup', upListener);
-  }
-
-  openColorPickerModal(index) {
+  updateColor(index, hexValue) {
+    let hex = hexValue.replace(/^#/, '');
+    let bigint = parseInt(hex, 16);
+    let r = (bigint >> 16) & 255;
+    let g = (bigint >> 8) & 255;
+    let b = bigint & 255;
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
       return;
     }
-    const set = cur.getColorset(this.targetLed);
-    const col = set.get(index);
-
-    if (!this.modals) {
-      this.modals = [];
-    }
-    if (!this.modals[index]) {
-      this.modals[index] = new Modal('color_' + index);
-    }
-
-    // Convert RGB to HSV
-    const { h, s, v } = this.rgbToHsv(col.red, col.green, col.blue);
-
-    this.modals[index].show({
-      title: 'Edit Color',
-      blurb: `<div class="color-picker-modal-content">
-                  <div class="sv-box-container">
-                    <div class="sv-box" style="background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(h / 255) * 360}, 100%, 50%));">
-                      <div class="sv-selector" style="left: ${(s / 255) * 100}%; top: ${(1 - v / 255) * 100}%;"></div>
-                    </div>
-                  </div>
-                  <div class="hue-slider-container">
-                    <div class="hue-slider">
-                      <div class="hue-selector" style="top: ${(h / 255) * 100}%;"></div>
-                    </div>
-                  </div>
-                  <div class="rgb-sliders">
-                    <div class="slider-group">
-                      <label for="redSlider">R</label>
-                      <input type="range" id="redSlider" min="0" max="255" value="${col.red}" style="--slider-color: rgb(255,0,0);">
-                    </div>
-                    <div class="slider-group">
-                      <label for="greenSlider">G</label>
-                      <input type="range" id="greenSlider" min="0" max="255" value="${col.green}" style="--slider-color: rgb(0,255,0);">
-                    </div>
-                    <div class="slider-group">
-                      <label for="blueSlider">B</label>
-                      <input type="range" id="blueSlider" min="0" max="255" value="${col.blue}" style="--slider-color: rgb(0,0,255);">
-                    </div>
-                  </div>
-                </div>`,
+    let set = cur.getColorset(this.targetLed);
+    set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
+    this.targetLeds.forEach(led => {
+      cur.setColorset(set, led);
     });
-
-    this.initColorPickerControls();
-
-    // Update color in real-time as the user drags
-    const updateColor = () => {
-      const r = parseInt(document.getElementById('redSlider').value, 10) & 0xFF;
-      const g = parseInt(document.getElementById('greenSlider').value, 10) & 0xFF;
-      const b = parseInt(document.getElementById('blueSlider').value, 10) & 0xFF;
-      this.updateColor(index, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
-    };
-
-    document.getElementById('redSlider').addEventListener('input', updateColor);
-    document.getElementById('greenSlider').addEventListener('input', updateColor);
-    document.getElementById('blueSlider').addEventListener('input', updateColor);
-
-    const svBox = document.querySelector('.sv-box');
-    const hueSlider = document.querySelector('.hue-slider');
-
-    const svListener = () => updateColor();
-    const hueListener = () => updateColor();
-
-    svBox.addEventListener('mousemove', svListener);
-    hueSlider.addEventListener('mousemove', hueListener);
-    svBox.addEventListener('mouseup', updateColor);
-    hueSlider.addEventListener('mouseup', updateColor);
-  }
-
-  updateColorPreviewHSV(h, s, v) {
-    const { r, g, b } = this.hsvToRgb(h, s, v);
-    document.getElementById('redSlider').value = r;
-    document.getElementById('greenSlider').value = g;
-    document.getElementById('blueSlider').value = b;
-    this.updateSvBoxBackground(h); // Ensure SV box background updates with new hue
-  }
-
-  updateColorPreview(r, g, b) {
-    document.getElementById('redSlider').value = r;
-    document.getElementById('greenSlider').value = g;
-    document.getElementById('blueSlider').value = b;
-    const { h, s, v } = this.rgbToHsv(r, g, b);
-    this.updateSvBoxBackground(h); // Ensure SV box background updates with new hue
-    this.setHueSlider(h);
-  }
-
-  updateSvBoxBackground(hue) {
-    const svBox = document.querySelector('.sv-box');
-    svBox.style.background = `linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(hue / 255) * 360}, 100%, 50%))`;
+    // re-initialize the demo mode because num colors may have changed
+    cur.init();
+    // save
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    // refresh
+    this.refreshColorset();
+    // demo on device
+    this.demoModeOnDevice();
   }
 
   async demoModeOnDevice() {
@@ -871,31 +645,6 @@ export default class ControlPanel extends Panel {
       return;
     }
     set.removeColor(index);
-    this.targetLeds.forEach(led => {
-      cur.setColorset(set, led);
-    });
-    // re-initialize the demo mode because num colors may have changed
-    cur.init();
-    // save
-    this.lightshow.vortex.engine().modes().saveCurMode();
-    // refresh
-    this.refreshColorset();
-    // demo on device
-    this.demoModeOnDevice();
-  }
-
-  updateColor(index, hexValue) {
-    let hex = hexValue.replace(/^#/, '');
-    let bigint = parseInt(hex, 16);
-    let r = (bigint >> 16) & 255;
-    let g = (bigint >> 8) & 255;
-    let b = bigint & 255;
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-      return;
-    }
-    let set = cur.getColorset(this.targetLed);
-    set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
     this.targetLeds.forEach(led => {
       cur.setColorset(set, led);
     });
