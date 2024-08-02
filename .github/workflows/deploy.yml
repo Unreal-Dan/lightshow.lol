@@ -13,6 +13,7 @@ jobs:
     - name: Checkout Vortex Engine
       uses: actions/checkout@v3
       with:
+        fetch-depth: 0 # Fetches all history for all branches and tags
         repository: 'StoneOrbits/VortexEngine'
         path: 'VortexEngine'
         ref: 'desktop'
