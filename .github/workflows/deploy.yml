@@ -17,7 +17,7 @@ jobs:
         path: 'VortexEngine'
         ref: 'desktop'
 
-    # Build Vortex cli tool
+    # Build Vortex CLI Tool
     - name: Build Vortex CLI Tool
       run: |
         cd VortexEngine/VortexEngine/VortexCLI
@@ -46,6 +46,15 @@ jobs:
         make clean
         make -j wasm
 
+    # Cache build artifacts
+    - name: Cache VortexLib Build Artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          VortexEngine/VortexEngine/VortexLib/VortexLib.js
+          VortexEngine/VortexEngine/VortexLib/VortexLib.wasm
+        key: VortexLib-${{ github.sha }}
+
     - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.5.3
       with:
@@ -63,3 +72,4 @@ jobs:
         #ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
         ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
         #ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
+
