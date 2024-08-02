@@ -512,7 +512,6 @@ export default class ControlPanel extends Panel {
     const rect = hueSlider.getBoundingClientRect();
     const y = hueSlider.querySelector('.hue-selector').offsetTop; // Add this element to track
     const hue = (y / rect.height) * 255;
-    console.log("Getting hue: " + hue);
     return hue;
   }
 
