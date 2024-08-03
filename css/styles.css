@@ -767,10 +767,10 @@ legend {
   width: 100%;
   height: 100%;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
-  border: 1px solid #ddd;
   border-radius: 4px;
   cursor: crosshair;
   position: relative;
+  border: 1px solid #a3a3a3;
 }
 
 .sv-selector {
@@ -796,6 +796,7 @@ legend {
   position: relative;
   width: 100%;
   height: 100%;
+  border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
   border-radius: 4px;
   cursor: pointer;
@@ -883,14 +884,17 @@ legend {
 
 #redSlider {
   background: linear-gradient(to top, black, rgb(255, 0, 0)); /* Red gradient */
+  border: 1px solid #454545;
 }
 
 #greenSlider {
   background: linear-gradient(to top, black, rgb(0, 255, 0)); /* Green gradient */
+  border: 1px solid #454545;
 }
 
 #blueSlider {
   background: linear-gradient(to top, black, rgb(0, 0, 255)); /* Blue gradient */
+  border: 1px solid #454545;
 }
 
 #redSlider::-webkit-slider-thumb,
