@@ -395,17 +395,16 @@ legend {
 }
 
 .modal {
-  display: none;
+  display: none; /* Hidden by default */
   position: fixed;
-  z-index: 1;
+  z-index: 1000;
   left: 0;
-  top: -50px;
+  top: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  padding: 10px;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+  justify-content: center;
+  align-items: center;
 }
 
 .modal-content {
@@ -752,14 +751,41 @@ legend {
 
 .color-picker-modal-content {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start; /* Aligns items to the top */
+  flex-direction: column;
+  align-items: center;
+  width: 100%; /* Ensure the content stretches across the full width */
+  max-width: 600px; /* Limit the maximum width for responsiveness */
+  margin: auto; /* Center the modal content */
+}
+
+.color-picker-top-section {
+  display: flex;
+  width: 100%;
+  justify-content: left; /* Distribute space between SV box and sliders */
+  flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
+  margin-bottom: 20px;
+}
+
+.color-picker-bottom-section {
+  display: flex;
+  width: 100%;
+  justify-content: left; /* Distribute space between SV box and sliders */
+  flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
+  margin-bottom: 20px;
+}
+
+
+
+.sliders-section {
+  padding: 0;
+  margin-top: -20px;
+  margin-left: 35px;
 }
 
 .sv-box-container {
-  width: 200px;
+  width: 200px; /* Minimum width to prevent squishing */
   height: 200px;
-  margin-top: 26px;
+  margin-right: 15px;
   position: relative;
 }
 
@@ -768,6 +794,7 @@ legend {
   height: 100%;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
   border-radius: 4px;
+  margin-top: 5px;
   cursor: crosshair;
   position: relative;
   border: 1px solid #a3a3a3;
@@ -787,9 +814,6 @@ legend {
 .hue-slider-container {
   width: 30px;
   height: 200px; /* Match SV box height */
-  margin-left: 20px; /* Space between SV box and hue slider */
-  margin-top: 26px;
-  position: relative;
 }
 
 .hue-slider {
@@ -799,6 +823,7 @@ legend {
   border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
   border-radius: 4px;
+  margin-top: 5px;
   cursor: pointer;
 }
 
@@ -811,15 +836,14 @@ legend {
   background: rgba(255, 255, 255, 0.5);
   transform: translate(-50%, -50%);
   pointer-events: none;
-  margin-left: 15px;
+  left: 50%;
 }
 
 .rgb-sliders {
   display: flex;
   flex-direction: row; /* Align sliders horizontally */
   gap: 20px; /* Space between sliders */
-  justify-content: center; /* Center the sliders */
-  margin-left: 30px;
+  justify-content: flex-start; /* Align sliders to the left */
 }
 
 .slider-group {
@@ -883,16 +907,19 @@ legend {
 }
 
 #redSlider {
+  margin: 0;
   background: linear-gradient(to top, black, rgb(255, 0, 0)); /* Red gradient */
   border: 1px solid #454545;
 }
 
 #greenSlider {
+  margin: 0;
   background: linear-gradient(to top, black, rgb(0, 255, 0)); /* Green gradient */
   border: 1px solid #454545;
 }
 
 #blueSlider {
+  margin: 0;
   background: linear-gradient(to top, black, rgb(0, 0, 255)); /* Blue gradient */
   border: 1px solid #454545;
 }
@@ -919,5 +946,35 @@ legend {
   cursor: pointer;
   border-radius: 50%;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.radial-hue-cone-container {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.radial-hue-cone {
+  width: 150px;
+  height: 150px;
+  margin: 30px;
+  margin-top: 20px;
+  border-radius: 50%;
+  border: 1px solid black;
+  background: conic-gradient(
+    red, yellow, lime, cyan, blue, magenta, red
+  );
+  position: relative;
+  cursor: pointer;
+}
+
+.hue-indicator {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  border-radius: 50%;
+  border: 2px solid #000;
+  transform: translate(-50%, -50%);
 }
 

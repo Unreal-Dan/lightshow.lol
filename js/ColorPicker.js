@@ -34,35 +34,49 @@ export default class ColorPicker {
     this.modal.show({
       title: 'Edit Color',
       blurb: `<div class="color-picker-modal-content">
-              <div class="sv-box-container">
-                <div class="sv-box" style="background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(h / 255) * 360}, 100%, 50%));">
-                  <div class="sv-selector" style="left: ${(s / 255) * 100}%; top: ${(1 - v / 255) * 100}%;"></div>
+                <div class="color-picker-top-section">
+                  <div class="sv-box-container">
+                    <div class="sv-box" style="background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(h / 255) * 360}, 100%, 50%));">
+                      <div class="sv-selector" style="left: ${(s / 255) * 100}%; top: ${(1 - v / 255) * 100}%;"></div>
+                    </div>
+                  </div>
+                  <div class="hue-slider-container">
+                    <div class="hue-slider">
+                      <div class="hue-selector" style="top: ${(h / 255) * 100}%;"></div>
+                    </div>
+                  </div>
+                  <div class="sliders-section">
+                    <div class="rgb-sliders">
+                      <div class="slider-group">
+                        <label for="redSlider">R</label>
+                        <input type="range" id="redSlider" min="0" max="255" value="${col.red}" style="--slider-color: rgb(255,0,0);">
+                      </div>
+                      <div class="slider-group">
+                        <label for="greenSlider">G</label>
+                        <input type="range" id="greenSlider" min="0" max="255" value="${col.green}" style="--slider-color: rgb(0,255,0);">
+                      </div>
+                      <div class="slider-group">
+                        <label for="blueSlider">B</label>
+                        <input type="range" id="blueSlider" min="0" max="255" value="${col.blue}" style="--slider-color: rgb(0,0,255);">
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="hue-slider-container">
-                <div class="hue-slider">
-                  <div class="hue-selector" style="top: ${(h / 255) * 100}%;"></div>
+                <div class="color-picker-bottom-section">
+                  <div class="radial-hue-cone-container">
+                    <div class="radial-hue-cone">
+                      <div class="hue-indicator"></div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="rgb-sliders">
-                <div class="slider-group">
-                  <label for="redSlider">R</label>
-                  <input type="range" id="redSlider" min="0" max="255" value="${col.red}" style="--slider-color: rgb(255,0,0);">
-                </div>
-                <div class="slider-group">
-                  <label for="greenSlider">G</label>
-                  <input type="range" id="greenSlider" min="0" max="255" value="${col.green}" style="--slider-color: rgb(0,255,0);">
-                </div>
-                <div class="slider-group">
-                  <label for="blueSlider">B</label>
-                  <input type="range" id="blueSlider" min="0" max="255" value="${col.blue}" style="--slider-color: rgb(0,0,255);">
-                </div>
-              </div>
-            </div>`,
+              </div>`,
     });
 
     // Initialize color picker controls
     this.initColorPickerControls(updateColorCallback, index);
+
+    // Initialize the hue circle
+    this.initHueCircle(h);
   }
 
   initColorPickerControls(updateColorCallback, index) {
@@ -73,8 +87,10 @@ export default class ColorPicker {
     const redSlider = document.getElementById('redSlider');
     const greenSlider = document.getElementById('greenSlider');
     const blueSlider = document.getElementById('blueSlider');
+    const hueCone = document.querySelector('.radial-hue-cone');
+    const hueIndicator = document.querySelector('.hue-indicator');
 
-    if (!hueSlider || !hueSelector || !svBox || !svSelector || !redSlider || !greenSlider || !blueSlider) {
+    if (!hueSlider || !hueSelector || !svBox || !svSelector || !redSlider || !greenSlider || !blueSlider || !hueCone || !hueIndicator) {
       console.error('One or more color picker elements are missing.');
       return;
     }
@@ -86,6 +102,7 @@ export default class ColorPicker {
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.updateSvBoxBackground(h);
       this.setHueSlider(h);
+      this.setHueIndicator(h); // Update hue indicator
       updateColorCallback(this.selectedIndex, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
     };
 
@@ -95,6 +112,8 @@ export default class ColorPicker {
       greenSlider.value = g;
       blueSlider.value = b;
       this.updateSvBoxBackground(h);
+      this.setHueSlider(h);
+      this.setHueIndicator(h); // Update hue indicator
       updateColorCallback(this.selectedIndex, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
     };
 
@@ -107,26 +126,8 @@ export default class ColorPicker {
 
       const { s, v } = this.getSv();
       this.updateSvBoxBackground(hue);
+      this.setHueIndicator(hue); // Update hue indicator
       updateColorPreview(hue, s, v);
-
-      const moveListener = (e) => {
-        const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-        const hue = (y / rect.height) * 255; // Scale hue to 0-255
-
-        hueSelector.style.top = `${y}px`;
-
-        const { s, v } = this.getSv();
-        this.updateSvBoxBackground(hue);
-        updateColorPreview(hue, s, v);
-      };
-
-      const upListener = () => {
-        document.removeEventListener('mousemove', moveListener);
-        document.removeEventListener('mouseup', upListener);
-      };
-
-      document.addEventListener('mousemove', moveListener);
-      document.addEventListener('mouseup', upListener);
     };
 
     const handleSvChange = (event) => {
@@ -141,38 +142,62 @@ export default class ColorPicker {
       svSelector.style.top = `${y}px`;
 
       const h = this.getHue();
+      this.setHueIndicator(h); // Update hue indicator
       updateColorPreview(h, s, v);
+    };
 
-      const moveListener = (e) => {
-        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-        const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-
-        const s = (x / rect.width) * 255; // Scale saturation to 0-255
-        const v = (1 - y / rect.height) * 255; // Scale value to 0-255
-
-        svSelector.style.left = `${x}px`;
-        svSelector.style.top = `${y}px`;
-
-        const h = this.getHue();
-        updateColorPreview(h, s, v);
-      };
-
-      const upListener = () => {
-        document.removeEventListener('mousemove', moveListener);
-        document.removeEventListener('mouseup', upListener);
-      };
-
-      document.addEventListener('mousemove', moveListener);
-      document.addEventListener('mouseup', upListener);
+    const startMoveListener = (event, moveHandler, endHandler) => {
+      moveHandler(event);
+      document.addEventListener('mousemove', moveHandler);
+      document.addEventListener('mouseup', () => {
+        document.removeEventListener('mousemove', moveHandler);
+        document.removeEventListener('mouseup', endHandler);
+      }, { once: true });
     };
 
     // Reattach event listeners
-    hueSlider.addEventListener('mousedown', handleHueChange);
-    svBox.addEventListener('mousedown', handleSvChange);
+    hueSlider.addEventListener('mousedown', (event) => startMoveListener(event, handleHueChange));
+    svBox.addEventListener('mousedown', (event) => startMoveListener(event, handleSvChange));
 
     redSlider.addEventListener('input', updateColor);
     greenSlider.addEventListener('input', updateColor);
     blueSlider.addEventListener('input', updateColor);
+
+    // Handle clicks and drag on the hue cone
+    hueCone.addEventListener('mousedown', (event) => startMoveListener(event, (e) => this.handleHueConeMove(e, updateColorPreview)));
+  }
+
+  initHueCircle(h) {
+    this.setHueIndicator(h);
+  }
+
+  setHueIndicator(hue) {
+    const hueCone = document.querySelector('.radial-hue-cone');
+    const hueIndicator = document.querySelector('.hue-indicator');
+
+    const radius = hueCone.offsetWidth / 2;
+    const angle = (hue / 255) * 360;
+    const radian = (angle * Math.PI) / 180;
+
+    const x = radius + radius * Math.cos(radian);
+    const y = radius - radius * Math.sin(radian); // Corrected the y calculation for top-to-bottom coordinate system
+
+    hueIndicator.style.left = `${x}px`;
+    hueIndicator.style.top = `${y}px`;
+  }
+
+  handleHueConeMove(event, updateColorPreview) {
+    const hueCone = document.querySelector('.radial-hue-cone');
+    const rect = hueCone.getBoundingClientRect();
+    const x = event.clientX - rect.left - hueCone.offsetWidth / 2;
+    const y = event.clientY - rect.top - hueCone.offsetHeight / 2;
+
+    const angle = Math.atan2(-y, x) * (180 / Math.PI); // Convert angle to 0-360 range
+    const correctedAngle = (angle < 0) ? angle + 360 : angle; // Ensure angle is non-negative
+
+    const hue = (correctedAngle / 360) * 255;
+    const { s, v } = this.getSv();
+    updateColorPreview(hue, s, v); // Update color based on angle
   }
 
   updateSvBoxBackground(hue) {
