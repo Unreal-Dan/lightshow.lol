@@ -4,7 +4,7 @@ export default class ColorPicker {
   constructor(lightshow) {
     this.lightshow = lightshow;
     this.modals = [];
-    this.currentModal = null;
+    this.selectedIndex = 0;
   }
 
   rgbToHsv(r, g, b) {
@@ -22,20 +22,16 @@ export default class ColorPicker {
   openColorPickerModal(index, colorSet, updateColorCallback) {
     const col = colorSet.get(index);
 
-    // Close the currently open modal if any
-    if (this.currentModal) {
-      this.currentModal.hide();
-    }
-
     // Create or reuse the modal for the current index
-    if (!this.modals[index]) {
-      this.modals[index] = new Modal('color_' + index);
+    if (!this.modal) {
+      this.modal = new Modal('color_picker');
     }
+    this.selectedIndex = index;
 
     const { h, s, v } = this.rgbToHsv(col.red, col.green, col.blue);
 
     // Show the modal with the current color
-    this.modals[index].show({
+    this.modal.show({
       title: 'Edit Color',
       blurb: `<div class="color-picker-modal-content">
               <div class="sv-box-container">
@@ -65,9 +61,6 @@ export default class ColorPicker {
             </div>`,
     });
 
-    // Track the currently open modal
-    this.currentModal = this.modals[index];
-
     // Initialize color picker controls
     this.initColorPickerControls(updateColorCallback, index);
   }
@@ -93,7 +86,7 @@ export default class ColorPicker {
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.updateSvBoxBackground(h);
       this.setHueSlider(h);
-      updateColorCallback(index, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
+      updateColorCallback(this.selectedIndex, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
     };
 
     const updateColorPreview = (h, s, v) => {
@@ -102,7 +95,7 @@ export default class ColorPicker {
       greenSlider.value = g;
       blueSlider.value = b;
       this.updateSvBoxBackground(h);
-      updateColorCallback(index, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
+      updateColorCallback(this.selectedIndex, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
     };
 
     const handleHueChange = (event) => {

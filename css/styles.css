@@ -864,7 +864,7 @@ legend {
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-[id^="modal_color_"] {
+[id^="modal_color_picker"] {
   width: 500px;
   height: 500px;
   padding: 0;
@@ -874,7 +874,7 @@ legend {
   top: 400px;
 }
 
-[id^="modal_color_"] .modal-content {
+[id^="modal_color_picker"] .modal-content {
   width: 100%;
   height: 100%;
   padding: 20px;
