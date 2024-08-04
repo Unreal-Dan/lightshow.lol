@@ -146,7 +146,7 @@ export default class ColorPicker {
     }
 
     // Update all color-related elements and call the external callback
-    const updateColorUI = () => {
+    const updateColorUI = (isDragging = false) => {
       const { r, g, b, h, s, v } = this.colorState;
       redSlider.value = r;
       greenSlider.value = g;
@@ -165,18 +165,19 @@ export default class ColorPicker {
       this.setHueIndicator(h);
       updateColorCallback(
         this.selectedIndex,
-        `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+        `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`,
+        isDragging // Pass isDragging to callback
       );
     };
 
     // Handler functions for different input changes
-    const handleRgbChange = () => {
+    const handleRgbSliderChange = (isDragging) => {
       const r = parseInt(redSlider.value, 10) & 0xff;
       const g = parseInt(greenSlider.value, 10) & 0xff;
       const b = parseInt(blueSlider.value, 10) & 0xff;
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.colorState = { r, g, b, h, s, v };
-      updateColorUI();
+      updateColorUI(isDragging);
     };
 
     const handleRgbInputChange = (event) => {
@@ -199,7 +200,7 @@ export default class ColorPicker {
       updateColorUI();
     };
 
-    const handleHueChange = (event) => {
+    const handleHueSliderChange = (event, isDragging) => {
       const rect = hueSlider.getBoundingClientRect();
       const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
       const hue = (y / rect.height) * 255;
@@ -207,19 +208,19 @@ export default class ColorPicker {
       const { r, g, b } = this.hsvToRgb(hue, s, v);
       hueSelector.style.top = `${y}px`;
       this.colorState = { r, g, b, h: hue, s, v };
-      updateColorUI();
+      updateColorUI(isDragging);
     };
 
-    const handleHueInputChange = () => {
-      const h = Math.round(parseInt(hueInput.value, 10));
-      const s = Math.round(parseInt(satInput.value, 10));
-      const v = Math.round(parseInt(valInput.value, 10));
+    const handleHsvInputChange = () => {
+      const h = Math.round(parseInt(hueInput.value, 10)) & 0xFF;
+      const s = Math.round(parseInt(satInput.value, 10)) & 0xFF;
+      const v = Math.round(parseInt(valInput.value, 10)) & 0xFF;
       const { r, g, b } = this.hsvToRgb(h, s, v);
       this.colorState = { r, g, b, h, s, v };
       updateColorUI();
     };
 
-    const handleSvChange = (event) => {
+    const handleSvBoxChange = (event, isDragging) => {
       const rect = svBox.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
       const y = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
@@ -230,7 +231,7 @@ export default class ColorPicker {
       svSelector.style.left = `${x}px`;
       svSelector.style.top = `${y}px`;
       this.colorState = { r, g, b, h, s, v };
-      updateColorUI();
+      updateColorUI(isDragging);
     };
 
     const handleHexInputChange = () => {
@@ -244,7 +245,7 @@ export default class ColorPicker {
       updateColorUI();
     };
 
-    const handleHueConeChange = (event) => {
+    const handleHueConeChange = (event, isDragging) => {
       const hueCone = document.querySelector('.radial-hue-cone');
       const rect = hueCone.getBoundingClientRect();
       const x = event.clientX - rect.left - hueCone.offsetWidth / 2;
@@ -255,44 +256,74 @@ export default class ColorPicker {
       const { s, v } = this.colorState;
       const { r, g, b } = this.hsvToRgb(hue, s, v);
       this.colorState = { r, g, b, h: hue, s, v };
-      updateColorUI();
+      updateColorUI(isDragging);
     };
 
-    const startMoveListener = (event, moveHandler, endHandler) => {
-      moveHandler(event);
-      document.addEventListener('mousemove', moveHandler);
-      document.addEventListener(
-        'mouseup',
-        () => {
-          document.removeEventListener('mousemove', moveHandler);
-          document.removeEventListener('mouseup', endHandler);
-        },
-        { once: true }
-      );
+    const startMoveListener = (event, moveHandler) => {
+      let isDragging = true; // Set dragging flag to true when mouse starts moving
+
+      const moveEventHandler = (moveEvent) => moveHandler(moveEvent, isDragging);
+
+      const stopDragging = () => {
+        isDragging = false; // Reset dragging flag when mouse stops
+        document.removeEventListener('mousemove', moveEventHandler);
+        document.removeEventListener('mouseup', stopDragging);
+        moveHandler(event, false);
+      };
+
+      moveHandler(event, isDragging);
+      document.addEventListener('mousemove', moveEventHandler);
+      document.addEventListener('mouseup', stopDragging, { once: true });
     };
 
     // Reattach event listeners
     hueSlider.addEventListener('mousedown', (event) =>
-      startMoveListener(event, handleHueChange)
+      startMoveListener(event, handleHueSliderChange)
     );
     svBox.addEventListener('mousedown', (event) =>
-      startMoveListener(event, handleSvChange)
+      startMoveListener(event, handleSvBoxChange)
     );
     hueCone.addEventListener('mousedown', (event) =>
       startMoveListener(event, handleHueConeChange)
     );
 
-    redSlider.addEventListener('input', handleRgbChange);
-    greenSlider.addEventListener('input', handleRgbChange);
-    blueSlider.addEventListener('input', handleRgbChange);
+    // Handle RGB sliders with mousedown for dragging behavior
+    const handleRgbSliderMouseDown = (event, slider, handler) => {
+      let isDragging = true; // Set dragging flag to true when mouse starts moving
 
+      const handleRgbDrag = () => handler(isDragging);
+
+      const stopRgbDragging = () => {
+        isDragging = false;
+        document.removeEventListener('mousemove', handleRgbDrag);
+        document.removeEventListener('mouseup', stopRgbDragging);
+        handler(false);
+      };
+
+      handler(isDragging);
+      document.addEventListener('mousemove', handleRgbDrag);
+      document.addEventListener('mouseup', stopRgbDragging, { once: true });
+    };
+
+    // Attach mousedown event for dragging
+    redSlider.addEventListener('mousedown', (event) =>
+      handleRgbSliderMouseDown(event, redSlider, handleRgbSliderChange)
+    );
+    greenSlider.addEventListener('mousedown', (event) =>
+      handleRgbSliderMouseDown(event, greenSlider, handleRgbSliderChange)
+    );
+    blueSlider.addEventListener('mousedown', (event) =>
+      handleRgbSliderMouseDown(event, blueSlider, handleRgbSliderChange)
+    );
+
+    // Simple input handlers (no dragging)
     redInput.addEventListener('input', handleRgbInputChange);
     greenInput.addEventListener('input', handleRgbInputChange);
     blueInput.addEventListener('input', handleRgbInputChange);
 
-    hueInput.addEventListener('input', handleHueInputChange);
-    satInput.addEventListener('input', handleHueInputChange);
-    valInput.addEventListener('input', handleHueInputChange);
+    hueInput.addEventListener('input', handleHsvInputChange);
+    satInput.addEventListener('input', handleHsvInputChange);
+    valInput.addEventListener('input', handleHsvInputChange);
 
     hexInput.addEventListener('input', handleHexInputChange);
   }
@@ -303,7 +334,7 @@ export default class ColorPicker {
 
   setHueIndicator(hue) {
     const hueIndicator = document.querySelector('.hue-indicator');
-    const angle = 360 - ((hue / 255) * 360) + 90;
+    const angle = 360 - (hue / 255) * 360 + 90;
     hueIndicator.style.transform = `rotate(${angle}deg)`;
   }
 

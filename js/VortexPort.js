@@ -210,18 +210,20 @@ export default class VortexPort {
     this.startReading();
   }
 
-  async demoColor(vortexLib, color) {
+  async demoColor(vortexLib, vortex, color) {
     if (!this.isActive()) {
       return;
     }
     // Unserialize the stream of data
     const curMode = new vortexLib.ByteStream();
-    let args = new this.vortexLib.PatternArgs(1, 0, 0);
-    let set = new this.vortexLib.Colorset(color);
-    let patID = this.vortexLib.intToPatternID(0);
-    let mode = new this.vortexLib.createMode(vortex, patID, args, set);
+    let args = new vortexLib.PatternArgs();
+    args.addArgs(1);
+    let set = new vortexLib.Colorset();
+    set.addColor(color);
+    let patID = vortexLib.intToPatternID(0);
+    let mode = new vortexLib.createMode(vortex, patID, args, set);
     mode.init();
-    mode.saveToBuffer(curMode);
+    mode.saveToBuffer(curMode, vortex.engine().leds().ledCount());
     await this.cancelReading();
     await this.sendCommand(this.EDITOR_VERB_DEMO_MODE);
     await this.expectData(this.EDITOR_VERB_READY);

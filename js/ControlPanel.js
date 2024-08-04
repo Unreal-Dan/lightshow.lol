@@ -422,7 +422,7 @@ export default class ControlPanel extends Panel {
           return;
         }
         const set = cur.getColorset(this.targetLed);
-        this.colorPicker.openColorPickerModal(idx, set, (index, color) => this.updateColor(index, color));
+        this.colorPicker.openColorPickerModal(idx, set, (index, color, dragging) => this.updateColor(index, color, dragging));
       });
     });
 
@@ -445,7 +445,7 @@ export default class ControlPanel extends Panel {
     }
   }
 
-  updateColor(index, hexValue) {
+  updateColor(index, hexValue, isDragging) {
     let hex = hexValue.replace(/^#/, '');
     let bigint = parseInt(hex, 16);
     let r = (bigint >> 16) & 255;
@@ -456,7 +456,8 @@ export default class ControlPanel extends Panel {
       return;
     }
     let set = cur.getColorset(this.targetLed);
-    set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
+    let col = new this.lightshow.vortexLib.RGBColor(r, g, b);
+    set.set(index, col);
     this.targetLeds.forEach(led => {
       cur.setColorset(set, led);
     });
@@ -466,15 +467,20 @@ export default class ControlPanel extends Panel {
     this.lightshow.vortex.engine().modes().saveCurMode();
     // refresh
     this.refreshColorset();
-    // demo on device
-    this.demoModeOnDevice();
+    console.log("Update: " + isDragging + ", " + col);
+    if (isDragging) {
+      this.demoColorOnDevice(col);
+    } else {
+      // demo on device
+      this.demoModeOnDevice();
+    }
   }
 
-  async demoColorOnDevice() {
+  async demoColorOnDevice(color) {
     try {
-      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      await this.vortexPort.demoColor(this.lightshow.vortexLib, this.lightshow.vortex, color);
     } catch (error) {
-      Notification.failure("Failed to demo current mode on device, connection may be broken (" + error + ")");
+      Notification.failure("Failed to demo color (" + error + ")");
     }
   }
 
@@ -482,7 +488,7 @@ export default class ControlPanel extends Panel {
     try {
       await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } catch (error) {
-      Notification.failure("Failed to demo current mode on device, connection may be broken (" + error + ")");
+      Notification.failure("Failed to demo mode (" + error + ")");
     }
   }
 
