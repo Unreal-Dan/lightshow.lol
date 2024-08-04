@@ -90,11 +90,11 @@ export default class ColorPicker {
                     </div>
                     <div class="input-group">
                       <label for="hueInput">H:</label>
-                      <input type="number" id="hueInput" class="color-input" min="0" max="360" value="${(h / 255) * 360}">
+                      <input type="number" id="hueInput" class="color-input" min="0" max="255" value="${h}">
                       <label for="satInput">S:</label>
-                      <input type="number" id="satInput" class="color-input" min="0" max="100" value="${(s / 255) * 100}">
+                      <input type="number" id="satInput" class="color-input" min="0" max="255" value="${s}">
                       <label for="valInput">V:</label>
-                      <input type="number" id="valInput" class="color-input" min="0" max="100" value="${(v / 255) * 100}">
+                      <input type="number" id="valInput" class="color-input" min="0" max="255" value="${v}">
                     </div>
                     <div class="hex-input-group">
                       <label for="hexInput">Hex:</label>
@@ -154,9 +154,9 @@ export default class ColorPicker {
       redInput.value = r;
       greenInput.value = g;
       blueInput.value = b;
-      hueInput.value = Math.round((h / 255) * 360);
-      satInput.value = Math.round((s / 255) * 100);
-      valInput.value = Math.round((v / 255) * 100);
+      hueInput.value = Math.round(h);
+      satInput.value = Math.round(s);
+      valInput.value = Math.round(v);
       hexInput.value = `#${((1 << 24) + (r << 16) + (g << 8) + b)
         .toString(16)
         .slice(1)}`;
@@ -211,9 +211,9 @@ export default class ColorPicker {
     };
 
     const handleHueInputChange = () => {
-      const h = Math.round((parseInt(hueInput.value, 10) / 360) * 255);
-      const s = Math.round((parseInt(satInput.value, 10) / 100) * 255);
-      const v = Math.round((parseInt(valInput.value, 10) / 100) * 255);
+      const h = Math.round(parseInt(hueInput.value, 10));
+      const s = Math.round(parseInt(satInput.value, 10));
+      const v = Math.round(parseInt(valInput.value, 10));
       const { r, g, b } = this.hsvToRgb(h, s, v);
       this.colorState = { r, g, b, h, s, v };
       updateColorUI();
@@ -271,28 +271,6 @@ export default class ColorPicker {
       );
     };
 
-    const handleInputMouseDown = (e) => {
-      let interval;
-      const input = e.target;
-
-      const incrementValue = (direction) => {
-        let value = parseInt(input.value, 10);
-        if (isNaN(value)) value = 0;
-        value += direction;
-        input.value = Math.max(0, Math.min(255, value));
-        handleRgbInputChange({ target: input });
-      };
-
-      const handleMouseUp = () => {
-        clearInterval(interval);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-
-      const direction = e.button === 0 ? 1 : -1; // 0 for left button (increment), 1 for right button (decrement)
-      interval = setInterval(() => incrementValue(direction), 100);
-      document.addEventListener('mouseup', handleMouseUp);
-    };
-
     // Reattach event listeners
     hueSlider.addEventListener('mousedown', (event) =>
       startMoveListener(event, handleHueChange)
@@ -317,10 +295,6 @@ export default class ColorPicker {
     valInput.addEventListener('input', handleHueInputChange);
 
     hexInput.addEventListener('input', handleHexInputChange);
-
-    redInput.addEventListener('mousedown', handleInputMouseDown);
-    greenInput.addEventListener('mousedown', handleInputMouseDown);
-    blueInput.addEventListener('mousedown', handleInputMouseDown);
   }
 
   initHueCircle(h) {
