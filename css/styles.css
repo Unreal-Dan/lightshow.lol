@@ -753,10 +753,13 @@ legend {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%; /* Ensure the content stretches across the full width */
-  max-width: 600px; /* Limit the maximum width for responsiveness */
-  margin: auto; /* Center the modal content */
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+  position: relative;
+  z-index: 2;
 }
+
 
 .color-picker-top-section {
   display: flex;
@@ -764,17 +767,79 @@ legend {
   justify-content: left; /* Distribute space between SV box and sliders */
   flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
   margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .color-picker-bottom-section {
   display: flex;
   width: 100%;
-  justify-content: left; /* Distribute space between SV box and sliders */
-  flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
-  margin-bottom: 20px;
+  justify-content: space-between; /* Align hue circle and input boxes */
+  align-items: left;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 3;
 }
 
+.color-picker-bottom-section label {
+  margin-left: 5px;
+  z-index: 3;
+}
 
+.color-input {
+  width: 45px;
+  height: 24px;
+  padding: 5px;
+  background-color: #292c2e;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #d8d4cf;
+  text-align: center; /* Center text for visual balance */
+  user-select: text;
+  appearance: none;
+}
+
+.input-box-container label {
+  width: 18px;
+}
+
+.input-box-container {
+  position: relative;
+  display: flex;
+  padding-top: 20px;
+  flex-direction: column; /* Stack input groups vertically */
+  gap: 25px; /* Add space between input groups */
+  justify-content: center; /* Align items to the left */
+  align-items: flex-end;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Align labels and inputs to the right */
+}
+
+.hex-input-group label {
+  width: 36px;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+#hexInput {
+  width: 100%;
+}
+
+.hex-input-group {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align labels and inputs to the right */
+}
+
+.input-group label {
+  margin-top: 3px;
+  margin-right: 5px;
+}
 
 .sliders-section {
   padding: 0;
@@ -949,11 +1014,10 @@ legend {
 }
 
 .radial-hue-cone-container {
-  position: absolute;
-  left: 30px; /* Align to the left */
-  bottom: 30px; /* Align to the bottom */
+  position: relative;
   display: flex;
   justify-content: flex-start; /* Align items to the left */
+  z-index: 1; /* Lower z-index to ensure it's behind inputs */
 }
 
 .radial-hue-cone {
@@ -964,6 +1028,7 @@ legend {
   background: conic-gradient(from 90deg, red, magenta, blue, cyan, lime, yellow, red);
   position: relative;
   cursor: pointer;
+  z-index: 1; /* Lower than input fields */
 }
 
 .radial-hue-inner-circle {
@@ -996,7 +1061,7 @@ legend {
   left: 50%;
   width: 100%; /* Ensure the container covers the whole circle */
   height: 100%;
-  transform: translate(-45%, -45%);
+  transform: translate(-47%, -47%);
   pointer-events: none;
   z-index: 3;
   display: flex;
@@ -1008,8 +1073,8 @@ legend {
   position: absolute;
   font-size: 16px;
   color: #d8d4cf;
-  transform-origin: 50% 50%; /* Rotate around the center of the label itself */
-  white-space: nowrap; /* Prevent label text from wrapping */
+  transform-origin: 50% 50%;
+  white-space: nowrap;
 }
 
 .hue-label-red {

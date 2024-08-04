@@ -64,20 +64,43 @@ export default class ColorPicker {
                     </div>
                   </div>
                 </div>
-                <div class="radial-hue-cone-container">
-                  <div class="radial-hue-cone">
-                    <div class="radial-hue-inner-circle"></div>
-                    <div class="hue-indicator hue-selector-animate"></div>
+                <div class="color-picker-bottom-section">
+                  <div class="radial-hue-cone-container">
+                    <div class="radial-hue-cone">
+                      <div class="radial-hue-inner-circle"></div>
+                      <div class="hue-indicator hue-selector-animate"></div>
+                    </div>
+                    <div class="hue-labels">
+                      <div class="hue-label hue-label-red">R</div>
+                      <div class="hue-label hue-label-yellow">Y</div>
+                      <div class="hue-label hue-label-lime">G</div>
+                      <div class="hue-label hue-label-cyan">C</div>
+                      <div class="hue-label hue-label-blue">B</div>
+                      <div class="hue-label hue-label-magenta">P</div>
+                    </div>
                   </div>
-                  <div class="hue-labels">
-                    <div class="hue-label hue-label-red">R</div>
-                    <div class="hue-label hue-label-yellow">Y</div>
-                    <div class="hue-label hue-label-lime">G</div>
-                    <div class="hue-label hue-label-cyan">C</div>
-                    <div class="hue-label hue-label-blue">B</div>
-                    <div class="hue-label hue-label-magenta">P</div>
+                  <div class="input-box-container">
+                    <div class="input-group">
+                      <label for="redInput">R:</label>
+                      <input type="number" id="redInput" class="color-input" min="0" max="255" value="${col.red}">
+                      <label for="greenInput">G:</label>
+                      <input type="number" id="greenInput" class="color-input" min="0" max="255" value="${col.green}">
+                      <label for="blueInput">B:</label>
+                      <input type="number" id="blueInput" class="color-input" min="0" max="255" value="${col.blue}">
+                    </div>
+                    <div class="input-group">
+                      <label for="hueInput">H:</label>
+                      <input type="number" id="hueInput" class="color-input" min="0" max="360" value="${(h / 255) * 360}">
+                      <label for="satInput">S:</label>
+                      <input type="number" id="satInput" class="color-input" min="0" max="100" value="${(s / 255) * 100}">
+                      <label for="valInput">V:</label>
+                      <input type="number" id="valInput" class="color-input" min="0" max="100" value="${(v / 255) * 100}">
+                    </div>
+                    <div class="hex-input-group">
+                      <label for="hexInput">Hex:</label>
+                      <input type="text" id="hexInput" class="color-input" value="#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}">
+                    </div>
                   </div>
-
                 </div>
               </div>`,
     });
@@ -97,10 +120,27 @@ export default class ColorPicker {
     const redSlider = document.getElementById('redSlider');
     const greenSlider = document.getElementById('greenSlider');
     const blueSlider = document.getElementById('blueSlider');
+    const redInput = document.getElementById('redInput');
+    const greenInput = document.getElementById('greenInput');
+    const blueInput = document.getElementById('blueInput');
+    const hueInput = document.getElementById('hueInput');
+    const satInput = document.getElementById('satInput');
+    const valInput = document.getElementById('valInput');
+    const hexInput = document.getElementById('hexInput');
     const hueCone = document.querySelector('.radial-hue-cone');
     const hueIndicator = document.querySelector('.hue-indicator');
 
-    if (!hueSlider || !hueSelector || !svBox || !svSelector || !redSlider || !greenSlider || !blueSlider || !hueCone || !hueIndicator) {
+    if (
+      !hueSlider ||
+      !hueSelector ||
+      !svBox ||
+      !svSelector ||
+      !redSlider ||
+      !greenSlider ||
+      !blueSlider ||
+      !hueCone ||
+      !hueIndicator
+    ) {
       console.error('One or more color picker elements are missing.');
       return;
     }
@@ -111,10 +151,22 @@ export default class ColorPicker {
       redSlider.value = r;
       greenSlider.value = g;
       blueSlider.value = b;
+      redInput.value = r;
+      greenInput.value = g;
+      blueInput.value = b;
+      hueInput.value = Math.round((h / 255) * 360);
+      satInput.value = Math.round((s / 255) * 100);
+      valInput.value = Math.round((v / 255) * 100);
+      hexInput.value = `#${((1 << 24) + (r << 16) + (g << 8) + b)
+        .toString(16)
+        .slice(1)}`;
       this.updateSvBoxBackground(h);
       this.setHueSlider(h);
       this.setHueIndicator(h);
-      updateColorCallback(this.selectedIndex, `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
+      updateColorCallback(
+        this.selectedIndex,
+        `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+      );
     };
 
     // Handler functions for different input changes
@@ -122,6 +174,26 @@ export default class ColorPicker {
       const r = parseInt(redSlider.value, 10) & 0xff;
       const g = parseInt(greenSlider.value, 10) & 0xff;
       const b = parseInt(blueSlider.value, 10) & 0xff;
+      const { h, s, v } = this.rgbToHsv(r, g, b);
+      this.colorState = { r, g, b, h, s, v };
+      updateColorUI();
+    };
+
+    const handleRgbInputChange = (event) => {
+      let input = event.target;
+      let value = parseInt(input.value, 10);
+
+      if (isNaN(value)) {
+        value = 0;
+      }
+
+      value = Math.max(0, Math.min(255, value));
+
+      input.value = value;
+
+      const r = parseInt(redInput.value, 10) & 0xff;
+      const g = parseInt(greenInput.value, 10) & 0xff;
+      const b = parseInt(blueInput.value, 10) & 0xff;
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.colorState = { r, g, b, h, s, v };
       updateColorUI();
@@ -138,6 +210,15 @@ export default class ColorPicker {
       updateColorUI();
     };
 
+    const handleHueInputChange = () => {
+      const h = Math.round((parseInt(hueInput.value, 10) / 360) * 255);
+      const s = Math.round((parseInt(satInput.value, 10) / 100) * 255);
+      const v = Math.round((parseInt(valInput.value, 10) / 100) * 255);
+      const { r, g, b } = this.hsvToRgb(h, s, v);
+      this.colorState = { r, g, b, h, s, v };
+      updateColorUI();
+    };
+
     const handleSvChange = (event) => {
       const rect = svBox.getBoundingClientRect();
       const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
@@ -148,6 +229,17 @@ export default class ColorPicker {
       const { r, g, b } = this.hsvToRgb(h, s, v);
       svSelector.style.left = `${x}px`;
       svSelector.style.top = `${y}px`;
+      this.colorState = { r, g, b, h, s, v };
+      updateColorUI();
+    };
+
+    const handleHexInputChange = () => {
+      const hex = hexInput.value.replace('#', '');
+      const bigint = parseInt(hex, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      const { h, s, v } = this.rgbToHsv(r, g, b);
       this.colorState = { r, g, b, h, s, v };
       updateColorUI();
     };
@@ -169,20 +261,66 @@ export default class ColorPicker {
     const startMoveListener = (event, moveHandler, endHandler) => {
       moveHandler(event);
       document.addEventListener('mousemove', moveHandler);
-      document.addEventListener('mouseup', () => {
-        document.removeEventListener('mousemove', moveHandler);
-        document.removeEventListener('mouseup', endHandler);
-      }, { once: true });
+      document.addEventListener(
+        'mouseup',
+        () => {
+          document.removeEventListener('mousemove', moveHandler);
+          document.removeEventListener('mouseup', endHandler);
+        },
+        { once: true }
+      );
+    };
+
+    const handleInputMouseDown = (e) => {
+      let interval;
+      const input = e.target;
+
+      const incrementValue = (direction) => {
+        let value = parseInt(input.value, 10);
+        if (isNaN(value)) value = 0;
+        value += direction;
+        input.value = Math.max(0, Math.min(255, value));
+        handleRgbInputChange({ target: input });
+      };
+
+      const handleMouseUp = () => {
+        clearInterval(interval);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      const direction = e.button === 0 ? 1 : -1; // 0 for left button (increment), 1 for right button (decrement)
+      interval = setInterval(() => incrementValue(direction), 100);
+      document.addEventListener('mouseup', handleMouseUp);
     };
 
     // Reattach event listeners
-    hueSlider.addEventListener('mousedown', (event) => startMoveListener(event, handleHueChange));
-    svBox.addEventListener('mousedown', (event) => startMoveListener(event, handleSvChange));
-    hueCone.addEventListener('mousedown', (event) => startMoveListener(event, handleHueConeChange));
+    hueSlider.addEventListener('mousedown', (event) =>
+      startMoveListener(event, handleHueChange)
+    );
+    svBox.addEventListener('mousedown', (event) =>
+      startMoveListener(event, handleSvChange)
+    );
+    hueCone.addEventListener('mousedown', (event) =>
+      startMoveListener(event, handleHueConeChange)
+    );
 
     redSlider.addEventListener('input', handleRgbChange);
     greenSlider.addEventListener('input', handleRgbChange);
     blueSlider.addEventListener('input', handleRgbChange);
+
+    redInput.addEventListener('input', handleRgbInputChange);
+    greenInput.addEventListener('input', handleRgbInputChange);
+    blueInput.addEventListener('input', handleRgbInputChange);
+
+    hueInput.addEventListener('input', handleHueInputChange);
+    satInput.addEventListener('input', handleHueInputChange);
+    valInput.addEventListener('input', handleHueInputChange);
+
+    hexInput.addEventListener('input', handleHexInputChange);
+
+    redInput.addEventListener('mousedown', handleInputMouseDown);
+    greenInput.addEventListener('mousedown', handleInputMouseDown);
+    blueInput.addEventListener('mousedown', handleInputMouseDown);
   }
 
   initHueCircle(h) {
