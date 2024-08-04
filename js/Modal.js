@@ -25,6 +25,7 @@ export default class Modal {
   }
 
   cacheElements(id) {
+    this.lightshowCanvas = document.getElementById("lightshowCanvas");
     this.modal = document.getElementById("modal_" + id);
     this.modalInput = document.getElementById("modalInput_" + id);
     this.modalTitle = this.modal.querySelector('.modal-title');
@@ -36,7 +37,7 @@ export default class Modal {
     closeButton.onclick = () => this.hide();
 
     window.onclick = (event) => {
-      if (event.target === this.modal) {
+      if (event.target === this.lightshowCanvas || event.target === this.modal) {
         this.hide();
       }
     };
