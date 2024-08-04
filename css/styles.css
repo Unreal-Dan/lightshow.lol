@@ -949,32 +949,90 @@ legend {
 }
 
 .radial-hue-cone-container {
+  position: absolute;
+  left: 30px; /* Align to the left */
+  bottom: 30px; /* Align to the bottom */
   display: flex;
-  justify-content: center;
-  position: relative;
+  justify-content: flex-start; /* Align items to the left */
 }
 
 .radial-hue-cone {
   width: 150px;
   height: 150px;
-  margin: 30px;
-  margin-top: 20px;
   border-radius: 50%;
-  border: 1px solid black;
-  background: conic-gradient(
-    red, yellow, lime, cyan, blue, magenta, red
-  );
+  border: 20px solid #181a1b;
+  background: conic-gradient(from 90deg, red, magenta, blue, cyan, lime, yellow, red);
   position: relative;
   cursor: pointer;
 }
 
+.radial-hue-inner-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px; /* Slimmer inner circle */
+  height: 100px;
+  background-color: #181a1b; /* Match the modal's background */
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2; /* Above the hue cone */
+}
+
 .hue-indicator {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  left: 50%;
+  width: 2px; /* Line width */
+  height: 75px; /* Extend to the outer edge of the hue cone */
   background-color: #fff;
-  border-radius: 50%;
-  border: 2px solid #000;
-  transform: translate(-50%, -50%);
+  transform-origin: 50% 100%; /* Set origin to the center bottom */
+  pointer-events: none;
+  z-index: 1;
+  transform: rotate(0deg); /* Initial position */
+}
+
+.hue-labels {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%; /* Ensure the container covers the whole circle */
+  height: 100%;
+  transform: translate(-45%, -45%);
+  pointer-events: none;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hue-label {
+  position: absolute;
+  font-size: 16px;
+  color: #d8d4cf;
+  transform-origin: 50% 50%; /* Rotate around the center of the label itself */
+  white-space: nowrap; /* Prevent label text from wrapping */
+}
+
+.hue-label-red {
+  transform: translate(85px, 0px) translate(-50%, -50%);
+}
+
+.hue-label-yellow {
+  transform: translate(45px, -78px) translate(-50%, -50%);
+}
+
+.hue-label-lime {
+  transform: translate(-45px, -78px) translate(-50%, -50%);
+}
+
+.hue-label-cyan {
+  transform: translate(-90px, 0px) translate(-50%, -50%);
+}
+
+.hue-label-blue {
+  transform: translate(-45px, 78px) translate(-50%, -50%);
+}
+
+.hue-label-magenta {
+  transform: translate(45px, 78px) translate(-50%, -50%);
 }
 
