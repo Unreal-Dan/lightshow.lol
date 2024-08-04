@@ -268,7 +268,7 @@ export default class ColorPicker {
         isDragging = false; // Reset dragging flag when mouse stops
         document.removeEventListener('mousemove', moveEventHandler);
         document.removeEventListener('mouseup', stopDragging);
-        moveHandler(event, false);
+        updateColorUI(false);
       };
 
       moveHandler(event, isDragging);
@@ -297,7 +297,7 @@ export default class ColorPicker {
         isDragging = false;
         document.removeEventListener('mousemove', handleRgbDrag);
         document.removeEventListener('mouseup', stopRgbDragging);
-        handler(false);
+        updateColorUI(false);
       };
 
       handler(isDragging);

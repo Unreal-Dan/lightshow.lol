@@ -467,7 +467,6 @@ export default class ControlPanel extends Panel {
     this.lightshow.vortex.engine().modes().saveCurMode();
     // refresh
     this.refreshColorset();
-    console.log("Update: " + isDragging + ", " + col);
     if (isDragging) {
       this.demoColorOnDevice(col);
     } else {
