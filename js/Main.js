@@ -99,7 +99,7 @@ VortexLib().then(vortexLib => {
 
   if (showWelcome) {
     // Create a new instance of the Modal class
-    const welcomeModal = new Modal();
+    const welcomeModal = new Modal('welcome');
 
     // Configuration for the welcome modal
     const welcomeConfig = {

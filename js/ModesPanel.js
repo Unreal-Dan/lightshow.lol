@@ -64,9 +64,9 @@ export default class ModesPanel extends Panel {
     super('modesPanel', content);
     this.lightshow = lightshow;
     this.vortexPort = vortexPort;
-    this.shareModal = new Modal();
-    this.exportModal = new Modal();
-    this.importModal = new Modal();
+    this.shareModal = new Modal('share');
+    this.exportModal = new Modal('export');
+    this.importModal = new Modal('import');
     this.devices = {
       'None': { image: 'public/images/none-logo-square-512.png', icon: 'public/images/none-logo-square-64.png', label: 'None', ledCount: 1 },
       'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },

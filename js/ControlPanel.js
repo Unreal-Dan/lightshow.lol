@@ -1,6 +1,7 @@
-/* ControlPanel.js */
 import Panel from './Panel.js';
+import Modal from './Modal.js';
 import Notification from './Notification.js';
+import ColorPicker from './ColorPicker.js';
 
 export default class ControlPanel extends Panel {
   constructor(lightshow, vortexPort) {
@@ -98,6 +99,9 @@ export default class ControlPanel extends Panel {
       this.clickCounts[control.id] = 0;
       this.sineWaveAnimations[control.id] = false;
     });
+
+    // Instantiate the ColorPicker
+    this.colorPicker = new ColorPicker(lightshow);
   }
 
   static generateControlsContent(controls) {
@@ -218,7 +222,6 @@ export default class ControlPanel extends Panel {
   stopSineWaveAnimation(controlId) {
     this.sineWaveAnimations[controlId] = false;
   }
-
 
   attachEventListeners() {
     this.controls.forEach(control => {
@@ -395,10 +398,10 @@ export default class ControlPanel extends Panel {
         let col = set.get(i);
         const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
         colorsetHtml += `<div class="color-container">
-                             <span class="delete-color" data-index="${i}">&times;</span>
-                             <input class="color-picker" type="color" value="${hexColor}">
-                             <label>${hexColor}</label>
-                           </div>`;
+                            <span class="delete-color" data-index="${i}">&times;</span>
+                            <div class="color-entry" data-index="${i}" style="background-color: ${hexColor};"></div>
+                            <label>${hexColor}</label>
+                          </div>`;
       }
     }
     if (!numCol || numCol < 8) {
@@ -410,13 +413,16 @@ export default class ControlPanel extends Panel {
 
     colorsetElement.innerHTML = colorsetHtml;
 
-    // Attach event listeners for color pickers
-    const colorPickers = colorsetElement.querySelectorAll('.color-picker');
-    colorPickers.forEach((picker, idx) => {
-      picker.addEventListener('change', (event) => {
-        this.updateColor(idx, event.target.value);
-        // Dispatch a custom event
-        document.dispatchEvent(new CustomEvent('patternChange'));
+    // Attach event listeners for color entries
+    const colorEntries = colorsetElement.querySelectorAll('.color-entry');
+    colorEntries.forEach((entry, idx) => {
+      entry.addEventListener('click', () => {
+        const cur = this.lightshow.vortex.engine().modes().curMode();
+        if (!cur) {
+          return;
+        }
+        const set = cur.getColorset(this.targetLed);
+        this.colorPicker.openColorPickerModal(idx, set, (index, color, dragging) => this.updateColor(index, color, dragging));
       });
     });
 
@@ -425,7 +431,6 @@ export default class ControlPanel extends Panel {
     deleteButtons.forEach(button => {
       button.addEventListener('click', () => {
         this.delColor(Number(button.getAttribute('data-index')));
-        // Dispatch a custom event
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
     });
@@ -434,10 +439,47 @@ export default class ControlPanel extends Panel {
     const addButton = colorsetElement.querySelector('.add-color');
     if (addButton) {
       addButton.addEventListener('click', () => {
-        // Dispatch a custom event
         this.addColor();
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
+    }
+  }
+
+  updateColor(index, hexValue, isDragging) {
+    let hex = hexValue.replace(/^#/, '');
+    let bigint = parseInt(hex, 16);
+    let r = (bigint >> 16) & 255;
+    let g = (bigint >> 8) & 255;
+    let b = bigint & 255;
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
+    let set = cur.getColorset(this.targetLed);
+    let col = new this.lightshow.vortexLib.RGBColor(r, g, b);
+    set.set(index, col);
+    this.targetLeds.forEach(led => {
+      cur.setColorset(set, led);
+    });
+    // re-initialize the demo mode because num colors may have changed
+    cur.init();
+    // save
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    // refresh
+    this.refreshColorset();
+    if (isDragging) {
+      this.demoColorOnDevice(col);
+    } else {
+      // demo on device
+      this.demoModeOnDevice();
+    }
+  }
+
+  async demoColorOnDevice(color) {
+    try {
+      await this.vortexPort.demoColor(this.lightshow.vortexLib, this.lightshow.vortex, color);
+    } catch (error) {
+      Notification.failure("Failed to demo color (" + error + ")");
     }
   }
 
@@ -445,7 +487,7 @@ export default class ControlPanel extends Panel {
     try {
       await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } catch (error) {
-      Notification.failure("Failed to demo current mode on device, connection may be broken (" + error + ")");
+      Notification.failure("Failed to demo mode (" + error + ")");
     }
   }
 
@@ -616,31 +658,6 @@ export default class ControlPanel extends Panel {
       return;
     }
     set.removeColor(index);
-    this.targetLeds.forEach(led => {
-      cur.setColorset(set, led);
-    });
-    // re-initialize the demo mode because num colors may have changed
-    cur.init();
-    // save
-    this.lightshow.vortex.engine().modes().saveCurMode();
-    // refresh
-    this.refreshColorset();
-    // demo on device
-    this.demoModeOnDevice();
-  }
-
-  updateColor(index, hexValue) {
-    let hex = hexValue.replace(/^#/, '');
-    let bigint = parseInt(hex, 16);
-    let r = (bigint >> 16) & 255;
-    let g = (bigint >> 8) & 255;
-    let b = bigint & 255;
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-      return;
-    }
-    let set = cur.getColorset(this.targetLed);
-    set.set(index, new this.lightshow.vortexLib.RGBColor(r, g, b));
     this.targetLeds.forEach(led => {
       cur.setColorset(set, led);
     });

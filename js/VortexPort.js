@@ -17,7 +17,7 @@ export default class VortexPort {
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
-  isReading = false;
+  isTransmitting = false; // Flag to track if a transmission is active
 
   constructor() {
     this.debugSending = false;
@@ -38,6 +38,7 @@ export default class VortexPort {
       this.reader.releaseLock();
       this.reader = null;
     }
+    this.isTransmitting = false; // Reset the transmission state on reset
     // Further state reset logic if necessary
   }
 
@@ -138,15 +139,22 @@ export default class VortexPort {
       return null;
     }
     if (this.reader) {
-      this.reader.releaseLock();
+      try {
+        this.reader.releaseLock();
+      } catch (error) {
+        console.warn('Failed to release reader lock:', error);
+      }
     }
     this.reader = this.serialPort.readable.getReader();
     try {
       while (true) {
         const { value, done } = await this.reader.read();
         if (done) {
-          this.reader.releaseLock();
-          this.reader = null;
+          // Ensure the reader is not released multiple times
+          if (this.reader) {
+            this.reader.releaseLock();
+            this.reader = null;
+          }
           break;
         }
 
@@ -162,7 +170,6 @@ export default class VortexPort {
             this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
             return fullMessage; // Return the full message
           }
-
         } else {
           // Return any single byte
           const singleByte = this.accumulatedData[0];
@@ -174,8 +181,14 @@ export default class VortexPort {
       console.error('Error reading data:', error);
       return null;
     } finally {
-      this.reader.releaseLock();
-      this.reader = null;
+      if (this.reader) {
+        try {
+          this.reader.releaseLock(); // Ensure release of reader in the finally block
+        } catch (error) {
+          console.warn('Failed to release reader lock in finally:', error);
+        }
+        this.reader = null;
+      }
     }
   }
 
@@ -194,76 +207,138 @@ export default class VortexPort {
   }
 
   async transmitVL(vortexLib, vortex) {
-    if (!this.isActive()) {
+    if (!this.isActive() || this.isTransmitting) {
       return;
     }
-    // Unserialize the stream of data
-    const curMode = new vortexLib.ByteStream();
-    if (!vortex.getCurMode(curMode)) {
-      console.log("Failed to get cur mode");
-      // Error handling - abort or handle as needed
+    this.isTransmitting = true; // Set the transmitting flag
+
+    try {
+      // Unserialize the stream of data
+      const curMode = new vortexLib.ByteStream();
+      if (!vortex.getCurMode(curMode)) {
+        console.log("Failed to get cur mode");
+        // Error handling - abort or handle as needed
+        return;
+      }
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_TRANSMIT_VL);
+      await this.expectData(this.EDITOR_VERB_TRANSMIT_VL_ACK);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during transmitVL:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
+    }
+  }
+
+  async demoColor(vortexLib, vortex, color) {
+    if (!this.isActive() || this.isTransmitting) {
       return;
     }
-    await this.cancelReading();
-    await this.sendCommand(this.EDITOR_VERB_TRANSMIT_VL);
-    await this.expectData(this.EDITOR_VERB_TRANSMIT_VL_ACK);
-    this.startReading();
+    this.isTransmitting = true; // Set the transmitting flag
+
+    try {
+      // Unserialize the stream of data
+      const curMode = new vortexLib.ByteStream();
+      let args = new vortexLib.PatternArgs();
+      args.addArgs(1);
+      let set = new vortexLib.Colorset();
+      set.addColor(color);
+      let patID = vortexLib.intToPatternID(0);
+      let mode = new vortexLib.createMode(vortex, patID, args, set);
+      mode.init();
+      mode.saveToBuffer(curMode, vortex.engine().leds().ledCount());
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_DEMO_MODE);
+      await this.expectData(this.EDITOR_VERB_READY);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
+      await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during demoColor:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
+    }
   }
 
   async demoCurMode(vortexLib, vortex) {
-    if (!this.isActive()) {
+    if (!this.isActive() || this.isTransmitting) {
       return;
     }
-    // Unserialize the stream of data
-    const curMode = new vortexLib.ByteStream();
-    if (!vortex.getCurMode(curMode)) {
-      console.log("Failed to get cur mode");
-      // Error handling - abort or handle as needed
-      return;
+    this.isTransmitting = true; // Set the transmitting flag
+
+    try {
+      // Unserialize the stream of data
+      const curMode = new vortexLib.ByteStream();
+      if (!vortex.getCurMode(curMode)) {
+        console.log("Failed to get cur mode");
+        // Error handling - abort or handle as needed
+        return;
+      }
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_DEMO_MODE);
+      await this.expectData(this.EDITOR_VERB_READY);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
+      await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during demoCurMode:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
     }
-    await this.cancelReading();
-    await this.sendCommand(this.EDITOR_VERB_DEMO_MODE);
-    await this.expectData(this.EDITOR_VERB_READY);
-    await this.sendRaw(this.constructCustomBuffer(vortexLib, curMode));
-    await this.expectData(this.EDITOR_VERB_DEMO_MODE_ACK);
-    this.startReading();
   }
 
   async pushToDevice(vortexLib, vortex) {
-    if (!this.isActive()) {
+    if (!this.isActive() || this.isTransmitting) {
       return;
     }
-    // Unserialize the stream of data
-    const modes = new vortexLib.ByteStream();
-    if (!vortex.getModes(modes)) {
-      console.log("Failed to get cur mode");
-      // Error handling - abort or handle as needed
-      return;
+    this.isTransmitting = true; // Set the transmitting flag
+
+    try {
+      // Unserialize the stream of data
+      const modes = new vortexLib.ByteStream();
+      if (!vortex.getModes(modes)) {
+        console.log("Failed to get cur mode");
+        // Error handling - abort or handle as needed
+        return;
+      }
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PUSH_MODES);
+      await this.expectData(this.EDITOR_VERB_READY);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, modes));
+      await this.expectData(this.EDITOR_VERB_PUSH_MODES_ACK);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during pushToDevice:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
     }
-    await this.cancelReading();
-    await this.sendCommand(this.EDITOR_VERB_PUSH_MODES);
-    await this.expectData(this.EDITOR_VERB_READY);
-    await this.sendRaw(this.constructCustomBuffer(vortexLib, modes));
-    await this.expectData(this.EDITOR_VERB_PUSH_MODES_ACK);
-    this.startReading();
   }
 
   async pullFromDevice(vortexLib, vortex) {
-    if (!this.isActive()) {
+    if (!this.isActive() || this.isTransmitting) {
       return;
     }
-    // Unserialize the stream of data
-    await this.cancelReading();
-    await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
-    const modes = await this.readModes(vortexLib);
-    // Call the Wasm function
-    let modesStream = new vortexLib.ByteStream();
-    vortexLib.createByteStreamFromData(modes, modesStream);
-    vortex.matchLedCount(modesStream, false);
-    vortex.setModes(modesStream, true);
-    await this.sendCommand(this.EDITOR_VERB_PULL_MODES_DONE);
-    await this.expectData(this.EDITOR_VERB_PULL_MODES_ACK);
-    this.startReading();
+    this.isTransmitting = true; // Set the transmitting flag
+
+    try {
+      // Unserialize the stream of data
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
+      const modes = await this.readModes(vortexLib);
+      // Call the Wasm function
+      let modesStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData(modes, modesStream);
+      vortex.matchLedCount(modesStream, false);
+      vortex.setModes(modesStream, true);
+      await this.sendCommand(this.EDITOR_VERB_PULL_MODES_DONE);
+      await this.expectData(this.EDITOR_VERB_PULL_MODES_ACK);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during pullFromDevice:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
+    }
   }
 
   async readFromSerialPort() {
@@ -374,7 +449,7 @@ export default class VortexPort {
   // send a command to the device
   async sendCommand(verb) {
     if (!this.isActive()) {
-      console.error('Port not active. Cannot send command.');
+      console.error('Port not active or another transmission is ongoing. Cannot send command.');
       return;
     }
 
