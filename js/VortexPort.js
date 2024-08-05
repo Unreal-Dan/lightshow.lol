@@ -210,6 +210,9 @@ export default class VortexPort {
     if (!this.isActive() || this.isTransmitting) {
       return;
     }
+    if (!vortex.engine().modes().curMode()) {
+      return;
+    }
     this.isTransmitting = true; // Set the transmitting flag
 
     try {
@@ -263,6 +266,9 @@ export default class VortexPort {
 
   async demoCurMode(vortexLib, vortex) {
     if (!this.isActive() || this.isTransmitting) {
+      return;
+    }
+    if (!vortex.engine().modes().curMode()) {
       return;
     }
     this.isTransmitting = true; // Set the transmitting flag
