@@ -1128,13 +1128,14 @@ export default class ModesPanel extends Panel {
       this.lightshow.vortex.setCurMode(modeCount, false);
     }
 
-    const cur = this.lightshow.vortex.engine().modes().curMode();
+    let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
       console.log("cur empty!");
       return;
     }
     // TODO: investigate this, if all modes are deleted then the first mode added back
     //       seems to need initialization... If we don't init here it seems to crash
+    //       actually might have been the fetching of cur once for all operations
     cur.init();
 
     patterns.forEach((pat, index) => {
@@ -1156,14 +1157,17 @@ export default class ModesPanel extends Panel {
         }
       });
 
-      cur.setColorset(set, index);
       const patID = this.lightshow.vortexLib.intToPatternID(pat.pattern_id);
-      cur.setPattern(patID, index, null, null);
       const args = new this.lightshow.vortexLib.PatternArgs();
       pat.args.forEach(arg => args.addArgs(arg));
+      // TODO: Have to fetch cur each time some reason... Use after free I guess
+      cur = this.lightshow.vortex.engine().modes().curMode();
+      cur.setPattern(patID, index, args, set);
       this.lightshow.vortex.setPatternArgs(index, args, true);
     });
 
+    // TODO: Have to fetch cur each time some reason... Use after free I guess
+    cur = this.lightshow.vortex.engine().modes().curMode();
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
 
