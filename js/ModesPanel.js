@@ -704,6 +704,9 @@ export default class ModesPanel extends Panel {
 
     const ledPositions = this.getLedPositions(deviceName);
     const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      return;
+    }
     const isMultiLed = cur.isMultiLed(); // Check if the current mode uses a multi-LED pattern
 
     ledPositions.forEach((position, index) => {
@@ -1109,6 +1112,11 @@ export default class ModesPanel extends Panel {
     }
 
     const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
+    if (!patterns) {
+      console.log("Patterns empty!");
+      return;
+    }
+    const cur1 = this.lightshow.vortex.engine().modes().curMode();
     let curSel;
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
@@ -1121,6 +1129,13 @@ export default class ModesPanel extends Panel {
     }
 
     const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      console.log("cur empty!");
+      return;
+    }
+    // TODO: investigate this, if all modes are deleted then the first mode added back
+    //       seems to need initialization... If we don't init here it seems to crash
+    cur.init();
 
     patterns.forEach((pat, index) => {
       if (!pat.colorset) {
