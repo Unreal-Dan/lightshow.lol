@@ -452,6 +452,111 @@ legend {
   background-color: #3e4446;
 }
 
+#outdatedFirmwareModal .modal-content {
+  padding: 20px;
+  color: #d8d4cf;
+  text-align: center;
+}
+
+#outdatedFirmwareModal h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #d8d4cf;
+}
+
+#outdatedFirmwareModal p {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #d8d4cf;
+}
+
+#outdatedFirmwareModal p strong {
+  font-weight: bold;
+}
+
+#outdatedFirmwareModal .btn-primary {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  color: #ffffff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#outdatedFirmwareModal .btn-primary:hover {
+  background-color: #0056b3;
+}
+
+#outdatedFirmwareModal .upgrade-guide-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 16px;
+  color: #66ff66;
+  text-decoration: none;
+}
+
+#outdatedFirmwareModal .upgrade-guide-link:hover {
+  color: #33cc33;
+}
+
+/* Styles for Firmware Update Modal */
+.update-header {
+    color: #66FF00;
+}
+
+.firmware-notification {
+    padding: 20px;
+    color: #d8d4cf;
+}
+
+.firmware-notification-blurb {
+    font-size: 18px;
+    margin: 0;
+    margin-bottom: 20px;
+}
+
+.firmware-notification-label {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 20px;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.firmware-buttons {
+    flex-direction: column;
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn-download, .btn-upgrade-guide {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #ffffff;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    margin: 10px 5px;
+    border: none;
+}
+
+.btn-download:hover {
+    background-color: #0056b3;
+}
+
+.btn-upgrade-guide {
+    background-color: #28a745;
+}
+
+.btn-upgrade-guide:hover {
+    background-color: #218838;
+}
+
 .close {
   color: #aaa;
   float: right;

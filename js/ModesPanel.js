@@ -272,7 +272,17 @@ export default class ModesPanel extends Panel {
     document.getElementById('ledsFieldset').style.display = 'block';
   }
 
-  onDeviceConnect() {
+  async fetchLatestFirmwareVersions() {
+    try {
+      const response = await fetch('https://vortex.community/downloads/json');
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to fetch firmware versions:', error);
+      return null;
+    }
+  }
+
+  async onDeviceConnect() {
     console.log("Device connected: " + this.vortexPort.name);
     const ledCount = this.devices[this.vortexPort.name].ledCount;
     if (ledCount !== undefined) {
@@ -288,6 +298,20 @@ export default class ModesPanel extends Panel {
     statusMessage.classList.add('status-success');
     statusMessage.classList.remove('status-pending', 'status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
+
+    // Fetch the latest firmware versions from vortex.community
+    //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
+    const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
+
+    const device = this.vortexPort.name.toLowerCase();
+    // Compare versions
+    if (latestFirmwareVersions && latestFirmwareVersions[device]) {
+      const latestVersion = latestFirmwareVersions[device].firmware.version;
+      const downloadUrl = latestFirmwareVersions[device].firmware.fileUrl;
+      if (this.vortexPort.version !== latestVersion) {
+        this.showOutdatedFirmwareNotification(device, latestVersion, downloadUrl);
+      }
+    }
 
     // Render LED indicators for the connected device
     this.renderLedIndicators(this.vortexPort.name);
@@ -309,6 +333,24 @@ export default class ModesPanel extends Panel {
     this.updateSelectedDevice(this.vortexPort.name, true);
 
     this.selectAllLeds();
+  }
+
+  showOutdatedFirmwareNotification(device, latestVersion, downloadUrl) {
+    const content = `
+      <div class="firmware-notification">
+        <p class="firmware-notification-blurb">Your device is out of date, please install the latest version</p>
+        <p class="firmware-notification-label"><strong>Device:</strong> ${this.vortexPort.name}</p>
+        <p class="firmware-notification-label"><strong>Current Version:</strong> ${this.vortexPort.version}</p>
+        <p class="firmware-notification-label"><strong>Latest Version:</strong> ${latestVersion}</p>
+        <div class="firmware-buttons">
+          <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
+          <a href="https://stoneorbits.github.io/VortexEngine/upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+        </div>
+      </div>
+    `;
+
+    const modal = new Modal('outdatedFirmwareModal');
+    modal.show({ title: 'Firmware Update', blurb: content });
   }
 
   // Add the rest of the unchanged methods here...
