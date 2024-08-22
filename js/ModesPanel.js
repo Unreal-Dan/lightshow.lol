@@ -67,6 +67,9 @@ export default class ModesPanel extends Panel {
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
+    // note changing this will not impact which device is shown, this just records
+    // which device was selected or connected for reference later
+    this.selectedDevice = 'None';
     this.devices = {
       'None': { image: 'public/images/none-logo-square-512.png', icon: 'public/images/none-logo-square-64.png', label: 'None', ledCount: 1 },
       'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },
@@ -157,8 +160,7 @@ export default class ModesPanel extends Panel {
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
 
     document.addEventListener('deviceTypeChange', (event) => {
-      const selectedDevice = event.detail;
-      this.renderLedIndicators(selectedDevice);
+      this.renderLedIndicators(this.selectedDevice);
       this.handleLedSelectionChange();
     });
 
@@ -169,7 +171,6 @@ export default class ModesPanel extends Panel {
       if (event.target && event.target.classList.contains('custom-dropdown-option')) {
         const selectedValue = event.target.getAttribute('data-value');
         this.updateSelectedDevice(selectedValue);
-        document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: selectedValue }));
       }
     });
 
@@ -200,6 +201,9 @@ export default class ModesPanel extends Panel {
     const modesListScrollContainer = document.getElementById('modesListScrollContainer');
 
     const deviceIcon = this.devices[device].icon;
+
+    this.selectedDevice = device;
+    document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: this.selectedDevice }));
 
     if (device === 'None') {
       deviceTypeSelected.innerHTML = 'Select Device';
@@ -926,6 +930,18 @@ export default class ModesPanel extends Panel {
 
   addMode() {
     let modeCount = this.lightshow.vortex.numModes();
+    switch (this.selectedDevice) {
+    case 'Orbit':
+    case 'Handle':
+    case 'Gloves':
+      if (modeCount >= 14) {
+        Notification.failure("This device can only hold 14 modes");
+        return;
+      }
+      break;
+    default:
+      break;
+    }
     if (!this.lightshow.vortex.addNewMode(true)) {
       Notification.failure("Cannot add another mode");
       return;
@@ -1116,11 +1132,22 @@ export default class ModesPanel extends Panel {
       console.log("Patterns empty!");
       return;
     }
-    const cur1 = this.lightshow.vortex.engine().modes().curMode();
     let curSel;
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
       let modeCount = this.lightshow.vortex.numModes();
+      switch (this.selectedDevice) {
+      case 'Orbit':
+      case 'Handle':
+      case 'Gloves':
+        if (modeCount >= 14) {
+          Notification.failure("This device can only hold 14 modes");
+          return;
+        }
+        break;
+      default:
+        break;
+      }
       if (!this.lightshow.vortex.addNewMode(true)) {
         Notification.failure("Cannot add another mode");
         return;
