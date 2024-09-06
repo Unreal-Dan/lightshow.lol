@@ -1056,7 +1056,7 @@ export default class ModesPanel extends Panel {
     this.importModal.selectText();
   }
 
-  importPatternFromData(patternJson) {
+  importPatternFromData(patternJson, addNew) {
     if (!patternJson) {
       Notification.failure("No pattern data");
       return;
@@ -1113,7 +1113,7 @@ export default class ModesPanel extends Panel {
       if (modesListScrollContainer) {
         modesListScrollContainer.style.height = '200px';
       }
-      return this.importModeFromData(patternJson, false);
+      return this.importModeFromData(patternJson, addNew);
     }
 
     let curSel;

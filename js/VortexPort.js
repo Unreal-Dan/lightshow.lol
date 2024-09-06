@@ -1,19 +1,39 @@
 export default class VortexPort {
   // Constants
-  EDITOR_VERB_HELLO = 'a';
-  EDITOR_VERB_READY = 'b';
-  EDITOR_VERB_PULL_MODES = 'c';
-  EDITOR_VERB_PULL_MODES_DONE = 'd';
-  EDITOR_VERB_PULL_MODES_ACK = 'e';
-  EDITOR_VERB_PUSH_MODES = 'f';
-  EDITOR_VERB_PUSH_MODES_ACK = 'g';
-  EDITOR_VERB_DEMO_MODE = 'h';
-  EDITOR_VERB_DEMO_MODE_ACK = 'i';
-  EDITOR_VERB_CLEAR_DEMO = 'j';
-  EDITOR_VERB_CLEAR_DEMO_ACK = 'k';
-  EDITOR_VERB_GOODBYE = 'l';
-  EDITOR_VERB_TRANSMIT_VL = 'm';
-  EDITOR_VERB_TRANSMIT_VL_ACK = 'n';
+  EDITOR_VERB_HELLO                 = 'a';
+  EDITOR_VERB_READY                 = 'b';
+  EDITOR_VERB_PULL_MODES            = 'c';
+  EDITOR_VERB_PULL_MODES_DONE       = 'd';
+  EDITOR_VERB_PULL_MODES_ACK        = 'e';
+  EDITOR_VERB_PUSH_MODES            = 'f';
+  EDITOR_VERB_PUSH_MODES_ACK        = 'g';
+  EDITOR_VERB_DEMO_MODE             = 'h';
+  EDITOR_VERB_DEMO_MODE_ACK         = 'i';
+  EDITOR_VERB_CLEAR_DEMO            = 'j';
+  EDITOR_VERB_CLEAR_DEMO_ACK        = 'k';
+  EDITOR_VERB_GOODBYE               = 'l';
+  EDITOR_VERB_TRANSMIT_VL           = 'm';
+  EDITOR_VERB_TRANSMIT_VL_ACK       = 'n';
+  EDITOR_VERB_LISTEN_VL             = 'o';
+  EDITOR_VERB_LISTEN_VL_ACK         = 'p';
+  EDITOR_VERB_PULL_CHROMA_HDR       = 'q';
+  EDITOR_VERB_PULL_CHROMA_HDR_ACK   = 'r';
+  EDITOR_VERB_PUSH_CHROMA_HDR       = 's';
+  EDITOR_VERB_PUSH_CHROMA_HDR_ACK   = 't';
+  EDITOR_VERB_PULL_CHROMA_MODE      = 'u';
+  EDITOR_VERB_PULL_CHROMA_MODE_ACK  = 'v';
+  EDITOR_VERB_PUSH_CHROMA_MODE      = 'w';
+  EDITOR_VERB_PUSH_CHROMA_MODE_ACK  = 'x';
+  EDITOR_VERB_PULL_SINGLE_MODE      = 'y';
+  EDITOR_VERB_PULL_SINGLE_MODE_ACK  = 'z';
+  EDITOR_VERB_PUSH_SINGLE_MODE      = 'A';
+  EDITOR_VERB_PUSH_SINGLE_MODE_ACK  = 'B';
+  EDITOR_VERB_PULL_EACH_MODE        = 'C';
+  EDITOR_VERB_PULL_EACH_MODE_ACK    = 'D';
+  EDITOR_VERB_PULL_EACH_MODE_DONE   = 'E';
+  EDITOR_VERB_PUSH_EACH_MODE        = 'F';
+  EDITOR_VERB_PUSH_EACH_MODE_ACK    = 'G';
+  EDITOR_VERB_PUSH_EACH_MODE_DONE   = 'H';
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -83,6 +103,18 @@ export default class VortexPort {
     }
   }
 
+  // helper for 1.3.0 compatibility version check
+  isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
+    const currentParts = currentVersion.split('.').map(Number);
+    const targetParts = targetVersion.split('.').map(Number);
+
+    for (let i = 0; i < targetParts.length; i++) {
+      if (currentParts[i] > targetParts[i]) return true;
+      if (currentParts[i] < targetParts[i]) return false;
+    }
+    return true;
+  }
+
   listenForGreeting = async (callback) => {
     while (!this.portActive) {
       if (this.serialPort) {
@@ -107,6 +139,13 @@ export default class VortexPort {
             console.log('Device Type:', this.name);
             console.log('Version:', this.version);
             console.log('Date:', this.buildDate);
+
+            // 1.3.0 compatibility layer
+            this.useNewPushPull = this.isVersionGreaterOrEqual(this.version, '1.3.0');
+            if (this.useNewPushPull) {
+              console.log('Detected 1.3.0+');
+            }
+
             this.portActive = true;
             this.serialPort.addEventListener("disconnect", (event) => {
               this.resetState(); // Reset the state of the class
@@ -294,12 +333,53 @@ export default class VortexPort {
     }
   }
 
-  async pushToDevice(vortexLib, vortex) {
+  async pushEachToDevice(vortexLib, vortex) {
     if (!this.isActive() || this.isTransmitting) {
       return;
     }
     this.isTransmitting = true; // Set the transmitting flag
+    try {
+      // Unserialize the stream of data
+      const modes = new vortexLib.ByteStream();
+      if (!vortex.getModes(modes)) {
+        console.log("Failed to get cur mode");
+        // Error handling - abort or handle as needed
+        return;
+      }
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
+      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+      const numModes = vortex.numModes();
+      const numModesBuf = new vortexLib.ByteStream();
+      numModesBuf.serialize8(numModes);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
+      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+      vortex.setCurMode(0, false);
+      for (let i = 0; i < numModes; ++i) {
+        const modeBuf = new vortexLib.ByteStream();
+        vortex.getCurMode(modeBuf);
+        await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
+        await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+        vortex.nextMode(false);
+      }
+      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during pushToDevice:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
+    }
+  }
 
+  async pushToDevice(vortexLib, vortex) {
+    if (!this.isActive() || this.isTransmitting) {
+      return;
+    }
+    // 1.3.0+ use new push pull logic
+    if (this.useNewPushPull) {
+      return await this.pushEachToDevice(vortexLib, vortex);
+    }
+    this.isTransmitting = true; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
@@ -321,7 +401,7 @@ export default class VortexPort {
     }
   }
 
-  async pullFromDevice(vortexLib, vortex) {
+  async pullEachFromDevice(vortexLib, vortex) {
     if (!this.isActive() || this.isTransmitting) {
       return;
     }
@@ -330,8 +410,45 @@ export default class VortexPort {
     try {
       // Unserialize the stream of data
       await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
+      const numModesBuf = await this.readByteStream(vortexLib);
+      let numModesStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData(numModesBuf, numModesStream);
+      // this is quite dumb, idk I guess header is 12 bytes so 13th byte is the one data byte
+      let numModes = numModesBuf['12'];
+      await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+      vortex.clearModes();
+      for (let i = 0; i < numModes; ++i) {
+        const modeBuf = await this.readByteStream(vortexLib);
+        // Call the Wasm function
+        let modeStream = new vortexLib.ByteStream();
+        vortexLib.createByteStreamFromData(modeBuf, modeStream);
+        vortex.addNewMode(modeStream);
+        await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+      }
+      await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+      this.startReading();
+    } catch (error) {
+      console.error('Error during pullFromDevice:', error);
+    } finally {
+      this.isTransmitting = false; // Reset the transmitting flag
+    }
+  }
+
+  async pullFromDevice(vortexLib, vortex) {
+    if (!this.isActive() || this.isTransmitting) {
+      return;
+    }
+    // 1.3.0+ use new push pull logic
+    if (this.useNewPushPull) {
+      return await this.pullEachFromDevice(vortexLib, vortex);
+    }
+    this.isTransmitting = true; // Set the transmitting flag
+    try {
+      // Unserialize the stream of data
+      await this.cancelReading();
       await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
-      const modes = await this.readModes(vortexLib);
+      const modes = await this.readByteStream(vortexLib);
       // Call the Wasm function
       let modesStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromData(modes, modesStream);
@@ -365,7 +482,7 @@ export default class VortexPort {
     }
   }
 
-  async readModes(vortexLib) {
+  async readByteStream(vortexLib) {
     if (!this.isActive()) {
       console.error('Port is not active. Cannot read modes.');
       return null;

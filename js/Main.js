@@ -7,6 +7,10 @@ import ModesPanel from './ModesPanel.js';
 import VortexPort from './VortexPort.js';
 import Modal from './Modal.js';
 
+if (!window.name || window.name !== "lightshowTab") {
+  window.name = "lightshowTab"; // This sets a unique identifier for this tab
+}
+
 const vortexPort = new VortexPort();
 
 const welcomeTitle = "<h1>Welcome to lightshow.lol</h1>";
@@ -78,14 +82,44 @@ VortexLib().then(vortexLib => {
   // finally import the modedata on the url if there is any
   const urlParams = new URLSearchParams(window.location.search);
   const encodedData = urlParams.get('data');
+
+  // if we are the main tab then just import the data
   if (encodedData) {
-    try {
-      // Decode the Base64 string and parse the JSON data
-      modesPanel.importPatternFromData(atob(encodedData), false);
-    } catch (error) {
-      console.error('Error parsing mode data:', error);
+    if (localStorage.getItem('mainTab') !== tabId) {
+      localStorage.setItem('loadMode', encodedData);
+      // Notify the main tab to focus itself
+      window.opener?.postMessage({ type: 'focusTab' }, '*');
+    } else {
+      try {
+        modesPanel.importPatternFromData(atob(encodedData), false);
+      } catch (error) {
+        console.error('Error parsing mode data:', error);
+      }
     }
   }
+
+  // otherwise listen to local storage in case another tab brings in some data
+  window.addEventListener('storage', (event) => {
+    if (localStorage.getItem('mainTab') !== tabId || event.key !== 'loadMode') {
+      return;
+    }
+    const encodedData = event.newValue;
+    if (encodedData) {
+      try {
+        modesPanel.importPatternFromData(atob(encodedData), true);
+        localStorage.removeItem('loadMode');
+      } catch (error) {
+        console.error('Error parsing mode data:', error);
+      }
+    }
+  });
+
+  // Listen for postMessage to focus this tab
+  window.addEventListener('message', (event) => {
+    if (event.data.type === 'focusTab') {
+      window.focus();
+    }
+  });
 
   // resize the lightshow when window drags
   window.addEventListener('resize', () => {
