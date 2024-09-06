@@ -362,7 +362,9 @@ export default class VortexPort {
         await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
         vortex.nextMode(false);
       }
-      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+      // these aren't really working... oh well it works good without them
+      //await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+      //await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
       this.startReading();
     } catch (error) {
       console.error('Error during pushToDevice:', error);
@@ -423,7 +425,7 @@ export default class VortexPort {
         // Call the Wasm function
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromData(modeBuf, modeStream);
-        vortex.addNewMode(modeStream);
+        vortex.addNewMode(modeStream, true);
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
       }
       await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
