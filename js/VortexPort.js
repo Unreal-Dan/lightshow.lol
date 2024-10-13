@@ -41,9 +41,6 @@ export default class VortexPort {
 
   constructor() {
     this.debugSending = false;
-    this.quitCommandCallback = null;
-    this.isPeriodicCheckActive = false;
-    this.periodicCheckInterval = null;
     this.resetState();
   }
 
