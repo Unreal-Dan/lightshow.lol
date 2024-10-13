@@ -1205,3 +1205,34 @@ legend {
 .hue-label-magenta {
   transform: translate(45px, 78px) translate(-50%, -50%);
 }
+
+/* Device Connect Container */
+#deviceConnectContainer {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#deviceConnectMessage {
+  display: block;
+  margin-bottom: 10px;
+  color: #d8d4cf;
+}
+
+/* WebSerial Detection Message */
+#unsupportedBrowserMessage {
+  color: #ff6c6c;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+#unsupportedBrowserMessage a {
+  color: #66ff66;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+#unsupportedBrowserMessage a:hover {
+  color: #33cc33;
+}
+

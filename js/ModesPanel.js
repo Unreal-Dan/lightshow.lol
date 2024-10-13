@@ -6,17 +6,20 @@ import Notification from './Notification.js';
 export default class ModesPanel extends Panel {
   constructor(lightshow, vortexPort) {
     const content = `
-      <div id="deviceConnectionSection" style="display:none;">
-        <div id="deviceStatusContainer">
-          <span id="statusLabel">Device Status:</span>
-          <span id="deviceStatus">Connect a Device</span>
-          <button id="hamburgerButton" class="hamburger-button">☰</button>
+      <div id="deviceConnectionSection">
+        <div id="deviceConnectContainer">
+          <span id="deviceConnectMessage">Connect a Vortex Device</span>
+          <button id="connectDevice" class="primary-button" style="display:none;">Connect</button>
+          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
+            WebSerial is not supported in your browser.
+            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
+          </p>
         </div>
-        <div id="hamburgerMenu" class="hamburger-menu">
-          <button id="connectDevice">Connect</button>
-          <button id="pullFromDevice">Pull</button>
-          <button id="pushToDevice">Push</button>
-          <button id="transmitVL">Transmit</button>
+        <div id="deviceActionContainer" style="display:none;">
+          <button id="pushToDevice" class="action-button">Push</button>
+          <button id="pullFromDevice" class="action-button">Pull</button>
+          <button id="transmitVL" class="secondary-button">Transmit</button>
+          <button id="chromalinkButton" class="secondary-button" style="display:none;">Chromalink</button>
         </div>
       </div>
       <div id="modesAndLedsSection">
@@ -99,6 +102,15 @@ export default class ModesPanel extends Panel {
         hamburgerMenu.style.display = 'none';
       }
     });
+
+    // Check if WebSerial is available in the browser
+    if ('serial' in navigator) {
+      document.getElementById('connectDevice').style.display = 'inline-block';
+      document.getElementById('unsupportedBrowserMessage').style.display = 'none';
+    } else {
+      document.getElementById('connectDevice').style.display = 'none';
+      document.getElementById('unsupportedBrowserMessage').style.display = 'block';
+    }
 
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());

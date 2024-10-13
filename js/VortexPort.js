@@ -34,6 +34,9 @@ export default class VortexPort {
   EDITOR_VERB_PUSH_EACH_MODE        = 'F';
   EDITOR_VERB_PUSH_EACH_MODE_ACK    = 'G';
   EDITOR_VERB_PUSH_EACH_MODE_DONE   = 'H';
+  EDITOR_VERB_FLASH_FIRMWARE        = "I";
+  EDITOR_VERB_FLASH_FIRMWARE_ACK    = "J";
+  EDITOR_VERB_FLASH_FIRMWARE_DONE   = "K";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -460,6 +463,132 @@ export default class VortexPort {
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.isTransmitting = false; // Reset the transmitting flag
+    }
+  }
+
+  // Function to connect the Duo via Chromalink
+  async connectChromalink() {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot connect to Duo.');
+      return;
+    }
+    try {
+      // Start the connection process
+      await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_HDR);
+      // Wait for the header acknowledgment
+      await this.expectData(this.EDITOR_VERB_PULL_CHROMA_HDR_ACK);
+      console.log('Duo connected via Chromalink.');
+    } catch (error) {
+      console.error('Error connecting to Duo via Chromalink:', error);
+    }
+  }
+
+  // Function to pull all modes from the Duo via Chromalink
+  async pullDuoModes(vortexLib, vortex) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot pull modes.');
+      return;
+    }
+    try {
+      // Send command to pull modes from the Duo
+      await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_MODE);
+      vortex.clearModes();  // Clear existing modes
+
+      const numModes = await this.readByteStream(vortexLib);  // Read the number of modes
+      vortex.setCurMode(0);  // Start with the first mode
+
+      for (let i = 0; i < numModes; ++i) {
+        const modeBuffer = await this.readByteStream(vortexLib);
+        vortex.addNewMode(modeBuffer, true);  // Add each mode
+        await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_MODE_ACK);
+      }
+      console.log(`Pulled ${numModes} modes from Duo via Chromalink.`);
+    } catch (error) {
+      console.error('Error pulling modes from Duo via Chromalink:', error);
+    }
+  }
+
+  // Function to push all modes to the Duo via Chromalink
+  async pushDuoModes(vortexLib, vortex) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot push modes.');
+      return;
+    }
+    try {
+      // Send the push command
+      await this.sendCommand(this.EDITOR_VERB_PUSH_CHROMA_MODE);
+      vortex.setCurMode(0);  // Start with the first mode
+
+      const numModes = vortex.numModes();
+      for (let i = 0; i < numModes; ++i) {
+        const modeBuffer = vortex.getCurModeBuffer();
+        await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuffer));  // Send mode buffer
+        await this.expectData(this.EDITOR_VERB_PUSH_CHROMA_MODE_ACK);
+        vortex.nextMode();
+      }
+      console.log(`Pushed ${numModes} modes to Duo via Chromalink.`);
+    } catch (error) {
+      console.error('Error pushing modes to Duo via Chromalink:', error);
+    }
+  }
+
+  // Function to flash firmware to the Duo via Chromalink
+  async flashFirmware(firmwareData) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot flash firmware.');
+      return;
+    }
+    try {
+      // Start firmware flashing
+      await this.sendCommand(this.EDITOR_VERB_FLASH_FIRMWARE);
+      await this.expectData(this.EDITOR_VERB_READY);
+
+      const chunkSize = 128;  // Firmware chunk size
+      let offset = 0;
+      while (offset < firmwareData.length) {
+        const chunk = firmwareData.slice(offset, offset + chunkSize);
+        await this.sendRaw(chunk);  // Send firmware chunk
+        await this.expectData(this.EDITOR_VERB_FLASH_FIRMWARE_ACK);
+        offset += chunkSize;
+      }
+      console.log('Firmware flashed successfully.');
+    } catch (error) {
+      console.error('Error flashing firmware to Duo via Chromalink:', error);
+    }
+  }
+
+  // Function to pull a single mode from the Duo via Chromalink
+  async pullSingleMode(vortexLib, vortex) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot pull single mode.');
+      return;
+    }
+    try {
+      // Send command to pull the current mode
+      await this.sendCommand(this.EDITOR_VERB_PULL_SINGLE_MODE);
+      const modeBuffer = await this.readByteStream(vortexLib);  // Read mode data
+      vortex.addNewMode(modeBuffer, true);
+      await this.sendCommand(this.EDITOR_VERB_PULL_SINGLE_MODE_ACK);
+      console.log('Pulled single mode from Duo via Chromalink.');
+    } catch (error) {
+      console.error('Error pulling single mode from Duo via Chromalink:', error);
+    }
+  }
+
+  // Function to push a single mode to the Duo via Chromalink
+  async pushSingleMode(vortexLib, vortex) {
+    if (!this.isActive()) {
+      console.error('Port not active. Cannot push single mode.');
+      return;
+    }
+    try {
+      const modeBuffer = vortex.getCurModeBuffer();  // Get the current mode data
+      await this.sendCommand(this.EDITOR_VERB_PUSH_SINGLE_MODE);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuffer));  // Send mode buffer
+      await this.expectData(this.EDITOR_VERB_PUSH_SINGLE_MODE_ACK);
+      console.log('Pushed single mode to Duo via Chromalink.');
+    } catch (error) {
+      console.error('Error pushing single mode to Duo via Chromalink:', error);
     }
   }
 
