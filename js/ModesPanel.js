@@ -2,33 +2,38 @@
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
+import ChromalinkPanel from './ChromalinkPanel.js';
 
 export default class ModesPanel extends Panel {
   constructor(lightshow, vortexPort) {
     const content = `
-      <div id="deviceConnectionSection">
-        <div id="deviceConnectContainer">
-          <span id="deviceConnectMessage">Connect a Vortex Device</span>
-          <button id="connectDevice" class="primary-button" style="display:none;">Connect</button>
-          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
-            WebSerial is not supported in your browser.
-            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
-          </p>
-        </div>
-        <div id="deviceActionContainer" style="display:none;">
-          <button id="pushToDevice" class="action-button">Push</button>
-          <button id="pullFromDevice" class="action-button">Pull</button>
-          <button id="transmitVL" class="secondary-button">Transmit</button>
-          <button id="chromalinkButton" class="secondary-button" style="display:none;">Chromalink</button>
+      <div id="deviceConnectionSection" style="display:none;">
+        <div id="deviceActionContainer">
+          <button id="pushToDevice">Push Modes</button>
+          <button id="pullFromDevice">Pull Modes</button>
+          <button id="transmitVL">Send to Duo</button>
         </div>
       </div>
       <div id="modesAndLedsSection">
         <div id="modeButtonsSection">
-          <button id="addModeButton">Add</button>
-          <button id="shareModeButton">Share</button>
-          <button id="linkModeButton">Link</button>
-          <button id="importModeButton">Import</button>
-          <button id="exportModeButton">Export</button>
+          <button id="addModeButton" class="add" title="Add a random mode">
+            <i class="fas fa-plus-circle"></i>
+          </button>
+          <button id="shareModeButton" title="Share to the community">
+            <i class="fas fa-share-alt"></i>
+          </button>
+          <button id="linkModeButton" title="Get URL to this mode">
+            <i class="fas fa-link"></i>
+          </button>
+          <button id="exportModeButton" title="Export JSON mode">
+            <i class="fas fa-file-export"></i>
+          </button>
+          <button id="importModeButton" title="Import JSON mode">
+            <i class="fas fa-file-import"></i>
+          </button>
+          <button id="connectDeviceButton" title="Connect">
+            <i class="fa-brands fa-usb" aria-hidden="true"></i>
+          </button>
         </div>
         <div id="modesListScrollContainer">
           <div id="modesListContainer">
@@ -70,6 +75,7 @@ export default class ModesPanel extends Panel {
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
+
     // note changing this will not impact which device is shown, this just records
     // which device was selected or connected for reference later
     this.selectedDevice = 'None';
@@ -87,30 +93,26 @@ export default class ModesPanel extends Panel {
 
   initialize() {
     // Hide device connection section and leds fieldset initially
-    document.getElementById('deviceConnectionSection').style.display = 'block';
+    //document.getElementById('deviceConnectionSection').style.display = 'block';
     document.getElementById('ledsFieldset').style.display = 'none';
+      this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
+      this.chromalinkPanel.appendTo(document.body); // Or any other parent element
+      this.chromalinkPanel.initialize();
 
-    const hamburgerButton = document.getElementById('hamburgerButton');
-    const hamburgerMenu = document.getElementById('hamburgerMenu');
 
-    hamburgerButton.addEventListener('click', function() {
-      hamburgerMenu.style.display = (hamburgerMenu.style.display === 'block' ? 'none' : 'block');
-    });
+    //const hamburgerButton = document.getElementById('hamburgerButton');
+    //const hamburgerMenu = document.getElementById('hamburgerMenu');
 
-    document.addEventListener('click', function(event) {
-      if (!hamburgerButton.contains(event.target) && !hamburgerMenu.contains(event.target)) {
-        hamburgerMenu.style.display = 'none';
-      }
-    });
+    //hamburgerButton.addEventListener('click', function() {
+    //  hamburgerMenu.style.display = (hamburgerMenu.style.display === 'block' ? 'none' : 'block');
+    //});
 
-    // Check if WebSerial is available in the browser
-    if ('serial' in navigator) {
-      document.getElementById('connectDevice').style.display = 'inline-block';
-      document.getElementById('unsupportedBrowserMessage').style.display = 'none';
-    } else {
-      document.getElementById('connectDevice').style.display = 'none';
-      document.getElementById('unsupportedBrowserMessage').style.display = 'block';
-    }
+    //document.addEventListener('click', function(event) {
+    //  if (!hamburgerButton.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+    //    hamburgerMenu.style.display = 'none';
+    //  }
+    //});
+
 
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());
@@ -138,20 +140,27 @@ export default class ModesPanel extends Panel {
 
     document.addEventListener('patternChange', () => this.refresh(true));
 
-    document.getElementById('connectDevice').addEventListener('click', async () => {
-      let statusMessage = document.getElementById('deviceStatus');
-      statusMessage.textContent = 'Device selection...';
-      statusMessage.classList.add('status-pending');
-      statusMessage.classList.remove('status-success', 'status-failure');
-
-      hamburgerMenu.style.display = 'none';
-
+    document.getElementById('connectDeviceButton').addEventListener('click', async () => {
       try {
+        // TODO: check for the thing
+        //    // Check if WebSerial is available in the browser
+    //if ('serial' in navigator) {
+    //} else {
+    //  document.getElementById('connectDevice').style.display = 'none';
+    //  document.getElementById('deviceConnectMessage').style.display = 'none';
+    //  document.getElementById('unsupportedBrowserMessage').style.display = 'block';
+    //}
+
+//        <div id="deviceConnectContainer">
+//          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
+//            WebSerial is not supported in your browser.
+//            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
+//          </p>
+//        </div>
+
         await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
       } catch (error) {
-        statusMessage.textContent = 'Failed to connect: ' + error.message;
-        statusMessage.classList.remove('status-success', 'status-pending');
-        statusMessage.classList.add('status-failure');
+        Notification.failure('Failed to connect: ' + error.message);
       }
     });
 
@@ -221,7 +230,7 @@ export default class ModesPanel extends Panel {
       deviceTypeSelected.innerHTML = 'Select Device';
       document.getElementById('deviceTypeOptions').classList.remove('show');
       this.lightshow.setLedCount(1); // Reset to default LED count
-      modesListScrollContainer.style.height = '500px';
+      modesListScrollContainer.style.height = '200px';
 
       // hide the spread slider
       document.getElementById('spread_div').style.display = 'block';
@@ -248,7 +257,7 @@ export default class ModesPanel extends Panel {
       document.getElementById('deviceTypeOptions').classList.add('show');
       // make the modes list long again
       if (modesListScrollContainer) {
-        modesListScrollContainer.style.height = '500px';
+        modesListScrollContainer.style.height = '200px';
       }
       // hide led selection
       ledsFieldset.style.display = 'none';
@@ -305,10 +314,11 @@ export default class ModesPanel extends Panel {
     }
     document.dispatchEvent(new CustomEvent('deviceConnected'));
     this.refresh(true);
-    let statusMessage = document.getElementById('deviceStatus');
-    statusMessage.textContent = this.vortexPort.name + ' Connected!';
-    statusMessage.classList.add('status-success');
-    statusMessage.classList.remove('status-pending', 'status-failure');
+    //Notification.success(this.vortexPort.name + ' Connected!');
+    //let statusMessage = document.getElementById('deviceStatus');
+    //statusMessage.textContent = this.vortexPort.name + ' Connected!';
+    //statusMessage.classList.add('status-success');
+    //statusMessage.classList.remove('status-pending', 'status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
 
     // Fetch the latest firmware versions from vortex.community
@@ -325,8 +335,19 @@ export default class ModesPanel extends Panel {
       }
     }
 
+    // did they connect a chromadeck?
+    if (device === 'chromadeck' && !this.chromalinkPanel) {
+      this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
+      this.chromalinkPanel.appendTo(document.body); // Or any other parent element
+      this.chromalinkPanel.initialize();
+    }
+
     // Render LED indicators for the connected device
     this.renderLedIndicators(this.vortexPort.name);
+
+    // show device options
+    document.getElementById('deviceActionContainer').style.display = 'flex';
+    //document.getElementById('deviceConnectContainer').style.display = 'none';
 
     // Show the device connection section and leds fieldset
     document.getElementById('deviceConnectionSection').style.display = 'block';
@@ -510,10 +531,11 @@ export default class ModesPanel extends Panel {
   }
 
   onDeviceWaiting() {
-    let statusMessage = document.getElementById('deviceStatus');
-    statusMessage.textContent = 'Waiting for device...';
-    statusMessage.classList.add('status-pending');
-    statusMessage.classList.remove('status-success', 'status-failure');
+    Notification.success("Waiting for device...");
+    //let statusMessage = document.getElementById('deviceStatus');
+    //statusMessage.textContent = 'Waiting for device...';
+    //statusMessage.classList.add('status-pending');
+    //statusMessage.classList.remove('status-success', 'status-failure');
   }
 
   toggleLed(index) {
@@ -671,10 +693,11 @@ export default class ModesPanel extends Panel {
 
   onDeviceDisconnect() {
     console.log("Device disconnected");
-    let statusMessage = document.getElementById('deviceStatus');
-    statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
-    statusMessage.classList.remove('status-success', 'status-pending');
-    statusMessage.classList.add('status-failure');
+    Notification.success(this.vortexPort.name + ' Disconnected!');
+    //let statusMessage = document.getElementById('deviceStatus');
+    //statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
+    //statusMessage.classList.remove('status-success', 'status-pending');
+    //statusMessage.classList.add('status-failure');
     this.lockDeviceSelection(false);
   }
 
