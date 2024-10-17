@@ -7,32 +7,25 @@ import ChromalinkPanel from './ChromalinkPanel.js';
 export default class ModesPanel extends Panel {
   constructor(lightshow, vortexPort) {
     const content = `
-      <div id="deviceConnectionSection" style="display:none;">
-        <div id="deviceActionContainer">
-          <button id="pushToDevice">Push Modes</button>
-          <button id="pullFromDevice">Pull Modes</button>
-          <button id="transmitVL">Send to Duo</button>
-        </div>
-      </div>
       <div id="modesAndLedsSection">
         <div id="modeButtonsSection">
-          <button id="addModeButton" class="add" title="Add a random mode">
+          <button id="addModeButton" class="mode-list-btn" title="New Random Mode">
             <i class="fas fa-plus-circle"></i>
           </button>
-          <button id="shareModeButton" title="Share to the community">
-            <i class="fas fa-share-alt"></i>
+          <button id="importModeButton" class="mode-list-btn" title="Paste JSON mode">
+            <i class="fa-solid fa-paste"></i>
           </button>
-          <button id="linkModeButton" title="Get URL to this mode">
-            <i class="fas fa-link"></i>
+          <button id="pullFromDeviceButton" class="mode-list-btn" title="Pull Modes from Device" disabled>
+            <i class="fa-solid fa-upload fa-flip-vertical"></i>
           </button>
-          <button id="exportModeButton" title="Export JSON mode">
-            <i class="fas fa-file-export"></i>
+          <button id="pushToDeviceButton" class="mode-list-btn" title="Push Modes to Device" disabled>
+            <i class="fa-solid fa-download fa-flip-vertical"></i>
           </button>
-          <button id="importModeButton" title="Import JSON mode">
-            <i class="fas fa-file-import"></i>
+          <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>
+            <i class="fa-solid fa-satellite-dish"></i>
           </button>
-          <button id="connectDeviceButton" title="Connect">
-            <i class="fa-brands fa-usb" aria-hidden="true"></i>
+          <button id="connectDeviceButton" class="mode-list-btn" title="Connect Device to USB">
+            <i class="fa-brands fa-usb"></i>
           </button>
         </div>
         <div id="modesListScrollContainer">
@@ -117,25 +110,25 @@ export default class ModesPanel extends Panel {
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());
 
-    const shareModeButton = document.getElementById('shareModeButton');
-    shareModeButton.addEventListener('click', () => this.shareMode());
+    //const shareModeButton = document.getElementById('shareModeButton');
+    //shareModeButton.addEventListener('click', () => this.shareMode());
 
-    const linkModeButton = document.getElementById('linkModeButton');
-    linkModeButton.addEventListener('click', () => this.linkMode());
+    //const linkModeButton = document.getElementById('linkModeButton');
+    //linkModeButton.addEventListener('click', () => this.linkMode());
 
-    const exportModeButton = document.getElementById('exportModeButton');
-    exportModeButton.addEventListener('click', () => this.exportMode());
+    //const exportModeButton = document.getElementById('exportModeButton');
+    //exportModeButton.addEventListener('click', () => this.exportMode());
 
     const importModeButton = document.getElementById('importModeButton');
     importModeButton.addEventListener('click', () => this.importMode());
 
-    const pushButton = document.getElementById('pushToDevice');
+    const pushButton = document.getElementById('pushToDeviceButton');
     pushButton.addEventListener('click', () => this.pushToDevice());
 
-    const pullButton = document.getElementById('pullFromDevice');
+    const pullButton = document.getElementById('pullFromDeviceButton');
     pullButton.addEventListener('click', () => this.pullFromDevice());
 
-    const transmitButton = document.getElementById('transmitVL');
+    const transmitButton = document.getElementById('transmitVLButton');
     transmitButton.addEventListener('click', () => this.transmitVL());
 
     document.addEventListener('patternChange', () => this.refresh(true));
@@ -279,17 +272,16 @@ export default class ModesPanel extends Panel {
     const deviceTypeOptions = document.getElementById('deviceTypeOptions');
     deviceTypeOptions.innerHTML = Object.keys(this.devices).map(key => {
       const device = this.devices[key];
-      return `
-    <div class="custom-dropdown-option" data-value="${key}">
-      <img src="${device.icon}" alt="${device.label} Logo">
-      ${device.label}
-    </div>
-  `;
+      return `<div class="custom-dropdown-option" data-value="${key}">
+                <img src="${device.icon}" alt="${device.label} Logo">
+                ${device.label}
+              </div>
+            `;
     }).join('');
   }
 
   showDeviceConnectionSection() {
-    document.getElementById('deviceConnectionSection').style.display = 'block';
+    //document.getElementById('deviceConnectionSection').style.display = 'block';
     document.getElementById('ledsFieldset').style.display = 'block';
   }
 
@@ -321,6 +313,11 @@ export default class ModesPanel extends Panel {
     //statusMessage.classList.remove('status-pending', 'status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
 
+    // Enable the 3 buttons when a device is connected
+    document.getElementById('pushToDeviceButton').disabled = false;
+    document.getElementById('pullFromDeviceButton').disabled = false;
+    document.getElementById('transmitVLButton').disabled = false;
+
     // Fetch the latest firmware versions from vortex.community
     //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
     const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
@@ -346,11 +343,11 @@ export default class ModesPanel extends Panel {
     this.renderLedIndicators(this.vortexPort.name);
 
     // show device options
-    document.getElementById('deviceActionContainer').style.display = 'flex';
+    //document.getElementById('deviceActionContainer').style.display = 'flex';
     //document.getElementById('deviceConnectContainer').style.display = 'none';
 
     // Show the device connection section and leds fieldset
-    document.getElementById('deviceConnectionSection').style.display = 'block';
+    //document.getElementById('deviceConnectionSection').style.display = 'block';
     document.getElementById('ledsFieldset').style.display = 'block';
 
     // display the spread slider
@@ -945,7 +942,14 @@ export default class ModesPanel extends Panel {
       }
       modeDiv.innerHTML = `
         <span class="mode-name">Mode ${i} - ${this.lightshow.vortex.getModeName()}</span>
-        <button class="delete-mode-btn">&times;</button>
+        <div style="display:flex">
+        <div class="mode-btn-container" style="display: ${isSelected ? 'flex' : 'none'};">
+          <button class="share-mode-btn mode-btn" title="Share Mode"><i class="fas fa-share-alt"></i></button>
+          <button class="link-mode-btn mode-btn" title="Get Link"><i class="fas fa-link"></i></button>
+          <button class="export-mode-btn mode-btn" title="Export Mode"><i class="fa-solid fa-copy"></i></button>
+        </div>
+        <button class="delete-mode-btn mode-btn" title="Delete Mode">&times;</button>
+        </div>
       `;
       modesListContainer.appendChild(modeDiv);
       this.lightshow.vortex.nextMode(false);
@@ -954,6 +958,25 @@ export default class ModesPanel extends Panel {
     this.attachModeEventListeners();
     this.refreshLedList();
   }
+
+  selectMode(index) {
+    this.lightshow.vortex.setCurMode(index, true);
+
+    // Hide buttons for all modes first
+    document.querySelectorAll('.mode-btn-container').forEach(buttonContainer => {
+      buttonContainer.style.display = 'none';
+    });
+
+    // Show buttons for the selected mode
+    const selectedMode = document.querySelector(`.mode-entry[mode-index="${index}"] .mode-btn-container`);
+    if (selectedMode) {
+      selectedMode.style.display = 'flex';
+    }
+
+    this.refreshLedList();
+    this.refreshPatternControlPanel();
+  }
+
 
   attachModeEventListeners() {
     const modesListContainer = document.getElementById('modesListContainer');
@@ -968,6 +991,22 @@ export default class ModesPanel extends Panel {
         const modeElement = event.target.closest('.mode-entry');
         modeElement.classList.remove('pressed');
       });
+      // Share Mode
+      modeEntry.querySelector('.share-mode-btn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.shareMode();
+      });
+      // Link Mode
+      modeEntry.querySelector('.link-mode-btn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.linkMode();
+      });
+      // Export Mode
+      modeEntry.querySelector('.export-mode-btn').addEventListener('click', (event) => {
+        event.stopPropagation();
+        this.exportMode();
+      });
+      // click select
       modeEntry.addEventListener('click', event => {
         const modeElement = event.target.closest('.mode-entry');
         const index = modeElement.getAttribute('mode-index');
@@ -1013,6 +1052,13 @@ export default class ModesPanel extends Panel {
     case 'Gloves':
       if (modeCount >= 14) {
         Notification.failure("This device can only hold 14 modes");
+        return;
+      }
+      break;
+    case 'Duo':
+        // TODO: version check?
+        if (modeCount >= 5) {
+        Notification.failure("This device can only hold 5 modes");
         return;
       }
       break;
@@ -1074,7 +1120,7 @@ export default class ModesPanel extends Panel {
     this.exportModal.show({
       buttons: [],
       defaultValue: modeJson,
-      title: 'Export Current Mode',
+      title: 'Export/Copy a Mode',
     });
     this.exportModal.selectAndCopyText();
     Notification.success("Copied JSON mode to clipboard");
@@ -1083,7 +1129,7 @@ export default class ModesPanel extends Panel {
   importMode() {
     this.importModal.show({
       placeholder: 'Paste a JSON mode',
-      title: 'Import New Mode',
+      title: 'Import/Paste a Mode',
       onInput: (event) => {
         this.importModeFromData(event.target.value);
       }
@@ -1299,11 +1345,11 @@ export default class ModesPanel extends Panel {
     Notification.success("Successfully Deleted Mode " + index);
   }
 
-  selectMode(index) {
-    this.lightshow.vortex.setCurMode(index, true);
-    this.refreshLedList();
-    this.refreshPatternControlPanel();
-  }
+  //selectMode(index) {
+  //  this.lightshow.vortex.setCurMode(index, true);
+  //  this.refreshLedList();
+  //  this.refreshPatternControlPanel();
+  //}
 
   pushToDevice() {
     if (!this.vortexPort.isActive()) {

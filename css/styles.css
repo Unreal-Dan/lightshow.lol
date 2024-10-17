@@ -105,7 +105,7 @@ canvas {
 }
 
 /* Connection Buttons */
-#exportModeButton, #importModeButton, #shareModeButton, #linkModeButton, #addModeButton, #connectDeviceButton {
+.mode-list-btn {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -117,29 +117,21 @@ canvas {
   width: 52px;
 }
 
-#pushToDevice, #pullFromDevice, #transmitVL {
+.mode-list-btn:hover {
+  background-color: #3e4446;
+}
+
+.mode-list-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mode-list-btn:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
-  border-radius: 4px;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 16px;
-}
-
-#randomizeColorset:hover,
-#randomizePattern:hover,
-#exportModeButton:hover,
-#importModeButton:hover,
-#shareModeButton:hover,
-#linkModeButton:hover,
-#addModeButton:hover,
-#connectDeviceButton:hover,
-#pushToDevice:hover,
-#pullFromDevice:hover,
-#transmitVL:hover {
-  background-color: #3e4446;
 }
 
 #deviceActionContainer {
@@ -371,6 +363,45 @@ legend {
   user-select: none;
 }
 
+.mode-btn-container {
+  display: flex;
+  justify-content: right;
+  align-items: top;
+  transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+  cursor: pointer;
+}
+
+.mode-btn {
+  position: relative;
+  background-color: transparent; /* Background set to transparent */
+  border: none;
+  color: #aaa;
+  float: right;
+  font-size: 14px;
+  user-select: none;
+}
+
+.share-mode-btn i:hover, .share-mode-btn i:focus {
+  color: lightgreen;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.link-mode-btn i:hover, .link-mode-btn i:focus {
+  color: lightblue;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.export-mode-btn i:hover, .export-mode-btn i:focus {
+  color: darkgray;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
 .delete-mode-btn {
   position: relative;
   top: -2px; /* it's a button so it has extra space on the top */
@@ -383,8 +414,7 @@ legend {
   user-select: none;
 }
 
-.delete-mode-btn:hover,
-.delete-mode-btn:focus {
+.delete-mode-btn:hover, .delete-mode-btn:focus {
   color: red;
   text-decoration: none;
   cursor: pointer;
@@ -1311,7 +1341,6 @@ legend {
 }
 
 i {
-  margin-right: 5px;
   color: #fff; /* Ensuring the icons are white */
 }
 
