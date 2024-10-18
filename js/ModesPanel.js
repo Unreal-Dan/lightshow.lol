@@ -317,6 +317,7 @@ export default class ModesPanel extends Panel {
     document.getElementById('pushToDeviceButton').disabled = false;
     document.getElementById('pullFromDeviceButton').disabled = false;
     document.getElementById('transmitVLButton').disabled = false;
+    document.getElementById('connectDeviceButton').disabled = true;
 
     // Fetch the latest firmware versions from vortex.community
     //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
@@ -348,7 +349,6 @@ export default class ModesPanel extends Panel {
 
     // Show the device connection section and leds fieldset
     //document.getElementById('deviceConnectionSection').style.display = 'block';
-    document.getElementById('ledsFieldset').style.display = 'block';
 
     // display the spread slider
     document.getElementById('spread_div').style.display = 'block';
@@ -691,6 +691,13 @@ export default class ModesPanel extends Panel {
   onDeviceDisconnect() {
     console.log("Device disconnected");
     Notification.success(this.vortexPort.name + ' Disconnected!');
+
+    // Enable the 3 buttons when a device is connected
+    document.getElementById('pushToDeviceButton').disabled = true;
+    document.getElementById('pullFromDeviceButton').disabled = true;
+    document.getElementById('transmitVLButton').disabled = true;
+    document.getElementById('connectDeviceButton').disabled = false;
+
     //let statusMessage = document.getElementById('deviceStatus');
     //statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
     //statusMessage.classList.remove('status-success', 'status-pending');
@@ -782,10 +789,7 @@ export default class ModesPanel extends Panel {
 
     const ledPositions = this.getLedPositions(deviceName);
     const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-      return;
-    }
-    const isMultiLed = cur.isMultiLed(); // Check if the current mode uses a multi-LED pattern
+    const isMultiLed = cur && cur.isMultiLed(); // Check if the current mode uses a multi-LED pattern
 
     ledPositions.forEach((position, index) => {
       const ledIndicator = document.createElement('div');
@@ -815,7 +819,7 @@ export default class ModesPanel extends Panel {
 
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       const index = indicator.dataset.ledIndex;
-      if (cur.isMultiLed()) {
+      if (cur && cur.isMultiLed()) {
         indicator.classList.add('selected');
       } else {
         if (selectedLeds.includes(index.toString())) {
@@ -926,9 +930,13 @@ export default class ModesPanel extends Panel {
   refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     this.clearModeList();
-    const cur = this.lightshow.vortex.engine().modes().curMode();
+    let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
-      return;
+      this.lightshow.vortex.setCurMode(0, false);
+      cur = this.lightshow.vortex.engine().modes().curMode();
+      if (!cur) {
+        return;
+      }
     }
     let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
     this.lightshow.vortex.setCurMode(0, false);
@@ -1056,8 +1064,8 @@ export default class ModesPanel extends Panel {
       }
       break;
     case 'Duo':
-        // TODO: version check?
-        if (modeCount >= 5) {
+      // TODO: version check?
+      if (modeCount >= 5) {
         Notification.failure("This device can only hold 5 modes");
         return;
       }
@@ -1065,8 +1073,8 @@ export default class ModesPanel extends Panel {
     default:
       break;
     }
-    if (!this.lightshow.vortex.addNewMode(true)) {
-      Notification.failure("Cannot add another mode");
+    if (!this.lightshow.vortex.addNewMode(false)) {
+      Notification.failure("Failed to add another mode");
       return;
     }
     this.refreshModeList();
@@ -1271,8 +1279,8 @@ export default class ModesPanel extends Panel {
       default:
         break;
       }
-      if (!this.lightshow.vortex.addNewMode(true)) {
-        Notification.failure("Cannot add another mode");
+      if (!this.lightshow.vortex.addNewMode(false)) {
+        Notification.failure("Failed to add another mode");
         return;
       }
       this.lightshow.vortex.setCurMode(modeCount, false);

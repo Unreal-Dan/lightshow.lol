@@ -1,4 +1,3 @@
-// ChromalinkPanel.js
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 
@@ -8,6 +7,7 @@ export default class ChromalinkPanel extends Panel {
       <h2>Chromalink Duo</h2>
       <div id="chromalinkOptions">
         <button id="chromalinkFlash" class="chromalink-button">Flash Duo Firmware</button>
+        <input type="file" id="firmwareFileInput" style="display:none;" />
         <button id="chromalinkConnect" class="chromalink-button">Connect Duo</button>
       </div>
       <div id="chromalinkConnectedOptions" style="display:none;">
@@ -32,65 +32,95 @@ export default class ChromalinkPanel extends Panel {
     // Connect button logic
     connectButton.addEventListener('click', async () => {
       try {
+        // Use the connect function from VortexPort
+        if (!await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib)) {
+          // failed to connect
+          return;
+        }
         this.isConnected = true;
         connectedOptions.style.display = 'block';
-        this.modesPanel.clearModeList();
+        this.modesPanel.lightshow.vortex.clearModes();
         this.modesPanel.lightshow.setLedCount(2);
         this.modesPanel.updateSelectedDevice('Duo', true);
-        Notification.success('Chromalink connected successfully.');
+        this.modesPanel.renderLedIndicators('Duo');
+        this.modesPanel.selectAllLeds();
       } catch (error) {
         Notification.failure('Failed to connect: ' + error.message);
       }
     });
 
     // Flash firmware button logic
-    flashButton.addEventListener('click', () => {
-      this.flashFirmware();
+    flashButton.addEventListener('click', async () => {
+      firmwareFileInput.click(); // Trigger file input
+    });
+
+    // Handle file selection and flash firmware
+    firmwareFileInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        Notification.failure('No firmware file selected.');
+        return;
+      }
+
+      // Read file as ArrayBuffer
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const firmwareData = new Uint8Array(e.target.result); // Get the binary data
+        try {
+          //Notification.success('Flashing firmware...');
+          await this.vortexPort.flashFirmware(this.modesPanel.lightshow.vortexLib, firmwareData); // Call the vortexPort flash method
+          Notification.success('Firmware flashed successfully.');
+        } catch (error) {
+          Notification.failure('Firmware flash failed: ' + error.message);
+        }
+      };
+      reader.onerror = () => {
+        Notification.failure('Error reading firmware file.');
+      };
+      reader.readAsArrayBuffer(file); // Read the file as binary data
     });
 
     // Pull modes button logic
-    pullModesButton.addEventListener('click', () => {
-      this.pullModes();
+    pullModesButton.addEventListener('click', async () => {
+      await this.pullModes();
     });
 
     // Push modes button logic
-    pushModesButton.addEventListener('click', () => {
-      this.pushModes();
+    pushModesButton.addEventListener('click', async () => {
+      await this.pushModes();
     });
   }
 
-  // Simulated actions (replace with actual logic)
-  async flashFirmware() {
-    try {
-      Notification.success('Flashing firmware...');
-      // Simulate firmware flash
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      Notification.success('Firmware flashed successfully.');
-    } catch (error) {
-      Notification.failure('Firmware flash failed: ' + error.message);
-    }
-  }
-
+  // Pull modes from Duo via Chromalink
   async pullModes() {
     if (!this.isConnected) {
       Notification.failure('Please connect first.');
       return;
     }
-    Notification.success('Pulling modes from Chromalink...');
-    // Simulate pulling modes
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    Notification.success('Modes pulled successfully.');
+    try {
+      Notification.success('Pulling modes from Chromalink...');
+      await this.vortexPort.pullDuoModes(this.modesPanel.lightshow.vortexLib, this.modesPanel.lightshow.vortex);
+      Notification.success('Modes pulled successfully.');
+    } catch (error) {
+      Notification.failure('Failed to pull modes: ' + error.message);
+    }
+    this.modesPanel.refreshModeList(); // Refresh modes in the UI
   }
 
+  // Push modes to Duo via Chromalink
   async pushModes() {
     if (!this.isConnected) {
       Notification.failure('Please connect first.');
       return;
     }
-    Notification.success('Pushing modes to Chromalink...');
-    // Simulate pushing modes
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    Notification.success('Modes pushed successfully.');
+
+    try {
+      Notification.success('Pushing modes to Chromalink...');
+      await this.vortexPort.pushDuoModes(this.modesPanel.lightshow.vortexLib, this.modesPanel.lightshow.vortex);
+      Notification.success('Modes pushed successfully.');
+    } catch (error) {
+      Notification.failure('Failed to push modes: ' + error.message);
+    }
   }
 
   onDeviceConnect() {
