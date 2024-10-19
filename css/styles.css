@@ -1290,9 +1290,37 @@ legend {
   padding: 10px;
   position: absolute;
   width: 150px;
-  z-index: 3;
+  z-index: 2;
   top: 10px;
   right: 410px;
+  transition: transform 0.4s ease; /* Sliding animation */
+}
+
+#chromalinkPanel.hidden {
+  transform: translateX(180px); /* Slide panel out of view */
+}
+
+/* Pull Tab Styles */
+.pull-tab {
+  position: absolute;
+  top: 10px;
+  left: -25px; /* Position the tab outside the panel */
+  background-color: #444;
+  border: 1px solid #3e4446;
+  border-radius: 5px 0 0 5px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+.pull-tab:hover {
+  background-color: #666;
+}
+
+.pull-tab span {
+  display: inline-block;
 }
 
 #chromalinkPanel h2 {

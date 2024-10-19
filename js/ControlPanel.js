@@ -477,7 +477,9 @@ export default class ControlPanel extends Panel {
 
   async demoColorOnDevice(color) {
     try {
-      await this.vortexPort.demoColor(this.lightshow.vortexLib, this.lightshow.vortex, color);
+      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
+        await this.vortexPort.demoColor(this.lightshow.vortexLib, this.lightshow.vortex, color);
+      }
     } catch (error) {
       Notification.failure("Failed to demo color (" + error + ")");
     }
@@ -485,7 +487,9 @@ export default class ControlPanel extends Panel {
 
   async demoModeOnDevice() {
     try {
-      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
+        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      }
     } catch (error) {
       Notification.failure("Failed to demo mode (" + error + ")");
     }

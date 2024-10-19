@@ -88,9 +88,11 @@ export default class ModesPanel extends Panel {
     // Hide device connection section and leds fieldset initially
     //document.getElementById('deviceConnectionSection').style.display = 'block';
     document.getElementById('ledsFieldset').style.display = 'none';
-      this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
-      this.chromalinkPanel.appendTo(document.body); // Or any other parent element
-      this.chromalinkPanel.initialize();
+
+    // optionally initialize the chromalink now:
+    //this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
+    //this.chromalinkPanel.appendTo(document.body); // Or any other parent element
+    //this.chromalinkPanel.initialize();
 
 
     //const hamburgerButton = document.getElementById('hamburgerButton');
@@ -333,8 +335,8 @@ export default class ModesPanel extends Panel {
       }
     }
 
-    // did they connect a chromadeck?
-    if (device === 'chromadeck' && !this.chromalinkPanel) {
+    // if the device has UPDI support open a chromalink window
+    if (this.vortexPort.hasUPDI && !this.chromalinkPanel) {
       this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
       this.chromalinkPanel.appendTo(document.body); // Or any other parent element
       this.chromalinkPanel.initialize();
@@ -1359,13 +1361,17 @@ export default class ModesPanel extends Panel {
   //  this.refreshPatternControlPanel();
   //}
 
-  pushToDevice() {
+  async pushToDevice() {
     if (!this.vortexPort.isActive()) {
       Notification.failure("Please connect a device first");
       return;
     }
-    this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
-    Notification.success("Successfully pushed save");
+    if (this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pushModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pushed save");
+    }
   }
 
   async pullFromDevice() {
@@ -1373,11 +1379,15 @@ export default class ModesPanel extends Panel {
       Notification.failure("Please connect a device first");
       return;
     }
-    await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+    if (this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pullModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pulled save");
+    }
     this.refreshModeList();
     this.refreshLedList();
     this.refreshPatternControlPanel();
-    Notification.success("Successfully pulled save");
   }
 
   async transmitVL() {
