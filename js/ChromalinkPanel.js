@@ -93,7 +93,7 @@ export default class ChromalinkPanel extends Panel {
       if (!this.duoHeader) {
         throw new Error('Failed to read Duo save header');
       }
-      this.modesPanel.checkVersion('Duo', this.duoHeader.version);
+      await this.modesPanel.checkVersion('Duo', this.duoHeader.version);
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Disconnect Duo'
       this.isVisible = true;
