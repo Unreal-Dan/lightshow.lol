@@ -94,52 +94,53 @@ canvas {
   flex-direction: column;
   justify-content: space-between; /* Adjusts button positioning */
   align-items: center;
-  background-color: #080a0b;
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-  margin: 2px;
 }
 
 #modeButtonsSection {
   display: flex;
+  padding: 3px;
   flex-direction: row;
+  justify-content: space-between; /* Align hue circle and input boxes */
+  margin-bottom: 10px;
 }
 
 /* Connection Buttons */
-#exportModeButton, #importModeButton, #shareModeButton, #linkModeButton, #addModeButton {
+.mode-list-btn {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
   border-radius: 4px;
-  padding: 8px 15px;
-  margin: 4px;
+  padding: 8px 10px;
   cursor: pointer;
   transition: background-color 0.2s;
+  font-size: 20px;
+  width: 52px;
 }
 
-#exportModeButton, #importModeButton, #addModeButton, #shareModeButton, #linkModeButton {
-  margin-bottom: 10px;
-}
-
-#randomizeColorset:hover,
-#randomizePattern:hover,
-#exportModeButton:hover,
-#importModeButton:hover,
-#shareModeButton:hover,
-#linkModeButton:hover,
-#addModeButton:hover,
-#connectDevice:hover,
-#pushToDevice:hover,
-#pullFromDevice:hover {
+.mode-list-btn:hover {
   background-color: #3e4446;
 }
 
-#deviceStatusContainer {
+.mode-list-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mode-list-btn:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+}
+
+#deviceActionContainer {
   display: flex;
   align-items: center;
   user-select: none;
   justify-content: space-between;
+  margin: 3px;
+  margin-bottom: 8px;
 }
 
 #statusLabel {
@@ -309,7 +310,7 @@ legend {
 }
 
 #modesListScrollContainer {
-  height: 500px;
+  height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
@@ -362,6 +363,45 @@ legend {
   user-select: none;
 }
 
+.mode-btn-container {
+  display: flex;
+  justify-content: right;
+  align-items: top;
+  transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+  cursor: pointer;
+}
+
+.mode-btn {
+  position: relative;
+  background-color: transparent; /* Background set to transparent */
+  border: none;
+  color: #aaa;
+  float: right;
+  font-size: 14px;
+  user-select: none;
+}
+
+.share-mode-btn i:hover, .share-mode-btn i:focus {
+  color: lightgreen;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.link-mode-btn i:hover, .link-mode-btn i:focus {
+  color: lightblue;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.export-mode-btn i:hover, .export-mode-btn i:focus {
+  color: darkgray;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
 .delete-mode-btn {
   position: relative;
   top: -2px; /* it's a button so it has extra space on the top */
@@ -374,8 +414,7 @@ legend {
   user-select: none;
 }
 
-.delete-mode-btn:hover,
-.delete-mode-btn:focus {
+.delete-mode-btn:hover, .delete-mode-btn:focus {
   color: red;
   text-decoration: none;
   cursor: pointer;
@@ -582,7 +621,7 @@ legend {
   border-radius: 4px; /* Rounded borders */
   padding: 16px; /* Padding */
   position: fixed; /* Sit on top of the screen */
-  z-index: 1; /* Add a z-index if needed */
+  z-index: 10; /* Add a z-index if needed */
   left: 50%; /* Center the div */
   top: 30px; /* 30px from the top */
 }
@@ -1205,3 +1244,135 @@ legend {
 .hue-label-magenta {
   transform: translate(45px, 78px) translate(-50%, -50%);
 }
+
+/* Device Connect Container */
+#deviceConnectContainer {
+  display: flex;
+  flex-direction: column;  /* Stack the elements vertically */
+  justify-content: center; /* Center vertically */
+  align-items: center;     /* Center horizontally */
+  gap: 10px;               /* Space between message and button */
+  padding: 5px;           /* Add some padding for spacing */
+  text-align: center;      /* Center text within the container */
+  font-family: 'Segoe UI Symbol', Arial, sans-serif;
+  font-size: 18px;
+
+}
+
+#deviceConnectMessage {
+  color: #d8d4cf;
+}
+
+/* WebSerial Detection Message */
+#unsupportedBrowserMessage {
+  color: #ff6c6c;
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+#unsupportedBrowserMessage a {
+  color: #66ff66;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+#unsupportedBrowserMessage a:hover {
+  color: #33cc33;
+}
+
+/* chromalink-panel.css */
+#chromalinkPanel {
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  padding: 10px;
+  position: absolute;
+  width: 150px;
+  z-index: 2;
+  top: 10px;
+  right: 410px;
+  transition: transform 0.4s ease; /* Sliding animation */
+}
+
+#chromalinkPanel.hidden {
+  transform: translateX(180px); /* Slide panel out of view */
+}
+
+/* Pull Tab Styles */
+.pull-tab {
+  position: absolute;
+  top: 10px;
+  left: -25px; /* Position the tab outside the panel */
+  background-color: #444;
+  border: 1px solid #3e4446;
+  border-radius: 5px 0 0 5px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+.pull-tab:hover {
+  background-color: #666;
+}
+
+.pull-tab span {
+  display: inline-block;
+}
+
+#chromalinkPanel h2 {
+  margin-bottom: 10px;
+  margin-top: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.chromalink-button {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0 0 0;
+  background-color: #444;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chromalink-button:hover {
+  background-color: #666;
+}
+
+#chromalinkConnectedOptions {
+}
+
+
+
+
+.btn.connect {
+  background-color: #333; /* Dark background */
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #fff; /* White icon/text color */
+}
+
+.btn.connect:hover {
+  background-color: #555; /* Slightly lighter dark color on hover */
+}
+
+i {
+  color: #fff; /* Ensuring the icons are white */
+}
+
+.btn.connect:active {
+  background-color: #777; /* Even lighter when pressed */
+}
+
