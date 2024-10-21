@@ -547,13 +547,13 @@ export default class VortexPort {
       duoHeader.vMajor = headerData[0];
       duoHeader.vMinor = headerData[1];
       duoHeader.vBuild = 0;
-      duoHeader.duoFlags = headerData[2];
-      duoHeader.duoBrightness = headerData[3];
-      duoHeader.duoNumModes = headerData[4];
+      duoHeader.flags = headerData[2];
+      duoHeader.brightness = headerData[3];
+      duoHeader.numModes = headerData[4];
       // construct a full version string
       duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
       duoHeader.rawData = headerData;
-      console.log("Header: " + JSON.stringify(duoHeader));
+      //console.log("Header: " + JSON.stringify(duoHeader));
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
@@ -564,7 +564,7 @@ export default class VortexPort {
     return duoHeader;
   }
 
-  async writeDuoHeader(vortexLib, vortex) {
+  async writeDuoHeader(vortexLib, vortex, duoHeader) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
@@ -578,21 +578,20 @@ export default class VortexPort {
       // Start the connection process
       await this.sendCommand(this.EDITOR_VERB_PUSH_CHROMA_HDR);
       await this.expectData(this.EDITOR_VERB_READY);
-      // update the number of modes
-      this.duoNumModes = vortex.numModes();
       // build the header
       const headerData = [
-        this.duoVersionMajor,
-        this.duoVersionMinor,
-        this.duoFlags,
-        this.duoBrightness,
-        this.duoNumModes,
+        duoHeader.vMajor,
+        duoHeader.vMinor,
+        duoHeader.flags,
+        duoHeader.brightness,
+        duoHeader.numModes,
       ];
       let headerStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromData(headerData, headerStream);
       await this.sendRaw(this.constructCustomBuffer(vortexLib, headerStream));
       await this.expectData(this.EDITOR_VERB_PUSH_CHROMA_HDR_ACK);
-      console.log("Header: " + JSON.stringify(headerData));
+      //console.log("DuoHeader: " + JSON.stringify(duoHeader));
+      //console.log("Header: " + JSON.stringify(headerData));
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
@@ -603,7 +602,7 @@ export default class VortexPort {
   }
 
   // Function to pull all modes from the Duo via Chromalink
-  async pullDuoModes(vortexLib, vortex) {
+  async pullDuoModes(vortexLib, vortex, numModes) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
@@ -615,7 +614,7 @@ export default class VortexPort {
     this.isTransmitting = true; // Set the transmitting flag
     try {
       await this.cancelReading();
-      for (let i = 0; i < this.duoNumModes; ++i) {
+      for (let i = 0; i < numModes; ++i) {
         // Send command to pull modes from the Duo
         await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_MODE);
         await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK

@@ -154,6 +154,7 @@ export default class ModesPanel extends Panel {
 
         await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
       } catch (error) {
+        console.log("Error: " + error);
         Notification.failure('Failed to connect: ' + error.message);
       }
     });
@@ -336,7 +337,7 @@ export default class ModesPanel extends Panel {
     document.getElementById('connectDeviceButton').disabled = true;
 
     // if the device has UPDI support open a chromalink window
-    if (this.vortexPort.hasUPDI && !this.chromalinkPanel) {
+    if (!this.chromalinkPanel && this.vortexPort.name === 'Chromadeck') {
       this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
       this.chromalinkPanel.appendTo(document.body); // Or any other parent element
       this.chromalinkPanel.initialize();

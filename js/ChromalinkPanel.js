@@ -90,7 +90,10 @@ export default class ChromalinkPanel extends Panel {
     try {
       // Use the connect function from VortexPort
       this.duoHeader = await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib);
-      this.modesPanel.checkVersion('Duo', duoHeader.version);
+      if (!this.duoHeader) {
+        throw new Error('Failed to read Duo save header');
+      }
+      this.modesPanel.checkVersion('Duo', this.duoHeader.version);
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Disconnect Duo'
       this.isVisible = true;
@@ -104,7 +107,7 @@ export default class ChromalinkPanel extends Panel {
       this.modesPanel.updateSelectedDevice('Duo', true);
       this.modesPanel.renderLedIndicators('Duo');
       this.modesPanel.selectAllLeds();
-      Notification.success('Successfully Chromalinked Duo v' + duoHeader.version);
+      Notification.success('Successfully Chromalinked Duo v' + this.duoHeader.version);
     } catch (error) {
       Notification.failure('Failed to connect: ' + error.message);
     }
@@ -140,8 +143,8 @@ export default class ChromalinkPanel extends Panel {
     }
     try {
       Notification.success('Pulling Duo modes via Chromalink...');
-      await this.vortexPort.pullDuoModes(vortexLib, vortex);
-      Notification.success(`Successfully pulled modes from Duo via Chromalink`);
+      await this.vortexPort.pullDuoModes(vortexLib, vortex, this.duoHeader.numModes);
+      //Notification.success(`Successfully pulled modes from Duo via Chromalink`);
     } catch (error) {
       Notification.failure('Failed to pull modes: ' + error.message);
     }
@@ -157,8 +160,10 @@ export default class ChromalinkPanel extends Panel {
 
     try {
       Notification.success('Pushing Duo modes via Chromalink...');
+      // update the number of modes
+      this.duoHeader.numModes = vortex.numModes();
       // then push the header (which will reset the device after)
-      await this.vortexPort.writeDuoHeader(vortexLib, vortex);
+      await this.vortexPort.writeDuoHeader(vortexLib, vortex, this.duoHeader);
       // push those modes
       await this.vortexPort.pushDuoModes(vortexLib, vortex);
       Notification.success('Successfully pushed modes to Duo via Chromalink');
