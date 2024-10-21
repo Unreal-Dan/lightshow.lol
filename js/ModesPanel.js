@@ -308,7 +308,7 @@ export default class ModesPanel extends Panel {
       const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
       const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
       if (version !== latestVersion) {
-        this.showOutdatedFirmwareNotification(lowerDevice, latestVersion, downloadUrl);
+        this.showOutdatedFirmwareNotification(device, version, latestVersion, downloadUrl);
       }
     }
   }
@@ -372,12 +372,12 @@ export default class ModesPanel extends Panel {
     this.selectAllLeds();
   }
 
-  showOutdatedFirmwareNotification(device, latestVersion, downloadUrl) {
+  showOutdatedFirmwareNotification(device, version, latestVersion, downloadUrl) {
     const content = `
       <div class="firmware-notification">
         <p class="firmware-notification-blurb">Your device is out of date, please install the latest version</p>
-        <p class="firmware-notification-label"><strong>Device:</strong> ${this.vortexPort.name}</p>
-        <p class="firmware-notification-label"><strong>Current Version:</strong> ${this.vortexPort.version}</p>
+        <p class="firmware-notification-label"><strong>Device:</strong> ${device}</p>
+        <p class="firmware-notification-label"><strong>Current Version:</strong> ${version}</p>
         <p class="firmware-notification-label"><strong>Latest Version:</strong> ${latestVersion}</p>
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
@@ -386,8 +386,8 @@ export default class ModesPanel extends Panel {
       </div>
     `;
 
-    const modal = new Modal('outdatedFirmwareModal');
-    modal.show({ title: 'Firmware Update', blurb: content });
+    const modal = new Modal('outdatedFirmwareModal' + device);
+    modal.show({ title: device + ' Firmware Update', blurb: content });
   }
 
   // Add the rest of the unchanged methods here...
