@@ -17,7 +17,7 @@ export default class ChromalinkPanel extends Panel {
     this.vortexPort = vortexPort;
     this.modesPanel = modesPanel;
     this.isConnected = false;
-    this.isVisible = false;
+    this.isVisible = true;
   }
 
   initialize() {
@@ -73,7 +73,7 @@ export default class ChromalinkPanel extends Panel {
 
     // Toggle visibility on pull tab click
     pullTab.addEventListener('click', () => {
-      if (!this.isVisible) {
+      if (this.isVisible) {
         // Hide panel
         panelElement.classList.add('hidden');
         pullTab.innerHTML = '<span>&#9664;</span>';
@@ -96,7 +96,6 @@ export default class ChromalinkPanel extends Panel {
       await this.modesPanel.checkVersion('Duo', this.duoHeader.version);
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Disconnect Duo'
-      this.isVisible = true;
       this.isConnected = true;
       this.oldModes = new this.modesPanel.lightshow.vortexLib.ByteStream();
       if (!this.modesPanel.lightshow.vortex.getModes(this.oldModes)) {
@@ -118,7 +117,6 @@ export default class ChromalinkPanel extends Panel {
       // Use the connect function from VortexPort
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Connect Duo'
-      this.isVisible = false;
       this.isConnected = false;
       this.modesPanel.lightshow.vortex.clearModes();
       this.modesPanel.lightshow.setLedCount(20);
