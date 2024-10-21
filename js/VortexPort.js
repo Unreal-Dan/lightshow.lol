@@ -553,7 +553,11 @@ export default class VortexPort {
       // construct a full version string
       duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
       duoHeader.rawData = headerData;
-      //console.log("Header: " + JSON.stringify(duoHeader));
+      console.log('Successfully Chromalinked Duo');
+      console.log('Version:', duoHeader.version);
+      console.log('Flags:', duoHeader.flags);
+      console.log('Brightness:', duoHeader.brightness);
+      console.log('Mode Count:', duoheader.numModes);
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
