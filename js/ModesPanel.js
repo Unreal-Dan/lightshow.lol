@@ -301,13 +301,14 @@ export default class ModesPanel extends Panel {
     // Fetch the latest firmware versions from vortex.community
     //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
     const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
-
+    // the results are lowercased
+    const lowerDevice = device.toLowerCase();
     // Compare versions
-    if (latestFirmwareVersions && latestFirmwareVersions[device]) {
-      const latestVersion = latestFirmwareVersions[device].firmware.version;
-      const downloadUrl = latestFirmwareVersions[device].firmware.fileUrl;
+    if (latestFirmwareVersions && latestFirmwareVersions[lowerDevice]) {
+      const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
+      const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
       if (version !== latestVersion) {
-        this.showOutdatedFirmwareNotification(device, latestVersion, downloadUrl);
+        this.showOutdatedFirmwareNotification(lowerDevice, latestVersion, downloadUrl);
       }
     }
   }
