@@ -348,7 +348,7 @@ export default class ModesPanel extends Panel {
     this.renderLedIndicators(this.vortexPort.name);
 
     // check version numbers
-    this.checkVersion(this.vortexPort.name.toLowerCase(), this.vortexPort.version);
+    this.checkVersion(this.vortexPort.name, this.vortexPort.version);
 
     // show device options
     //document.getElementById('deviceActionContainer').style.display = 'flex';
@@ -373,6 +373,15 @@ export default class ModesPanel extends Panel {
   }
 
   showOutdatedFirmwareNotification(device, version, latestVersion, downloadUrl) {
+    const modalId = 'outdatedFirmwareModal' + device;
+
+    // Check if the modal already exists
+    let modal = Modal.getExistingModal(modalId);
+
+    if (!modal) {
+      modal = new Modal(modalId);
+    }
+
     const content = `
       <div class="firmware-notification">
         <p class="firmware-notification-blurb">Your device is out of date, please install the latest version</p>
@@ -386,7 +395,6 @@ export default class ModesPanel extends Panel {
       </div>
     `;
 
-    const modal = new Modal('outdatedFirmwareModal' + device);
     modal.show({ title: device + ' Firmware Update', blurb: content });
   }
 

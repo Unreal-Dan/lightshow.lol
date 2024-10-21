@@ -6,6 +6,16 @@ export default class Modal {
     this.currentInputListener = null;
   }
 
+  static getExistingModal(id) {
+    const modalElement = document.getElementById("modal_" + id);
+    if (modalElement) {
+      const modal = new Modal(id);
+      modal.cacheElements(id);  // Make sure elements are cached for the existing modal
+      return modal;
+    }
+    return null;
+  }
+
   createModal(id) {
     const html = `
       <div id="modal_${id}" class="modal">
