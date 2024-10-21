@@ -557,7 +557,7 @@ export default class VortexPort {
       console.log('Version:', duoHeader.version);
       console.log('Flags:', duoHeader.flags);
       console.log('Brightness:', duoHeader.brightness);
-      console.log('Mode Count:', duoheader.numModes);
+      console.log('Mode Count:', duoHeader.numModes);
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
