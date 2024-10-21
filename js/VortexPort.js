@@ -74,10 +74,12 @@ export default class VortexPort {
     try {
       if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
-      }
-      if (!this.serialPort.readable || !this.serialPort.writable) {
+        if (!this.serialPort) {
+          throw new Error('Failed to open serial port');
+        }
         await this.serialPort.open({ baudRate: 9600 });
       }
+      // is this necessary...? I don't remember why it's here
       await this.serialPort.setSignals({ dataTerminalReady: true });
       this.portActive = false;
       if (callback && typeof callback === 'function') {
@@ -125,6 +127,11 @@ export default class VortexPort {
         try {
           // Read data from the serial port
           const response = await this.readData();
+          if (!response) {
+            console.log("Error: Connection broken");
+            // broken connection
+            break;
+          }
 
           let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==$/;
           let match = response.match(responseRegex);
@@ -133,7 +140,6 @@ export default class VortexPort {
             responseRegex = /^== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==$/;
             match = response.match(responseRegex);
           }
-          console.log("response: " + response);
 
           if (match) {
             this.version = match[1]; // Capturing the version number
@@ -145,14 +151,16 @@ export default class VortexPort {
             console.log('Version:', this.version);
             console.log('Date:', this.buildDate);
 
-            // check if this is UPDI supported chromadeck
-            const regex = /\bUPDI\b/;
-            if (regex.test(this.name)) {
-              // Replace 'UPDI' with an empty string and trim any remaining spaces
-              this.name = this.name.replace(regex, '').replace(/\s+/g, ' ').trim();
-              // note that we have updi support for this chromadeck
-              this.hasUPDI = true;
-            }
+            // old logic: sending updi in the name
+            // new logic: a command to check if updi is available
+            //// check if this is UPDI supported chromadeck
+            //const regex = /\bUPDI\b/;
+            //if (regex.test(this.name)) {
+            //  // Replace 'UPDI' with an empty string and trim any remaining spaces
+            //  this.name = this.name.replace(regex, '').replace(/\s+/g, ' ').trim();
+            //  // note that we have updi support for this chromadeck
+            //  this.hasUPDI = true;
+            //}
 
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.isVersionGreaterOrEqual(this.version, '1.3.0');
@@ -519,6 +527,7 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
+    let duoHeader = {};
     //console.log("connectChromaLink Start");
     this.isTransmitting = true; // Reset the transmitting flag
     try {
@@ -535,13 +544,16 @@ export default class VortexPort {
       }
       // process header
       const headerData = vortexLib.getDataArray(headerStream);
-      this.duoVersionMajor = headerData[0];
-      this.duoVersionMinor = headerData[1];
-      this.duoVersion = this.duoVersionMajor + '.' + this.duoVersionMinor;
-      this.duoFlags = headerData[2];
-      this.duoBrightness = headerData[3];
-      this.duoNumModes = headerData[4];
-      console.log("Header: " + JSON.stringify(headerData));
+      duoHeader.vMajor = headerData[0];
+      duoHeader.vMinor = headerData[1];
+      duoHeader.vBuild = 0;
+      duoHeader.duoFlags = headerData[2];
+      duoHeader.duoBrightness = headerData[3];
+      duoHeader.duoNumModes = headerData[4];
+      // construct a full version string
+      duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
+      duoHeader.rawData = headerData;
+      console.log("Header: " + JSON.stringify(duoHeader));
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
@@ -549,6 +561,7 @@ export default class VortexPort {
       this.isTransmitting = false; // Reset the transmitting flag
       //console.log("connectChromaLink End");
     }
+    return duoHeader;
   }
 
   async writeDuoHeader(vortexLib, vortex) {
@@ -785,7 +798,7 @@ export default class VortexPort {
 
       // Validate the size of the accumulated data
       if (accumulatedData.length === size) {
-        console.log("RECEIVED BUFFER (size: " + size + "):" + JSON.stringify(accumulatedData));
+        //console.log("RECEIVED BUFFER (size: " + size + "):" + JSON.stringify(accumulatedData));
         return new Uint8Array(accumulatedData);
       } else {
         console.error("Data size mismatch.");
@@ -799,23 +812,23 @@ export default class VortexPort {
 
   // wait for a specific response
   async expectData(expectedResponse, timeoutMs = 10000) {
-    console.log("EXPECTING:" + expectedResponse);
+    //console.log("EXPECTING:" + expectedResponse);
     const startTime = Date.now();
     while (Date.now() - startTime < timeoutMs) {
       const response = await this.readData();
       if (response === expectedResponse) {
-        console.log('RECEIVED GOOD:', response, ' (expected: ', expectedResponse, ')');
+        //console.log('RECEIVED GOOD:', response, ' (expected: ', expectedResponse, ')');
         return; // Expected response received
       }
       if (!response) {
-        console.log('RECEIVED NOTHING (expected: ', expectedResponse, ')');
+        //console.log('RECEIVED NOTHING (expected: ', expectedResponse, ')');
         return;
       }
-      console.log('RECEIVED BAD:', response, ' (expected: ', expectedResponse, ')');
+      //console.log('RECEIVED BAD:', response, ' (expected: ', expectedResponse, ')');
       return;
       //throw new Error('BAD: Expected response not received');
     }
-    console.log('RECEIVE TIMEOUT (expected: ', expectedResponse, ')');
+    //console.log('RECEIVE TIMEOUT (expected: ', expectedResponse, ')');
     throw new Error('Timeout: Expected response not received');
   }
 
@@ -837,7 +850,7 @@ export default class VortexPort {
 
     const writer = this.serialPort.writable.getWriter();
     try {
-      console.log("SENDING RAW: " + JSON.stringify(data));
+      //console.log("SENDING RAW: " + JSON.stringify(data));
       await writer.write(data);
     } catch (error) {
       console.error('Error writing data:', error);

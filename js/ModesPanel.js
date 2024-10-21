@@ -77,7 +77,6 @@ export default class ModesPanel extends Panel {
       'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },
       'Handle': { image: 'public/images/handle.png', icon: 'public/images/handle-logo-square-64.png', label: 'Handle', ledCount: 3 },
       'Gloves': { image: 'public/images/gloves.png', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves', ledCount: 10 },
-      // TODO: uncomment these to make them available:
       'Chromadeck': { image: 'public/images/chromadeck.png', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck', ledCount: 20 },
       'Spark': { image: 'public/images/spark.png', icon: 'public/images/spark-logo-square-64.png', label: 'Spark', ledCount: 6 },
       'Duo': { image: 'public/images/duo.png', icon: 'public/images/duo-logo-square-64.png', label: 'Duo', ledCount: 2 }
@@ -139,19 +138,19 @@ export default class ModesPanel extends Panel {
       try {
         // TODO: check for the thing
         //    // Check if WebSerial is available in the browser
-    //if ('serial' in navigator) {
-    //} else {
-    //  document.getElementById('connectDevice').style.display = 'none';
-    //  document.getElementById('deviceConnectMessage').style.display = 'none';
-    //  document.getElementById('unsupportedBrowserMessage').style.display = 'block';
-    //}
+        //if ('serial' in navigator) {
+        //} else {
+        //  document.getElementById('connectDevice').style.display = 'none';
+        //  document.getElementById('deviceConnectMessage').style.display = 'none';
+        //  document.getElementById('unsupportedBrowserMessage').style.display = 'block';
+        //}
 
-//        <div id="deviceConnectContainer">
-//          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
-//            WebSerial is not supported in your browser.
-//            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
-//          </p>
-//        </div>
+        //        <div id="deviceConnectContainer">
+        //          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
+        //            WebSerial is not supported in your browser.
+        //            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
+        //          </p>
+        //        </div>
 
         await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
       } catch (error) {
@@ -297,6 +296,21 @@ export default class ModesPanel extends Panel {
     }
   }
 
+  async checkVersion(device, version) {
+    // Fetch the latest firmware versions from vortex.community
+    //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
+    const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
+
+    // Compare versions
+    if (latestFirmwareVersions && latestFirmwareVersions[device]) {
+      const latestVersion = latestFirmwareVersions[device].firmware.version;
+      const downloadUrl = latestFirmwareVersions[device].firmware.fileUrl;
+      if (version !== latestVersion) {
+        this.showOutdatedFirmwareNotification(device, latestVersion, downloadUrl);
+      }
+    }
+  }
+
   async onDeviceConnect() {
     console.log("Device connected: " + this.vortexPort.name);
     const ledCount = this.devices[this.vortexPort.name].ledCount;
@@ -321,20 +335,6 @@ export default class ModesPanel extends Panel {
     document.getElementById('transmitVLButton').disabled = false;
     document.getElementById('connectDeviceButton').disabled = true;
 
-    // Fetch the latest firmware versions from vortex.community
-    //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
-    const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
-
-    const device = this.vortexPort.name.toLowerCase();
-    // Compare versions
-    if (latestFirmwareVersions && latestFirmwareVersions[device]) {
-      const latestVersion = latestFirmwareVersions[device].firmware.version;
-      const downloadUrl = latestFirmwareVersions[device].firmware.fileUrl;
-      if (this.vortexPort.version !== latestVersion) {
-        this.showOutdatedFirmwareNotification(device, latestVersion, downloadUrl);
-      }
-    }
-
     // if the device has UPDI support open a chromalink window
     if (this.vortexPort.hasUPDI && !this.chromalinkPanel) {
       this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
@@ -344,6 +344,9 @@ export default class ModesPanel extends Panel {
 
     // Render LED indicators for the connected device
     this.renderLedIndicators(this.vortexPort.name);
+
+    // check version numbers
+    this.checkVersion(this.vortexPort.name.toLowerCase(), this.vortexPort.version);
 
     // show device options
     //document.getElementById('deviceActionContainer').style.display = 'flex';
@@ -1366,7 +1369,7 @@ export default class ModesPanel extends Panel {
       Notification.failure("Please connect a device first");
       return;
     }
-    if (this.chromalinkPanel.isConnected) {
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
       await this.chromalinkPanel.pushModes(this.lightshow.vortexLib, this.lightshow.vortex);
     } else {
       await this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
@@ -1379,7 +1382,7 @@ export default class ModesPanel extends Panel {
       Notification.failure("Please connect a device first");
       return;
     }
-    if (this.chromalinkPanel.isConnected) {
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
       await this.chromalinkPanel.pullModes(this.lightshow.vortexLib, this.lightshow.vortex);
     } else {
       await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);

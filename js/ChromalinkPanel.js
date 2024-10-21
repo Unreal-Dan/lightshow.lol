@@ -86,6 +86,30 @@ export default class ChromalinkPanel extends Panel {
     });
   }
 
+  async connect() {
+    try {
+      // Use the connect function from VortexPort
+      this.duoHeader = await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib);
+      this.modesPanel.checkVersion('Duo', duoHeader.version);
+      const connectButton = document.getElementById('chromalinkConnect');
+      connectButton.innerHTML = 'Disconnect Duo'
+      this.isVisible = true;
+      this.isConnected = true;
+      this.oldModes = new this.modesPanel.lightshow.vortexLib.ByteStream();
+      if (!this.modesPanel.lightshow.vortex.getModes(this.oldModes)) {
+        throw new Error('Failed to backup old modes');
+      }
+      this.modesPanel.lightshow.vortex.clearModes();
+      this.modesPanel.lightshow.setLedCount(2);
+      this.modesPanel.updateSelectedDevice('Duo', true);
+      this.modesPanel.renderLedIndicators('Duo');
+      this.modesPanel.selectAllLeds();
+      Notification.success('Successfully Chromalinked Duo v' + duoHeader.version);
+    } catch (error) {
+      Notification.failure('Failed to connect: ' + error.message);
+    }
+  }
+
   async disconnect() {
     try {
       // Use the connect function from VortexPort
@@ -103,29 +127,6 @@ export default class ChromalinkPanel extends Panel {
       this.modesPanel.renderLedIndicators('Chromadeck');
       this.modesPanel.selectAllLeds();
       Notification.success('Successfully Disconnected Chromalink');
-    } catch (error) {
-      Notification.failure('Failed to connect: ' + error.message);
-    }
-  }
-
-  async connect() {
-    try {
-      // Use the connect function from VortexPort
-      await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib);
-      const connectButton = document.getElementById('chromalinkConnect');
-      connectButton.innerHTML = 'Disconnect Duo'
-      this.isVisible = true;
-      this.isConnected = true;
-      this.oldModes = new this.modesPanel.lightshow.vortexLib.ByteStream();
-      if (!this.modesPanel.lightshow.vortex.getModes(this.oldModes)) {
-        throw new Error('Failed to backup old modes');
-      }
-      this.modesPanel.lightshow.vortex.clearModes();
-      this.modesPanel.lightshow.setLedCount(2);
-      this.modesPanel.updateSelectedDevice('Duo', true);
-      this.modesPanel.renderLedIndicators('Duo');
-      this.modesPanel.selectAllLeds();
-      Notification.success('Successfully Connected Chromalink');
     } catch (error) {
       Notification.failure('Failed to connect: ' + error.message);
     }
