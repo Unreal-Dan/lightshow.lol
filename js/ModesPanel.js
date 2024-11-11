@@ -228,7 +228,7 @@ export default class ModesPanel extends Panel {
       modesListScrollContainer.style.height = '200px';
 
       // hide the spread slider
-      document.getElementById('spread_div').style.display = 'block';
+      document.getElementById('spread_div').style.display = 'none';
 
       // Hide the LED selection fieldset
       ledsFieldset.style.display = 'none';
