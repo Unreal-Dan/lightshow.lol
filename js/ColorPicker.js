@@ -161,6 +161,7 @@ export default class ColorPicker {
         .toString(16)
         .slice(1)}`;
       this.updateSvBoxBackground(h);
+      this.updateSvSelector(s, v);
       this.setHueSlider(h);
       this.setHueIndicator(h);
       updateColorCallback(
@@ -341,6 +342,16 @@ export default class ColorPicker {
   updateSvBoxBackground(hue) {
     const svBox = document.querySelector('.sv-box');
     svBox.style.background = `linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(hue / 255) * 360}, 100%, 50%))`;
+  }
+  
+  updateSvSelector(sat, val) {
+    const svBox = document.querySelector('.sv-box');
+    const rect = svBox.getBoundingClientRect();
+    const x = (sat / 255) * rect.width;
+    const y = (1.0 - (val / 255)) * rect.height;
+    const svSelector = document.querySelector('.sv-selector');
+    svSelector.style.left = `${x}px`;
+    svSelector.style.top = `${y}px`;
   }
 
   setHueSlider(hue) {
