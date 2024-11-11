@@ -274,7 +274,7 @@ export default class ControlPanel extends Panel {
 
     for (let pattern in patternEnum) {
       if (patternEnum.hasOwnProperty(pattern)) {
-        if (pattern === 'values' ||
+        if (pattern === 'values' || pattern === 'argCount' ||
             patternEnum[pattern] === patternEnum.PATTERN_NONE ||
             patternEnum[pattern] === patternEnum.PATTERN_COUNT) {
           continue;
