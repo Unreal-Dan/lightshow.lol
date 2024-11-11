@@ -90,7 +90,7 @@ export default class ControlPanel extends Panel {
     this.targetLed = 0;
     this.targetLeds = [ this.targetLed ];
     this.isMulti = false;
-    this.multiEnabled = false;
+    this.multiEnabled = true;
     // Add click tracking variables for each control
     this.clickCounts = {};
     this.clickTimers = {};
@@ -521,9 +521,35 @@ export default class ControlPanel extends Panel {
       "blend speed": "Blend Speed",
       "num flips": "Blend Flip Count",
       "col index": "Solid Color Index",
+      // hueshift
+      "blink on duration": "Blink On Duration",
+      "blink off duration": "Blink Off Duration",
+      "blend delay": "Blend Delay",
+      // theatre_case
+      "step duration": "Step Duration",
+      // zigzag
+      "snake size": "Snake Size",
+      "fade amount": "Fade Amount",
+      // dripmorph
+      "speed": "Speed",
+      // lighthouse
+      "fade rate": "Fade Rate",
+      // pulsish
+      "on duration1": "On Duration 1",
+      "off duration1": "Off Duration 1",
+      "on duration2": "On Duration 2",
+      "off duration2": "Off Duration 2",
+      // split strobie
+      "first pattern args.arg1": "First Pattern Arg 1",
+      "first pattern args.arg2": "First Pattern Arg 2",
+      "first pattern args.arg3": "First Pattern Arg 3",
+      "second pattern args.arg1": "Second Pattern Arg 1",
+      "second pattern args.arg2": "Second Pattern Arg 2",
+      "first pat": "First Pattern ID",
+      "sec pat": "Second Pattern ID",
       // Add more slider names and their descriptions as needed
     };
-    return nicerNames[sliderName] || "Name not available"; // Default text if no description is found
+    return nicerNames[sliderName] || sliderName; // Default text if no description is found
   }
 
   async refreshPatternArgs(fromEvent = false) {
