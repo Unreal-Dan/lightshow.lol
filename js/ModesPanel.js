@@ -382,6 +382,7 @@ export default class ModesPanel extends Panel {
       modal = new Modal(modalId);
     }
 
+    const lowerDevice = device.toLowerCase();
     const content = `
       <div class="firmware-notification">
         <p class="firmware-notification-blurb">Your device is out of date, please install the latest version</p>
@@ -390,7 +391,7 @@ export default class ModesPanel extends Panel {
         <p class="firmware-notification-label"><strong>Latest Version:</strong> ${latestVersion}</p>
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
-          <a href="https://stoneorbits.github.io/VortexEngine/upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       </div>
     `;
