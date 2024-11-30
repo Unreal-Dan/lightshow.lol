@@ -5,7 +5,7 @@ import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 
 export default class ModesPanel extends Panel {
-  constructor(lightshow, vortexPort) {
+  constructor(editor) {
     const content = `
       <div id="modesAndLedsSection">
         <div id="modeButtonsSection">
@@ -63,8 +63,9 @@ export default class ModesPanel extends Panel {
     `;
 
     super('modesPanel', content);
-    this.lightshow = lightshow;
-    this.vortexPort = vortexPort;
+    this.editor = editor;
+    this.lightshow = editor.lightshow;
+    this.vortexPort = editor.vortexPort;
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
@@ -240,7 +241,7 @@ export default class ModesPanel extends Panel {
     }
 
     // display the spread slider
-    document.getElementById('spread_div').style.display = 'block';
+    //document.getElementById('spread_div').style.display = 'block';
 
     deviceTypeSelected.innerHTML = `
       <img src="${deviceIcon}" alt="${device} Logo">

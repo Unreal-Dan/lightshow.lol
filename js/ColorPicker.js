@@ -1,8 +1,9 @@
 import Modal from './Modal.js';
 
 export default class ColorPicker {
-  constructor(lightshow) {
-    this.lightshow = lightshow;
+  constructor(editor) {
+    this.editor = editor;
+    this.lightshow = editor.lightshow;
     this.modals = [];
     this.selectedIndex = 0;
     this.colorState = { r: 0, g: 0, b: 0, h: 0, s: 0, v: 0 };

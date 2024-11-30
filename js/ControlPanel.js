@@ -5,87 +5,22 @@ import ColorPicker from './ColorPicker.js';
 
 export default class ControlPanel extends Panel {
   constructor(lightshow, vortexPort) {
-    const controls = [
-      {
-        id: 'tickRate',
-        type: 'range',
-        min: 1,
-        max: 30,
-        default: 3,
-        label: 'Speed',
-        update: value => lightshow.tickRate = value
-      },
-      {
-        id: 'trailSize',
-        type: 'range',
-        min: 1,
-        max: 300,
-        default: 100,
-        label: 'Trail',
-        update: value => lightshow.trailSize = value
-      },
-      {
-        id: 'dotSize',
-        type: 'range',
-        min: 5,
-        max: 50,
-        default: 25,
-        label: 'Size',
-        update: value => lightshow.dotSize = value
-      },
-      {
-        id: 'blurFac',
-        type: 'range',
-        min: 1,
-        max: 10,
-        default: 5,
-        label: 'Blur',
-        update: value => lightshow.blurFac = value
-      },
-      {
-        id: 'circleRadius',
-        type: 'range',
-        min: 0,
-        max: 600,
-        default: 400,
-        label: 'Radius',
-        update: value => lightshow.circleRadius = value
-      },
-      {
-        id: 'spread',  // New Slider ID
-        type: 'range',
-        min: 0,
-        max: 100,
-        default: 15,
-        label: 'Spread',
-        display: 'none',
-        update: value => lightshow.spread = parseInt(value)  // Assume 'spread' is a new property in Lightshow
-      }
-    ];
-    
     const content = `
-            <fieldset>
-                <legend>Animation</legend>
-                <div class="flex-container">
-                    ${ControlPanel.generateControlsContent(controls)}
-                </div>
-            </fieldset>
-            <fieldset>
-                <legend>Pattern</legend>
-                <select id="patternDropdown"></select>
-                <button id="randomizePattern">Randomize</button>
-                <div id="patternParams"></div>
-            </fieldset>
-            <fieldset>
-                <legend>Colorset</legend>
-                <button id="randomizeColorset">Randomize</button>
-                <div id="colorset"></div>
-            </fieldset>
+  <fieldset>
+    <legend>Pattern</legend>
+    <div id="patternDropdownContainer">
+      <select id="patternDropdown"></select>
+    </div>
+    <div id="patternParams" class="grid-container"></div>
+  </fieldset>
+  <fieldset>
+    <legend>Colorset</legend>
+    <div id="colorset" class="grid-container"></div>
+  </fieldset>
         `;
 
     super('controlPanel', content);
     this.lightshow = lightshow;
-    this.controls = controls;
     this.vortexPort = vortexPort;
     this.targetLed = 0;
     this.targetLeds = [ this.targetLed ];
@@ -95,26 +30,12 @@ export default class ControlPanel extends Panel {
     this.clickCounts = {};
     this.clickTimers = {};
     this.sineWaveAnimations = {};
-    this.controls.forEach(control => {
-      this.clickCounts[control.id] = 0;
-      this.sineWaveAnimations[control.id] = false;
-    });
 
     // Instantiate the ColorPicker
     this.colorPicker = new ColorPicker(lightshow);
   }
 
-  static generateControlsContent(controls) {
-    return controls.map(control => `
-            <div id="${control.id}_div" style="display:${control.display}">
-                <input type="${control.type}" id="${control.id}" min="${control.min}" max="${control.max}" value="${control.default}" style="width:80%">
-                <label for="${control.id}">${control.label}</label>
-            </div>
-        `).join('');
-  }
-
   initialize() {
-    this.attachEventListeners();
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
@@ -221,38 +142,6 @@ export default class ControlPanel extends Panel {
 
   stopSineWaveAnimation(controlId) {
     this.sineWaveAnimations[controlId] = false;
-  }
-
-  attachEventListeners() {
-    this.controls.forEach(control => {
-      const element = this.panel.querySelector(`#${control.id}`);
-      element.addEventListener('input', (event) => {
-        control.update(event.target.value);
-      });
-      element.addEventListener('click', this.handleControlClick.bind(this));
-    });
-    const randomizePatternButton = document.getElementById('randomizePattern');
-    randomizePatternButton.addEventListener('click', () => {
-      this.lightshow.randomizePattern(this.targetLeds);
-      document.dispatchEvent(new CustomEvent('patternChange'));
-      // refresh
-      this.refreshPatternDropdown();
-      this.refreshPatternArgs();
-      this.refreshColorset();
-      // demo on device
-      this.demoModeOnDevice();
-    });
-    const randomizeColorsetButton = document.getElementById('randomizeColorset');
-    randomizeColorsetButton.addEventListener('click', () => {
-      this.lightshow.randomizeColorset(this.targetLeds);
-      document.dispatchEvent(new CustomEvent('patternChange'));
-      // refresh
-      this.refreshPatternDropdown();
-      this.refreshPatternArgs();
-      this.refreshColorset();
-      // demo on device
-      this.demoModeOnDevice();
-    });
   }
 
   populatePatternDropdown() {
@@ -380,70 +269,131 @@ export default class ControlPanel extends Panel {
     this.demoModeOnDevice();
   }
 
+  //async refreshColorset(fromEvent = false) {
+  //  const colorsetElement = document.getElementById("colorset");
+  //  let cur = this.lightshow.vortex.engine().modes().curMode();
+  //  if (!cur) {
+  //    colorsetElement.textContent = '';
+  //    return;
+  //  }
+  //  let colorsetHtml = '';
+  //  let dropdown = document.getElementById('patternDropdown');
+  //  const pat = cur.getPatternID(this.targetLed);
+  //  dropdown.value = pat.value;
+  //  const set = cur.getColorset(this.targetLed);
+  //  let numCol = set.numColors();
+  //  if (numCol) {
+  //    for (var i = 0; i < numCol; ++i) {
+  //      let col = set.get(i);
+  //      const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
+  //      colorsetHtml += `<div class="color-container">
+  //                          <span class="delete-color" data-index="${i}">&times;</span>
+  //                          <div class="color-entry" data-index="${i}" style="background-color: ${hexColor};"></div>
+  //                          <label>${hexColor}</label>
+  //                        </div>`;
+  //    }
+  //  }
+  //  if (!numCol || numCol < 8) {
+  //    colorsetHtml += `
+  //                  <div class="color-container add-color">
+  //                      +
+  //                  </div>`;
+  //  }
+
+  //  colorsetElement.innerHTML = colorsetHtml;
+
+  //  // Attach event listeners for color entries
+  //  const colorEntries = colorsetElement.querySelectorAll('.color-entry');
+  //  colorEntries.forEach((entry, idx) => {
+  //    entry.addEventListener('click', () => {
+  //      const cur = this.lightshow.vortex.engine().modes().curMode();
+  //      if (!cur) {
+  //        return;
+  //      }
+  //      const set = cur.getColorset(this.targetLed);
+  //      this.colorPicker.openColorPickerModal(idx, set, (index, color, dragging) => this.updateColor(index, color, dragging));
+  //    });
+  //  });
+
+  //  // Attach event listeners for del col buttons
+  //  const deleteButtons = colorsetElement.querySelectorAll('.delete-color');
+  //  deleteButtons.forEach(button => {
+  //    button.addEventListener('click', () => {
+  //      this.delColor(Number(button.getAttribute('data-index')));
+  //      document.dispatchEvent(new CustomEvent('patternChange'));
+  //    });
+  //  });
+
+  //  // Attach event listeners for add col button
+  //  const addButton = colorsetElement.querySelector('.add-color');
+  //  if (addButton) {
+  //    addButton.addEventListener('click', () => {
+  //      this.addColor();
+  //      document.dispatchEvent(new CustomEvent('patternChange'));
+  //    });
+  //  }
+  //}
+
   async refreshColorset(fromEvent = false) {
-    const colorsetElement = document.getElementById("colorset");
-    let cur = this.lightshow.vortex.engine().modes().curMode();
+    const colorsetElement = document.getElementById('colorset');
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    colorsetElement.innerHTML = ''; // Clear colorset
+
     if (!cur) {
-      colorsetElement.textContent = '';
+      colorsetElement.innerHTML = this.generateEmptySlots(8); // Fill with placeholders up to max 8
       return;
     }
-    let colorsetHtml = '';
-    let dropdown = document.getElementById('patternDropdown');
-    const pat = cur.getPatternID(this.targetLed);
-    dropdown.value = pat.value;
+
     const set = cur.getColorset(this.targetLed);
-    let numCol = set.numColors();
-    if (numCol) {
-      for (var i = 0; i < numCol; ++i) {
-        let col = set.get(i);
-        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
-        colorsetHtml += `<div class="color-container">
-                            <span class="delete-color" data-index="${i}">&times;</span>
-                            <div class="color-entry" data-index="${i}" style="background-color: ${hexColor};"></div>
-                            <label>${hexColor}</label>
-                          </div>`;
+    const numColors = set.numColors();
+
+    for (let i = 0; i < 8; i++) { // Fixed 8 slots for layout consistency
+      const container = document.createElement('div');
+      container.className = 'color-box';
+
+      if (i < numColors) {
+        const col = set.get(i);
+        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+
+        const colorEntry = document.createElement('div');
+        colorEntry.style.backgroundColor = hexColor;
+        colorEntry.className = 'color-entry';
+        colorEntry.addEventListener('click', () => this.colorPicker.openColorPickerModal(i, set, this.updateColor.bind(this)));
+
+        const hexInput = document.createElement('input');
+        hexInput.type = 'text';
+        hexInput.value = hexColor;
+        hexInput.className = 'color-hex-input';
+        hexInput.addEventListener('change', (event) => this.updateColorHex(i, event.target.value));
+
+        container.appendChild(colorEntry);
+        container.appendChild(hexInput);
+      } else {
+        container.textContent = '+';
+        container.className = 'color-box empty';
+        container.addEventListener('click', () => this.addColor());
       }
-    }
-    if (!numCol || numCol < 8) {
-      colorsetHtml += `
-                    <div class="color-container add-color">
-                        +
-                    </div>`;
-    }
 
-    colorsetElement.innerHTML = colorsetHtml;
-
-    // Attach event listeners for color entries
-    const colorEntries = colorsetElement.querySelectorAll('.color-entry');
-    colorEntries.forEach((entry, idx) => {
-      entry.addEventListener('click', () => {
-        const cur = this.lightshow.vortex.engine().modes().curMode();
-        if (!cur) {
-          return;
-        }
-        const set = cur.getColorset(this.targetLed);
-        this.colorPicker.openColorPickerModal(idx, set, (index, color, dragging) => this.updateColor(index, color, dragging));
-      });
-    });
-
-    // Attach event listeners for del col buttons
-    const deleteButtons = colorsetElement.querySelectorAll('.delete-color');
-    deleteButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        this.delColor(Number(button.getAttribute('data-index')));
-        document.dispatchEvent(new CustomEvent('patternChange'));
-      });
-    });
-
-    // Attach event listeners for add col button
-    const addButton = colorsetElement.querySelector('.add-color');
-    if (addButton) {
-      addButton.addEventListener('click', () => {
-        this.addColor();
-        document.dispatchEvent(new CustomEvent('patternChange'));
-      });
+      colorsetElement.appendChild(container);
     }
   }
+
+  // Helper: Update Color from Hex Input
+  updateColorHex(index, hexValue) {
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const set = cur.getColorset(this.targetLed);
+    const color = this.hexToRGB(hexValue);
+    set.set(index, new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+    cur.init();
+    this.refreshColorset();
+  }
+
+  // Helper: Convert Hex to RGB
+  hexToRGB(hex) {
+    let bigint = parseInt(hex.replace(/^#/, ''), 16);
+    return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
+  }
+
 
   updateColor(index, hexValue, isDragging) {
     let hex = hexValue.replace(/^#/, '');
@@ -472,26 +422,6 @@ export default class ControlPanel extends Panel {
     } else {
       // demo on device
       this.demoModeOnDevice();
-    }
-  }
-
-  async demoColorOnDevice(color) {
-    try {
-      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
-        await this.vortexPort.demoColor(this.lightshow.vortexLib, this.lightshow.vortex, color);
-      }
-    } catch (error) {
-      Notification.failure("Failed to demo color (" + error + ")");
-    }
-  }
-
-  async demoModeOnDevice() {
-    try {
-      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
-        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
-      }
-    } catch (error) {
-      Notification.failure("Failed to demo mode (" + error + ")");
     }
   }
 
@@ -552,99 +482,170 @@ export default class ControlPanel extends Panel {
     return nicerNames[sliderName] || sliderName; // Default text if no description is found
   }
 
+  //async refreshPatternArgs(fromEvent = false) {
+  //  const paramsDiv = document.getElementById('patternParams');
+  //  const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
+  //  if (!patternID) {
+  //    // Clear existing parameters
+  //    paramsDiv.innerHTML = '';
+  //    return;
+  //  }
+  //  const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
+  //  let customParams = this.lightshow.vortex.getCustomParams(patternID);
+  //  // Clear existing parameters
+  //  paramsDiv.innerHTML = '';
+  //  let cur = this.lightshow.vortex.engine().modes().curMode();
+  //  if (!cur) {
+  //    // Clear existing parameters
+  //    paramsDiv.innerHTML = '';
+  //    return;
+  //  }
+
+  //  for (let i = 0; i < numOfParams; i++) {
+  //    const container = document.createElement('div');
+  //    container.className = 'param-container';
+  //    const label = document.createElement('label');
+  //    let sliderName = customParams.get(i).slice(2)
+  //                                        .replace(/([a-z])([A-Z])/g, '$1 $2')
+  //                                        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+  //                                        .toLowerCase();
+  //    label.textContent = this.getTooltipNiceName(sliderName);
+  //    const slider = document.createElement('input');
+  //    slider.type = 'range';
+  //    slider.className = 'param-slider';
+  //    if (sliderName === 'on duration') {
+  //      // on duration cannot be 0, it can but it kinda breaks stuff
+  //      slider.min = '1';
+  //    } else {
+  //      slider.min = '0';
+  //    }
+  //    slider.max = '255';
+  //    slider.step = '1';
+  //    slider.value = cur.getArg(i, this.targetLed) || '0';
+
+  //    // Display value
+  //    const displayValue = document.createElement('span');
+  //    displayValue.className = 'slider-value';
+  //    displayValue.textContent = slider.value;
+
+  //    // Description of what the slider does
+  //    const helpIcon = document.createElement('i');
+  //    helpIcon.className = 'fas fa-question-circle help-icon';
+  //    helpIcon.setAttribute('data-tooltip', this.getTooltipText(sliderName));  // Modify this line for each slider's specific tooltip content.
+  //    helpIcon.onclick = () => { this.toggleTooltip(helpIcon); };
+
+  //    helpIcon.addEventListener('click', function(event) {
+  //      event.stopPropagation();  // Prevent the document click event from immediately hiding the tooltip
+  //    });
+
+  //    const labelContainer = document.createElement('div');
+  //    labelContainer.className = 'label-container';
+  //    labelContainer.appendChild(label);
+  //    labelContainer.appendChild(helpIcon);
+
+  //    const sliderContainer = document.createElement('div');
+  //    sliderContainer.className = 'slider-container';
+  //    sliderContainer.appendChild(slider);
+  //    sliderContainer.appendChild(displayValue);
+
+  //    container.appendChild(labelContainer);
+  //    container.appendChild(sliderContainer);
+  //    paramsDiv.appendChild(container);
+
+  //    // Event for slider
+  //    slider.addEventListener('input', (event) => {
+  //      const paramName = label.textContent.replace(/([a-z])([A-Z])/g, '$1 $2')
+  //                                         .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+  //                                         .toLowerCase();
+  //      displayValue.textContent = event.target.value;  // Update the displayed value
+  //      let cur = this.lightshow.vortex.engine().modes().curMode();
+  //      this.targetLeds.forEach((led) => {
+  //        let pat = cur.getPattern(led);
+  //        pat.setArg(i, event.target.value);
+  //      });
+  //    });
+  //    slider.addEventListener('change', async () => {
+  //      // init
+  //      cur.init();
+  //      // save
+  //      this.lightshow.vortex.engine().modes().saveCurMode();
+  //      // send to device
+  //      document.dispatchEvent(new CustomEvent('patternChange'));
+  //      // demo on device
+  //      this.demoModeOnDevice();
+  //    });
+  //  }
+  //}
   async refreshPatternArgs(fromEvent = false) {
     const paramsDiv = document.getElementById('patternParams');
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
     if (!patternID) {
-      // Clear existing parameters
-      paramsDiv.innerHTML = '';
+      paramsDiv.innerHTML = this.generateEmptySlots(7); // Fill with placeholders up to max 7
       return;
     }
+
     const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
     let customParams = this.lightshow.vortex.getCustomParams(patternID);
-    // Clear existing parameters
-    paramsDiv.innerHTML = '';
-    let cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-      // Clear existing parameters
-      paramsDiv.innerHTML = '';
-      return;
-    }
+    paramsDiv.innerHTML = ''; // Clear existing params
 
-    for (let i = 0; i < numOfParams; i++) {
+    for (let i = 0; i < 7; i++) { // Fixed 7 slots for layout consistency
       const container = document.createElement('div');
       container.className = 'param-container';
-      const label = document.createElement('label');
-      let sliderName = customParams.get(i).slice(2)
-                                          .replace(/([a-z])([A-Z])/g, '$1 $2')
-                                          .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
-                                          .toLowerCase();
-      label.textContent = this.getTooltipNiceName(sliderName);
-      const slider = document.createElement('input');
-      slider.type = 'range';
-      slider.className = 'param-slider';
-      if (sliderName === 'on duration') {
-        // on duration cannot be 0, it can but it kinda breaks stuff
-        slider.min = '1';
-      } else {
+
+      if (i < numOfParams) {
+        let sliderName = customParams.get(i)
+          .slice(2)
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+          .toLowerCase();
+
+        const label = document.createElement('label');
+        label.textContent = this.getTooltipNiceName(sliderName);
+
+        const slider = document.createElement('input');
+        slider.type = 'range';
         slider.min = '0';
-      }
-      slider.max = '255';
-      slider.step = '1';
-      slider.value = cur.getArg(i, this.targetLed) || '0';
+        slider.max = '255';
+        slider.step = '1';
+        slider.value = this.lightshow.vortex.engine().modes().curMode().getArg(i, this.targetLed) || '0';
+        slider.className = 'custom-slider';
 
-      // Display value
-      const displayValue = document.createElement('span');
-      displayValue.className = 'slider-value';
-      displayValue.textContent = slider.value;
+        const textbox = document.createElement('input');
+        textbox.type = 'number';
+        textbox.min = slider.min;
+        textbox.max = slider.max;
+        textbox.value = slider.value;
+        textbox.className = 'custom-textbox';
 
-      // Description of what the slider does
-      const helpIcon = document.createElement('i');
-      helpIcon.className = 'fas fa-question-circle help-icon';
-      helpIcon.setAttribute('data-tooltip', this.getTooltipText(sliderName));  // Modify this line for each slider's specific tooltip content.
-      helpIcon.onclick = () => { this.toggleTooltip(helpIcon); };
-
-      helpIcon.addEventListener('click', function(event) {
-        event.stopPropagation();  // Prevent the document click event from immediately hiding the tooltip
-      });
-
-      const labelContainer = document.createElement('div');
-      labelContainer.className = 'label-container';
-      labelContainer.appendChild(label);
-      labelContainer.appendChild(helpIcon);
-
-      const sliderContainer = document.createElement('div');
-      sliderContainer.className = 'slider-container';
-      sliderContainer.appendChild(slider);
-      sliderContainer.appendChild(displayValue);
-
-      container.appendChild(labelContainer);
-      container.appendChild(sliderContainer);
-      paramsDiv.appendChild(container);
-
-      // Event for slider
-      slider.addEventListener('input', (event) => {
-        const paramName = label.textContent.replace(/([a-z])([A-Z])/g, '$1 $2')
-                                           .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
-                                           .toLowerCase();
-        displayValue.textContent = event.target.value;  // Update the displayed value
-        let cur = this.lightshow.vortex.engine().modes().curMode();
-        this.targetLeds.forEach((led) => {
-          let pat = cur.getPattern(led);
-          pat.setArg(i, event.target.value);
+        // Sync slider and textbox values
+        slider.addEventListener('input', (event) => {
+          textbox.value = event.target.value;
+          this.updatePatternArg(i, event.target.value);
         });
-      });
-      slider.addEventListener('change', async () => {
-        // init
-        cur.init();
-        // save
-        this.lightshow.vortex.engine().modes().saveCurMode();
-        // send to device
-        document.dispatchEvent(new CustomEvent('patternChange'));
-        // demo on device
-        this.demoModeOnDevice();
-      });
+        textbox.addEventListener('input', (event) => {
+          slider.value = event.target.value;
+          this.updatePatternArg(i, event.target.value);
+        });
+
+        container.appendChild(label);
+        container.appendChild(slider);
+        container.appendChild(textbox);
+      }
+
+      paramsDiv.appendChild(container);
     }
+  }
+
+  // Helper: Update Pattern Argument
+  updatePatternArg(index, value) {
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    this.targetLeds.forEach((led) => {
+      cur.getPattern(led).setArg(index, value);
+    });
+    cur.init();
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    document.dispatchEvent(new CustomEvent('patternChange'));
+    this.demoModeOnDevice();
   }
 
   toggleTooltip(element) {

@@ -48,7 +48,7 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #aboutPanel, #controlPanel, #modeInfoPanel {
+#modesPanel, #aboutPanel, #colorsetPanel, #patternPanel, #modeInfoPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -65,9 +65,15 @@ canvas {
   z-index: 3;
 }
 
-#controlPanel {
+#patternPanel {
   left: 10px;
   top: 60px;
+  z-index: 3;
+}
+
+#colorsetPanel {
+  left: 10px;
+  top: 472px;
   z-index: 3;
 }
 
@@ -179,9 +185,8 @@ legend {
 }
 
 #patternDropdown {
-  margin-bottom: 5px;
-  margin-right: 10px;
-  width: 230px;
+  width: 100%;
+  margin-right: 5px;
   background-color: #333; /* Dark background */
   color: #fff; /* Light text color for contrast */
   border: 1px solid #555; /* Dark border for distinction */
@@ -1374,5 +1379,193 @@ i {
 
 .btn.connect:active {
   background-color: #777; /* Even lighter when pressed */
+}
+
+
+
+
+
+/* Animation panel stuff */
+#animationPanel {
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  padding: 10px;
+  position: absolute;
+  width: 150px;
+  z-index: 2;
+  top: 10px;
+  left: -180px;
+  transition: transform 0.4s ease; /* Sliding animation */
+}
+
+#animationPanel.hidden {
+  transform: translateX(-180px); /* Slide panel out of view */
+}
+
+/* Pull Tab Styles */
+#animationPanel .pull-tab {
+  position: absolute;
+  top: 10px;
+  right: -25px; /* Position the tab outside the panel */
+  background-color: #444;
+  border: 1px solid #3e4446;
+  border-radius: 0 5px 5px 0;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  transition: background-color 0.2s;
+}
+
+#animationPanel .pull-tab:hover {
+  background-color: #666;
+}
+
+
+
+
+/* Pattern panel stuff */
+.control-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  height: 30px; /* Consistent height for rows */
+}
+
+.control-slider-container {
+  position: relative;
+  flex: 5;
+  height: 100%;
+  display: flex;
+  align-items: center; /* Align slider and label vertically */
+  overflow: hidden; /* Prevent overlapping visuals */
+}
+
+.control-label {
+  position: absolute;
+  z-index: 2;
+  font-weight: bold;
+  color: #d8d4cf;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%); /* Center vertically */
+  pointer-events: none; /* Ensure it doesn’t interfere with slider interaction */
+}
+
+.control-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e 50%, #3e3e3e 50%); /* Placeholder gradient */
+  margin-right: 0;
+  outline: none;
+  position: relative;
+}
+
+.control-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill)); /* Dynamic fill */
+  border: none;
+}
+
+.control-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2px;
+  height: 100%;
+  background: black; /* The draggable "line" */
+  cursor: pointer;
+  z-index: 3; /* Ensure it's above the slider track */
+}
+
+.control-slider::-moz-range-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill));
+  border: none;
+}
+
+.control-slider::-moz-range-thumb {
+  width: 2px;
+  height: 100%;
+  background: black;
+  color: black;
+  cursor: pointer;
+  border: none;
+}
+
+.control-input {
+  flex: 1;
+  height: 30px;
+  background: #292c2e;
+  color: #d8d4cf;
+  border: none;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid black;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.control-input:focus {
+  outline: none;
+}
+
+.control-slider-container.disabled .control-slider.disabled {
+  background: #111111;
+  pointer-events: none;
+}
+
+.control-slider-container.disabled .control-label {
+  color: #333;
+}
+
+.control-input.disabled {
+  background: #1e1e1e;
+  pointer-events: none;
+}
+
+
+
+#patternDropdownContainer {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pattern-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background-color: #333;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid black;
+}
+
+.icon-button:hover {
+  background-color: #444;
+}
+
+.icon-button:active {
+  background-color: #555;
 }
 
