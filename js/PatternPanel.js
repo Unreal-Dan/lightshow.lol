@@ -11,9 +11,6 @@ export default class PatternPanel extends Panel {
             <button id="patternRandomizeButton" class="icon-button" title="Randomize">
               <i class="fa-solid fa-dice"></i>
             </button>
-            <button id="patternHelpButton" class="icon-button" title="Help">
-              <i class="fas fa-question-circle"></i>
-            </button>
           </div>
         </div>
         <div id="patternParams" class="grid-container"></div>
@@ -36,6 +33,20 @@ export default class PatternPanel extends Panel {
     document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
     document.addEventListener('deviceConnected', this.handleDeviceConnected.bind(this));
+
+    // Attach event listeners for help and randomize buttons
+    document.getElementById('patternRandomizeButton').addEventListener('click', () => this.randomizePattern());
+  }
+
+  randomizePattern() {
+    const dropdown = document.getElementById('patternDropdown');
+    const options = Array.from(dropdown.options);
+    const randomOption = options[Math.floor(Math.random() * options.length)];
+
+    if (randomOption) {
+      dropdown.value = randomOption.value;
+      this.handlePatternSelect(); // Apply the random pattern
+    }
   }
 
   handleModeChange(event) {
@@ -98,7 +109,7 @@ export default class PatternPanel extends Panel {
     const solidGroup = document.createElement('optgroup');
     solidGroup.label = "Solid Patterns";
     const multiGroup = document.createElement('optgroup');
-    multiGroup.label = "MultiLed Patterns";
+    multiGroup.label = "Special Patterns (Multi Led)";
 
     // Get the PatternID enum values from your wasm module
     const patternEnum = this.lightshow.vortexLib.PatternID;

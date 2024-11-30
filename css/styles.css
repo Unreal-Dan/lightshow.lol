@@ -67,13 +67,13 @@ canvas {
 
 #patternPanel {
   left: 10px;
-  top: 60px;
+  top: 70px;
   z-index: 3;
 }
 
 #colorsetPanel {
   left: 10px;
-  top: 472px;
+  top: 460px;
   z-index: 3;
 }
 
@@ -1464,6 +1464,10 @@ i {
   margin-right: 0;
   outline: none;
   position: relative;
+  border-top-left-radius: 4px; /* Ensure full rounding */
+  border-bottom-left-radius: 4px; /* Ensure full rounding */
+  position: relative; /* Needed for ::before */
+  overflow: hidden;
 }
 
 .control-slider::-webkit-slider-runnable-track {
@@ -1478,7 +1482,7 @@ i {
   appearance: none;
   width: 2px;
   height: 100%;
-  background: black; /* The draggable "line" */
+  background: #070707; /* The draggable "line" */
   cursor: pointer;
   z-index: 3; /* Ensure it's above the slider track */
 }
@@ -1493,8 +1497,7 @@ i {
 .control-slider::-moz-range-thumb {
   width: 2px;
   height: 100%;
-  background: black;
-  color: black;
+  background: #070707;
   cursor: pointer;
   border: none;
 }
@@ -1545,6 +1548,10 @@ i {
   gap: 5px;
 }
 
+#patternRandomizeButton {
+  padding: 1px;
+}
+
 .icon-button {
   width: 32px;
   height: 32px;
@@ -1552,13 +1559,31 @@ i {
   border-radius: 4px;
   background-color: #333;
   color: white;
-  font-size: 16px;
-  display: flex;
+  font-size: 14px;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background-color 0.2s;
   border: 1px solid black;
+}
+
+.help-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: white;
+  font-size: 18px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#githubLink {
+  font-size: 18px;
+  background: none;
+  padding: 0;
+  margin: 0;
 }
 
 .icon-button:hover {
@@ -1569,3 +1594,44 @@ i {
   background-color: #555;
 }
 
+
+
+/* about panel stuff */
+.about-panel-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.about-label {
+  font-size: 16px;
+  color: #d8d4cf;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.icon-button:hover {
+  color: #66ff66;
+  transform: scale(1.1);
+}
+
+.icon-button:active {
+  transform: scale(1);
+}
+
+.icon-button i {
+  pointer-events: none; /* Prevent accidental selection of the icon */
+}
