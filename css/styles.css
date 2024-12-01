@@ -63,17 +63,20 @@ canvas {
   text-align: center;
   top: 10px;
   z-index: 3;
+  position: absolute; /* Ensure the element is positioned relative to the viewport */
+  left: 50%; /* Move to the horizontal center */
+  transform: translate(-50%, 0%); /* Offset by half the width and height for perfect centering */
 }
 
 #patternPanel {
   left: 10px;
-  top: 70px;
+  top: 10px;
   z-index: 3;
 }
 
 #colorsetPanel {
   left: 10px;
-  top: 460px;
+  top: 432px;
   z-index: 3;
 }
 
@@ -184,6 +187,12 @@ legend {
   padding: 0 5px;
 }
 
+#patternDivider {
+  margin-left: 10px;
+  margin-right: 10px;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
 #patternDropdown {
   width: 100%;
   margin-right: 5px;
@@ -289,6 +298,7 @@ legend {
   font-size: 28px;
   font-weight: bold;
   user-select:none;
+  margin-right: 10px;
 }
 
 .delete-color:hover,
@@ -881,17 +891,6 @@ legend {
   opacity: 0.6;
 }
 
-.color-entry {
-  width: 50px;
-  height: 24px;
-  cursor: pointer;
-  display: inline-block;
-  border-radius: 4px;
-  margin-right: 10px;
-  margin-left: 5px;
-  border: 2px solid #090c0e;
-}
-
 .color-container {
   display: flex;
   align-items: center;
@@ -1467,7 +1466,6 @@ i {
   border-top-left-radius: 4px; /* Ensure full rounding */
   border-bottom-left-radius: 4px; /* Ensure full rounding */
   position: relative; /* Needed for ::before */
-  overflow: hidden;
 }
 
 .control-slider::-webkit-slider-runnable-track {
@@ -1482,7 +1480,7 @@ i {
   appearance: none;
   width: 2px;
   height: 100%;
-  background: #070707; /* The draggable "line" */
+  background: #111; /* The draggable "line" */
   cursor: pointer;
   z-index: 3; /* Ensure it's above the slider track */
 }
@@ -1497,7 +1495,7 @@ i {
 .control-slider::-moz-range-thumb {
   width: 2px;
   height: 100%;
-  background: #070707;
+  background: #111;
   cursor: pointer;
   border: none;
 }
@@ -1549,7 +1547,10 @@ i {
 }
 
 #patternRandomizeButton {
+  font-size: 22px;
   padding: 1px;
+  margin-left: 5px;
+  margin-right: 5px;
 }
 
 .icon-button {
@@ -1635,3 +1636,120 @@ i {
 .icon-button i {
   pointer-events: none; /* Prevent accidental selection of the icon */
 }
+
+
+
+/* colorset panel stuff */
+#colorset {
+  display: column;
+  grid-template-columns: repeat(4, 1fr); /* 4 columns */
+  gap: 10px; /* Space between slots */
+}
+
+.color-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid #444; /* Border for all slots */
+  border-bottom-right-radius: 5px;
+  border-top-right-radius: 5px;
+  border-radius: 5px;
+  padding: 0;
+  margin-left: 0;
+  margin-bottom: 3px;
+  height: 40px; /* Fixed height */
+  box-sizing: border-box; /* Include padding in size */
+  overflow: none;
+}
+
+.color-box.empty {
+  background: #1a1a1a; /* Dark background for empty slots */
+  border: 2px dashed #666; /* Dotted border for empty slots */
+  color: #999; /* Placeholder text color */
+  justify-content: center; /* Center content */
+  overflow: none;
+}
+
+.color-entry {
+  width: 50px;
+  display: inline-block;
+  flex: 0 0 30%; /* Take 30% of the box width */
+  height: 100%;
+  cursor: pointer;
+  border: none;
+  border-right: 2px solid #333;
+  margin-left: 0;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  transition: flex 0.3s ease; /* Smooth transition for width */
+}
+
+.color-hex-input {
+  flex: 1; /* Fill remaining space */
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 0 5px;
+  text-align: center;
+}
+
+.color-box.empty:hover {
+  background: #222; /* Slightly darker on hover */
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-hex-input:focus {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-entry:hover {
+  flex: 0 0 50%;
+}
+
+
+
+/* draggable panels */
+
+.draggable-panel {
+  position: absolute;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  background-color: #181a1b;
+  user-select: none;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  background-color: #292c2e;
+  border-bottom: 1px solid #3e4446;
+  cursor: move; /* Indicate draggable for header */
+  border-radius: 5px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #d8d4cf;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.collapse-btn:hover {
+  color: #66ff66;
+}
+
+.panel-content {
+  padding-top: 10px;
+}
+

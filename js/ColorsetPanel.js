@@ -12,14 +12,14 @@ export default class ColorsetPanel extends Panel {
           </fieldset>
         `;
 
-    super('colorsetPanel', content);
+    super('colorsetPanel', content, 'Colorset');
     this.editor = editor
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.targetLed = 0;
     this.targetLeds = [ this.targetLed ];
     this.isMulti = false;
-    this.multiEnabled = true;
+    this.multiEnabled = false;
 
     // Instantiate the ColorPicker
     this.colorPicker = new ColorPicker(editor);
@@ -85,112 +85,67 @@ export default class ColorsetPanel extends Panel {
     this.refreshColorset(fromEvent);
   }
 
-  //async refreshColorset(fromEvent = false) {
-  //  const colorsetElement = document.getElementById("colorset");
-  //  let cur = this.lightshow.vortex.engine().modes().curMode();
-  //  if (!cur) {
-  //    colorsetElement.textContent = '';
-  //    return;
-  //  }
-  //  let colorsetHtml = '';
-  //  let dropdown = document.getElementById('patternDropdown');
-  //  const pat = cur.getPatternID(this.targetLed);
-  //  dropdown.value = pat.value;
-  //  const set = cur.getColorset(this.targetLed);
-  //  let numCol = set.numColors();
-  //  if (numCol) {
-  //    for (var i = 0; i < numCol; ++i) {
-  //      let col = set.get(i);
-  //      const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`.toUpperCase();
-  //      colorsetHtml += `<div class="color-container">
-  //                          <span class="delete-color" data-index="${i}">&times;</span>
-  //                          <div class="color-entry" data-index="${i}" style="background-color: ${hexColor};"></div>
-  //                          <label>${hexColor}</label>
-  //                        </div>`;
-  //    }
-  //  }
-  //  if (!numCol || numCol < 8) {
-  //    colorsetHtml += `
-  //                  <div class="color-container add-color">
-  //                      +
-  //                  </div>`;
-  //  }
-
-  //  colorsetElement.innerHTML = colorsetHtml;
-
-  //  // Attach event listeners for color entries
-  //  const colorEntries = colorsetElement.querySelectorAll('.color-entry');
-  //  colorEntries.forEach((entry, idx) => {
-  //    entry.addEventListener('click', () => {
-  //      const cur = this.lightshow.vortex.engine().modes().curMode();
-  //      if (!cur) {
-  //        return;
-  //      }
-  //      const set = cur.getColorset(this.targetLed);
-  //      this.colorPicker.openColorPickerModal(idx, set, (index, color, dragging) => this.updateColor(index, color, dragging));
-  //    });
-  //  });
-
-  //  // Attach event listeners for del col buttons
-  //  const deleteButtons = colorsetElement.querySelectorAll('.delete-color');
-  //  deleteButtons.forEach(button => {
-  //    button.addEventListener('click', () => {
-  //      this.delColor(Number(button.getAttribute('data-index')));
-  //      document.dispatchEvent(new CustomEvent('patternChange'));
-  //    });
-  //  });
-
-  //  // Attach event listeners for add col button
-  //  const addButton = colorsetElement.querySelector('.add-color');
-  //  if (addButton) {
-  //    addButton.addEventListener('click', () => {
-  //      this.addColor();
-  //      document.dispatchEvent(new CustomEvent('patternChange'));
-  //    });
-  //  }
-  //}
-
   async refreshColorset(fromEvent = false) {
     const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
     colorsetElement.innerHTML = ''; // Clear colorset
 
     if (!cur) {
-      colorsetElement.innerHTML = this.generateEmptySlots(8); // Fill with placeholders up to max 8
       return;
     }
 
     const set = cur.getColorset(this.targetLed);
-    const numColors = set.numColors();
+    const numColors = set ? set.numColors() : 0;
 
-    for (let i = 0; i < 8; i++) { // Fixed 8 slots for layout consistency
+    for (let i = 0; i < numColors; i++) {
       const container = document.createElement('div');
       container.className = 'color-box';
 
-      if (i < numColors) {
-        const col = set.get(i);
-        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+      const col = set.get(i);
+      const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
 
-        const colorEntry = document.createElement('div');
-        colorEntry.style.backgroundColor = hexColor;
-        colorEntry.className = 'color-entry';
-        colorEntry.addEventListener('click', () => this.colorPicker.openColorPickerModal(i, set, this.updateColor.bind(this)));
+      // Create color entry
+      const colorEntry = document.createElement('div');
+      colorEntry.style.backgroundColor = hexColor;
+      colorEntry.className = 'color-entry';
+      colorEntry.dataset.index = i;
+      colorEntry.addEventListener('click', () =>
+        this.colorPicker.openColorPickerModal(i, set, this.updateColor.bind(this))
+      );
 
-        const hexInput = document.createElement('input');
-        hexInput.type = 'text';
-        hexInput.value = hexColor;
-        hexInput.className = 'color-hex-input';
-        hexInput.addEventListener('change', (event) => this.updateColorHex(i, event.target.value));
+      // Create hex label
+      const hexLabel = document.createElement('label');
+      hexLabel.textContent = hexColor;
 
-        container.appendChild(colorEntry);
-        container.appendChild(hexInput);
-      } else {
-        container.textContent = '+';
-        container.className = 'color-box empty';
-        container.addEventListener('click', () => this.addColor());
-      }
+      // Create delete button
+      const deleteButton = document.createElement('span');
+      deleteButton.className = 'delete-color';
+      deleteButton.dataset.index = i;
+      deleteButton.textContent = '×';
+      deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent triggering color picker
+        this.delColor(Number(deleteButton.dataset.index));
+        document.dispatchEvent(new CustomEvent('patternChange'));
+      });
+
+      // Append elements to container
+      container.appendChild(colorEntry);
+      container.appendChild(hexLabel);
+      container.appendChild(deleteButton);
 
       colorsetElement.appendChild(container);
+    }
+
+    // Add empty slots for adding colors
+    if (numColors < 8) {
+      const addColorContainer = document.createElement('div');
+      addColorContainer.className = 'color-box empty';
+      addColorContainer.textContent = '+';
+      addColorContainer.addEventListener('click', () => {
+        this.addColor();
+        document.dispatchEvent(new CustomEvent('patternChange'));
+      });
+      colorsetElement.appendChild(addColorContainer);
     }
   }
 

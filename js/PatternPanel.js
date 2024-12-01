@@ -13,17 +13,17 @@ export default class PatternPanel extends Panel {
             </button>
           </div>
         </div>
+        <hr id="patternDivider">
         <div id="patternParams" class="grid-container"></div>
       </fieldset>
     `;
-    super('patternPanel', content);
+    super('patternPanel', content, 'Pattern');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.targetLed = 0;
     this.targetLeds = [this.targetLed];
     this.isMulti = false;
-    this.multiEnabled = true;
   }
 
   initialize() {
@@ -71,7 +71,6 @@ export default class PatternPanel extends Panel {
   }
 
   handleDeviceConnected() {
-    this.multiEnabled = true;
     this.populatePatternDropdown();
     this.refresh(true);
     this.vortexPort.startReading();
@@ -146,7 +145,8 @@ export default class PatternPanel extends Panel {
     dropdown.appendChild(strobeGroup);
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
-    if (this.multiEnabled) {
+
+    if (this.editor.modesPanel.selectedDevice !== 'None') {
       dropdown.appendChild(multiGroup);
     }
   }

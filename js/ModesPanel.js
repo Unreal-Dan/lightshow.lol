@@ -62,7 +62,7 @@ export default class ModesPanel extends Panel {
       </div>
     `;
 
-    super('modesPanel', content);
+    super('modesPanel', content, 'Modes');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
