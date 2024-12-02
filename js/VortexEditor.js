@@ -4,6 +4,7 @@ import AboutPanel from './AboutPanel.js';
 import ControlPanel from './ControlPanel.js';
 import PatternPanel from './PatternPanel.js';
 import ColorsetPanel from './ColorsetPanel.js';
+import ColorPickerPanel from './ColorPickerPanel.js';
 import ModesPanel from './ModesPanel.js';
 import Modal from './Modal.js';
 import VortexPort from './VortexPort.js';
@@ -30,8 +31,9 @@ export default class VortexEditor {
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
     this.modesPanel = new ModesPanel(this);
+    this.colorPicker = new ColorPickerPanel(this);
 
-    this.panels = [this.aboutPanel, this.patternPanel, this.colorsetPanel, this.modesPanel];
+    this.panels = [this.aboutPanel, this.patternPanel, this.colorsetPanel, this.modesPanel, this.colorPicker];
   }
 
   initialize() {

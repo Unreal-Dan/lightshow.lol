@@ -7,7 +7,9 @@ export default class ColorPickerPanel extends Panel {
     this.lightshow = editor.lightshow;
     this.selectedIndex = 0;
     this.colorState = { r: 0, g: 0, b: 0, h: 0, s: 0, v: 0 };
+  }
 
+  initialize() {
     this.initColorPickerContent();
 
     // Automatically append to the document body

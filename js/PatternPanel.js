@@ -17,7 +17,7 @@ export default class PatternPanel extends Panel {
         <div id="patternParams" class="grid-container"></div>
       </fieldset>
     `;
-    super('patternPanel', content, 'Pattern');
+    super('patternPanel', content, 'Pattern Controls');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

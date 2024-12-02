@@ -12,7 +12,7 @@ export default class ColorsetPanel extends Panel {
           </fieldset>
         `;
 
-    super('colorsetPanel', content, 'Colorset');
+    super('colorsetPanel', content, 'Colorset Controls');
     this.editor = editor
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
@@ -20,9 +20,6 @@ export default class ColorsetPanel extends Panel {
     this.targetLeds = [ this.targetLed ];
     this.isMulti = false;
     this.multiEnabled = false;
-
-    // Instantiate the ColorPicker
-    this.colorPicker = new ColorPickerPanel(editor);
   }
 
   initialize() {
@@ -110,7 +107,7 @@ export default class ColorsetPanel extends Panel {
       colorEntry.className = 'color-entry';
       colorEntry.dataset.index = i;
       colorEntry.addEventListener('click', () =>
-        this.colorPicker.openColorPicker(i, set, this.updateColor.bind(this))
+        this.editor.colorPicker.openColorPicker(i, set, this.updateColor.bind(this))
       );
 
       // Create hex label
