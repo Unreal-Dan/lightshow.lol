@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
-import ColorPicker from './ColorPicker.js';
+import ColorPickerPanel from './ColorPickerPanel.js';
 
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
@@ -22,7 +22,7 @@ export default class ColorsetPanel extends Panel {
     this.multiEnabled = false;
 
     // Instantiate the ColorPicker
-    this.colorPicker = new ColorPicker(editor);
+    this.colorPicker = new ColorPickerPanel(editor);
   }
 
   initialize() {
@@ -110,7 +110,7 @@ export default class ColorsetPanel extends Panel {
       colorEntry.className = 'color-entry';
       colorEntry.dataset.index = i;
       colorEntry.addEventListener('click', () =>
-        this.colorPicker.openColorPickerModal(i, set, this.updateColor.bind(this))
+        this.colorPicker.openColorPicker(i, set, this.updateColor.bind(this))
       );
 
       // Create hex label

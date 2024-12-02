@@ -25,6 +25,7 @@ export default class Panel {
     this.panel.appendChild(this.contentContainer);
 
     this.isCollapsed = false; // Track collapse state
+    this.isVisible = true; // Track visibility state
     this.originalPosition = { left: 0, top: 0 }; // Store the initial position
     this.snapMargin = 40; // Configurable snap distance
 
@@ -46,18 +47,55 @@ export default class Panel {
 
   initCollapse(collapseBtn) {
     collapseBtn.addEventListener('click', () => {
-      this.isCollapsed = !this.isCollapsed;
+      this.toggleCollapse();
+    });
+  }
 
-      if (this.isCollapsed) {
-        this.contentContainer.style.display = 'none';
-        collapseBtn.textContent = '▲'; // Change icon to expand
-        this.panel.style.height = '30px'; // Adjust height for collapsed bar
-        this.panel.style.cursor = 'move'; // Indicate it's draggable
-      } else {
-        this.contentContainer.style.display = 'block';
-        collapseBtn.textContent = '▼'; // Change icon to collapse
-        this.panel.style.height = ''; // Reset height
-        this.panel.style.cursor = ''; // Reset cursor
+  toggleCollapse() {
+    this.isCollapsed = !this.isCollapsed;
+
+    if (this.isCollapsed) {
+      const previousHeight = this.panel.offsetHeight;
+      this.contentContainer.style.display = 'none';
+      this.panel.style.height = '30px'; // Adjust height for collapsed bar
+      this.moveSnappedPanels(previousHeight - this.panel.offsetHeight);
+    } else {
+      const previousHeight = this.panel.offsetHeight;
+      this.contentContainer.style.display = 'block';
+      this.panel.style.height = ''; // Reset height
+      this.moveSnappedPanels(previousHeight - this.panel.offsetHeight);
+    }
+  }
+
+  show() {
+    if (!this.isVisible) {
+      this.isVisible = true;
+      this.panel.style.display = 'block';
+    }
+  }
+
+  hide() {
+    if (this.isVisible) {
+      this.isVisible = false;
+      this.panel.style.display = 'none';
+    }
+  }
+
+  moveSnappedPanels(heightChange) {
+    const rect = this.panel.getBoundingClientRect();
+    Panel.panels.forEach((otherPanel) => {
+      if (otherPanel === this) return; // Skip self
+
+      const otherRect = otherPanel.panel.getBoundingClientRect();
+
+      // Check if the other panel is snapped to the bottom of this panel
+      const isSnappedToBottom =
+        Math.abs(otherRect.top - rect.bottom) <= this.snapMargin &&
+        otherRect.left >= rect.left &&
+        otherRect.left <= rect.right;
+
+      if (isSnappedToBottom) {
+        otherPanel.panel.style.top = `${otherRect.top - heightChange}px`;
       }
     });
   }
