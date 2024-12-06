@@ -85,7 +85,7 @@ export default class Panel {
     });
   }
 
-  toggleCollapse() {
+  toggleCollapse(propagate = true) {
     const previousHeight = this.panel.offsetHeight;
 
     // Step 1: Identify snapped panels BEFORE resizing
@@ -102,16 +102,17 @@ export default class Panel {
       newHeight = this.panel.offsetHeight;
     }
 
-    const heightChange = newHeight - previousHeight;
-
-    // Step 3: Move snapped panels AFTER resizing
-    snappedPanels.forEach((otherPanel) => {
-      // Propagate movement recursively
-      otherPanel.moveSnappedPanels(heightChange);
-      otherPanel.panel.style.top = `${
-        parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top) + heightChange
-      }px`;
-    });
+    if (propagate) {
+      const heightChange = newHeight - previousHeight;
+      // Step 3: Move snapped panels AFTER resizing
+      snappedPanels.forEach((otherPanel) => {
+        // Propagate movement recursively
+        otherPanel.moveSnappedPanels(heightChange);
+        otherPanel.panel.style.top = `${
+          parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top) + heightChange
+        }px`;
+      });
+    }
 
     // Step 4: Toggle the collapse state
     this.isCollapsed = !this.isCollapsed;

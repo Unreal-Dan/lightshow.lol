@@ -15,25 +15,27 @@ export default class AboutPanel extends Panel {
         </div>
       </div>
     `;
-    super('aboutPanel', content, 'General Controls');
+    super('aboutPanel', content, 'Help & About');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
   }
 
   initialize() {
-    //this.addClickListener('patternHelpButton', this.showHelp);
-    //this.addClickListener('githubLinkButton', this.gotoGithub);
+    this.addClickListener('patternHelpButton', this.showHelp);
+    this.addClickListener('githubLinkButton', this.gotoGithub);
+    // collapse the about panel by default
+    this.toggleCollapse(false);
   }
 
-  //addClickListener(buttonId, callback) {
-  //  const button = document.getElementById(buttonId);
-  //  if (button) {
-  //    button.addEventListener('click', callback.bind(this));
-  //  } else {
-  //    console.error(`Button with ID ${buttonId} not found.`);
-  //  }
-  //}
+  addClickListener(buttonId, callback) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+      button.addEventListener('click', callback.bind(this));
+    } else {
+      console.error(`Button with ID ${buttonId} not found.`);
+    }
+  }
 
   gotoGithub() {
     try {

@@ -115,6 +115,12 @@ export default class AnimationPanel extends Panel {
 
     // Attach event listeners to shape buttons
     this.attachShapeButtonListeners();
+
+    // hide the spread slider
+    document.getElementById('spread_div').style.display = 'none';
+
+    // collapse the animation panel by default
+    this.toggleCollapse(false);
   }
 
   attachShapeButtonListeners() {
@@ -128,7 +134,6 @@ export default class AnimationPanel extends Panel {
     shapes.forEach(({ id, shape, label }) => {
       const button = this.panel.querySelector(`#${id}`);
       button.addEventListener('click', () => {
-        console.log(`[AnimationPanel] Changing shape to: ${label}`);
         this.lightshow.setShape(shape);
         this.lightshow.angle = 0; // Reset angle
       });

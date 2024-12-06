@@ -241,7 +241,7 @@ export default class ModesPanel extends Panel {
     }
 
     // display the spread slider
-    //document.getElementById('spread_div').style.display = 'block';
+    document.getElementById('spread_div').style.display = 'block';
 
     deviceTypeSelected.innerHTML = `
       <img src="${deviceIcon}" alt="${device} Logo">

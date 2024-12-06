@@ -160,7 +160,8 @@ export default class ColorsetPanel extends Panel {
   }
 
   updateColor(index, hexValue, isDragging) {
-    let hex = hexValue.replace(/^#/, '');
+    console.log(hexValue);
+    let hex = hexValue ? hexValue.replace(/^#/, '') : 0;
     let bigint = parseInt(hex, 16);
     let r = (bigint >> 16) & 255;
     let g = (bigint >> 8) & 255;

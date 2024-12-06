@@ -59,23 +59,21 @@ canvas {
 }
 
 #aboutPanel {
-  /*left: 392px;
-  top: 5px;*/;
   left: 5px;
-  top: 721px;
+  top: 5px;
   text-align: center;
   z-index: 3;
 }
 
 #patternPanel {
   left: 5px;
-  top: 5px;
+  top: 103px;
   z-index: 3;
 }
 
 #colorsetPanel {
   left: 5px;
-  top: 397px;
+  top: 495px;
   z-index: 3;
 }
 
@@ -1421,14 +1419,14 @@ i {
 
 /* Animation panel stuff */
 #animationPanel {
+  top: 54px;
+  left: 5px;
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
   position: absolute;
   z-index: 2;
-  top: 10px;
-  left: 480px;
   transition: transform 0.4s ease; /* Sliding animation */
 }
 
