@@ -2,18 +2,30 @@
 export default class Panel {
   static panels = []; // Static list to track all panels
 
-  constructor(id, content, title = 'Panel') {
+  constructor(id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
     this.panel.id = id;
     this.panel.className = 'draggable-panel';
 
-    // Create header with title and collapse button
+    const { showCloseButton = false } = options;
+
     const header = document.createElement('div');
     header.className = 'panel-header';
-    header.innerHTML = `
-      <span class="panel-title">${title}</span>
-      <button class="collapse-btn">▼</button>
-    `;
+    header.innerHTML = `<span class="panel-title">${title}</span>`;
+
+    if (showCloseButton) {
+      const closeBtn = document.createElement('span');
+      closeBtn.className = 'close-btn';
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('click', () => this.hide());
+      header.appendChild(closeBtn);
+    } else {
+      const collapseBtn = document.createElement('button');
+      collapseBtn.className = 'collapse-btn';
+      collapseBtn.textContent = '▼';
+      collapseBtn.addEventListener('click', () => this.toggleCollapse());
+      header.appendChild(collapseBtn);
+    }
 
     // Create content container
     this.contentContainer = document.createElement('div');
@@ -33,10 +45,6 @@ export default class Panel {
     this.panel.style.height = ''; // Full height
 
     this.initDraggable();
-    this.initCollapse(header.querySelector('.collapse-btn'));
-
-    // watch for size changes and move other panels nearby
-    //this.observeSizeChanges();
 
     // Add this panel to the global list
     Panel.panels.push(this);
@@ -51,15 +59,15 @@ export default class Panel {
   }
 
   initCollapse(collapseBtn) {
-    collapseBtn.addEventListener('click', () => {
-      this.toggleCollapse();
-    });
   }
 
   show() {
     if (!this.isVisible) {
       this.isVisible = true;
       this.panel.style.display = '';
+    }
+    if (this.isCollapsed) {
+      this.toggleCollapse();
     }
   }
 
@@ -77,11 +85,7 @@ export default class Panel {
       if (otherPanel === this) return false; // Skip self
 
       const otherRect = otherPanel.panel.getBoundingClientRect();
-      return (
-        Math.abs(otherRect.top - rect.bottom) <= this.snapRadius &&
-        otherRect.left >= rect.left &&
-        otherRect.right <= rect.right
-      );
+      return (Math.abs(otherRect.top - rect.bottom) <= this.snapRadius);
     });
   }
 
@@ -128,11 +132,7 @@ export default class Panel {
       const otherRect = otherPanel.panel.getBoundingClientRect();
 
       // Identify panels snapped below this one
-      const isSnappedBelow =
-        Math.abs(otherRect.top - rect.bottom) <= this.snapMargin &&
-        otherRect.left >= rect.left &&
-        otherRect.right <= rect.right;
-
+      const isSnappedBelow = (Math.abs(otherRect.top - rect.bottom) <= this.snapMargin);
       if (isSnappedBelow) {
         // Calculate the new position for the snapped panel
         const currentTop = parseFloat(otherPanel.panel.style.top || otherRect.top);
@@ -148,54 +148,6 @@ export default class Panel {
       }
     }
   }
-
-
-  observeSizeChanges() {
-    const observer = new ResizeObserver(() => {
-      this.notifySnappedPanels();
-    });
-    observer.observe(this.panel);
-  }
-
-  clampPosition(panel) {
-    const rect = panel.getBoundingClientRect();
-    const screenWidth = window.innerWidth;
-    const screenHeight = window.innerHeight;
-
-    const left = Math.max(0, Math.min(rect.left, screenWidth - rect.width));
-    const top = Math.max(0, Math.min(rect.top, screenHeight - rect.height));
-
-    panel.style.left = `${left}px`;
-    panel.style.top = `${top}px`;
-  }
-
-  notifySnappedPanels(heightChange = null) {
-    const rect = this.panel.getBoundingClientRect();
-    const newHeight = rect.height;
-
-    if (heightChange === null) {
-      if (this.previousHeight === undefined) {
-        this.previousHeight = newHeight;
-        return;
-      }
-
-      // Calculate height change
-      heightChange = newHeight - this.previousHeight;
-      this.previousHeight = newHeight;
-    }
-
-    if (heightChange !== 0) {
-      // Identify snapped panels BEFORE moving
-      const snappedPanels = this.getSnappedPanels();
-
-      // Move snapped panels AFTER resizing
-      snappedPanels.forEach((otherPanel) => {
-        otherPanel.moveSnappedPanels(heightChange);
-      });
-    }
-  }
-
-  
 
   initDraggable() {
     let isDragging = false;
@@ -342,9 +294,7 @@ export default class Panel {
         { x: right + this.snapMargin, y: bottom + this.snapMargin }
       );
     });
-
     return snapPoints;
   }
-
 }
 

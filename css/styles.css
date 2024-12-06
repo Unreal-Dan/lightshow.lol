@@ -647,6 +647,24 @@ legend {
     background-color: #218838;
 }
 
+
+.close-btn {
+  color: #aaa;
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: red;
+  text-decoration: none;
+  cursor: pointer;
+  user-select:none;
+}
+
 .close {
   color: #aaa;
   float: right;

@@ -2,7 +2,7 @@ import Panel from './Panel.js';
 
 export default class ColorPickerPanel extends Panel {
   constructor(editor) {
-    super('colorPickerPanel', '', 'Color Picker'); // Pass id and title to Panel
+    super('colorPickerPanel', '', 'Color Picker', { showCloseButton: true }); // Pass id and title to Panel
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.selectedIndex = 0;
