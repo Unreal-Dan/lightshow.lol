@@ -85,9 +85,19 @@ export default class Panel {
       if (otherPanel === this) return false; // Skip self
 
       const otherRect = otherPanel.panel.getBoundingClientRect();
-      return (Math.abs(otherRect.top - rect.bottom) <= this.snapRadius);
+
+      // Check if the other panel is below this panel
+      const isBelow = otherRect.top - rect.bottom <= this.snapRadius && otherRect.top > rect.bottom;
+
+      // Check if the horizontal ranges overlap
+      const isOverlappingHorizontally =
+        otherRect.left < rect.right + this.snapRadius &&
+        otherRect.right > rect.left - this.snapRadius;
+
+      return isBelow && isOverlappingHorizontally;
     });
   }
+
 
   toggleCollapse(propagate = true) {
     const previousHeight = this.panel.offsetHeight;
@@ -131,21 +141,17 @@ export default class Panel {
 
       const otherRect = otherPanel.panel.getBoundingClientRect();
 
-      // Identify panels snapped below this one
-      const isSnappedBelow = (Math.abs(otherRect.top - rect.bottom) <= this.snapMargin);
-      if (isSnappedBelow) {
-        // Calculate the new position for the snapped panel
-        const currentTop = parseFloat(otherPanel.panel.style.top || otherRect.top);
-        const newTop = currentTop + heightChange;
+      // Calculate the new position for the snapped panel
+      const currentTop = parseFloat(otherPanel.panel.style.top || otherRect.top);
+      const newTop = currentTop + heightChange;
 
-        // Recursively move panels snapped to this one
-        otherPanel.moveSnappedPanels(heightChange);
+      // Recursively move panels snapped to this one
+      otherPanel.moveSnappedPanels(heightChange);
 
-        otherPanel.panel.style.top = `${newTop}px`;
+      otherPanel.panel.style.top = `${newTop}px`;
 
-        // Return immediately after finding a snapped panel
-        return;
-      }
+      // Return immediately after finding a snapped panel
+      return;
     }
   }
 

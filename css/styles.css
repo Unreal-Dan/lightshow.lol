@@ -650,7 +650,9 @@ legend {
 
 .close-btn {
   color: #aaa;
-  font-size: 20px;
+  margin-bottom: -8px;
+  margin-top: -6px;
+  font-size: 28px;
   font-weight: bold;
   margin-right: 5px;
   cursor: pointer;
@@ -1792,6 +1794,7 @@ i {
   justify-content: space-between;
   align-items: center;
   padding: 5px;
+  padding-left: 7px;
   background-color: #292c2e;
   border-bottom: 1px solid #3e4446;
   cursor: move; /* Indicate draggable for header */
