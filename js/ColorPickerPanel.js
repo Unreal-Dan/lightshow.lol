@@ -7,6 +7,7 @@ export default class ColorPickerPanel extends Panel {
     this.lightshow = editor.lightshow;
     this.selectedIndex = 0;
     this.colorState = { r: 0, g: 0, b: 0, h: 0, s: 0, v: 0 };
+    this.preventPropagation = false; // Prevent infinite update loops
   }
 
   initialize() {
@@ -157,7 +158,13 @@ export default class ColorPickerPanel extends Panel {
 
     // Update all color-related elements and call the external callback
     const updateColorUI = (isDragging = false) => {
+      if (this.preventPropagation) return;
+
+      this.preventPropagation = true;
+
       const { r, g, b, h, s, v } = this.colorState;
+
+      // Update controls
       redSlider.value = r;
       greenSlider.value = g;
       blueSlider.value = b;
@@ -167,45 +174,54 @@ export default class ColorPickerPanel extends Panel {
       hueInput.value = Math.round(h);
       satInput.value = Math.round(s);
       valInput.value = Math.round(v);
-      hexInput.value = `#${((1 << 24) + (r << 16) + (g << 8) + b)
-        .toString(16)
-        .slice(1)}`;
+      hexInput.value = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
       this.updateSvBoxBackground(h);
       this.updateSvSelector(s, v);
       this.setHueSlider(h);
       this.setHueIndicator(h);
+
+      // Trigger external callback
       updateColorCallback(
         this.selectedIndex,
         `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`,
-        isDragging // Pass isDragging to callback
+        isDragging
       );
+
+      this.preventPropagation = false;
     };
 
     // Handler functions for different input changes
     const handleRgbSliderChange = (isDragging) => {
+      if (this.preventPropagation) return;
+
+      // Get the current RGB values
       const r = parseInt(redSlider.value, 10) & 0xff;
       const g = parseInt(greenSlider.value, 10) & 0xff;
       const b = parseInt(blueSlider.value, 10) & 0xff;
+
+      // Update color state and propagate changes
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.colorState = { r, g, b, h, s, v };
+
+      // Update UI immediately
       updateColorUI(isDragging);
     };
 
     const handleRgbInputChange = (event) => {
-      let input = event.target;
+      if (this.preventPropagation) return;
+
+      const input = event.target;
       let value = parseInt(input.value, 10);
 
-      if (isNaN(value)) {
-        value = 0;
-      }
+      if (isNaN(value)) value = 0;
 
       value = Math.max(0, Math.min(255, value));
-
       input.value = value;
 
       const r = parseInt(redInput.value, 10) & 0xff;
       const g = parseInt(greenInput.value, 10) & 0xff;
       const b = parseInt(blueInput.value, 10) & 0xff;
+
       const { h, s, v } = this.rgbToHsv(r, g, b);
       this.colorState = { r, g, b, h, s, v };
       updateColorUI();
@@ -257,29 +273,34 @@ export default class ColorPickerPanel extends Panel {
     };
 
     const handleHueConeChange = (event, isDragging) => {
-      const hueCone = document.querySelector('.radial-hue-cone');
+      if (this.preventPropagation) return;
+
       const rect = hueCone.getBoundingClientRect();
       const x = event.clientX - rect.left - hueCone.offsetWidth / 2;
       const y = event.clientY - rect.top - hueCone.offsetHeight / 2;
       const angle = Math.atan2(-y, x) * (180 / Math.PI);
       const correctedAngle = angle < 0 ? angle + 360 : angle;
       const hue = (correctedAngle / 360) * 255;
+
       const { s, v } = this.colorState;
       const { r, g, b } = this.hsvToRgb(hue, s, v);
+
       this.colorState = { r, g, b, h: hue, s, v };
       updateColorUI(isDragging);
     };
 
     const startMoveListener = (event, moveHandler) => {
-      let isDragging = true; // Set dragging flag to true when mouse starts moving
+      let isDragging = true;
 
-      const moveEventHandler = (moveEvent) => moveHandler(moveEvent, isDragging);
+      const moveEventHandler = (moveEvent) => {
+        moveHandler(moveEvent, isDragging);
+      };
 
       const stopDragging = () => {
-        isDragging = false; // Reset dragging flag when mouse stops
+        isDragging = false;
         document.removeEventListener('mousemove', moveEventHandler);
         document.removeEventListener('mouseup', stopDragging);
-        updateColorUI(false);
+        updateColorUI(false); // Final update after dragging ends
       };
 
       moveHandler(event, isDragging);
@@ -298,20 +319,23 @@ export default class ColorPickerPanel extends Panel {
       startMoveListener(event, handleHueConeChange)
     );
 
-    // Handle RGB sliders with mousedown for dragging behavior
     const handleRgbSliderMouseDown = (event, slider, handler) => {
-      let isDragging = true; // Set dragging flag to true when mouse starts moving
+      let isDragging = false;
 
-      const handleRgbDrag = () => handler(isDragging);
-
-      const stopRgbDragging = () => {
-        isDragging = false;
-        document.removeEventListener('mousemove', handleRgbDrag);
-        document.removeEventListener('mouseup', stopRgbDragging);
-        updateColorUI(false);
+      const handleRgbDrag = () => {
+        isDragging = true; // Now dragging
+        handler(true); // Call handler with dragging state
       };
 
-      handler(isDragging);
+      const stopRgbDragging = () => {
+        document.removeEventListener('mousemove', handleRgbDrag);
+        document.removeEventListener('mouseup', stopRgbDragging);
+        handler(false); // Final update when dragging stops
+      };
+
+      // Immediate update on click
+      handler(false);
+
       document.addEventListener('mousemove', handleRgbDrag);
       document.addEventListener('mouseup', stopRgbDragging, { once: true });
     };

@@ -783,6 +783,7 @@ legend {
 
 #ledControls {
   display: flex;
+  justify-content: space-between;
   gap: 5px; /* Space between buttons */
   margin-top: 10px; /* Space above the button group */
 }
@@ -791,7 +792,7 @@ legend {
   text-align: center; /* Center text */
   text-decoration: none; /* Remove underline */
   display: inline-block; /* Display as inline-block */
-  font-size: 14px; /* Font size */
+  font-size: 12px; /* Font size */
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;

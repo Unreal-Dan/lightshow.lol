@@ -20,6 +20,7 @@ export default class PatternPanel extends Panel {
     this.vortexPort = editor.vortexPort;
     this.targetLed = 0;
     this.targetLeds = [this.targetLed];
+    this.multiEnabled = false;
     this.isMulti = false;
   }
 
@@ -53,6 +54,7 @@ export default class PatternPanel extends Panel {
     } else {
       this.setTargetSingles(selectedLeds);
     }
+    this.populatePatternDropdown();
     this.refresh(true);
     this.editor.demoModeOnDevice();
   }
@@ -64,10 +66,12 @@ export default class PatternPanel extends Panel {
     } else {
       this.setTargetSingles(selectedLeds);
     }
+    this.populatePatternDropdown();
     this.refresh(true);
   }
 
   handleDeviceConnected() {
+    this.multiEnabled = true;
     this.populatePatternDropdown();
     this.refresh(true);
     this.vortexPort.startReading();

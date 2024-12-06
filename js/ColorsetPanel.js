@@ -48,8 +48,6 @@ export default class ColorsetPanel extends Panel {
     });
     document.addEventListener('deviceConnected', (event) => {
       //console.log("Control Panel detected device conneted");
-      this.multiEnabled = true;
-      this.populatePatternDropdown();
       this.refresh(true);
       this.vortexPort.startReading();
       this.editor.demoModeOnDevice();

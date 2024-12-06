@@ -724,7 +724,6 @@ export default class ModesPanel extends Panel {
 
   refresh(fromEvent = false) {
     this.refreshModeList(fromEvent);
-    this.refreshLedList(fromEvent);
     this.updateLedIndicators(); // Ensure indicators are updated
   }
 
@@ -981,7 +980,7 @@ export default class ModesPanel extends Panel {
     }
     this.lightshow.vortex.setCurMode(curSel, false);
     this.attachModeEventListeners();
-    this.refreshLedList();
+    this.refreshLedList(fromEvent);
   }
 
   selectMode(index) {
@@ -1095,7 +1094,6 @@ export default class ModesPanel extends Panel {
       return;
     }
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
     Notification.success("Successfully Added Mode " + modeCount);
   }
@@ -1210,7 +1208,6 @@ export default class ModesPanel extends Panel {
           this.lightshow.setLedCount(1);
           break;
       }
-      this.refreshLedList();
       this.refreshModeList();
       this.renderLedIndicators(initialDevice);
       this.handleLedSelectionChange();
@@ -1365,7 +1362,6 @@ export default class ModesPanel extends Panel {
     this.lightshow.vortex.setCurMode(cur, false);
     this.lightshow.vortex.engine().modes().saveCurMode();
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
     Notification.success("Successfully Deleted Mode " + index);
   }
@@ -1401,7 +1397,6 @@ export default class ModesPanel extends Panel {
       Notification.success("Successfully pulled save");
     }
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
   }
 
