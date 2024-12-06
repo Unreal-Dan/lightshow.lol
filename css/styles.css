@@ -48,7 +48,7 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #aboutPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
+#modesPanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -59,24 +59,23 @@ canvas {
 }
 
 #aboutPanel {
-  left: 10px;
+  /*left: 392px;
+  top: 5px;*/;
+  left: 5px;
+  top: 721px;
   text-align: center;
-  top: 10px;
   z-index: 3;
-  position: absolute; /* Ensure the element is positioned relative to the viewport */
-  left: 50%; /* Move to the horizontal center */
-  transform: translate(-50%, 0%); /* Offset by half the width and height for perfect centering */
 }
 
 #patternPanel {
-  left: 10px;
-  top: 10px;
+  left: 5px;
+  top: 5px;
   z-index: 3;
 }
 
 #colorsetPanel {
-  left: 10px;
-  top: 406px;
+  left: 5px;
+  top: 397px;
   z-index: 3;
 }
 
@@ -84,13 +83,12 @@ canvas {
 #colorPickerPanel {
   top: 370px;
   left: 392px;
-  width: 480px; /* Adjust size as needed */
-  height: 480px; /* Adjust size as needed */
+  width: 480px;
   z-index: 5; /* Ensure it stacks above other UI elements */
 }
 
 .color-picker-controls {
-  margin: 10px;
+  margin: 0px;
   margin-top: 0px;
   display: flex;
   flex-direction: column;
@@ -127,8 +125,8 @@ canvas {
 }
 
 #modesPanel {
-  top: 10px;
-  right: 10px;
+  top: 5px;
+  right: 5px;
   z-index: 3;
 }
 
@@ -1023,10 +1021,17 @@ legend {
 }
 
 .sv-box-container {
+  display: flex;
+  flex-direction: column; /* Stack label and slider */
+  align-items: left;
   width: 200px; /* Minimum width to prevent squishing */
-  height: 200px;
+  height: auto;
   margin-right: 15px;
   position: relative;
+}
+
+.sv-box-container label {
+  margin-bottom: 5px;
 }
 
 .sv-box {
@@ -1034,7 +1039,6 @@ legend {
   height: 100%;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
   border-radius: 4px;
-  margin-top: 22px;
   cursor: crosshair;
   position: relative;
   border: 1px solid #a3a3a3;
@@ -1052,9 +1056,14 @@ legend {
 }
 
 .hue-slider-container {
+  display: flex;
+  flex-direction: column; /* Stack label and slider */
+  align-items: center;
   width: 30px;
-  height: 200px; /* Match SV box height */
-  margin-top: 18px;
+}
+
+.hue-slider-container label {
+  margin-bottom: 5px;
 }
 
 .hue-slider {
@@ -1064,7 +1073,6 @@ legend {
   border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
   border-radius: 4px;
-  margin-top: 5px;
   cursor: pointer;
 }
 
@@ -1417,39 +1425,55 @@ i {
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
-  padding: 10px;
   position: absolute;
-  width: 150px;
   z-index: 2;
   top: 10px;
-  left: -180px;
+  left: 480px;
   transition: transform 0.4s ease; /* Sliding animation */
 }
 
-#animationPanel.hidden {
-  transform: translateX(-180px); /* Slide panel out of view */
+.animation-button {
+  width: 40px;
+  height: 40px;
+  margin: 5px;
 }
 
-/* Pull Tab Styles */
-#animationPanel .pull-tab {
-  position: absolute;
-  top: 10px;
-  right: -25px; /* Position the tab outside the panel */
-  background-color: #444;
-  border: 1px solid #3e4446;
-  border-radius: 0 5px 5px 0;
-  padding: 5px;
+.animation-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.animation-buttons-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.animation-button {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #202020;
   cursor: pointer;
-  font-size: 14px;
-  color: #fff;
-  transition: background-color 0.2s;
+  transition: background 0.2s, transform 0.1s;
 }
 
-#animationPanel .pull-tab:hover {
-  background-color: #666;
+.animation-button:hover {
+  background: #e0e0e0;
+  transform: scale(1.1);
 }
 
-
+.animation-button i {
+  pointer-events: none; /* Ensure clicks pass through to the button */
+}
 
 
 /* Pattern panel stuff */
@@ -1781,5 +1805,7 @@ i {
   flex-direction: column;
   height: auto;
   padding-top: 10px;
+  padding: 10px;
 }
+
 

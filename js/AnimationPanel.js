@@ -10,7 +10,7 @@ export default class AnimationPanel extends Panel {
         max: 30,
         default: 3,
         label: 'Speed',
-        update: value => lightshow.tickRate = value,
+        update: value => editor.lightshow.tickRate = value,
       },
       {
         id: 'trailSize',
@@ -19,7 +19,7 @@ export default class AnimationPanel extends Panel {
         max: 300,
         default: 100,
         label: 'Trail',
-        update: value => lightshow.trailSize = value,
+        update: value => editor.lightshow.trailSize = value,
       },
       {
         id: 'dotSize',
@@ -28,7 +28,7 @@ export default class AnimationPanel extends Panel {
         max: 50,
         default: 25,
         label: 'Size',
-        update: value => lightshow.dotSize = value,
+        update: value => editor.lightshow.dotSize = value,
       },
       {
         id: 'blurFac',
@@ -37,7 +37,7 @@ export default class AnimationPanel extends Panel {
         max: 10,
         default: 5,
         label: 'Blur',
-        update: value => lightshow.blurFac = value,
+        update: value => editor.lightshow.blurFac = value,
       },
       {
         id: 'circleRadius',
@@ -46,7 +46,7 @@ export default class AnimationPanel extends Panel {
         max: 600,
         default: 400,
         label: 'Radius',
-        update: value => lightshow.circleRadius = value,
+        update: value => editor.lightshow.circleRadius = value,
       },
       {
         id: 'spread',
@@ -55,19 +55,31 @@ export default class AnimationPanel extends Panel {
         max: 100,
         default: 15,
         label: 'Spread',
-        update: value => lightshow.spread = parseInt(value),
+        update: value => editor.lightshow.spread = parseInt(value),
       },
     ];
 
     const content = `
-      <h2>Animation Controls</h2>
+      <div class="animation-buttons-container">
+        <button class="animation-button" id="renderCircleButton" title="Circle">
+          <i class="fa fa-circle"></i>
+        </button>
+        <button class="animation-button" id="renderInfinityButton" title="Infinity">
+          <i class="fa fa-infinity"></i>
+        </button>
+        <button class="animation-button" id="renderHeartButton" title="Heart">
+          <i class="fa fa-heart"></i>
+        </button>
+        <button class="animation-button" id="renderBoxButton" title="Box">
+          <i class="fa fa-square"></i>
+        </button>
+      </div>
       <div id="animationControls">
         ${AnimationPanel.generateControlsContent(controls)}
       </div>
-      <div class="pull-tab" id="animationPullTab"><span>&#9664;</span></div>
     `;
 
-    super('animationPanel', content);
+    super('animationPanel', content, 'Animation');
 
     this.editor = editor;
     this.lightshow = editor.lightshow;
@@ -91,7 +103,6 @@ export default class AnimationPanel extends Panel {
   }
 
   initialize() {
-    const pullTab = document.getElementById('animationPullTab');
     const panelElement = document.getElementById('animationPanel');
 
     // Attach event listeners to controls
@@ -102,18 +113,25 @@ export default class AnimationPanel extends Panel {
       });
     });
 
-    // Toggle visibility on pull tab click
-    pullTab.addEventListener('click', () => {
-      if (this.isVisible) {
-        // Hide panel
-        panelElement.classList.add('hidden');
-        pullTab.innerHTML = '<span>&#9654;</span>';
-      } else {
-        // Show panel
-        panelElement.classList.remove('hidden');
-        pullTab.innerHTML = '<span>&#9664;</span>';
-      }
-      this.isVisible = !this.isVisible;
+    // Attach event listeners to shape buttons
+    this.attachShapeButtonListeners();
+  }
+
+  attachShapeButtonListeners() {
+    const shapes = [
+      { id: 'renderCircleButton', shape: 'circle', label: 'Circle' },
+      { id: 'renderInfinityButton', shape: 'figure8', label: 'Infinity' },
+      { id: 'renderHeartButton', shape: 'heart', label: 'Heart' },
+      { id: 'renderBoxButton', shape: 'box', label: 'Box' },
+    ];
+
+    shapes.forEach(({ id, shape, label }) => {
+      const button = this.panel.querySelector(`#${id}`);
+      button.addEventListener('click', () => {
+        console.log(`[AnimationPanel] Changing shape to: ${label}`);
+        this.lightshow.setShape(shape);
+        this.lightshow.angle = 0; // Reset angle
+      });
     });
   }
 }

@@ -1,6 +1,7 @@
 /* VortexEditor.js */
 import Lightshow from './Lightshow.js';
 import AboutPanel from './AboutPanel.js';
+import AnimationPanel from './AnimationPanel.js';
 import ControlPanel from './ControlPanel.js';
 import PatternPanel from './PatternPanel.js';
 import ColorsetPanel from './ColorsetPanel.js';
@@ -28,12 +29,13 @@ export default class VortexEditor {
 
     // Instantiate Panels
     this.aboutPanel = new AboutPanel(this);
+    this.animationPanel = new AnimationPanel(this);
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
     this.modesPanel = new ModesPanel(this);
     this.colorPicker = new ColorPickerPanel(this);
 
-    this.panels = [this.aboutPanel, this.patternPanel, this.colorsetPanel, this.modesPanel, this.colorPicker];
+    this.panels = [this.aboutPanel, this.animationPanel, this.patternPanel, this.colorsetPanel, this.modesPanel, this.colorPicker];
   }
 
   initialize() {

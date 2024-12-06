@@ -3,7 +3,6 @@ import Panel from './Panel.js';
 export default class PatternPanel extends Panel {
   constructor(editor) {
     const content = `
-      <fieldset>
         <div id="patternDropdownContainer">
           <select id="patternDropdown"></select>
           <div class="pattern-buttons">
@@ -14,7 +13,6 @@ export default class PatternPanel extends Panel {
         </div>
         <hr id="patternDivider">
         <div id="patternParams" class="grid-container"></div>
-      </fieldset>
     `;
     super('patternPanel', content, 'Pattern');
     this.editor = editor;

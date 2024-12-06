@@ -6,9 +6,7 @@ import ColorPickerPanel from './ColorPickerPanel.js';
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
     const content = `
-          <fieldset>
             <div id="colorset" class="grid-container"></div>
-          </fieldset>
         `;
 
     super('colorsetPanel', content, 'Colorset');
