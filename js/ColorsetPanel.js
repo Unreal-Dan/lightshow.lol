@@ -7,12 +7,11 @@ export default class ColorsetPanel extends Panel {
   constructor(editor) {
     const content = `
           <fieldset>
-            <legend>Colorset</legend>
             <div id="colorset" class="grid-container"></div>
           </fieldset>
         `;
 
-    super('colorsetPanel', content, 'Colorset Controls');
+    super('colorsetPanel', content, 'Colorset');
     this.editor = editor
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

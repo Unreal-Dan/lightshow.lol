@@ -19,7 +19,6 @@ export default class Panel {
     this.contentContainer = document.createElement('div');
     this.contentContainer.className = 'panel-content';
     this.contentContainer.innerHTML = content;
-    this.contentContainer.style.display = 'block'; // Content is visible
 
     // Append header and content to the panel
     this.panel.appendChild(header);
@@ -56,7 +55,7 @@ export default class Panel {
   show() {
     if (!this.isVisible) {
       this.isVisible = true;
-      this.panel.style.display = 'block';
+      this.panel.style.display = '';
     }
   }
 
@@ -88,14 +87,14 @@ export default class Panel {
     // Identify snapped panels first
     const snappedPanels = this.getSnappedPanels();
 
-    let newHeight = 72; // Default height after collapse
+    let newHeight = 44; // Default height after collapse (32 + 10 padding + 2 border)
     if (!this.isCollapsed) {
-      // Collapse the panel: Set height to 50px and hide content
+      // Collapse the panel: Set height to 32px and hide content
       this.contentContainer.style.display = 'none';
-      this.panel.style.height = '50px';
+      this.panel.style.height = '32px';
     } else {
       // Expand the panel: Restore content and height
-      this.contentContainer.style.display = 'block';
+      this.contentContainer.style.display = 'flex';
       this.panel.style.height = ''; // Reset height to auto
       newHeight = this.panel.offsetHeight;
     }

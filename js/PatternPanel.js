@@ -4,7 +4,6 @@ export default class PatternPanel extends Panel {
   constructor(editor) {
     const content = `
       <fieldset>
-        <legend>Pattern</legend>
         <div id="patternDropdownContainer">
           <select id="patternDropdown"></select>
           <div class="pattern-buttons">
@@ -17,7 +16,7 @@ export default class PatternPanel extends Panel {
         <div id="patternParams" class="grid-container"></div>
       </fieldset>
     `;
-    super('patternPanel', content, 'Pattern Controls');
+    super('patternPanel', content, 'Pattern');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

@@ -48,12 +48,12 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #aboutPanel, #colorsetPanel, #patternPanel, #modeInfoPanel {
+#modesPanel, #aboutPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
-  padding: 10px;
+  padding: 5px;
   position: absolute;
   width: 370px;
 }
@@ -76,8 +76,48 @@ canvas {
 
 #colorsetPanel {
   left: 10px;
-  top: 432px;
+  top: 406px;
   z-index: 3;
+}
+
+/* Color Picker Panel Specific Styles */
+#colorPickerPanel {
+  top: 370px;
+  left: 392px;
+  width: 480px; /* Adjust size as needed */
+  height: 480px; /* Adjust size as needed */
+  z-index: 5; /* Ensure it stacks above other UI elements */
+}
+
+.color-picker-controls {
+  margin: 10px;
+  margin-top: 0px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.color-picker-panel .color-picker-top-section,
+.color-picker-panel .color-picker-bottom-section {
+  width: 100%;
+}
+
+.color-picker-panel .sv-box-container,
+.color-picker-panel .sliders-section,
+.color-picker-panel .radial-hue-cone-container,
+.color-picker-panel .input-box-container {
+  margin-bottom: 10px;
+}
+
+.color-picker-panel .sv-box-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.color-picker-panel .input-group {
+  display: flex;
+  justify-content: space-between;
 }
 
 #modeInfoPanel {
@@ -178,7 +218,7 @@ canvas {
 fieldset {
   border: 1px solid #3e4446;
   border-radius: 5px;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   padding: 10px;
 }
 
@@ -897,24 +937,11 @@ legend {
   margin-bottom: 5px;
 }
 
-.color-picker-modal-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 600px;
-  margin: auto;
-  position: relative;
-  z-index: 2;
-}
-
-
 .color-picker-top-section {
   display: flex;
   width: 100%;
-  justify-content: left; /* Distribute space between SV box and sliders */
+  justify-content: space-between; /* Distribute space between SV box and sliders */
   flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
-  margin-bottom: 20px;
   position: relative;
   z-index: 1;
 }
@@ -922,8 +949,9 @@ legend {
 .color-picker-bottom-section {
   display: flex;
   width: 100%;
+  margin-top: 15px;
   justify-content: space-between; /* Align hue circle and input boxes */
-  align-items: left;
+  align-items: center;
   flex-wrap: wrap;
   position: relative;
   z-index: 3;
@@ -935,9 +963,9 @@ legend {
 }
 
 .color-input {
-  width: 45px;
+  width: 34px;
   height: 24px;
-  padding: 5px;
+  padding: 3px;
   background-color: #292c2e;
   border: 1px solid #454545;
   border-radius: 4px;
@@ -991,8 +1019,7 @@ legend {
 
 .sliders-section {
   padding: 0;
-  margin-top: -20px;
-  margin-left: 35px;
+  margin-left: 65px;
 }
 
 .sv-box-container {
@@ -1007,7 +1034,7 @@ legend {
   height: 100%;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
   border-radius: 4px;
-  margin-top: 5px;
+  margin-top: 22px;
   cursor: crosshair;
   position: relative;
   border: 1px solid #a3a3a3;
@@ -1027,6 +1054,7 @@ legend {
 .hue-slider-container {
   width: 30px;
   height: 200px; /* Match SV box height */
+  margin-top: 18px;
 }
 
 .hue-slider {
@@ -1205,11 +1233,10 @@ legend {
 
 .hue-labels {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 10px;
+  left: 10px;
   width: 100%; /* Ensure the container covers the whole circle */
   height: 100%;
-  transform: translate(-47%, -47%);
   pointer-events: none;
   z-index: 3;
   display: flex;
@@ -1750,6 +1777,9 @@ i {
 }
 
 .panel-content {
+  display: flex;
+  flex-direction: column;
+  height: auto;
   padding-top: 10px;
 }
 

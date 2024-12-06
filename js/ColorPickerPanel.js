@@ -18,8 +18,23 @@ export default class ColorPickerPanel extends Panel {
   }
 
   initColorPickerContent() {
-    // Create the initial empty content area for the color picker
-    this.contentContainer.innerHTML = `<div class="color-picker-modal-content"></div>`;
+    // Create and structure the content container for the color picker
+    this.contentContainer.innerHTML = `<div class="color-picker-controls"></div>`;
+  }
+
+  openColorPicker(index, colorSet, updateColorCallback) {
+    const col = colorSet.get(index);
+    this.selectedIndex = index;
+
+    const { h, s, v } = this.rgbToHsv(col.red, col.green, col.blue);
+    this.colorState = { r: col.red, g: col.green, b: col.blue, h, s, v };
+
+    const controlsContainer = this.contentContainer.querySelector('.color-picker-controls');
+    controlsContainer.innerHTML = this.createColorPickerHTML(h, s, v, col);
+
+    this.show(); // Show the panel
+    this.initColorPickerControls(updateColorCallback);
+    this.initHueCircle(h);
   }
 
   rgbToHsv(r, g, b) {
@@ -32,21 +47,6 @@ export default class ColorPickerPanel extends Panel {
     const HSVCol = new this.lightshow.vortexLib.HSVColor(h, s, v);
     const RGBCol = this.lightshow.vortexLib.hsv_to_rgb_generic(HSVCol);
     return { r: RGBCol.red, g: RGBCol.green, b: RGBCol.blue };
-  }
-
-  openColorPicker(index, colorSet, updateColorCallback) {
-    const col = colorSet.get(index);
-    this.selectedIndex = index;
-
-    const { h, s, v } = this.rgbToHsv(col.red, col.green, col.blue);
-    this.colorState = { r: col.red, g: col.green, b: col.blue, h, s, v };
-
-    this.contentContainer.innerHTML = this.createColorPickerHTML(h, s, v, col);
-    this.show(); // Show the panel
-
-    // Initialize controls
-    this.initColorPickerControls(updateColorCallback);
-    this.initHueCircle(h);
   }
 
   createColorPickerHTML(h, s, v, col) {
@@ -85,23 +85,31 @@ export default class ColorPickerPanel extends Panel {
             <div class="radial-hue-inner-circle"></div>
             <div class="hue-indicator hue-selector-animate"></div>
           </div>
+          <div class="hue-labels">
+            <div class="hue-label hue-label-red">R</div>
+            <div class="hue-label hue-label-yellow">Y</div>
+            <div class="hue-label hue-label-lime">G</div>
+            <div class="hue-label hue-label-cyan">C</div>
+            <div class="hue-label hue-label-blue">B</div>
+            <div class="hue-label hue-label-magenta">P</div>
+          </div>
         </div>
         <div class="input-box-container">
           <div class="input-group">
             <label for="redInput">R:</label>
-            <input type="number" id="redInput" class="color-input" min="0" max="255" value="${col.red}">
+            <input type="text" id="redInput" class="color-input" min="0" max="255" value="${col.red}">
             <label for="greenInput">G:</label>
-            <input type="number" id="greenInput" class="color-input" min="0" max="255" value="${col.green}">
+            <input type="text" id="greenInput" class="color-input" min="0" max="255" value="${col.green}">
             <label for="blueInput">B:</label>
-            <input type="number" id="blueInput" class="color-input" min="0" max="255" value="${col.blue}">
+            <input type="text" id="blueInput" class="color-input" min="0" max="255" value="${col.blue}">
           </div>
           <div class="input-group">
             <label for="hueInput">H:</label>
-            <input type="number" id="hueInput" class="color-input" min="0" max="255" value="${h}">
+            <input type="text" id="hueInput" class="color-input" min="0" max="255" value="${h}">
             <label for="satInput">S:</label>
-            <input type="number" id="satInput" class="color-input" min="0" max="255" value="${s}">
+            <input type="text" id="satInput" class="color-input" min="0" max="255" value="${s}">
             <label for="valInput">V:</label>
-            <input type="number" id="valInput" class="color-input" min="0" max="255" value="${v}">
+            <input type="text" id="valInput" class="color-input" min="0" max="255" value="${v}">
           </div>
           <div class="hex-input-group">
             <label for="hexInput">Hex:</label>
