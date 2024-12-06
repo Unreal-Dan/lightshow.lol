@@ -79,7 +79,7 @@ canvas {
 
 /* Color Picker Panel Specific Styles */
 #colorPickerPanel {
-  top: 370px;
+  top: 417px;
   left: 392px;
   width: 480px;
   z-index: 5; /* Ensure it stacks above other UI elements */
