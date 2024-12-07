@@ -1,0 +1,27 @@
+{
+    "device_name": "Chromadeck",
+    "original_width": 500,
+    "original_height": 250,
+    "points": [
+        {"x": 250, "y": 11, "name": "Outer Ring 12 Oclock" },
+        {"x": 318, "y": 32, "name": "Outer Ring 1 Oclock" },
+        {"x": 360, "y": 90, "name": "Outer Ring 2 Oclock" },
+        {"x": 360, "y": 162, "name": "Outer Ring 4 Oclock" },
+        {"x": 318, "y": 219, "name": "Outer Ring 5 Oclock" },
+        {"x": 250, "y": 241, "name": "Outer Ring 6 Oclock" },
+        {"x": 183, "y": 219, "name": "Outer Ring 7 Oclock" },
+        {"x": 141, "y": 161, "name": "Outer Ring 8 Oclock" },
+        {"x": 141, "y": 90, "name": "Outer Ring 10 Oclock" },
+        {"x": 183, "y": 33, "name": "Outer Ring 11 Oclock" },
+        {"x": 250,  "y": 44, "name": "Inner Ring 12 Oclock" },
+        {"x": 298,  "y": 60, "name": "Inner Ring 1 Oclock" },
+        {"x": 328,  "y": 100, "name": "Inner Ring 2 Oclock" },
+        {"x": 328,  "y": 150, "name": "Inner Ring 4 Oclock" },
+        {"x": 298,  "y": 192,  "name": "Inner Ring 5 Oclock" },
+        {"x": 250,  "y": 206,  "name": "Inner Ring 6 Oclock" },
+        {"x": 203,  "y": 191,  "name": "Inner Ring 7 Oclock" },
+        {"x": 173,  "y": 151,  "name": "Inner Ring 8 Oclock" },
+        {"x": 173, "y": 100,  "name": "Inner Ring 10 Oclock" },
+        {"x": 203, "y": 60,  "name": "Inner Ring 11 Oclock" }
+    ]
+}

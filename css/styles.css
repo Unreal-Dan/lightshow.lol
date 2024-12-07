@@ -767,6 +767,16 @@ legend {
   border: none;
 }
 
+.led-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Prevent blocking interactions with the image */
+  z-index: 2; /* Ensure it appears above the image */
+}
+
 .led-indicator {
   position: absolute;
   width: 13px; /* Adjust size */
@@ -775,6 +785,7 @@ legend {
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
+  z-index: 3; /* Ensure indicators are above other UI elements */
 }
 
 .led-indicator.selected {
@@ -867,7 +878,7 @@ legend {
   position: absolute;
   background-color: #121212;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: 5;
   width: 100%;
 }
 

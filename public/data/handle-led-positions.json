@@ -1,0 +1,10 @@
+{
+    "device_name": "Handle",
+    "original_width": 500,
+    "original_height": 250,
+    "points": [
+        { "x": 150, "y": 191, "name": "front" },
+        { "x": 150, "y": 222, "name": "tip" },
+        { "x": 353, "y": 216, "name": "back" }
+    ]
+}
