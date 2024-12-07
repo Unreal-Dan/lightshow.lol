@@ -115,7 +115,7 @@ export default class ColorPickerPanel extends Panel {
             <input type="text" id="valInput" class="color-input" min="0" max="255" value="${v}">
           </div>
           <div class="hex-input-group">
-            <label for="hexInput">Hex:</label>
+            <label for="hexInput" id="hexInputLabel">Hex:</label>
             <input type="text" id="hexInput" class="color-input" value="#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}">
           </div>
         </div>

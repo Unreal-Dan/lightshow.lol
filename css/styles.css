@@ -751,6 +751,11 @@ legend {
   outline: none;
 }
 
+#hexInputLabel {
+  /* make the word 'Hex' line up with 'H' and 'R' */
+  margin-left: -10px;
+}
+
 #deviceImageContainer {
   position: relative;
   width: 100%; /* Take full width of the container */
@@ -1232,6 +1237,7 @@ legend {
   display: flex;
   justify-content: flex-start; /* Align items to the left */
   z-index: 1; /* Lower z-index to ensure it's behind inputs */
+  margin-left: 10px;
 }
 
 .radial-hue-cone {
