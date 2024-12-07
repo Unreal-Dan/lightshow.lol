@@ -77,6 +77,43 @@ export default class VortexEditor {
     }
   }
 
+  async pushToDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pushModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pushed save");
+    }
+  }
+
+  async pullFromDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pullModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pulled save");
+    }
+    this.refreshModeList();
+    this.refreshPatternControlPanel();
+  }
+
+  async transmitVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    Notification.success("Successfully finished transmitting");
+  }
+
   async demoColorOnDevice(color) {
     try {
       if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
