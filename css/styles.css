@@ -48,27 +48,129 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #aboutPanel, #controlPanel, #modeInfoPanel {
+#modesPanel, #welcomePanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
-  padding: 10px;
+  padding: 5px;
   position: absolute;
   width: 370px;
 }
 
+#welcomePanel {
+  top: 75px;
+  left: 50%; /* Center the div */
+  width: 900px;
+  transform: translate(-25%, 0%);
+  text-align: left;
+  z-index: 50;
+}
+
+#welcomePanel label {
+  font-size: 20px;
+}
+#welcomePanel input {
+  height: 16px;
+  width: 16px;
+}
+
+#welcomePanel p {
+  font-size: 20px;
+}
+
+#welcomePanel h2 {
+  margin-bottom: 0;
+}
+
+/* public/css/components/welcome-panel.css */
+.wiki-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  background-color: #28a745; /* Green color */
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin: 20px 0;
+}
+
+.wiki-button .arrow {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+.wiki-button:hover {
+  background-color: #218838; /* Darker green on hover */
+  transform: translateY(-2px);
+}
+
+.wiki-button:active {
+  background-color: #1e7e34; /* Even darker green on click */
+  transform: translateY(1px);
+}
+
+
 #aboutPanel {
-  left: 10px;
+  left: 5px;
+  top: 5px;
   text-align: center;
-  top: 10px;
   z-index: 3;
 }
 
-#controlPanel {
-  left: 10px;
-  top: 60px;
+#patternPanel {
+  left: 5px;
+  top: 103px;
   z-index: 3;
+}
+
+#colorsetPanel {
+  left: 5px;
+  top: 495px;
+  z-index: 3;
+}
+
+/* Color Picker Panel Specific Styles */
+#colorPickerPanel {
+  top: 417px;
+  left: 392px;
+  width: 480px;
+  z-index: 5; /* Ensure it stacks above other UI elements */
+}
+
+.color-picker-controls {
+  margin: 0px;
+  margin-top: 0px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.color-picker-panel .color-picker-top-section,
+.color-picker-panel .color-picker-bottom-section {
+  width: 100%;
+}
+
+.color-picker-panel .sv-box-container,
+.color-picker-panel .sliders-section,
+.color-picker-panel .radial-hue-cone-container,
+.color-picker-panel .input-box-container {
+  margin-bottom: 10px;
+}
+
+.color-picker-panel .sv-box-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.color-picker-panel .input-group {
+  display: flex;
+  justify-content: space-between;
 }
 
 #modeInfoPanel {
@@ -78,8 +180,8 @@ canvas {
 }
 
 #modesPanel {
-  top: 10px;
-  right: 10px;
+  top: 5px;
+  right: 5px;
   z-index: 3;
 }
 
@@ -169,7 +271,7 @@ canvas {
 fieldset {
   border: 1px solid #3e4446;
   border-radius: 5px;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   padding: 10px;
 }
 
@@ -178,10 +280,15 @@ legend {
   padding: 0 5px;
 }
 
-#patternDropdown {
-  margin-bottom: 5px;
+#patternDivider {
+  margin-left: 10px;
   margin-right: 10px;
-  width: 230px;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+#patternDropdown {
+  width: 100%;
+  margin-right: 5px;
   background-color: #333; /* Dark background */
   color: #fff; /* Light text color for contrast */
   border: 1px solid #555; /* Dark border for distinction */
@@ -284,6 +391,7 @@ legend {
   font-size: 28px;
   font-weight: bold;
   user-select:none;
+  margin-right: 10px;
 }
 
 .delete-color:hover,
@@ -596,6 +704,26 @@ legend {
     background-color: #218838;
 }
 
+
+.close-btn {
+  color: #aaa;
+  margin-bottom: -8px;
+  margin-top: -6px;
+  font-size: 28px;
+  font-weight: bold;
+  margin-right: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: red;
+  text-decoration: none;
+  cursor: pointer;
+  user-select:none;
+}
+
 .close {
   color: #aaa;
   float: right;
@@ -680,6 +808,11 @@ legend {
   outline: none;
 }
 
+#hexInputLabel {
+  /* make the word 'Hex' line up with 'H' and 'R' */
+  margin-left: -10px;
+}
+
 #deviceImageContainer {
   position: relative;
   width: 100%; /* Take full width of the container */
@@ -696,6 +829,16 @@ legend {
   border: none;
 }
 
+.led-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Prevent blocking interactions with the image */
+  z-index: 2; /* Ensure it appears above the image */
+}
+
 .led-indicator {
   position: absolute;
   width: 13px; /* Adjust size */
@@ -704,6 +847,7 @@ legend {
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
+  z-index: 3; /* Ensure indicators are above other UI elements */
 }
 
 .led-indicator.selected {
@@ -712,6 +856,7 @@ legend {
 
 #ledControls {
   display: flex;
+  justify-content: space-between;
   gap: 5px; /* Space between buttons */
   margin-top: 10px; /* Space above the button group */
 }
@@ -720,7 +865,7 @@ legend {
   text-align: center; /* Center text */
   text-decoration: none; /* Remove underline */
   display: inline-block; /* Display as inline-block */
-  font-size: 14px; /* Font size */
+  font-size: 12px; /* Font size */
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -795,7 +940,7 @@ legend {
   position: absolute;
   background-color: #121212;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: 5;
   width: 100%;
 }
 
@@ -876,41 +1021,17 @@ legend {
   opacity: 0.6;
 }
 
-.color-entry {
-  width: 50px;
-  height: 24px;
-  cursor: pointer;
-  display: inline-block;
-  border-radius: 4px;
-  margin-right: 10px;
-  margin-left: 5px;
-  border: 2px solid #090c0e;
-}
-
 .color-container {
   display: flex;
   align-items: center;
   margin-bottom: 5px;
 }
 
-.color-picker-modal-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 600px;
-  margin: auto;
-  position: relative;
-  z-index: 2;
-}
-
-
 .color-picker-top-section {
   display: flex;
   width: 100%;
-  justify-content: left; /* Distribute space between SV box and sliders */
+  justify-content: space-between; /* Distribute space between SV box and sliders */
   flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
-  margin-bottom: 20px;
   position: relative;
   z-index: 1;
 }
@@ -918,8 +1039,9 @@ legend {
 .color-picker-bottom-section {
   display: flex;
   width: 100%;
+  margin-top: 15px;
   justify-content: space-between; /* Align hue circle and input boxes */
-  align-items: left;
+  align-items: center;
   flex-wrap: wrap;
   position: relative;
   z-index: 3;
@@ -931,9 +1053,9 @@ legend {
 }
 
 .color-input {
-  width: 45px;
+  width: 34px;
   height: 24px;
-  padding: 5px;
+  padding: 3px;
   background-color: #292c2e;
   border: 1px solid #454545;
   border-radius: 4px;
@@ -987,15 +1109,21 @@ legend {
 
 .sliders-section {
   padding: 0;
-  margin-top: -20px;
-  margin-left: 35px;
+  margin-left: 65px;
 }
 
 .sv-box-container {
+  display: flex;
+  flex-direction: column; /* Stack label and slider */
+  align-items: left;
   width: 200px; /* Minimum width to prevent squishing */
-  height: 200px;
+  height: auto;
   margin-right: 15px;
   position: relative;
+}
+
+.sv-box-container label {
+  margin-bottom: 5px;
 }
 
 .sv-box {
@@ -1003,7 +1131,6 @@ legend {
   height: 100%;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
   border-radius: 4px;
-  margin-top: 5px;
   cursor: crosshair;
   position: relative;
   border: 1px solid #a3a3a3;
@@ -1021,8 +1148,14 @@ legend {
 }
 
 .hue-slider-container {
+  display: flex;
+  flex-direction: column; /* Stack label and slider */
+  align-items: center;
   width: 30px;
-  height: 200px; /* Match SV box height */
+}
+
+.hue-slider-container label {
+  margin-bottom: 5px;
 }
 
 .hue-slider {
@@ -1032,7 +1165,6 @@ legend {
   border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
   border-radius: 4px;
-  margin-top: 5px;
   cursor: pointer;
 }
 
@@ -1162,6 +1294,7 @@ legend {
   display: flex;
   justify-content: flex-start; /* Align items to the left */
   z-index: 1; /* Lower z-index to ensure it's behind inputs */
+  margin-left: 10px;
 }
 
 .radial-hue-cone {
@@ -1201,11 +1334,10 @@ legend {
 
 .hue-labels {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 10px;
+  left: 10px;
   width: 100%; /* Ensure the container covers the whole circle */
   height: 100%;
-  transform: translate(-47%, -47%);
   pointer-events: none;
   z-index: 3;
   display: flex;
@@ -1375,4 +1507,399 @@ i {
 .btn.connect:active {
   background-color: #777; /* Even lighter when pressed */
 }
+
+
+
+
+
+/* Animation panel stuff */
+#animationPanel {
+  top: 54px;
+  left: 5px;
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  position: absolute;
+  z-index: 2;
+  transition: transform 0.4s ease; /* Sliding animation */
+}
+
+.animation-button {
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+}
+
+.animation-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.animation-buttons-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.animation-button {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #202020;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.animation-button:hover {
+  background: #e0e0e0;
+  transform: scale(1.1);
+}
+
+.animation-button i {
+  pointer-events: none; /* Ensure clicks pass through to the button */
+}
+
+
+/* Pattern panel stuff */
+.control-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  height: 30px; /* Consistent height for rows */
+}
+
+.control-slider-container {
+  position: relative;
+  flex: 5;
+  height: 100%;
+  display: flex;
+  align-items: center; /* Align slider and label vertically */
+  overflow: hidden; /* Prevent overlapping visuals */
+}
+
+.control-label {
+  position: absolute;
+  z-index: 2;
+  font-weight: bold;
+  color: #d8d4cf;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%); /* Center vertically */
+  pointer-events: none; /* Ensure it doesn’t interfere with slider interaction */
+}
+
+.control-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e 50%, #3e3e3e 50%); /* Placeholder gradient */
+  margin-right: 0;
+  outline: none;
+  position: relative;
+  border-top-left-radius: 4px; /* Ensure full rounding */
+  border-bottom-left-radius: 4px; /* Ensure full rounding */
+  position: relative; /* Needed for ::before */
+}
+
+.control-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill)); /* Dynamic fill */
+  border: none;
+}
+
+.control-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2px;
+  height: 100%;
+  background: #111; /* The draggable "line" */
+  cursor: pointer;
+  z-index: 3; /* Ensure it's above the slider track */
+}
+
+.control-slider::-moz-range-track {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill));
+  border: none;
+}
+
+.control-slider::-moz-range-thumb {
+  width: 2px;
+  height: 100%;
+  background: #111;
+  cursor: pointer;
+  border: none;
+}
+
+.control-input {
+  flex: 1;
+  height: 30px;
+  background: #292c2e;
+  color: #d8d4cf;
+  border: none;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid black;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.control-input:focus {
+  outline: none;
+}
+
+.control-slider-container.disabled .control-slider.disabled {
+  background: #111111;
+  pointer-events: none;
+}
+
+.control-slider-container.disabled .control-label {
+  color: #333;
+}
+
+.control-input.disabled {
+  background: #1e1e1e;
+  pointer-events: none;
+}
+
+
+
+#patternDropdownContainer {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pattern-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+#patternRandomizeButton {
+  font-size: 22px;
+  padding: 1px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.icon-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  background-color: #333;
+  color: white;
+  font-size: 14px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: 1px solid black;
+}
+
+.help-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  color: white;
+  font-size: 18px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#githubLink {
+  font-size: 18px;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+.icon-button:hover {
+  background-color: #444;
+}
+
+.icon-button:active {
+  background-color: #555;
+}
+
+
+
+/* about panel stuff */
+.about-panel-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.about-label {
+  font-size: 16px;
+  color: #d8d4cf;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 5px;
+  transition: transform 0.2s, color 0.2s;
+}
+
+.icon-button:hover {
+  color: #66ff66;
+  transform: scale(1.1);
+}
+
+.icon-button:active {
+  transform: scale(1);
+}
+
+.icon-button i {
+  pointer-events: none; /* Prevent accidental selection of the icon */
+}
+
+
+
+/* colorset panel stuff */
+#colorset {
+  display: column;
+  grid-template-columns: repeat(4, 1fr); /* 4 columns */
+  gap: 10px; /* Space between slots */
+}
+
+.color-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid #444; /* Border for all slots */
+  border-bottom-right-radius: 5px;
+  border-top-right-radius: 5px;
+  border-radius: 5px;
+  padding: 0;
+  margin-left: 0;
+  margin-bottom: 3px;
+  height: 40px; /* Fixed height */
+  box-sizing: border-box; /* Include padding in size */
+  overflow: none;
+}
+
+.color-box.empty {
+  background: #1a1a1a; /* Dark background for empty slots */
+  border: 2px dashed #666; /* Dotted border for empty slots */
+  color: #999; /* Placeholder text color */
+  justify-content: center; /* Center content */
+  overflow: none;
+}
+
+.color-entry {
+  width: 50px;
+  display: inline-block;
+  flex: 0 0 30%; /* Take 30% of the box width */
+  height: 100%;
+  cursor: pointer;
+  border: none;
+  border-right: 2px solid #333;
+  margin-left: 0;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+  transition: flex 0.3s ease; /* Smooth transition for width */
+}
+
+.color-hex-input {
+  flex: 1; /* Fill remaining space */
+  border: none;
+  background: transparent;
+  color: #fff;
+  padding: 0 5px;
+  text-align: center;
+}
+
+.color-box.empty:hover {
+  background: #222; /* Slightly darker on hover */
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-hex-input:focus {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-entry:hover {
+  flex: 0 0 50%;
+}
+
+
+
+/* draggable panels */
+
+.draggable-panel {
+  position: absolute;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  background-color: #181a1b;
+  user-select: none;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  padding-left: 7px;
+  background-color: #292c2e;
+  border-bottom: 1px solid #3e4446;
+  cursor: move; /* Indicate draggable for header */
+  border-radius: 5px;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #d8d4cf;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.collapse-btn:hover {
+  color: #66ff66;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  padding-top: 10px;
+  padding: 10px;
+}
+
 

@@ -1,0 +1,17 @@
+{
+    "device_name": "Gloves",
+    "original_width": 500,
+    "original_height": 250,
+    "points": [
+        { "x": 425, "y": 150, "name": "pinkie tip" },
+        { "x": 425, "y": 172, "name": "pinkie top" },
+        { "x": 337, "y": 77, "name": "ring tip" },
+        { "x": 337, "y": 98, "name": "ring top" },
+        { "x": 251, "y": 39, "name": "middle tip" },
+        { "x": 251, "y": 61, "name": "middle top" },
+        { "x": 163, "y": 77, "name": "index tip" },
+        { "x": 163, "y": 99, "name": "index top" },
+        { "x": 66, "y": 201, "name": "thumb tip" },
+        { "x": 66, "y": 225, "name": "thumb top" }
+    ]
+}

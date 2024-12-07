@@ -5,7 +5,7 @@ import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 
 export default class ModesPanel extends Panel {
-  constructor(lightshow, vortexPort) {
+  constructor(editor) {
     const content = `
       <div id="modesAndLedsSection">
         <div id="modeButtonsSection">
@@ -62,9 +62,10 @@ export default class ModesPanel extends Panel {
       </div>
     `;
 
-    super('modesPanel', content);
-    this.lightshow = lightshow;
-    this.vortexPort = vortexPort;
+    super('modesPanel', content, 'Modes and Device Controls');
+    this.editor = editor;
+    this.lightshow = editor.lightshow;
+    this.vortexPort = editor.vortexPort;
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
@@ -578,130 +579,16 @@ export default class ModesPanel extends Panel {
     this.handleLedSelectionChange();
   }
 
-  getLedPositions(deviceName = 'Orbit') {
-    // Add logic to return LED positions based on the device name
-    const ledPositions = [];
-
-    // Example logic for different devices
-    if (deviceName === 'Orbit') {
-      return this.getLedPositionsOrbit();
-    } else if (deviceName === 'Gloves') {
-      return this.getLedPositionsGlove();
-    } else if (deviceName === 'Handle') {
-      return this.getLedPositionsHandle();
-    } else if (deviceName === 'Duo') {
-      return this.getLedPositionsDuo();
-    } else if (deviceName === 'Chromadeck') {
-      return this.getLedPositionsChromadeck();
-    } else if (deviceName === 'Spark') {
-      return this.getLedPositionsSpark();
+  async getLedPositions(deviceName) {
+    try {
+      const cacheBuster = '?v=' + new Date().getTime();
+      const response = await fetch(`public/data/${deviceName.toLowerCase()}-led-positions.json${cacheBuster}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Error loading LED positions for ${deviceName}:`, error);
+      return { points: [], original_width: 1, original_height: 1 };
     }
-    return ledPositions;
-  }
-
-  getLedPositionsHandle() {
-    const ledPositions = [
-      { x: 100, y: 125 }, // front
-      { x: 100, y: 160 }, // tip
-      { x: 233, y: 125 }, // back
-    ];
-    return ledPositions;
-
-  }
-
-  getLedPositionsGlove() {
-    const ledPositions = [
-      { x: 246, y: 45 }, // pinkie tip
-      { x: 246, y: 60 }, // pinkie top
-      { x: 207, y: 20 }, // ring tip
-      { x: 207, y: 35 }, // ring top
-      { x: 168, y: 9 },  // middle tip
-      { x: 168, y: 24 }, // middle top
-      { x: 128, y: 20 }, // index tip
-      { x: 128, y: 35 }, // index top
-      { x: 89, y: 86 },  // thumb tip
-      { x: 89, y: 101 }, // thumb top
-    ];
-    return ledPositions;
-  }
-
-  getLedPositionsOrbit() {
-    const ledPositions = [];
-    let size = 11;
-    // Quadrant 1 top
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 40 + (i * size) + 67, y: 108 + (i * size) });
-    // Quadrant 1 edge
-    ledPositions.push({ x: ledPositions[2].x + 16, y: ledPositions[2].y + 16 });
-    // Quadrant 1 bottom
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 140 + (i * size) + 67, y: 129 - (i * size) });
-    // Quadrant 2 bottom
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 208 + (i * size) + 67, y: 108 + (i * size) });
-    // Quadrant 2 edge
-    ledPositions.push({ x: 23, y: 146 });
-    // Quadrant 2 top
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 40 + (i * size), y: 129 - (i * size) });
-    // Quadrant 3 top
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 62 - (i * size), y: 62 - (i * size) });
-    // Quadrant 3 edge
-    ledPositions.push({ x: ledPositions[16].x - 17, y: ledPositions[16].y - 18 });
-    // Quadrant 3 bottom
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 297 - (i * size), y: 40 + (i * size) });
-    // Quadrant 4 bottom
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 162 - (i * size) + 67, y: 62 - (i * size) });
-    // Quadrant 4 edge
-    ledPositions.push({ x: 145, y: 24 });
-    // Quadrant 4 top
-    for (let i = 0; i < 3; ++i) ledPositions.push({ x: 130 - (i * size), y: 40 + (i * size) });
-    return ledPositions;
-  }
-
-  getLedPositionsChromadeck() {
-    const ledPositions = [
-        // lol poor mans scaling
-        {x: 250 * (334 / 500), y: 11  * (333 / 500)}, // Outer Ring 12 Oclock
-        {x: 318 * (334 / 500), y: 32  * (333 / 500)}, // Outer Ring 1 Oclock
-        {x: 360 * (334 / 500), y: 90  * (333 / 500)}, // Outer Ring 2 Oclock
-        {x: 360 * (334 / 500), y: 162 * (333 / 500) }, // Outer Ring 4 Oclock
-        {x: 318 * (334 / 500), y: 219 * (333 / 500) }, // Outer Ring 5 Oclock
-        {x: 250 * (334 / 500), y: 241 * (333 / 500) }, // Outer Ring 6 Oclock
-        {x: 183 * (334 / 500), y: 219 * (333 / 500) }, // Outer Ring 7 Oclock
-        {x: 141 * (334 / 500), y: 161 * (333 / 500) }, // Outer Ring 8 Oclock
-        {x: 141 * (334 / 500), y: 90  * (333 / 500) }, // Outer Ring 10 Oclock
-        {x: 183 * (334 / 500), y: 33  * (333 / 500) }, // Outer Ring 11 Oclock
-        {x: 250 * (334 / 500), y: 44  * (333 / 500) }, // Inner Ring 12 Oclock
-        {x: 298 * (334 / 500), y: 60  * (333 / 500) }, // Inner Ring 1 Oclock
-        {x: 328 * (334 / 500), y: 100 * (333 / 500) }, // Inner Ring 2 Oclock
-        {x: 328 * (334 / 500), y: 150 * (333 / 500) }, // Inner Ring 4 Oclock
-        {x: 298 * (334 / 500), y: 192 * (333 / 500) }, // Inner Ring 5 Oclock
-        {x: 250 * (334 / 500), y: 206 * (333 / 500) }, // Inner Ring 6 Oclock
-        {x: 203 * (334 / 500), y: 191 * (333 / 500) }, // Inner Ring 7 Oclock
-        {x: 173 * (334 / 500), y: 151 * (333 / 500) }, // Inner Ring 8 Oclock
-        {x: 173 * (334 / 500), y: 100 * (333 / 500) }, // Inner Ring 10 Oclock
-        {x: 203 * (334 / 500), y: 60  * (333 / 500) }, // Inner Ring 11 Oclock
-    ];
-    return ledPositions;
-  }
-
-  getLedPositionsSpark() {
-    const ledPositions = [
-        // lol poor mans scaling
-        {x: 300 * (334 / 500), y: 40  * (333 / 500)}, // 1 oclock
-        {x: 350 * (334 / 500), y: 125  * (333 / 500)}, // 3 oclock
-        {x: 300 * (334 / 500), y: 212  * (333 / 500)}, // 5 oclock
-        {x: 200 * (334 / 500), y: 212  * (333 / 500)}, // 7 oclock
-        {x: 150 * (334 / 500), y: 125  * (333 / 500)}, // 9 oclock
-        {x: 200 * (334 / 500), y: 40  * (333 / 500)}, // 11 oclock
-    ];
-    return ledPositions;
-  }
-
-  getLedPositionsDuo() {
-    const ledPositions = [
-        // lol poor mans scaling
-        {x: 250 * (334 / 500), y: 25  * (333 / 500)}, // tip led
-        {x: 250 * (334 / 500), y: 140  * (333 / 500)}, // top led
-    ];
-    return ledPositions;
   }
 
   onDeviceDisconnect() {
@@ -723,7 +610,6 @@ export default class ModesPanel extends Panel {
 
   refresh(fromEvent = false) {
     this.refreshModeList(fromEvent);
-    this.refreshLedList(fromEvent);
     this.updateLedIndicators(); // Ensure indicators are updated
   }
 
@@ -780,52 +666,52 @@ export default class ModesPanel extends Panel {
     this.applyLedSelections(selectedLeds);
   }
 
-  renderLedIndicators(deviceName = null) {
+  async renderLedIndicators(deviceName = null) {
     const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    const ledList = document.getElementById('ledList');
     const ledControls = document.getElementById('ledControls');
 
     if (!deviceName || deviceName === 'None') {
-      ledsFieldset.style.display = 'none'; // Hide the entire fieldset
+      ledsFieldset.style.display = 'none';
       return;
     }
 
-    ledsFieldset.style.display = 'block'; // Show the fieldset
-    deviceImageContainer.innerHTML = ''; // Clear any existing content
-    ledList.style.display = 'block'; // Show the LED list
-    ledControls.style.display = 'flex'; // Show the LED controls
+    ledsFieldset.style.display = 'block';
+    deviceImageContainer.innerHTML = '';
+    ledList.style.display = 'block';
+    ledControls.style.display = 'flex';
+    deviceImageContainer.innerHTML = '';
 
+    const overlay = document.createElement('div');
+    overlay.classList.add('led-overlay');
+    deviceImageContainer.appendChild(overlay);
+
+    const deviceData = await this.getLedPositions(deviceName);
     const deviceImageSrc = this.devices[deviceName].image;
+
     if (deviceImageSrc) {
       const deviceImage = document.createElement('img');
-      deviceImage.src = deviceImageSrc;
+      deviceImage.src = deviceImageSrc + '?v=' + new Date().getTime();
+      deviceImage.style.display = 'block';
+      deviceImage.style.width = '100%';
+      deviceImage.style.height = 'auto';
+
+      deviceImage.onload = () => {
+        const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
+        const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
+
+        deviceData.points.forEach((point, index) => {
+          const ledIndicator = document.createElement('div');
+          ledIndicator.classList.add('led-indicator');
+          ledIndicator.style.left = `${point.x * scaleX}px`;
+          ledIndicator.style.top = `${point.y * scaleY}px`;
+          ledIndicator.dataset.ledIndex = index;
+
+          overlay.appendChild(ledIndicator);
+        });
+      };
+
       deviceImageContainer.appendChild(deviceImage);
-    }
-
-    const ledPositions = this.getLedPositions(deviceName);
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    const isMultiLed = cur && cur.isMultiLed(); // Check if the current mode uses a multi-LED pattern
-
-    ledPositions.forEach((position, index) => {
-      const ledIndicator = document.createElement('div');
-      ledIndicator.classList.add('led-indicator');
-      ledIndicator.style.left = position.x + 'px';
-      ledIndicator.style.top = position.y + 'px';
-      ledIndicator.dataset.ledIndex = index;
-
-      if (isMultiLed) {
-        ledIndicator.classList.add('selected');
-      }
-
-      deviceImageContainer.appendChild(ledIndicator);
-    });
-
-    // Disable LED controls if multi-LED pattern is applied
-    if (isMultiLed) {
-      ledControls.style.display = 'none';
-    } else {
-      ledControls.style.display = 'flex';
     }
   }
 
@@ -980,7 +866,7 @@ export default class ModesPanel extends Panel {
     }
     this.lightshow.vortex.setCurMode(curSel, false);
     this.attachModeEventListeners();
-    this.refreshLedList();
+    this.refreshLedList(fromEvent);
   }
 
   selectMode(index) {
@@ -1094,7 +980,6 @@ export default class ModesPanel extends Panel {
       return;
     }
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
     Notification.success("Successfully Added Mode " + modeCount);
   }
@@ -1209,7 +1094,6 @@ export default class ModesPanel extends Panel {
           this.lightshow.setLedCount(1);
           break;
       }
-      this.refreshLedList();
       this.refreshModeList();
       this.renderLedIndicators(initialDevice);
       this.handleLedSelectionChange();
@@ -1364,7 +1248,6 @@ export default class ModesPanel extends Panel {
     this.lightshow.vortex.setCurMode(cur, false);
     this.lightshow.vortex.engine().modes().saveCurMode();
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
     Notification.success("Successfully Deleted Mode " + index);
   }
@@ -1400,7 +1283,6 @@ export default class ModesPanel extends Panel {
       Notification.success("Successfully pulled save");
     }
     this.refreshModeList();
-    this.refreshLedList();
     this.refreshPatternControlPanel();
   }
 
