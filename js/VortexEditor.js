@@ -2,7 +2,6 @@
 import Lightshow from './Lightshow.js';
 import AboutPanel from './AboutPanel.js';
 import AnimationPanel from './AnimationPanel.js';
-import ControlPanel from './ControlPanel.js';
 import PatternPanel from './PatternPanel.js';
 import ColorsetPanel from './ColorsetPanel.js';
 import ColorPickerPanel from './ColorPickerPanel.js';
