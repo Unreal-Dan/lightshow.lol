@@ -48,7 +48,7 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
+#modesPanel, #welcomePanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -57,6 +57,63 @@ canvas {
   position: absolute;
   width: 370px;
 }
+
+#welcomePanel {
+  top: 75px;
+  left: 50%; /* Center the div */
+  width: 900px;
+  transform: translate(-25%, 0%);
+  text-align: left;
+  z-index: 50;
+}
+
+#welcomePanel label {
+  font-size: 20px;
+}
+#welcomePanel input {
+  height: 16px;
+  width: 16px;
+}
+
+#welcomePanel p {
+  font-size: 20px;
+}
+
+#welcomePanel h2 {
+  margin-bottom: 0;
+}
+
+/* public/css/components/welcome-panel.css */
+.wiki-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  background-color: #28a745; /* Green color */
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin: 20px 0;
+}
+
+.wiki-button .arrow {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+.wiki-button:hover {
+  background-color: #218838; /* Darker green on hover */
+  transform: translateY(-2px);
+}
+
+.wiki-button:active {
+  background-color: #1e7e34; /* Even darker green on click */
+  transform: translateY(1px);
+}
+
 
 #aboutPanel {
   left: 5px;
