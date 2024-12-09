@@ -48,7 +48,7 @@ canvas {
 }
 
 /* Panels */
-#modesPanel, #welcomePanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #modeInfoPanel, #colorPickerPanel {
+#updatePanel, #modesPanel, #welcomePanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #colorPickerPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -56,7 +56,68 @@ canvas {
   padding: 5px;
   position: absolute;
   width: 370px;
+  z-index: 3;
 }
+
+#updatePanel {
+  left: 903px;
+  top: 5px;
+  right: 5px;
+  z-index: 3;
+}
+
+#updateFlash {
+  margin-top: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+/* chromalink-panel.css */
+#chromalinkPanel {
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  padding: 10px;
+  position: absolute;
+  width: 150px;
+  z-index: 4;
+  top: 10px;
+  right: 410px;
+  width: 200px;
+}
+
+#chromalinkPanel h2 {
+  margin-bottom: 10px;
+  margin-top: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.chromalink-button {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0 0 0;
+  background-color: #444;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chromalink-button:hover {
+  background-color: #666;
+}
+
+
 
 #welcomePanel {
   top: 75px;
@@ -173,16 +234,9 @@ canvas {
   justify-content: space-between;
 }
 
-#modeInfoPanel {
-  left: 10px;
-  top: 263px;
-  z-index: 3;
-}
-
 #modesPanel {
   top: 5px;
   right: 5px;
-  z-index: 3;
 }
 
 #modesPanel .flex-container {
@@ -1412,77 +1466,6 @@ legend {
 #unsupportedBrowserMessage a:hover {
   color: #33cc33;
 }
-
-/* chromalink-panel.css */
-#chromalinkPanel {
-  background-color: #181a1b;
-  border: 1px solid #3e4446;
-  border-radius: 5px;
-  color: #d8d4cf;
-  padding: 10px;
-  position: absolute;
-  width: 150px;
-  z-index: 2;
-  top: 10px;
-  right: 410px;
-  transition: transform 0.4s ease; /* Sliding animation */
-}
-
-#chromalinkPanel.hidden {
-  transform: translateX(180px); /* Slide panel out of view */
-}
-
-/* Pull Tab Styles */
-.pull-tab {
-  position: absolute;
-  top: 10px;
-  left: -25px; /* Position the tab outside the panel */
-  background-color: #444;
-  border: 1px solid #3e4446;
-  border-radius: 5px 0 0 5px;
-  padding: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #fff;
-  transition: background-color 0.2s;
-}
-
-.pull-tab:hover {
-  background-color: #666;
-}
-
-.pull-tab span {
-  display: inline-block;
-}
-
-#chromalinkPanel h2 {
-  margin-bottom: 10px;
-  margin-top: 5px;
-  font-size: 16px;
-  text-align: center;
-}
-
-.chromalink-button {
-  display: block;
-  width: 100%;
-  padding: 8px;
-  margin: 10px 0 0 0;
-  background-color: #444;
-  border: none;
-  border-radius: 5px;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.chromalink-button:hover {
-  background-color: #666;
-}
-
-#chromalinkConnectedOptions {
-}
-
 
 
 

@@ -8,7 +8,9 @@ import ColorPickerPanel from './ColorPickerPanel.js';
 import ModesPanel from './ModesPanel.js';
 import Modal from './Modal.js';
 import VortexPort from './VortexPort.js';
-import WelcomePanel from './WelcomePanel.js'; // Add this import
+import WelcomePanel from './WelcomePanel.js';
+import ChromalinkPanel from './ChromalinkPanel.js';
+import UpdatePanel from './UpdatePanel.js';
 
 export default class VortexEditor {
   constructor(vortexLib) {
@@ -28,22 +30,26 @@ export default class VortexEditor {
     this.lightshow = new Lightshow(vortexLib, this.canvas);
 
     // Instantiate Panels
-    this.welcomePanel = new WelcomePanel(this); // Add WelcomePanel
+    this.welcomePanel = new WelcomePanel(this);
     this.aboutPanel = new AboutPanel(this);
     this.animationPanel = new AnimationPanel(this);
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
     this.modesPanel = new ModesPanel(this);
-    this.colorPicker = new ColorPickerPanel(this);
+    this.colorPickerPanel = new ColorPickerPanel(this);
+    this.updatePanel = new UpdatePanel(this);
+    this.chromalinkPanel = new ChromalinkPanel(this);
 
     this.panels = [
-      this.welcomePanel, // Add WelcomePanel to panels array
+      this.welcomePanel,
       this.aboutPanel,
       this.animationPanel,
       this.patternPanel,
       this.colorsetPanel,
       this.modesPanel,
-      this.colorPicker,
+      this.colorPickerPanel,
+      this.updatePanel,
+      this.chromalinkPanel
     ];
   }
 
@@ -75,6 +81,43 @@ export default class VortexEditor {
         console.error('Error parsing mode data:', error);
       }
     }
+  }
+
+  async pushToDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pushModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pushed save");
+    }
+  }
+
+  async pullFromDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
+      await this.chromalinkPanel.pullModes(this.lightshow.vortexLib, this.lightshow.vortex);
+    } else {
+      await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
+      Notification.success("Successfully pulled save");
+    }
+    this.refreshModeList();
+    this.refreshPatternControlPanel();
+  }
+
+  async transmitVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    Notification.success("Successfully finished transmitting");
   }
 
   async demoColorOnDevice(color) {

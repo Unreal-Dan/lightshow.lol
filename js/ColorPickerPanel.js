@@ -23,7 +23,7 @@ export default class ColorPickerPanel extends Panel {
     this.contentContainer.innerHTML = `<div class="color-picker-controls"></div>`;
   }
 
-  openColorPicker(index, colorSet, updateColorCallback) {
+  open(index, colorSet, updateColorCallback) {
     const col = colorSet.get(index);
     this.selectedIndex = index;
 

@@ -90,7 +90,7 @@ export default class ModesPanel extends Panel {
     document.getElementById('ledsFieldset').style.display = 'none';
 
     // optionally initialize the chromalink now:
-    //this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
+    //this.chromalinkPanel = new ChromalinkPanel(this.editor, this);
     //this.chromalinkPanel.appendTo(document.body); // Or any other parent element
     //this.chromalinkPanel.initialize();
 
@@ -125,13 +125,13 @@ export default class ModesPanel extends Panel {
     importModeButton.addEventListener('click', () => this.importMode());
 
     const pushButton = document.getElementById('pushToDeviceButton');
-    pushButton.addEventListener('click', () => this.pushToDevice());
+    pushButton.addEventListener('click', () => this.editor.pushToDevice());
 
     const pullButton = document.getElementById('pullFromDeviceButton');
-    pullButton.addEventListener('click', () => this.pullFromDevice());
+    pullButton.addEventListener('click', () => this.editor.pullFromDevice());
 
     const transmitButton = document.getElementById('transmitVLButton');
-    transmitButton.addEventListener('click', () => this.transmitVL());
+    transmitButton.addEventListener('click', () => this.editor.transmitVL());
 
     document.addEventListener('patternChange', () => this.refresh(true));
 
@@ -339,14 +339,10 @@ export default class ModesPanel extends Panel {
     document.getElementById('connectDeviceButton').disabled = true;
 
     // if the device has UPDI support open a chromalink window
-    if (!this.chromalinkPanel && this.vortexPort.name === 'Chromadeck') {
-      this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
-      this.chromalinkPanel.appendTo(document.body); // Or any other parent element
-      this.chromalinkPanel.initialize();
+    if (!this.editor.chromalinkPanel.isVisible && this.vortexPort.name === 'Chromadeck') {
+      this.editor.chromalinkPanel.show();
+      this.editor.updatePanel.show();
     }
-
-    // Render LED indicators for the connected device
-    this.renderLedIndicators(this.vortexPort.name);
 
     // check version numbers
     this.checkVersion(this.vortexPort.name, this.vortexPort.version);
@@ -1251,48 +1247,4 @@ export default class ModesPanel extends Panel {
     this.refreshPatternControlPanel();
     Notification.success("Successfully Deleted Mode " + index);
   }
-
-  //selectMode(index) {
-  //  this.lightshow.vortex.setCurMode(index, true);
-  //  this.refreshLedList();
-  //  this.refreshPatternControlPanel();
-  //}
-
-  async pushToDevice() {
-    if (!this.vortexPort.isActive()) {
-      Notification.failure("Please connect a device first");
-      return;
-    }
-    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
-      await this.chromalinkPanel.pushModes(this.lightshow.vortexLib, this.lightshow.vortex);
-    } else {
-      await this.vortexPort.pushToDevice(this.lightshow.vortexLib, this.lightshow.vortex);
-      Notification.success("Successfully pushed save");
-    }
-  }
-
-  async pullFromDevice() {
-    if (!this.vortexPort.isActive()) {
-      Notification.failure("Please connect a device first");
-      return;
-    }
-    if (this.chromalinkPanel && this.chromalinkPanel.isConnected) {
-      await this.chromalinkPanel.pullModes(this.lightshow.vortexLib, this.lightshow.vortex);
-    } else {
-      await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
-      Notification.success("Successfully pulled save");
-    }
-    this.refreshModeList();
-    this.refreshPatternControlPanel();
-  }
-
-  async transmitVL() {
-    if (!this.vortexPort.isActive()) {
-      Notification.failure("Please connect a device first");
-      return;
-    }
-    await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
-    Notification.success("Successfully finished transmitting");
-  }
 }
-

@@ -2,29 +2,26 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 export default class ChromalinkPanel extends Panel {
-  constructor(vortexPort, modesPanel) {
+  constructor(editor, modesPanel) {
     const content = `
-      <h2>Chromalink Duo</h2>
       <div id="chromalinkOptions">
         <button id="chromalinkFlash" class="chromalink-button">Flash Duo Firmware</button>
         <input type="file" id="firmwareFileInput" style="display:none;" />
         <button id="chromalinkConnect" class="chromalink-button">Connect Duo</button>
       </div>
-      <div class="pull-tab" id="chromalinkPullTab"><span>&#9654;</span></div> <!-- Pull tab -->
     `;
-
-    super('chromalinkPanel', content);
-    this.vortexPort = vortexPort;
-    this.modesPanel = modesPanel;
+    super('chromalinkPanel', content, 'Chromalink Duo');
+    this.editor = editor;
+    this.vortexPort = editor.vortexPort;
+    this.modesPanel = editor.modesPanel;
     this.isConnected = false;
-    this.isVisible = true;
   }
 
   initialize() {
     const connectButton = document.getElementById('chromalinkConnect');
     const flashButton = document.getElementById('chromalinkFlash');
-    const pullTab = document.getElementById('chromalinkPullTab');
     const panelElement = document.getElementById('chromalinkPanel');
+    const firmwareFileInput = document.getElementById('firmwareFileInput');
 
     // Connect button logic
     connectButton.addEventListener('click', async () => {
@@ -70,20 +67,8 @@ export default class ChromalinkPanel extends Panel {
       };
       reader.readAsArrayBuffer(file); // Read the file as binary data
     });
-
-    // Toggle visibility on pull tab click
-    pullTab.addEventListener('click', () => {
-      if (this.isVisible) {
-        // Hide panel
-        panelElement.classList.add('hidden');
-        pullTab.innerHTML = '<span>&#9664;</span>';
-      } else {
-        // Show panel
-        panelElement.classList.remove('hidden');
-        pullTab.innerHTML = '<span>&#9654;</span>'; // Change arrow direction
-      }
-      this.isVisible = !this.isVisible;
-    });
+    // don't show to start
+    this.hide();
   }
 
   async connect() {
