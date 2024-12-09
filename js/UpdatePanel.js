@@ -78,55 +78,51 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchAndFlashFirmware() {
-    const firmwareZipUrl = 'https://vortex.community/api/getFirmware?device=chromadeck';
-
-    //// Fallback paths if fetch fails (used for local debugging)
-    //const fallbackFiles = [
-    //  { path: './js/bins/VortexEngine.ino.bootloader.bin', address: 0x0 },
-    //  { path: './js/bins/VortexEngine.ino.partitions.bin', address: 0x8000 },
-    //  { path: './js/bins/boot_app0.bin', address: 0xE000 },
-    //  { path: './js/bins/VortexEngine.ino.bin', address: 0x10000 },
-    //];
-
+    const firmwareApiUrl = 'https://vortex.community/downloads/json/chromadeck';
     let firmwareFiles;
+
     try {
-      // Try to fetch the firmware zip
-      const response = await fetch(firmwareZipUrl);
-      if (!response.ok) {
+      // Fetch the firmware metadata
+      const apiResponse = await fetch(firmwareApiUrl);
+      if (!apiResponse.ok) {
+        throw new Error('Failed to fetch firmware metadata');
+      }
+
+      const firmwareData = await apiResponse.json();
+      const firmwareZipUrl = firmwareData.firmware?.fileUrl;
+      if (!firmwareZipUrl) {
+        throw new Error('Firmware file URL not found in API response');
+      }
+
+      // Fetch the firmware zip
+      const zipResponse = await fetch(firmwareZipUrl);
+      if (!zipResponse.ok) {
         throw new Error('Failed to fetch firmware zip');
       }
-      const zipData = await response.arrayBuffer();
+
+      const zipData = await zipResponse.arrayBuffer();
       firmwareFiles = await this.unzipFirmware(zipData);
+
       // Add the boot_app0.bin from the local server
-      const bootAppFile = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
+      const bootAppResponse = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
+      if (!bootAppResponse.ok) {
+        throw new Error('Failed to fetch boot_app0.bin from local server');
+      }
+
       firmwareFiles.push({
         path: './public/data/boot_app0.bin',
         address: 0xE000,
-        data: new Uint8Array(await bootAppFile.arrayBuffer()),
+        data: new Uint8Array(await bootAppResponse.arrayBuffer()),
       });
     } catch (error) {
-      throw new Error('Failed to fetch files: ', error.message);
-      //// Fallback paths if fetch fails (used for local debugging)
-      //console.warn('Falling back to local files due to fetch error:', error.message);
-      //firmwareFiles = await Promise.all(
-      //  fallbackFiles.map(async (file) => {
-      //    const fileData = await fetch(`${file.path}?cacheBust=${Date.now()}`).then((response) => {
-      //      if (!response.ok) {
-      //        throw new Error(`Failed to fetch ${file.path}`);
-      //      }
-      //      return response.arrayBuffer();
-      //    });
-      //    return { ...file, data: new Uint8Array(fileData) };
-      //  })
-      //);
+      console.error('Error during firmware fetching:', error.message);
+      throw error;
     }
 
-    // cancel listening for the greeting just in case we are
+    // Cancel listening for the greeting just in case
     if (!this.vortexPort.portActive) {
       this.vortexPort.cancelListening();
     }
-
-    //await this.espStub.setBaudrate(115200);
 
     // Flash the firmware
     await this.flashFirmware(firmwareFiles);
