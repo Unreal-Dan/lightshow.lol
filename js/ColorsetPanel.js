@@ -102,7 +102,7 @@ export default class ColorsetPanel extends Panel {
       colorEntry.className = 'color-entry';
       colorEntry.dataset.index = i;
       colorEntry.addEventListener('click', () =>
-        this.editor.colorPicker.openColorPicker(i, set, this.updateColor.bind(this))
+        this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this))
       );
 
       // Create hex label
