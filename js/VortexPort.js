@@ -46,8 +46,13 @@ export default class VortexPort {
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   constructor() {
+    this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
+  }
+
+  cancelListening() {
+    this.cancelListeningForGreeting = true;
   }
 
   resetState() {
@@ -122,7 +127,7 @@ export default class VortexPort {
   }
 
   listenForGreeting = async (callback) => {
-    while (!this.portActive) {
+    while (!this.portActive && !this.cancelListeningForGreeting) {
       if (this.serialPort) {
         try {
           // Read data from the serial port
@@ -177,11 +182,17 @@ export default class VortexPort {
             }
           }
         } catch (err) {
-          console.error('Error reading data:', err);
+          if (this.cancelListeningForGreeting) {
+            this.cancelListeningForGreeting = false;
+            console.error('Cancelling...');
+          } else {
+            console.error('Error reading data:', err);
+          }
         }
       }
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    this.cancelListeningForGreeting = false;
   }
 
   disconnect(callback = null) {

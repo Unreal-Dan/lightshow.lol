@@ -1,4 +1,4 @@
-class ESPUpdater {
+export default class ESPUpdater {
   constructor(port, logger) {
     this.port = port;
     this.logger = logger;

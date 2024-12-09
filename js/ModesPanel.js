@@ -90,7 +90,7 @@ export default class ModesPanel extends Panel {
     document.getElementById('ledsFieldset').style.display = 'none';
 
     // optionally initialize the chromalink now:
-    //this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
+    //this.chromalinkPanel = new ChromalinkPanel(this.editor, this);
     //this.chromalinkPanel.appendTo(document.body); // Or any other parent element
     //this.chromalinkPanel.initialize();
 
@@ -339,14 +339,10 @@ export default class ModesPanel extends Panel {
     document.getElementById('connectDeviceButton').disabled = true;
 
     // if the device has UPDI support open a chromalink window
-    if (!this.chromalinkPanel && this.vortexPort.name === 'Chromadeck') {
-      this.chromalinkPanel = new ChromalinkPanel(this.vortexPort, this);
-      this.chromalinkPanel.appendTo(document.body); // Or any other parent element
-      this.chromalinkPanel.initialize();
+    if (!this.editor.chromalinkPanel.isVisible && this.vortexPort.name === 'Chromadeck') {
+      this.editor.chromalinkPanel.show();
+      this.editor.updatePanel.show();
     }
-
-    // Render LED indicators for the connected device
-    this.renderLedIndicators(this.vortexPort.name);
 
     // check version numbers
     this.checkVersion(this.vortexPort.name, this.vortexPort.version);

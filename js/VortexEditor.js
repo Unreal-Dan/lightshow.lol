@@ -8,7 +8,9 @@ import ColorPickerPanel from './ColorPickerPanel.js';
 import ModesPanel from './ModesPanel.js';
 import Modal from './Modal.js';
 import VortexPort from './VortexPort.js';
-import WelcomePanel from './WelcomePanel.js'; // Add this import
+import WelcomePanel from './WelcomePanel.js';
+import ChromalinkPanel from './ChromalinkPanel.js';
+import UpdatePanel from './UpdatePanel.js';
 
 export default class VortexEditor {
   constructor(vortexLib) {
@@ -28,22 +30,26 @@ export default class VortexEditor {
     this.lightshow = new Lightshow(vortexLib, this.canvas);
 
     // Instantiate Panels
-    this.welcomePanel = new WelcomePanel(this); // Add WelcomePanel
+    this.welcomePanel = new WelcomePanel(this);
     this.aboutPanel = new AboutPanel(this);
     this.animationPanel = new AnimationPanel(this);
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
     this.modesPanel = new ModesPanel(this);
-    this.colorPicker = new ColorPickerPanel(this);
+    this.colorPickerPanel = new ColorPickerPanel(this);
+    this.updatePanel = new UpdatePanel(this);
+    this.chromalinkPanel = new ChromalinkPanel(this);
 
     this.panels = [
-      this.welcomePanel, // Add WelcomePanel to panels array
+      this.welcomePanel,
       this.aboutPanel,
       this.animationPanel,
       this.patternPanel,
       this.colorsetPanel,
       this.modesPanel,
-      this.colorPicker,
+      this.colorPickerPanel,
+      this.updatePanel,
+      this.chromalinkPanel
     ];
   }
 
