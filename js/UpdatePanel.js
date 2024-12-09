@@ -129,7 +129,6 @@ export default class UpdatePanel extends Panel {
   }
 
   async unzipFirmware(zipData) {
-    const JSZip = await import('jszip'); // Assuming JSZip is available
     const zip = await JSZip.loadAsync(zipData);
 
     const firmwareFiles = [];
