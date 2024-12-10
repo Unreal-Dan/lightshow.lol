@@ -343,6 +343,9 @@ export default class ModesPanel extends Panel {
       this.editor.chromalinkPanel.show();
       this.editor.updatePanel.show();
     }
+    if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
+      this.editor.updatePanel.show();
+    }
 
     // check version numbers
     this.checkVersion(this.vortexPort.name, this.vortexPort.version);

@@ -68,6 +68,7 @@ export default class UpdatePanel extends Panel {
 
       await esploader.initialize();
       this.espStub = await esploader.runStub();
+      this.deviceName = this.vortexPort.name.toLowerCase();
     } catch (error) {
       throw new Error('Failed to initialize ESP flasher: ' + error.message);
     }
@@ -78,9 +79,11 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchAndFlashFirmware() {
-    const firmwareApiUrl = 'https://vortex.community/downloads/json/chromadeck';
+    if (this.deviceName !== 'chromadeck' && this.deviceName !== 'spark') {
+      throw new Error('Cannot flash '${this.deviceName}', wrong device!');
+    }
+    const firmwareApiUrl = `https://vortex.community/downloads/json/${this.deviceName}`;
     let firmwareFiles;
-
     try {
       // Fetch the firmware metadata
       const apiResponse = await fetch(firmwareApiUrl);
