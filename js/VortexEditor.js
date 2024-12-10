@@ -11,6 +11,7 @@ import VortexPort from './VortexPort.js';
 import WelcomePanel from './WelcomePanel.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 import UpdatePanel from './UpdatePanel.js';
+import Notification from './Notification.js';
 
 export default class VortexEditor {
   constructor(vortexLib) {
