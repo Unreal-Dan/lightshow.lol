@@ -109,11 +109,15 @@ export default class UpdatePanel extends Panel {
         throw new Error('Failed to fetch boot_app0.bin from local server');
       }
 
-      firmwareFiles.push({
+      // Create the boot_app0.bin entry
+      const bootAppEntry = {
         path: './public/data/boot_app0.bin',
         address: 0xE000,
         data: new Uint8Array(await bootAppResponse.arrayBuffer()),
-      });
+      };
+
+      // Insert boot_app0.bin as the 3rd item in the list
+      firmwareFiles.splice(2, 0, bootAppEntry);
     } catch (error) {
       console.error('Error during firmware fetching:', error.message);
       throw error;
