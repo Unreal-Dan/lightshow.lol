@@ -4,7 +4,7 @@ export default class AboutPanel extends Panel {
   constructor(editor) {
     const content = `
       <div class="about-panel-content">
-        <label class="about-label">Made with Vortex Engine</label>
+        <label id="versionLabel" class="about-label">Made with Vortex Engine v</label>
         <div class="action-buttons">
           <button id="githubLinkButton" class="icon-button" aria-label="View on Github">
             <i class="fab fa-github" title="View on Github"></i>
