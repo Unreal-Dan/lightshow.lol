@@ -80,7 +80,7 @@ export default class UpdatePanel extends Panel {
 
   async fetchAndFlashFirmware() {
     if (this.deviceName !== 'chromadeck' && this.deviceName !== 'spark') {
-      throw new Error('Cannot flash '${this.deviceName}', wrong device!');
+      throw new Error(`Cannot flash '${this.deviceName}', wrong device!`);
     }
     const firmwareApiUrl = `https://vortex.community/downloads/json/${this.deviceName}`;
     let firmwareFiles;
