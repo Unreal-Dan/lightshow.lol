@@ -115,7 +115,6 @@ export default class UpdatePanel extends Panel {
       if (!bootAppResponse.ok) {
         throw new Error('Failed to fetch boot_app0.bin from local server');
       }
-      console.log(`Fetched boot_app0.bin, Size: ${bootAppData.length} bytes`);
 
       // Create the boot_app0.bin entry
       const bootAppEntry = {
