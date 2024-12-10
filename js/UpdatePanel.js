@@ -103,11 +103,16 @@ export default class UpdatePanel extends Panel {
       const zipData = await zipResponse.arrayBuffer();
       firmwareFiles = await this.unzipFirmware(zipData);
 
+      firmwareFiles.forEach(file => {
+        console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
+      });
+
       // Add the boot_app0.bin from the local server
       const bootAppResponse = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
       if (!bootAppResponse.ok) {
         throw new Error('Failed to fetch boot_app0.bin from local server');
       }
+      console.log(`Fetched boot_app0.bin, Size: ${bootAppData.length} bytes`);
 
       // Create the boot_app0.bin entry
       const bootAppEntry = {
@@ -183,26 +188,22 @@ export default class UpdatePanel extends Panel {
       const progressBar = document.getElementById('updateProgress');
 
       try {
-       // // Fetch the binary file
-       // const fileData = await fetch(file.path).then((response) => {
-       //   if (!response.ok) {
-       //     throw new Error(`Failed to fetch ${file.path}`);
-       //   }
-       //   return response.arrayBuffer();
-       // });
+        console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
 
-       // // Convert to Uint8Array
-       // const fileUint8Array = new Uint8Array(fileData);
+        // Create a File object from the Uint8Array
+        const blob = new Blob([file.data], { type: 'application/octet-stream' });
+        const fileObject = new File([blob], file.path.split('/').pop(), {
+          type: 'application/octet-stream',
+          lastModified: Date.now(),
+        });
 
         const readUploadedFileAsArrayBuffer = (inputFile) => {
           const reader = new FileReader();
-
           return new Promise((resolve, reject) => {
             reader.onerror = () => {
               reader.abort();
               reject(new DOMException("Problem parsing input file."));
             };
-
             reader.onload = () => {
               resolve(reader.result);
             };
@@ -210,8 +211,8 @@ export default class UpdatePanel extends Panel {
           });
         };
 
-        const localFile = await this.loadLocalFile(file.path);
-        let contents = await readUploadedFileAsArrayBuffer(localFile);
+        const contents = await readUploadedFileAsArrayBuffer(fileObject);
+        console.log(`Flashing: ` + JSON.stringify(fileObject));
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalBytes) => {
@@ -221,29 +222,6 @@ export default class UpdatePanel extends Panel {
           file.address
         );
         await this.sleep(100);
-
-        //// Align the data to the block size
-        //const paddedLength = Math.ceil(fileUint8Array.length / blockSize) * blockSize;
-        //const paddedData = new Uint8Array(paddedLength);
-        //paddedData.set(fileUint8Array);
-
-        //console.log(`Flashing ${file.path} at address: ${file.address.toString(16)}`);
-        //console.log(`Aligned data length: ${paddedData.length}`);
-
-        //document.getElementById('updateProgress').classList.remove('hidden');
-
-        //for (let offset = 0; offset < paddedData.length; offset += blockSize) {
-        //  const chunk = paddedData.slice(offset, offset + blockSize);
-
-        //  await this.espStub.flashData(chunk, (bytesWritten, totalBytes) => {
-        //    const percent = Math.floor(((offset + bytesWritten) / paddedData.length) * 100);
-        //    progressBar.style.width = `${percent}%`;
-        //  }, file.address + offset);
-
-        //  console.log(`Chunk flashed: ${offset}-${offset + chunk.length}`);
-        //  await this.sleep(100); // Delay between chunks
-        //}
-
         console.log(`${file.path} flashed successfully.`);
         document.getElementById('updateProgress').classList.add('hidden');
       } catch (error) {
@@ -253,7 +231,6 @@ export default class UpdatePanel extends Panel {
     }
 
     console.log('All files flashed successfully.');
-
     try {
       console.log('Resetting ESP32...');
       await this.espStub.hardReset();
