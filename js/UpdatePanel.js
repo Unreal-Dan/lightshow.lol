@@ -82,7 +82,7 @@ export default class UpdatePanel extends Panel {
     if (!targetDevice) {
       targetDevice = this.editor.modesPanel.selectedDevice.toLowerCase();
     }
-    if (deviceLower === 'none') {
+    if (targetDevice === 'none') {
       throw new Error(`Select a device first`);
     }
     if (targetDevice !== 'chromadeck' && targetDevice !== 'spark') {
