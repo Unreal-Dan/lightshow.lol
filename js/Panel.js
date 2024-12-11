@@ -58,9 +58,6 @@ export default class Panel {
     this.panel.style.top = `${rect.top}px`;
   }
 
-  initCollapse(collapseBtn) {
-  }
-
   show() {
     if (!this.isVisible) {
       this.isVisible = true;

@@ -69,6 +69,13 @@ export default class VortexEditor {
 
     // Listen for window resize to adjust lightshow
     window.addEventListener('resize', () => this.lightshow.resetToCenter());
+
+    // Keydown event to show updatePanel
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Insert') {
+        this.updatePanel.show();
+      }
+    });
   }
 
   importModeDataFromUrl() {

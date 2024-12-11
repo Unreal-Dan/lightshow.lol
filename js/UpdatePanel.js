@@ -79,7 +79,7 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchAndFlashFirmware() {
-    if (this.deviceName !== 'chromadeck' && this.deviceName !== 'spark') {
+    if (this.deviceName.length > 0 && this.deviceName !== 'chromadeck' && this.deviceName !== 'spark') {
       throw new Error(`Cannot flash '${this.deviceName}', wrong device!`);
     }
     const firmwareApiUrl = `https://vortex.community/downloads/json/${this.deviceName}`;
@@ -159,28 +159,6 @@ export default class UpdatePanel extends Panel {
     }
 
     return firmwareFiles;
-  }
-
-  async loadLocalFile(filePath) {
-    // Fetch the file content
-    const response = await fetch(filePath);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${filePath}`);
-    }
-
-    // Get the ArrayBuffer
-    const arrayBuffer = await response.arrayBuffer();
-
-    // Create a Blob from the ArrayBuffer
-    const blob = new Blob([arrayBuffer], { type: "application/octet-stream" });
-
-    // Create a File object (mimics a file selected in an input[type="file"])
-    const file = new File([blob], "VortexEngine.ino.bootloader.bin", {
-      type: "application/octet-stream",
-      lastModified: new Date(),
-    });
-
-    return file;
   }
 
   async flashFirmware(files) {
