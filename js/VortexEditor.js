@@ -115,8 +115,8 @@ export default class VortexEditor {
       await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
       Notification.success("Successfully pulled save");
     }
-    this.refreshModeList();
-    this.refreshPatternControlPanel();
+    this.modesPanel.refreshModeList();
+    this.modesPanel.refreshPatternControlPanel();
   }
 
   async transmitVL() {
