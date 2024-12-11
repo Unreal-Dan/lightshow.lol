@@ -78,7 +78,7 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchAndFlashFirmware() {
-    const targetDevice = this.vortexPort.name.toLowerCase();
+    let targetDevice = this.vortexPort.name.toLowerCase();
     if (!targetDevice) {
       targetDevice = this.editor.modesPanel.selectedDevice.toLowerCase();
     }
