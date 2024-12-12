@@ -205,7 +205,7 @@ export default class UpdatePanel extends Panel {
         const contents = await readUploadedFileAsArrayBuffer(fileObject);
         await this.espStub.flashData(
           contents,
-          (bytesWritten, totalBytes) => {
+          (bytesWritten, totalThisFile) => {
             totalBytesFlashed += bytesWritten;
             progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
           },
