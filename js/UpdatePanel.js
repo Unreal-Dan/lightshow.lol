@@ -171,12 +171,15 @@ export default class UpdatePanel extends Panel {
     const blockSize = 0x4000; // Flash memory block size
 
     const progressBar = document.getElementById('overallProgressBar');
+    const progressMessage = document.getElementById('updateProgress');
+
     let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
-    let bytesFlashed = 0;
+    let totalBytesFlashed = 0;
 
     for (const file of files) {
       try {
         console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
+        progressMessage.textContent = 'Flashing firmware...';
 
         // Create a File object from the Uint8Array
         const blob = new Blob([file.data], { type: 'application/octet-stream' });
