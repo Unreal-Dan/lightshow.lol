@@ -243,6 +243,22 @@ export default class UpdatePanel extends Panel {
       </div>
     `;
 
+    if (version === latestVersion) {
+      const updatePanelContent = document.getElementById('updateOptions');
+      updatePanelContent.innerHTML = `
+        <h3 id="updateTitle">${device} Firmware</h3>
+        <fieldset>
+          <div class="firmware-notification">
+            ${content}
+          </div>
+          <p>Your firmware is up-to-date.</p>
+        </fieldset>
+      `;
+      Notification.success(`${device} firmware is up-to-date.`);
+      this.show();
+      return;
+    }
+
     // Show download links for orbit, handles, and gloves
     if (['orbit', 'handles', 'gloves'].includes(lowerDevice)) {
       content += `
@@ -304,14 +320,6 @@ export default class UpdatePanel extends Panel {
 
 
   displayUpToDateMessage(device) {
-    const updatePanelContent = document.getElementById('updateOptions');
-    updatePanelContent.innerHTML = `
-      <h3 id="updateTitle">${device} Firmware</h3>
-      <p>Your firmware is up-to-date.</p>
-    `;
-
-    Notification.success(`${device} firmware is up-to-date.`);
-    this.show();
   }
 }
 

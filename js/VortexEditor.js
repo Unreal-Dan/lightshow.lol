@@ -103,6 +103,11 @@ export default class VortexEditor {
       }
     }
 
+    // this can happen if the update panel is forced open with Insert
+    if (!version) {
+      version = '1.0.0';
+    }
+
     // Fetch the latest firmware versions from vortex.community
     const response = await fetch('https://vortex.community/downloads/json');
     const latestFirmwareVersions = await response.json();
@@ -114,11 +119,7 @@ export default class VortexEditor {
     if (latestFirmwareVersions && latestFirmwareVersions[lowerDevice]) {
       const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
       const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
-      if (version !== latestVersion) {
-        this.updatePanel.displayFirmwareUpdateInfo(lowerDevice, version, latestVersion, downloadUrl);
-      } else {
-        this.updatePanel.displayUpToDateMessage(lowerDevice);
-      }
+      this.updatePanel.displayFirmwareUpdateInfo(device, version, latestVersion, downloadUrl);
     }
   }
 
