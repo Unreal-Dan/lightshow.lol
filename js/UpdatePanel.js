@@ -255,7 +255,7 @@ export default class UpdatePanel extends Panel {
         </fieldset>
       `;
       Notification.success(`${device} ${currentVersion} is up-to-date.`);
-      this.hide();
+      this.show();
       return;
     }
 
