@@ -203,8 +203,8 @@ export default class UpdatePanel extends Panel {
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalBytes) => {
-            bytesFlashed += bytesWritten;
-            progressBar.style.width = Math.floor((bytesFlashed / totalBytes) * 100) + '%';
+            totalBytesFlashed += bytesWritten;
+            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
           },
           file.address
         );
