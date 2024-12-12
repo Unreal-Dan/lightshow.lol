@@ -114,7 +114,6 @@ export default class VortexEditor {
     if (latestFirmwareVersions && latestFirmwareVersions[lowerDevice]) {
       const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
       const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
-      version = '1.0.0';
       if (version !== latestVersion) {
         this.updatePanel.displayFirmwareUpdateInfo(lowerDevice, version, latestVersion, downloadUrl);
       } else {
