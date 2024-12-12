@@ -95,9 +95,9 @@ export default class VortexEditor {
   async checkVersion(device, version) {
     // the results are lowercased
     let lowerDevice = device.toLowerCase();
-    if (!lowerDevice || lowerDevice === 'none') {
+    if (!lowerDevice.length || lowerDevice === 'none') {
       lowerDevice = this.modesPanel.selectedDevice.toLowerCase();
-      if (!lowerDevice || lowerDevice === 'none') {
+      if (!lowerDevice.length || lowerDevice === 'none') {
         // not connected?
         return;
       }
