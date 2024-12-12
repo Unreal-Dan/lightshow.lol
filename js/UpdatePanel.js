@@ -243,7 +243,7 @@ export default class UpdatePanel extends Panel {
       </div>
     `;
 
-    if (version === latestVersion) {
+    if (currentVersion === latestVersion) {
       const updatePanelContent = document.getElementById('updateOptions');
       updatePanelContent.innerHTML = `
         <h3 id="updateTitle">${device} Firmware</h3>
@@ -318,8 +318,5 @@ export default class UpdatePanel extends Panel {
     this.show();
   }
 
-
-  displayUpToDateMessage(device) {
-  }
 }
 
