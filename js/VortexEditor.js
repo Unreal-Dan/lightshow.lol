@@ -94,14 +94,14 @@ export default class VortexEditor {
 
   async checkVersion(device, version) {
     // the results are lowercased
-    let lowerDevice = device.toLowerCase();
-    if (!lowerDevice.length || lowerDevice === 'none') {
-      lowerDevice = this.modesPanel.selectedDevice.toLowerCase();
-      if (!lowerDevice.length || lowerDevice === 'none') {
+    if (!device.length || device === 'None') {
+      device = this.modesPanel.selectedDevice;
+      if (!device.length || device === 'None') {
         // not connected?
         return;
       }
     }
+    let lowerDevice = device.toLowerCase();
 
     // this can happen if the update panel is forced open with Insert
     if (!version) {
