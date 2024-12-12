@@ -41,7 +41,7 @@ export default class UpdatePanel extends Panel {
         await this.fetchAndFlashFirmware();
 
         updateProgress.textContent = 'Firmware flashing completed!';
-        Notification.success('Firmware updated successfully.');
+        Notification.success(this.vortexPort.name + ' firmware updated successfully.');
       } catch (error) {
         updateProgress.textContent = 'Firmware flash failed.';
         Notification.failure('Firmware flash failed: ' + error.message);
@@ -170,9 +170,11 @@ export default class UpdatePanel extends Panel {
   async flashFirmware(files) {
     const blockSize = 0x4000; // Flash memory block size
 
-    for (const file of files) {
-      const progressBar = document.getElementById('updateProgress');
+    const progressBar = document.getElementById('overallProgressBar');
+    let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
+    let bytesFlashed = 0;
 
+    for (const file of files) {
       try {
         console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
 
@@ -198,12 +200,11 @@ export default class UpdatePanel extends Panel {
         };
 
         const contents = await readUploadedFileAsArrayBuffer(fileObject);
-        console.log(`Flashing: ` + JSON.stringify(fileObject));
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalBytes) => {
-            progressBar.style.width =
-              Math.floor((bytesWritten / totalBytes) * 100) + "%";
+            bytesFlashed += bytesWritten;
+            progressBar.style.width = Math.floor((bytesFlashed / totalBytes) * 100) + '%';
           },
           file.address
         );
@@ -228,10 +229,18 @@ export default class UpdatePanel extends Panel {
 
   displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
     const lowerDevice = device.toLowerCase();
+    const deviceIconUrl = `./public/images/${lowerDevice}-logo-square-64.png`;
     let content = `
-      <p id="deviceUpdateLabel"><strong>Device:</strong> ${device}</p>
-      <p id="deviceVersionLabel"><strong>Current Version:</strong> ${currentVersion}</p>
-      <p id="deviceLatestVersionLabel"><strong>Latest Version:</strong> ${latestVersion}</p>
+      <div class="device-update-labels">
+        <div>
+          <p id="deviceUpdateLabel"><strong>Device:</strong> ${device}</p>
+          <p id="deviceVersionLabel"><strong>Current Version:</strong> ${currentVersion}</p>
+          <p id="deviceLatestVersionLabel"><strong>Latest Version:</strong> ${latestVersion}</p>
+        </div>
+        <div>
+          <img src="${deviceIconUrl}" alt="${device} Icon" class="device-icon">
+        </div>
+      </div>
     `;
 
     // Show download links for orbit, handles, and gloves
@@ -254,7 +263,7 @@ export default class UpdatePanel extends Panel {
           </div>
         </div>
         <div class="update-progress-container">
-          <span id="updateProgress" style="margin-top: 10px;"></span>
+          <span id="updateProgress"></span>
         </div>
       `;
     }

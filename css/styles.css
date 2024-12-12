@@ -65,9 +65,15 @@ canvas {
   z-index: 3;
 }
 
+.device-update-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 #deviceUpdateLabel, #deviceVersionLabel, #deviceLatestVersionLabel {
   margin-top: 2px;
-  margin-bottom: 2px;
+  margin-bottom: 5px;
 }
 
 #updateTitle {
@@ -740,6 +746,7 @@ legend {
 
 .update-progress-container {
   text-align: center;
+  padding: 5px;
   padding-top: 15px;
 }
 
@@ -1904,6 +1911,7 @@ i {
 
 
 .progress-container {
+  margin: 5px;
   margin-top: 10px;
   height: 20px;
   background-color: #e0e0e0;
