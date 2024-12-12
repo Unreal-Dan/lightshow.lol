@@ -250,12 +250,12 @@ export default class UpdatePanel extends Panel {
         <fieldset>
           <div class="firmware-notification">
             ${content}
+            <p>Your firmware is up-to-date.</p>
           </div>
-          <p>Your firmware is up-to-date.</p>
         </fieldset>
       `;
-      Notification.success(`${device} firmware is up-to-date.`);
-      this.show();
+      Notification.success(`${device} ${currentVersion} is up-to-date.`);
+      this.hide();
       return;
     }
 
