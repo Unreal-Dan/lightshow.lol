@@ -73,6 +73,7 @@ export default class VortexEditor {
     // Keydown event to show updatePanel
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Insert') {
+        this.checkVersion(this.vortexPort.name, this.vortexPort.version);
         this.updatePanel.show();
       }
     });
@@ -87,6 +88,31 @@ export default class VortexEditor {
         this.modesPanel.importPatternFromData(atob(encodedData), false);
       } catch (error) {
         console.error('Error parsing mode data:', error);
+      }
+    }
+  }
+
+  async checkVersion(device, version) {
+    // the results are lowercased
+    let lowerDevice = device.toLowerCase();
+    if (lowerDevice === 'none') {
+      // not connected?
+      return;
+    }
+
+    // Fetch the latest firmware versions from vortex.community
+    const response = await fetch('https://vortex.community/downloads/json');
+    const latestFirmwareVersions = await response.json();
+
+    // Compare versions
+    if (latestFirmwareVersions && latestFirmwareVersions[lowerDevice]) {
+      const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
+      const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
+      version = '1.0.0';
+      if (version !== latestVersion) {
+        this.updatePanel.displayFirmwareUpdateInfo(lowerDevice, version, latestVersion, downloadUrl);
+      } else {
+        this.updatePanel.displayUpToDateMessage(lowerDevice);
       }
     }
   }

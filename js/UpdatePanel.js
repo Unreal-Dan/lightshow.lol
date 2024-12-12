@@ -16,7 +16,7 @@ export default class UpdatePanel extends Panel {
         </div>
       </div>
     `;
-    super('updatePanel', content, 'Updates');
+    super('updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.modesPanel = modesPanel;
@@ -224,6 +224,85 @@ export default class UpdatePanel extends Panel {
     } catch (resetError) {
       console.error('Failed to reset ESP32:', resetError);
     }
+  }
+
+  displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
+    const lowerDevice = device.toLowerCase();
+    let content = `
+      <p id="deviceUpdateLabel"><strong>Device:</strong> ${device}</p>
+      <p id="deviceVersionLabel"><strong>Current Version:</strong> ${currentVersion}</p>
+      <p id="deviceLatestVersionLabel"><strong>Latest Version:</strong> ${latestVersion}</p>
+    `;
+
+    // Show download links for orbit, handles, and gloves
+    if (['orbit', 'handles', 'gloves'].includes(lowerDevice)) {
+      content += `
+        <div class="firmware-buttons">
+          <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
+          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+        </div>
+      `;
+    }
+
+    // Show update button and progress bar for chromadeck and spark
+    if (['chromadeck', 'spark'].includes(lowerDevice)) {
+      content += `
+        <button id="updateFlash" class="update-button">Update Firmware Now</button>
+        <div class="progress-container">
+          <div id="overallProgress" class="progress-bar">
+            <div id="overallProgressBar"></div>
+          </div>
+        </div>
+        <div class="update-progress-container">
+          <span id="updateProgress" style="margin-top: 10px;"></span>
+        </div>
+      `;
+    }
+
+    const updatePanelContent = document.getElementById('updateOptions');
+    updatePanelContent.innerHTML = `
+      <h3 id="updateTitle">Firmware Update Required</h3>
+      <fieldset>
+        <div class="firmware-notification">
+          ${content}
+        </div>
+      </fieldset>
+    `;
+
+    if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
+      // Attach the flash button event listener
+      const flashButton = document.getElementById('updateFlash');
+      flashButton.addEventListener('click', async () => {
+        const updateProgress = document.getElementById('updateProgress');
+        try {
+          Notification.success('Starting firmware update...');
+          updateProgress.textContent = 'Initializing firmware update...';
+          await this.initializeESPFlasher();
+          await this.fetchAndFlashFirmware();
+          updateProgress.textContent = 'Firmware update completed successfully!';
+          Notification.success('Firmware updated successfully.');
+        } catch (error) {
+          updateProgress.textContent = 'Firmware update failed.';
+          Notification.failure('Firmware update failed: ' + error.message);
+          console.error(error);
+        }
+      });
+    }
+
+    Notification.success(`Firmware update available for ${device}.`);
+    this.show();
+  }
+
+
+  displayUpToDateMessage(device) {
+    const updatePanelContent = document.getElementById('updateOptions');
+    updatePanelContent.innerHTML = `
+      <h3 id="updateTitle">${device} Firmware</h3>
+      <p>Your firmware is up-to-date.</p>
+    `;
+
+    Notification.success(`${device} firmware is up-to-date.`);
+    this.show();
   }
 }
 

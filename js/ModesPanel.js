@@ -288,32 +288,6 @@ export default class ModesPanel extends Panel {
     document.getElementById('ledsFieldset').style.display = 'block';
   }
 
-  async fetchLatestFirmwareVersions() {
-    try {
-      const response = await fetch('https://vortex.community/downloads/json');
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch firmware versions:', error);
-      return null;
-    }
-  }
-
-  async checkVersion(device, version) {
-    // Fetch the latest firmware versions from vortex.community
-    //const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
-    const latestFirmwareVersions = await this.fetchLatestFirmwareVersions();
-    // the results are lowercased
-    const lowerDevice = device.toLowerCase();
-    // Compare versions
-    if (latestFirmwareVersions && latestFirmwareVersions[lowerDevice]) {
-      const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
-      const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
-      if (version !== latestVersion) {
-        this.showOutdatedFirmwareNotification(device, version, latestVersion, downloadUrl);
-      }
-    }
-  }
-
   async onDeviceConnect() {
     console.log("Device connected: " + this.vortexPort.name);
     const ledCount = this.devices[this.vortexPort.name].ledCount;
@@ -341,14 +315,14 @@ export default class ModesPanel extends Panel {
     // if the device has UPDI support open a chromalink window
     if (!this.editor.chromalinkPanel.isVisible && this.vortexPort.name === 'Chromadeck') {
       this.editor.chromalinkPanel.show();
-      this.editor.updatePanel.show();
+      //this.editor.updatePanel.show();
     }
-    if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
-      this.editor.updatePanel.show();
-    }
+    //if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
+    //  this.editor.updatePanel.show();
+    //}
 
     // check version numbers
-    this.checkVersion(this.vortexPort.name, this.vortexPort.version);
+    this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
 
     // show device options
     //document.getElementById('deviceActionContainer').style.display = 'flex';
