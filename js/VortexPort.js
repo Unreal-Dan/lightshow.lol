@@ -549,7 +549,6 @@ export default class VortexPort {
       // Call the Wasm function
       let headerStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromRawData(header, headerStream);
-      // TODO: big header is 15 not 5
       if (!headerStream.checkCRC() || headerStream.size() < 5) {
         throw new Error('Bad CRC or size: ' + headerStream.size());
       }
@@ -561,6 +560,10 @@ export default class VortexPort {
       duoHeader.flags = headerData[2];
       duoHeader.brightness = headerData[3];
       duoHeader.numModes = headerData[4];
+      if (headerStream.size() > 5) {
+        duoHeader.vBuild = headerData[5];
+      }
+      console.log(JSON.stringify(headerData));
       // construct a full version string
       duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
       duoHeader.rawData = headerData;

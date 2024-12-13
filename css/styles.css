@@ -1933,3 +1933,31 @@ i {
 }
 
 
+
+
+.device-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.device-info img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+#firmwareProgress {
+  margin-top: 10px;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#firmwareProgressBar {
+  height: 100%;
+  background-color: #007bff;
+  width: 0;
+  transition: width 0.3s ease;
+}
