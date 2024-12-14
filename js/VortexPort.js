@@ -52,6 +52,7 @@ export default class VortexPort {
   }
 
   cancelListening() {
+    console.log("Cancel listening");
     this.cancelListeningForGreeting = true;
   }
 
@@ -137,6 +138,7 @@ export default class VortexPort {
             // broken connection
             break;
           }
+          console.log("Read Data: " + response);
 
           let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==$/;
           let match = response.match(responseRegex);
@@ -169,9 +171,9 @@ export default class VortexPort {
 
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.isVersionGreaterOrEqual(this.version, '1.3.0');
-            if (this.useNewPushPull) {
-              console.log('Detected 1.3.0+');
-            }
+            //if (this.useNewPushPull) {
+            //  console.log('Detected 1.3.0+');
+            //}
 
             this.portActive = true;
             this.serialPort.addEventListener("disconnect", (event) => {
