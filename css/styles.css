@@ -48,7 +48,8 @@ canvas {
 }
 
 /* Panels */
-#updatePanel, #modesPanel, #welcomePanel, #aboutPanel, #animationPanel, #colorsetPanel, #patternPanel, #colorPickerPanel {
+#updatePanel, #modesPanel, #welcomePanel, #aboutPanel, #animationPanel,
+#colorsetPanel, #patternPanel, #colorPickerPanel, #ledSelectPanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -62,7 +63,11 @@ canvas {
 #updatePanel {
   top: 5px;
   right: 615px;
-  z-index: 3;
+}
+
+#ledSelectPanel {
+  top: 330px;
+  right: 5px;
 }
 
 .device-update-labels {
