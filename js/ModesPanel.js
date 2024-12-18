@@ -89,6 +89,7 @@ export default class ModesPanel extends Panel {
     transmitButton.addEventListener('click', () => this.editor.transmitVL());
 
     document.addEventListener('patternChange', () => this.refresh(true));
+    document.addEventListener('deviceChange', this.handleDeviceConnected.bind(this));
 
     this.refreshModeList();
   }
@@ -102,7 +103,6 @@ export default class ModesPanel extends Panel {
     } else {
       console.log(`Device name ${this.vortexPort.name} not recognized`);
     }
-    document.dispatchEvent(new CustomEvent('deviceConnected'));
     this.refresh(true);
     //Notification.success(this.vortexPort.name + ' Connected!');
     //let statusMessage = document.getElementById('deviceStatus');
@@ -125,6 +125,8 @@ export default class ModesPanel extends Panel {
     //if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
     //  this.editor.updatePanel.show();
     //}
+    
+    console.log("Checking version...");
 
     // check version numbers
     this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
@@ -315,7 +317,7 @@ export default class ModesPanel extends Panel {
 
   addMode() {
     let modeCount = this.lightshow.vortex.numModes();
-    switch (this.selectedDevice) {
+    switch (this.editor.devicePanel.selectedDevice) {
     case 'Orbit':
     case 'Handle':
     case 'Gloves':
@@ -526,7 +528,7 @@ export default class ModesPanel extends Panel {
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
       let modeCount = this.lightshow.vortex.numModes();
-      switch (this.selectedDevice) {
+      switch (this.editor.devicePanel.selectedDevice) {
       case 'Orbit':
       case 'Handle':
       case 'Gloves':

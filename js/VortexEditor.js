@@ -123,7 +123,13 @@ export default class VortexEditor {
     // Keydown event to show updatePanel
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Insert') {
-        this.checkVersion(this.vortexPort.name, this.vortexPort.version);
+        if (this.vortexPort.name.length > 0 && this.vortexPort.version.length > 0) {
+          this.checkVersion(this.vortexPort.name, this.vortexPort.version);
+        } else {
+          this.updatePanel.displayFirmwareUpdateInfo(this.devicePanel.selectedDevice,
+            '1.0.0', '1.0.1', 'https://vortex.community/downloads');
+          Notification.error("Need a device connection to use update panel");
+        }
         this.updatePanel.show();
       }
     });
@@ -144,9 +150,9 @@ export default class VortexEditor {
 
   async checkVersion(device, version) {
     // the results are lowercased
-    if (!device.length || device === 'None') {
-      device = this.modesPanel.selectedDevice;
-      if (!device.length || device === 'None') {
+    if (!device.length) {
+      device = this.devicePanel.selectedDevice;
+      if (!device.length) {
         // not connected?
         return;
       }

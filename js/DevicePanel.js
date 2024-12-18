@@ -20,6 +20,7 @@ export default class DevicePanel extends Panel {
 
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
+    this.selectedDevice = 'None';
   }
 
   initialize() {
@@ -67,15 +68,15 @@ export default class DevicePanel extends Panel {
     const connectDeviceButton = document.getElementById('connectDeviceButton');
 
     // Change button to "Disconnect Device"
-    connectDeviceButton.innerHTML = `<i class="fa-solid fa-power-off"></i>`;
+    //connectDeviceButton.innerHTML = `<i class="fa-solid fa-power-off"></i>`;
     connectDeviceButton.title = "Disconnect Device";
-    connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
+    //connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
 
-    // Update event listener for disconnect
-    connectDeviceButton.onclick = () => {
-      this.vortexPort.disconnectDevice();
-      this.onDeviceDisconnect();
-    };
+    //// Update event listener for disconnect
+    //connectDeviceButton.onclick = () => {
+    //  this.vortexPort.disconnectDevice();
+    //  this.onDeviceDisconnect();
+    //};
 
     // Lock the dropdown to prevent further changes
     document.getElementById('deviceTypeSelected').classList.add('locked');
@@ -85,7 +86,7 @@ export default class DevicePanel extends Panel {
     this.editor.ledSelectPanel.updateSelectedDevice(deviceName, true);
     this.editor.ledSelectPanel.selectAllLeds();
 
-    document.dispatchEvent(new CustomEvent('deviceConnected'));
+    document.dispatchEvent(new CustomEvent('deviceChange'));
   }
 
   onDeviceDisconnect() {
@@ -151,6 +152,9 @@ export default class DevicePanel extends Panel {
     // Update the UI of the dropdown
     deviceTypeSelected.innerHTML = `
     <img src="${deviceIcon}" alt="${device} Logo"> ${device}`;
+
+    // store the selected device
+    this.selectedDevice = device;
 
     // Set LED count based on the device
     this.editor.lightshow.setLedCount(this.editor.devices[device].ledCount);

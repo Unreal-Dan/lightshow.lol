@@ -74,6 +74,7 @@ export default class PatternPanel extends Panel {
     this.multiEnabled = true;
     this.populatePatternDropdown();
     this.refresh(true);
+    // uh is this supposed to be here?
     this.vortexPort.startReading();
     this.editor.demoModeOnDevice();
   }
@@ -147,7 +148,7 @@ export default class PatternPanel extends Panel {
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
 
-    if (this.editor.modesPanel.selectedDevice !== 'None') {
+    if (this.editor.devicePanel.selectedDevice !== 'None') {
       dropdown.appendChild(multiGroup);
     }
   }

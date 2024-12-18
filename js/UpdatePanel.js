@@ -2,7 +2,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 export default class UpdatePanel extends Panel {
-  constructor(editor, modesPanel) {
+  constructor(editor) {
     const content = `
       <div id="updateOptions">
         <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
@@ -19,7 +19,6 @@ export default class UpdatePanel extends Panel {
     super('updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
-    this.modesPanel = modesPanel;
     this.espStub = null;
   }
 
@@ -80,7 +79,7 @@ export default class UpdatePanel extends Panel {
   async fetchAndFlashFirmware() {
     let targetDevice = this.vortexPort.name.toLowerCase();
     if (!targetDevice) {
-      targetDevice = this.editor.modesPanel.selectedDevice.toLowerCase();
+      targetDevice = this.editor.devicePanel.selectedDevice.toLowerCase();
     }
     if (targetDevice === 'none') {
       throw new Error(`Select a device first`);

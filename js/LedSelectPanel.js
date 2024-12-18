@@ -29,8 +29,6 @@ export default class LedSelectPanel extends Panel {
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
-
-    this.selectedDevice = 'None';
   }
 
   initialize() {
@@ -52,10 +50,6 @@ export default class LedSelectPanel extends Panel {
     deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
-
-    document.addEventListener('deviceTypeChange', (event) => {
-      this.renderLedIndicators(this.selectedDevice);
-    });
 
     //// Initialize dropdown with icons
     //this.addIconsToDropdown();
@@ -100,9 +94,6 @@ export default class LedSelectPanel extends Panel {
 
     const deviceIcon = this.editor.devices[device].icon;
 
-    this.selectedDevice = device;
-    document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: this.selectedDevice }));
-
     if (device === 'None') {
       deviceTypeSelected.innerHTML = 'Select Device';
       document.getElementById('deviceTypeOptions').classList.remove('show');
@@ -131,6 +122,7 @@ export default class LedSelectPanel extends Panel {
     }
     ledsFieldset.style.display = 'block';
     document.getElementById('deviceTypeOptions').classList.remove('show');
+    this.renderLedIndicators(device);
     this.lockDeviceSelection(lock);
     this.refreshLedList();
     this.show();
@@ -168,6 +160,7 @@ export default class LedSelectPanel extends Panel {
 
     if (!deviceName || deviceName === 'None') {
       ledsFieldset.style.display = 'none';
+      this.hide();
       return;
     }
 
