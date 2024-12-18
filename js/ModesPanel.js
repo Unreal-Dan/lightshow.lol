@@ -162,6 +162,8 @@ export default class ModesPanel extends Panel {
       this.onDeviceConnect(deviceName);
     } else if (deviceEvent === 'disconnect') {
       this.onDeviceDisconnect(deviceName);
+    } else if (deviceEvent === 'select') {
+      this.onDeviceSelected(deviceName);
     }
   }
 
@@ -188,6 +190,10 @@ export default class ModesPanel extends Panel {
     //statusMessage.classList.remove('status-success', 'status-pending');
     //statusMessage.classList.add('status-failure');
     //this.lockDeviceSelection(false);
+  }
+
+  onDeviceSelected(devicename) {
+    // 
   }
 
   refresh(fromEvent = false) {

@@ -6,6 +6,7 @@ import ColorPickerPanel from './ColorPickerPanel.js';
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
     const content = `
+            <div id="colorset-selected-leds" class="selected-leds-bar"></div>
             <div id="colorset" class="grid-container"></div>
         `;
 
@@ -58,7 +59,13 @@ export default class ColorsetPanel extends Panel {
       this.onDeviceConnect(deviceName);
     } else if (deviceEvent === 'disconnect') {
       this.onDeviceDisconnect(deviceName);
+    } else if (deviceEvent === 'select') {
+      this.onDeviceSelected(deviceName);
     }
+  }
+
+  onDeviceSelected(deviceName) {
+    // nothing yet
   }
 
   onDeviceWaiting(deviceName) {
@@ -93,7 +100,44 @@ export default class ColorsetPanel extends Panel {
   }
 
   refresh(fromEvent = false) {
+    //this.refreshSelectedLedsBar();
     this.refreshColorset(fromEvent);
+  }
+
+
+  refreshSelectedLedsBar() {
+    const selectedLedsBar = document.getElementById('colorset-selected-leds');
+    if (!selectedLedsBar) return;
+
+    selectedLedsBar.innerHTML = '';
+
+    const ledCount = this.lightshow.vortex.engine().leds().ledCount();
+
+    // Calculate dot size dynamically
+    const barWidth = selectedLedsBar.clientWidth;
+    const marginPerDot = 4; // total horizontal space per dot from margin
+    const desiredDotSize = 10; // base size
+    const totalNeededWidth = (desiredDotSize + marginPerDot) * ledCount;
+
+    let dotSize = desiredDotSize;
+    if (totalNeededWidth > barWidth) {
+      // Scale down if they don't fit
+      dotSize = Math.floor((barWidth / ledCount) - marginPerDot);
+      if (dotSize < 4) {
+        dotSize = 4; // minimum size
+      }
+    }
+
+    for (let i = 0; i < ledCount; i++) {
+      const dot = document.createElement('div');
+      dot.classList.add('led-dot');
+      dot.style.width = `${dotSize}px`;
+      dot.style.height = `${dotSize}px`;
+      if (this.isMulti || this.targetLeds.includes(i)) {
+        dot.classList.add('selected');
+      }
+      selectedLedsBar.appendChild(dot);
+    }
   }
 
   async refreshColorset(fromEvent = false) {
@@ -108,9 +152,104 @@ export default class ColorsetPanel extends Panel {
     const set = cur.getColorset(this.targetLed);
     const numColors = set ? set.numColors() : 0;
 
+    let draggingElement = null;
+    let dragStartIndex = null;
+    let placeholder = null;
+
+    // Create a placeholder element for visual feedback
+    function createPlaceholder() {
+      placeholder = document.createElement('div');
+      placeholder.className = 'color-box placeholder';
+      colorsetElement.appendChild(placeholder);
+    }
+
+    // Move the placeholder to the correct position
+    function updatePlaceholder(target) {
+      if (!placeholder || !target) return;
+      colorsetElement.insertBefore(placeholder, target);
+    }
+
+    function handlePointerDown(e) {
+      const target = e.target.closest('.color-box');
+      if (!target) return;
+
+      draggingElement = target;
+      dragStartIndex = parseInt(target.dataset.index, 10);
+      target.classList.add('dragging');
+
+      const rect = target.getBoundingClientRect();
+      draggingElement.style.position = 'absolute';
+      draggingElement.style.width = `${rect.width}px`;
+      draggingElement.style.height = `${rect.height}px`;
+      draggingElement.style.zIndex = 1000;
+      draggingElement.style.pointerEvents = 'none';
+
+      // Set the starting position
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+      draggingElement.dataset.offsetX = offsetX;
+      draggingElement.dataset.offsetY = offsetY;
+
+      createPlaceholder();
+      updatePlaceholder(draggingElement.nextSibling);
+
+      document.addEventListener('pointermove', handlePointerMove);
+      document.addEventListener('pointerup', handlePointerUp);
+    }
+
+    function handlePointerMove(e) {
+      if (!draggingElement) return;
+
+      // Move the dragged element with the cursor
+      const offsetX = parseFloat(draggingElement.dataset.offsetX);
+      const offsetY = parseFloat(draggingElement.dataset.offsetY);
+      draggingElement.style.left = `${e.clientX - offsetX}px`;
+      draggingElement.style.top = `${e.clientY - offsetY}px`;
+
+      // Find the nearest color box and update placeholder position
+      const target = document.elementFromPoint(e.clientX, e.clientY + 15)?.closest('.color-box:not(.dragging)');
+      if (target) updatePlaceholder(target);
+    }
+
+    function handlePointerUp() {
+      if (!draggingElement || !placeholder) return;
+
+      const dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
+
+      if (dragStartIndex !== dropIndex && dropIndex >= 0) {
+        // Swap colors using VortexLib API
+        const set = cur.getColorset(this.targetLed);
+        const col1 = set.get(dragStartIndex);
+        const col2 = set.get(dropIndex);
+        cur.getColorset(this.targetLed).swapColors(dragStartIndex, dropIndex);
+        cur.init(); // Reinitialize the mode
+        this.lightshow.vortex.engine().modes().saveCurMode(); // Save changes
+      }
+
+      // Cleanup
+      placeholder.remove();
+      placeholder = null;
+
+      draggingElement.classList.remove('dragging');
+      draggingElement.style.position = '';
+      draggingElement.style.width = '';
+      draggingElement.style.height = '';
+      draggingElement.style.zIndex = '';
+      draggingElement.style.pointerEvents = '';
+      draggingElement.style.left = '';
+      draggingElement.style.top = '';
+      draggingElement = null;
+
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      //this.refreshColorset(); // Refresh the UI
+    }
+
     for (let i = 0; i < numColors; i++) {
       const container = document.createElement('div');
       container.className = 'color-box';
+      container.dataset.index = i;
 
       const col = set.get(i);
       const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
@@ -139,6 +278,9 @@ export default class ColorsetPanel extends Panel {
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
 
+      // Attach custom drag-and-drop handlers
+      container.addEventListener('pointerdown', handlePointerDown.bind(this));
+
       // Append elements to container
       container.appendChild(colorEntry);
       container.appendChild(hexLabel);
@@ -159,6 +301,70 @@ export default class ColorsetPanel extends Panel {
       colorsetElement.appendChild(addColorContainer);
     }
   }
+
+  //async refreshColorset(fromEvent = false) {
+  //  const colorsetElement = document.getElementById('colorset');
+  //  const cur = this.lightshow.vortex.engine().modes().curMode();
+  //  colorsetElement.innerHTML = ''; // Clear colorset
+
+  //  if (!cur) {
+  //    return;
+  //  }
+
+  //  const set = cur.getColorset(this.targetLed);
+  //  const numColors = set ? set.numColors() : 0;
+
+  //  for (let i = 0; i < numColors; i++) {
+  //    const container = document.createElement('div');
+  //    container.className = 'color-box';
+
+  //    const col = set.get(i);
+  //    const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+
+  //    // Create color entry
+  //    const colorEntry = document.createElement('div');
+  //    colorEntry.style.backgroundColor = hexColor;
+  //    colorEntry.className = 'color-entry';
+  //    colorEntry.dataset.index = i;
+  //    colorEntry.addEventListener('click', () =>
+  //      this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this))
+  //    );
+
+  //    // Create hex label
+  //    const hexLabel = document.createElement('label');
+  //    hexLabel.textContent = hexColor;
+
+  //    // Create delete button
+  //    const deleteButton = document.createElement('span');
+  //    deleteButton.className = 'delete-color';
+  //    deleteButton.dataset.index = i;
+  //    deleteButton.textContent = '×';
+  //    deleteButton.addEventListener('click', (e) => {
+  //      e.stopPropagation(); // Prevent triggering color picker
+  //      this.delColor(Number(deleteButton.dataset.index));
+  //      document.dispatchEvent(new CustomEvent('patternChange'));
+  //    });
+
+  //    // Append elements to container
+  //    container.appendChild(colorEntry);
+  //    container.appendChild(hexLabel);
+  //    container.appendChild(deleteButton);
+
+  //    colorsetElement.appendChild(container);
+  //  }
+
+  //  // Add empty slots for adding colors
+  //  if (numColors < 8) {
+  //    const addColorContainer = document.createElement('div');
+  //    addColorContainer.className = 'color-box empty';
+  //    addColorContainer.textContent = '+';
+  //    addColorContainer.addEventListener('click', () => {
+  //      this.addColor();
+  //      document.dispatchEvent(new CustomEvent('patternChange'));
+  //    });
+  //    colorsetElement.appendChild(addColorContainer);
+  //  }
+  //}
 
   // Helper: Update Color from Hex Input
   updateColorHex(index, hexValue) {

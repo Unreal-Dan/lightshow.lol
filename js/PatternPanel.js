@@ -79,6 +79,8 @@ export default class PatternPanel extends Panel {
       this.onDeviceConnect(deviceName);
     } else if (deviceEvent === 'disconnect') {
       this.onDeviceDisconnect(deviceName);
+    } else if (deviceEvent === 'select') {
+      this.onDeviceSelected(deviceName);
     }
   }
 
@@ -96,6 +98,10 @@ export default class PatternPanel extends Panel {
   }
 
   onDeviceDisconnect(deviceName) {
+    // nothing yet
+  }
+
+  onDeviceSelected(deviceName) {
     // nothing yet
   }
 

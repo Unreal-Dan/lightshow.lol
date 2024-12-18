@@ -1998,3 +1998,73 @@ i {
   width: 0;
   transition: width 0.3s ease;
 }
+
+
+
+
+/* Add this at the bottom of your existing CSS */
+
+/* Container for the selected LEDs bar */
+#colorset-selected-leds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #3e4446;
+}
+
+/* Individual LED dots */
+.led-dot {
+  width: 10px;
+  height: 10px;
+  background: #444;
+  border-radius: 50%;
+  margin: 2px;
+}
+
+.led-dot.selected {
+  background: #00ff00; /* Green for selected */
+}
+
+
+
+
+
+
+.color-box {
+  transition: transform 0.2s ease;
+}
+
+.color-box.dragging {
+  opacity: 0.5;
+}
+
+.color-box.placeholder {
+  background: rgba(0, 0, 0, 0.1);
+  border: 2px dashed #ccc;
+  height: 50px; /* Match the color box height */
+}
+
+.color-box.over {
+  transform: translateY(10px); /* Example visual cue */
+}
+
+
+
+.color-box {
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.color-box.placeholder {
+  background: rgba(0, 0, 0, 0.1);
+  border: 2px dashed #ccc;
+  height: 50px; /* Match the color box height */
+}
+
+.color-box.dragging {
+  opacity: 0.8;
+  cursor: grabbing;
+  transition: none; /* Disable transitions for the dragged element */
+}

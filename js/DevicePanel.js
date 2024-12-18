@@ -63,6 +63,8 @@ export default class DevicePanel extends Panel {
       this.onDeviceDisconnect();
     } else if (deviceEvent === 'waiting') {
       Notification.success("Waiting for device...");
+    } else if (deviceEvent === 'select') {
+      Notification.success(`Selected '${deviceName}`);
     }
 
     // dispatch the device change event with the new device name
@@ -90,8 +92,7 @@ export default class DevicePanel extends Panel {
 
     // Update selected device
     const deviceName = this.vortexPort.name;
-    this.editor.ledSelectPanel.updateSelectedDevice(deviceName, true);
-    this.editor.ledSelectPanel.selectAllLeds();
+    this.updateSelectedDevice(deviceName, true);
   }
 
   onDeviceDisconnect() {
@@ -144,7 +145,8 @@ export default class DevicePanel extends Panel {
 
     // Update and show the LED Select Panel
     this.editor.ledSelectPanel.updateSelectedDevice(device);
-    this.editor.ledSelectPanel.show(); // Ensure the panel is shown
+    this.editor.ledSelectPanel.selectAllLeds();
+    this.editor.ledSelectPanel.show();
   }
 }
 
