@@ -138,7 +138,6 @@ export default class VortexPort {
             // broken connection
             break;
           }
-          console.log("Read Data: " + response);
 
           let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==$/;
           let match = response.match(responseRegex);
