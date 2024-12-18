@@ -40,19 +40,15 @@ export default class VortexPort {
   EDITOR_VERB_FLASH_FIRMWARE_ACK    = "J";
   EDITOR_VERB_FLASH_FIRMWARE_DONE   = "K";
 
-  accumulatedData = "";
+  accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
-  isTransmitting = false; 
+  isTransmitting = false; // Flag to track if a transmission is active
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   constructor() {
     this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
-
-    // Use a binary buffer rather than text for both binary and normal data.
-    this.buffer = new Uint8Array(0); 
-    this.pollingActive = false;
   }
 
   cancelListening() {
@@ -61,6 +57,7 @@ export default class VortexPort {
   }
 
   resetState() {
+    // Reset properties to default state
     this.serialPort = null;
     this.portActive = false;
     this.name = '';
@@ -70,68 +67,13 @@ export default class VortexPort {
       this.reader.releaseLock();
       this.reader = null;
     }
-    this.isTransmitting = false;
+    this.isTransmitting = false; // Reset the transmission state on reset
     this.hasUPDI = false;
+    // Further state reset logic if necessary
   }
 
   isActive = () => {
     return this.portActive;
-  }
-
-  stopBackgroundReader() {
-    if (this.backgroundReaderInterval) {
-      clearInterval(this.backgroundReaderInterval);
-      this.backgroundReaderInterval = null;
-    }
-    this.pollingActive = false;
-
-    if (this.reader) {
-      this.reader.releaseLock();
-      this.reader = null;
-    }
-
-    console.log('Background reader stopped.');
-  }
-
-  startBackgroundReader() {
-    if (this.pollingActive) {
-      console.warn('Background reader already active.');
-      return;
-    }
-
-    this.pollingActive = true;
-          console.log("Reading");
-
-    this.backgroundReaderInterval = setInterval(async () => {
-      try {
-        if (!this.serialPort || !this.serialPort.readable) return;
-        if (!this.reader) {
-          this.reader = this.serialPort.readable.getReader();
-        }
-
-        const { value, done } = await this.reader.read();
-          console.log("Received");
-
-        if (done) {
-          console.warn('Stream ended.');
-          this.stopBackgroundReader(); 
-          return;
-        }
-
-        if (value) {
-          // Append binary data directly
-          const newData = value;
-          const combined = new Uint8Array(this.buffer.length + newData.length);
-          combined.set(this.buffer, 0);
-          combined.set(newData, this.buffer.length);
-          this.buffer = combined;
-          console.log("Accumulated: " + this.buffer);
-        }
-      } catch (error) {
-        console.error('Error in background reader:', error);
-        this.stopBackgroundReader(); 
-      }
-    }, 50); 
   }
 
   async requestDevice(callback) {
@@ -141,13 +83,14 @@ export default class VortexPort {
         if (!this.serialPort) {
           throw new Error('Failed to open serial port');
         }
-        await this.serialPort.open({ baudRate: 115200 });
+        await this.serialPort.open({ baudRate: 9600 });
       }
+      // is this necessary...? I don't remember why it's here
+      await this.serialPort.setSignals({ dataTerminalReady: true });
       this.portActive = false;
       if (callback && typeof callback === 'function') {
         callback('waiting');
       }
-      await this.startBackgroundReader();
       this.listenForGreeting(callback);
     } catch (error) {
       console.error('Error:', error);
@@ -172,6 +115,7 @@ export default class VortexPort {
     }
   }
 
+  // helper for 1.3.0 compatibility version check
   isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
     const currentParts = currentVersion.split('.').map(Number);
     const targetParts = targetVersion.split('.').map(Number);
@@ -184,40 +128,52 @@ export default class VortexPort {
   }
 
   listenForGreeting = async (callback) => {
-    console.log("Listening for greeting...");
     while (!this.portActive && !this.cancelListeningForGreeting) {
       if (this.serialPort) {
         try {
-          console.log("Reading...");
+          // Read data from the serial port
           const response = await this.readData();
           if (!response) {
-            await this.sleep(100);
-            continue;
+            console.log("Error: Connection broken");
+            // broken connection
+            break;
           }
+          console.log("Read Data: " + response);
 
-          let textResp = '';
-          if (response.value) {
-            textResp = new TextDecoder().decode(response.value);
-          }
-          
           let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==$/;
-          let match = textResp.match(responseRegex);
+          let match = response.match(responseRegex);
           if (!match) {
+            // TODO: removeme later! backwards compatibility for old connection string
             responseRegex = /^== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==$/;
-            match = textResp.match(responseRegex);
+            match = response.match(responseRegex);
           }
 
           if (match) {
-            this.version = match[1]; 
-            this.name = match[2];    
-            this.buildDate = match[3]; 
+            this.version = match[1]; // Capturing the version number
+            this.name = match[2];    // Capturing the name
+            this.buildDate = match[3]; // Capturing the build date
 
             console.log('Successfully Received greeting from Vortex Device');
             console.log('Device Type:', this.name);
             console.log('Version:', this.version);
             console.log('Date:', this.buildDate);
 
+            // old logic: sending updi in the name
+            // new logic: a command to check if updi is available
+            //// check if this is UPDI supported chromadeck
+            //const regex = /\bUPDI\b/;
+            //if (regex.test(this.name)) {
+            //  // Replace 'UPDI' with an empty string and trim any remaining spaces
+            //  this.name = this.name.replace(regex, '').replace(/\s+/g, ' ').trim();
+            //  // note that we have updi support for this chromadeck
+            //  this.hasUPDI = true;
+            //}
+
+            // 1.3.0 compatibility layer
             this.useNewPushPull = this.isVersionGreaterOrEqual(this.version, '1.3.0');
+            //if (this.useNewPushPull) {
+            //  console.log('Detected 1.3.0+');
+            //}
 
             this.portActive = true;
             this.serialPort.addEventListener("disconnect", (event) => {
@@ -242,38 +198,93 @@ export default class VortexPort {
   }
 
   disconnect(callback = null) {
-    this.resetState(); 
+    this.resetState(); // Reset the state of the class
     if (callback && typeof callback === 'function') {
       callback('disconnect');
     }
   }
 
   startReading() {
+    // todo: implement async read waiting for quit that can be canceled
   }
 
   cancelReading() {
+    // todo: implement async read cancel
   }
 
-  // Updated readData to return binary data and mimic reader.read() style response
-  readData() {
-    if (this.buffer.length > 0) {
-      const returnValue = { value: this.buffer, done: false };
-      this.buffer = new Uint8Array(0);
-      return returnValue;
+  async readData() {
+    if (!this.serialPort || !this.serialPort.readable) {
+      return null;
     }
-    return null;
+    if (this.reader) {
+      try {
+        this.reader.releaseLock();
+      } catch (error) {
+        console.warn('Failed to release reader lock:', error);
+      }
+    }
+    this.reader = this.serialPort.readable.getReader();
+    try {
+      while (true) {
+        const { value, done } = await this.reader.read();
+        if (done) {
+          // Ensure the reader is not released multiple times
+          if (this.reader) {
+            this.reader.releaseLock();
+            this.reader = null;
+          }
+          break;
+        }
+
+        const text = new TextDecoder().decode(value);
+        this.accumulatedData += text;
+
+        // If it starts with '=' or '==', look for the end delimiter '=='
+        if (this.accumulatedData.startsWith('=') || this.accumulatedData.startsWith('==')) {
+          const endIndex = this.accumulatedData.indexOf('==', 2); // Search for '==' after the first one.
+
+          if (endIndex >= 0) {
+            const fullMessage = this.accumulatedData.substring(0, endIndex + 2).trim();
+            this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
+            return fullMessage; // Return the full message
+          }
+        } else {
+          // Return any single byte
+          const singleByte = this.accumulatedData[0];
+          this.accumulatedData = this.accumulatedData.substring(1);
+          return singleByte;
+        }
+      }
+    } catch (error) {
+      console.error('Error reading data:', error);
+      return null;
+    } finally {
+      if (this.reader) {
+        try {
+          this.reader.releaseLock(); // Ensure release of reader in the finally block
+        } catch (error) {
+          console.warn('Failed to release reader lock in finally:', error);
+        }
+        this.reader = null;
+      }
+    }
   }
 
   constructCustomBufferRaw(vortexLib, rawDataArray, size) {
-    const sizeArray = new Uint32Array([size]);
+    // Create the custom array with size and rawData
+    const sizeArray = new Uint32Array([size]); // No byte swapping
+
+    // Combine sizeArray and rawDataArray into a single array
     const combinedArray = new Uint8Array(sizeArray.length * 4 + rawDataArray.length);
-    combinedArray.set(new Uint8Array(sizeArray.buffer), 0);
-    combinedArray.set(rawDataArray, sizeArray.length * 4);
+    combinedArray.set(new Uint8Array(sizeArray.buffer), 0); // Copy sizeArray bytes
+    combinedArray.set(rawDataArray, sizeArray.length * 4); // Copy rawDataArray bytes
+
     return combinedArray;
   }
 
   constructCustomBuffer(vortexLib, curMode) {
     let data = vortexLib.getRawDataArray(curMode);
+    //console.log("Raw data: " + JSON.stringify(data));
     return this.constructCustomBufferRaw(vortexLib, data, curMode.rawSize());
   }
 
@@ -284,8 +295,13 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    if (!vortex.engine().modes().curMode()) {
+      throw new Error('No current mode');
+    }
+    //console.log("transmitVL Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
       if (!vortex.getCurMode(curMode)) {
         throw new Error('Failed to get cur mode');
@@ -297,7 +313,8 @@ export default class VortexPort {
       console.error('Error during transmitVL:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("transmitVL End");
     }
   }
 
@@ -308,8 +325,10 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    //console.log("demoColor Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
       let args = new vortexLib.PatternArgs();
       args.addArgs(1);
@@ -328,7 +347,8 @@ export default class VortexPort {
       console.error('Error during demoColor:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("demoColor End");
     }
   }
 
@@ -342,8 +362,10 @@ export default class VortexPort {
     if (!vortex.engine().modes().curMode()) {
       throw new Error('No current mode');
     }
-    this.isTransmitting = true; 
+    //console.log("demoCurMode Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
       if (!vortex.getCurMode(curMode)) {
         throw new Error('Failed to get cur mode');
@@ -357,7 +379,8 @@ export default class VortexPort {
       console.error('Error during demoCurMode:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("demoCurMode End");
     }
   }
 
@@ -368,8 +391,10 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    //console.log("pushEachToDevice Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
       if (!vortex.getModes(modes)) {
         throw new Error('Failed to get cur mode');
@@ -390,11 +415,15 @@ export default class VortexPort {
         await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
         vortex.nextMode(false);
       }
+      // these aren't really working... oh well it works good without them
+      //await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+      //await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
     } catch (error) {
       console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pushEachToDevice End");
     }
   }
 
@@ -405,11 +434,14 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
+    // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
       return await this.pushEachToDevice(vortexLib, vortex);
     }
-    this.isTransmitting = true; 
+    //console.log("pushToDevice Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
       if (!vortex.getModes(modes)) {
         throw new Error('Failed to get cur mode');
@@ -423,7 +455,8 @@ export default class VortexPort {
       console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pushToDevice End");
     }
   }
 
@@ -434,18 +467,22 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    //console.log("pullEachFromDevice Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       await this.cancelReading();
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
       const numModesBuf = await this.readByteStream(vortexLib);
       let numModesStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromRawData(numModesBuf, numModesStream);
-      let numModes = numModesBuf[12];
+      // this is quite dumb, idk I guess header is 12 bytes so 13th byte is the one data byte
+      let numModes = numModesBuf['12'];
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
       vortex.clearModes();
       for (let i = 0; i < numModes; ++i) {
         const modeBuf = await this.readByteStream(vortexLib);
+        // Call the Wasm function
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
         vortex.addNewMode(modeStream, true);
@@ -456,7 +493,8 @@ export default class VortexPort {
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pullEachFromDevice End");
     }
   }
 
@@ -467,14 +505,18 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
+    // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
       return await this.pullEachFromDevice(vortexLib, vortex);
     }
-    this.isTransmitting = true; 
+    //console.log("pullFromDevice Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
+      // Unserialize the stream of data
       await this.cancelReading();
       await this.sendCommand(this.EDITOR_VERB_PULL_MODES);
       const modes = await this.readByteStream(vortexLib);
+      // Call the Wasm function
       let modesStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromRawData(modes, modesStream);
       vortex.matchLedCount(modesStream, false);
@@ -485,10 +527,12 @@ export default class VortexPort {
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pullFromDevice End");
     }
   }
 
+  // Function to connect the Duo via Chromalink
   async connectChromalink(vortexLib) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -497,16 +541,20 @@ export default class VortexPort {
       throw new Error('Already transmitting');
     }
     let duoHeader = {};
-    this.isTransmitting = true; 
+    //console.log("connectChromaLink Start");
+    this.isTransmitting = true; // Reset the transmitting flag
     try {
       await this.cancelReading();
+      // Start the connection process
       await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_HDR);
       const header = await this.readByteStream(vortexLib);
+      // Call the Wasm function
       let headerStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromRawData(header, headerStream);
       if (!headerStream.checkCRC() || headerStream.size() < 5) {
         throw new Error('Bad CRC or size: ' + headerStream.size());
       }
+      // process header
       const headerData = vortexLib.getDataArray(headerStream);
       duoHeader.vMajor = headerData[0];
       duoHeader.vMinor = headerData[1];
@@ -517,9 +565,10 @@ export default class VortexPort {
       if (headerStream.size() > 5) {
         duoHeader.vBuild = headerData[5];
       }
+      console.log(JSON.stringify(headerData));
+      // construct a full version string
       duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
       duoHeader.rawData = headerData;
-      console.log(JSON.stringify(headerData));
       console.log('Successfully Chromalinked Duo');
       console.log('Version:', duoHeader.version);
       console.log('Flags:', duoHeader.flags);
@@ -529,7 +578,8 @@ export default class VortexPort {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("connectChromaLink End");
     }
     return duoHeader;
   }
@@ -541,11 +591,14 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    //console.log("connectChromaLink Start");
+    this.isTransmitting = true; // Reset the transmitting flag
     try {
       await this.cancelReading();
+      // Start the connection process
       await this.sendCommand(this.EDITOR_VERB_PUSH_CHROMA_HDR);
       await this.expectData(this.EDITOR_VERB_READY);
+      // build the header
       const headerData = [
         duoHeader.vMajor,
         duoHeader.vMinor,
@@ -557,14 +610,18 @@ export default class VortexPort {
       vortexLib.createByteStreamFromData(headerData, headerStream);
       await this.sendRaw(this.constructCustomBuffer(vortexLib, headerStream));
       await this.expectData(this.EDITOR_VERB_PUSH_CHROMA_HDR_ACK);
+      //console.log("DuoHeader: " + JSON.stringify(duoHeader));
+      //console.log("Header: " + JSON.stringify(headerData));
     } catch (error) {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("connectChromaLink End");
     }
   }
 
+  // Function to pull all modes from the Duo via Chromalink
   async pullDuoModes(vortexLib, vortex, numModes) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -573,34 +630,46 @@ export default class VortexPort {
       throw new Error('Already transmitting');
     }
     vortex.clearModes();
-    this.isTransmitting = true; 
+    //console.log("pullDuoModes Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
       await this.cancelReading();
       for (let i = 0; i < numModes; ++i) {
+        // Send command to pull modes from the Duo
         await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_MODE);
-        await this.expectData(this.EDITOR_VERB_READY);  
+        await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
         const sizeBuffer = new Uint8Array([i]);
         await this.sendRaw(sizeBuffer);
         const mode = await this.readByteStream(vortexLib);
+        // Call the Wasm function
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromRawData(mode, modeStream);
         if (!modeStream.checkCRC() || !modeStream.size()) {
           throw new Error(`Bad CRC or size for mode ${i}`);
         }
-        if (!vortex.addNewModeRaw(modeStream, false)) { 
+        // need to use addNewModeRaw here because the duo mode buffers
+        // are not the full 'mode save' buffer with the header that would
+        // be needed for addNewMode(), this will just 'unserialize' the mode
+        // then add it without using the mode.loadFromBuffer() function
+        if (!vortex.addNewModeRaw(modeStream, false)) {  // Add each mode
           throw new Error(`Failed to add mode ${i}`);
         }
+        // seems to be an issue where it gets stuck on mode 3 (the first flash mode),
+        // something to do with the underlying updi connection getting hung up and idk
+        // why but the sleep fixes it lol
         await this.sleep(10);
       }
     } catch (error) {
       console.error('Error pulling modes from Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pullDuoModes End");
     }
     return true;
   }
 
+  // Function to push all modes to the Duo via Chromalink
   async pushDuoModes(vortexLib, vortex) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -608,18 +677,26 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting');
     }
-    this.isTransmitting = true; 
+    //console.log("pushDuoModes Start");
+    this.isTransmitting = true; // Set the transmitting flag
     try {
       vortex.setCurMode(0, false);
+      // TODO: detect total modes?
       for (let i = 0; i < vortex.numModes(); ++i) {
+        // Send the push command
         await this.sendCommand(this.EDITOR_VERB_PUSH_CHROMA_MODE);
-        await this.expectData(this.EDITOR_VERB_READY);  
+
+        await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
         const sizeBuffer = new Uint8Array([i]);
         await this.sendRaw(sizeBuffer);
-        await this.expectData(this.EDITOR_VERB_READY);  
+
+        await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
+
         const modeBuf = new vortexLib.ByteStream();
+
         vortex.getCurModeRaw(modeBuf);
         await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
+
         await this.expectData(this.EDITOR_VERB_PUSH_CHROMA_MODE_ACK);
         vortex.nextMode(false);
       }
@@ -627,26 +704,36 @@ export default class VortexPort {
       console.error('Error pushing modes to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; 
+      this.isTransmitting = false; // Reset the transmitting flag
+      //console.log("pushDuoModes End");
     }
   }
 
+  // Function to flash firmware to the Duo via Chromalink
+  // Method for flashing firmware
   async flashFirmware(vortexLib, firmwareData, progressCallback) {
     try {
       if (!this.isActive()) {
         throw new Error('Port not active');
       }
+
+      // Step 1: Check firmware size
       const firmwareSize = firmwareData.length;
       if (firmwareSize <= 0) {
         throw new Error('Invalid firmware file.');
       }
+
+      // Step 2: Send Flash Firmware command, wait for ACK
       await this.sendCommand(this.EDITOR_VERB_FLASH_FIRMWARE);
       await this.expectData(this.EDITOR_VERB_READY);
+
+      // Step 3: Send firmware size, wait for ACK
       const sizeBuffer = new Uint32Array([firmwareSize]);
       await this.sendRaw(new Uint8Array(sizeBuffer.buffer));
       await this.expectData(this.EDITOR_VERB_READY);
 
-      const chunkSize = 128;  
+      // Step 4: Send firmware data in chunks
+      const chunkSize = 128;  // Firmware chunk size
       let offset = 0;
       let chunk = 0;
       const totalChunks = Math.ceil(firmwareSize / chunkSize);
@@ -658,8 +745,9 @@ export default class VortexPort {
         const chunkStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromData(chunkData, chunkStream);
 
+        // Send the current chunk, wait for ACK
         await this.sendRaw(this.constructCustomBuffer(vortexLib, chunkStream));
-        await this.expectData(this.EDITOR_VERB_FLASH_FIRMWARE_ACK);  
+        await this.expectData(this.EDITOR_VERB_FLASH_FIRMWARE_ACK);  // Wait for ACK
 
         offset += bytesToSend;
         chunk++;
@@ -674,44 +762,62 @@ export default class VortexPort {
     }
   }
 
+  async readFromSerialPort() {
+    if (!this.serialPort || !this.serialPort.readable) {
+      throw new Error('Serial port is not readable');
+    }
+
+    if (this.reader) {
+      this.reader.releaseLock();
+    }
+    this.reader = this.serialPort.readable.getReader();
+    let result = null;
+    try {
+      result = await this.reader.read();
+      //console.log("RECEIVED BYTE:" + JSON.stringify(result));
+    } catch (error) {
+      // do nothing?
+      console.log("Failed to read: " + error);
+    }
+    this.reader.releaseLock();
+    this.reader = null;
+    return result;
+  }
+
   async readByteStream(vortexLib) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
 
     try {
+      // Function to append new data to existing data
       const appendData = (existing, newData) => {
-        const combined = new Uint8Array(existing.length + newData.value.length);
+        const combined = new Uint8Array(existing.length + newData.length);
         combined.set(existing);
-        combined.set(newData.value, existing.length);
+        combined.set(newData, existing.length);
         return combined;
       };
 
+      // Read the initial 4 bytes for size
       let sizeData = new Uint8Array(0);
       while (sizeData.length < 4) {
-        const data = await this.readData();
-        if (!data) {
-          await this.sleep(100);
-          continue;
-        }
-        sizeData = appendData(sizeData, data);
+        const data = await this.readFromSerialPort();
+        sizeData = appendData(sizeData, data.value);
       }
 
+      // Interpret the first 4 bytes as size
       const size = new DataView(sizeData.buffer).getUint32(0, true);
+
+      // Read the remaining data
       let accumulatedData = sizeData.slice(4);
       while (accumulatedData.length < size) {
-        const data = await this.readData();
-        if (!data) {
-          await this.sleep(100);
-          continue;
-        }
-        const combined = new Uint8Array(accumulatedData.length + data.value.length);
-        combined.set(accumulatedData);
-        combined.set(data.value, accumulatedData.length);
-        accumulatedData = combined;
+        const data = await this.readFromSerialPort();
+        accumulatedData = appendData(accumulatedData, data.value);
       }
 
+      // Validate the size of the accumulated data
       if (accumulatedData.length === size) {
+        //console.log("RECEIVED BUFFER (size: " + size + "):" + JSON.stringify(accumulatedData));
         return new Uint8Array(accumulatedData);
       } else {
         console.error("Data size mismatch.");
@@ -723,33 +829,38 @@ export default class VortexPort {
     }
   }
 
+  // wait for a specific response
   async expectData(expectedResponse, timeoutMs = 10000) {
+    //console.log("EXPECTING:" + expectedResponse);
     const startTime = Date.now();
     while (Date.now() - startTime < timeoutMs) {
       const response = await this.readData();
-      if (!response) {
-        continue;
+      if (response === expectedResponse) {
+        //console.log('RECEIVED GOOD:', response, ' (expected: ', expectedResponse, ')');
+        return; // Expected response received
       }
-      const textResponse = new TextDecoder().decode(response.value);
-      console.log("Expecting: " + expectedResponse);
-      if (textResponse === expectedResponse) {
+      if (!response) {
+        //console.log('RECEIVED NOTHING (expected: ', expectedResponse, ')');
         return;
       }
-      console.log("Got: " + textResponse);
+      //console.log('RECEIVED BAD:', response, ' (expected: ', expectedResponse, ')');
       return;
+      //throw new Error('BAD: Expected response not received');
     }
+    //console.log('RECEIVE TIMEOUT (expected: ', expectedResponse, ')');
     throw new Error('Timeout: Expected response not received');
   }
 
+  // finish up and close
   async closePort() {
     if (this.serialPort) {
       await this.serialPort.close();
       this.serialPort = null;
       console.log('Port closed.');
     }
-    this.stopBackgroundReader();
   }
 
+  // send raw data to the device
   async sendRaw(data) {
     if (!this.serialPort || !this.serialPort.writable) {
       console.error('Port is not writable.');
@@ -758,6 +869,7 @@ export default class VortexPort {
 
     const writer = this.serialPort.writable.getWriter();
     try {
+      //console.log("SENDING RAW: " + JSON.stringify(data));
       await writer.write(data);
     } catch (error) {
       console.error('Error writing data:', error);
@@ -766,32 +878,15 @@ export default class VortexPort {
     }
   }
 
+  // send a command to the device
   async sendCommand(verb) {
     if (!this.isActive()) {
       console.error('Port not active or another transmission is ongoing. Cannot send command.');
       return;
     }
-    const encodedVerb = new TextEncoder().encode(verb);
+    //console.log("SENDING: " + verb);
+    const encodedVerb = new TextEncoder().encode(verb); // Ensure encoding for consistent communication
     await this.sendRaw(encodedVerb);
-  }
-
-  // A helper that waits for a certain number of bytes or times out
-  async readBytes(numBytes, timeoutMs = 100) {
-    const startTime = Date.now();
-    while (this.isActive()) {
-      if (this.buffer.length >= numBytes) {
-        const data = this.buffer.slice(0, numBytes);
-        this.buffer = this.buffer.slice(numBytes);
-        return data;
-      }
-
-      if (Date.now() - startTime > timeoutMs) {
-        throw new Error('Timeout waiting for data');
-      }
-
-      await this.sleep(10);
-    }
-    throw new Error('Port not active');
   }
 }
 

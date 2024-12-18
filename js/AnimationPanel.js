@@ -73,6 +73,9 @@ export default class AnimationPanel extends Panel {
         <button class="animation-button" id="renderBoxButton" title="Box">
           <i class="fa fa-square"></i>
         </button>
+        <button class="animation-button" id="renderCursorButton" title="Cursor">
+          <i class="fa-solid fa-arrow-pointer"></i>
+        </button>
       </div>
       <div id="animationControls">
         ${AnimationPanel.generateControlsContent(controls)}
@@ -129,6 +132,7 @@ export default class AnimationPanel extends Panel {
       { id: 'renderInfinityButton', shape: 'figure8', label: 'Infinity' },
       { id: 'renderHeartButton', shape: 'heart', label: 'Heart' },
       { id: 'renderBoxButton', shape: 'box', label: 'Box' },
+      { id: 'renderCursorButton', shape: 'cursor', label: 'Cursor' },
     ];
 
     shapes.forEach(({ id, shape, label }) => {

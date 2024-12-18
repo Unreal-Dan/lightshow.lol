@@ -5,6 +5,7 @@ import AnimationPanel from './AnimationPanel.js';
 import PatternPanel from './PatternPanel.js';
 import ColorsetPanel from './ColorsetPanel.js';
 import ColorPickerPanel from './ColorPickerPanel.js';
+import DevicePanel from './DevicePanel.js';
 import ModesPanel from './ModesPanel.js';
 import LedSelectPanel from './LedSelectPanel.js';
 import Modal from './Modal.js';
@@ -37,6 +38,7 @@ export default class VortexEditor {
     this.animationPanel = new AnimationPanel(this);
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
+    this.devicePanel = new DevicePanel(this);
     this.modesPanel = new ModesPanel(this);
     this.ledSelectPanel = new LedSelectPanel(this);
     this.colorPickerPanel = new ColorPickerPanel(this);
@@ -49,12 +51,57 @@ export default class VortexEditor {
       this.animationPanel,
       this.patternPanel,
       this.colorsetPanel,
+      this.devicePanel,
       this.modesPanel,
       this.ledSelectPanel,
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel
     ];
+    this.devices = {
+      'None': { 
+        image: 'public/images/none-logo-square-512.png',
+        icon: 'public/images/none-logo-square-64.png',
+        label: 'None',
+        ledCount: 1
+      },
+      'Orbit': {
+        image: 'public/images/orbit.png',
+        icon: 'public/images/orbit-logo-square-64.png',
+        label: 'Orbit',
+        ledCount: 28
+      },
+      'Handle': {
+        image: 'public/images/handle.png',
+        icon: 'public/images/handle-logo-square-64.png',
+        label: 'Handle',
+        ledCount: 3
+      },
+      'Gloves': {
+        image: 'public/images/gloves.png',
+        icon: 'public/images/gloves-logo-square-64.png',
+        label: 'Gloves',
+        ledCount: 10
+      },
+      'Chromadeck': {
+        image: 'public/images/chromadeck.png',
+        icon: 'public/images/chromadeck-logo-square-64.png',
+        label: 'Chromadeck',
+        ledCount: 20
+      },
+      'Spark': {
+        image: 'public/images/spark.png',
+        icon: 'public/images/spark-logo-square-64.png',
+        label: 'Spark',
+        ledCount: 6
+      },
+      'Duo': {
+        image: 'public/images/duo.png',
+        icon: 'public/images/duo-logo-square-64.png',
+        label: 'Duo',
+        ledCount: 2
+      }
+    };
   }
 
   initialize() {

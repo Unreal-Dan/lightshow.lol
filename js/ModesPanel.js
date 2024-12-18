@@ -23,9 +23,6 @@ export default class ModesPanel extends Panel {
         <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>
           <i class="fa-solid fa-satellite-dish"></i>
         </button>
-        <button id="connectDeviceButton" class="mode-list-btn" title="Connect Device to USB">
-          <i class="fa-brands fa-usb"></i>
-        </button>
       </div>
       <div id="modesListScrollContainer">
         <div id="modesListContainer">
@@ -33,8 +30,7 @@ export default class ModesPanel extends Panel {
         </div>
       </div>
     `;
-
-    super('modesPanel', content, 'Modes List & Device Controls');
+    super('modesPanel', content, 'Modes List');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
@@ -94,37 +90,12 @@ export default class ModesPanel extends Panel {
 
     document.addEventListener('patternChange', () => this.refresh(true));
 
-    document.getElementById('connectDeviceButton').addEventListener('click', async () => {
-      try {
-        // TODO: check for the thing
-        //    // Check if WebSerial is available in the browser
-        //if ('serial' in navigator) {
-        //} else {
-        //  document.getElementById('connectDevice').style.display = 'none';
-        //  document.getElementById('deviceConnectMessage').style.display = 'none';
-        //  document.getElementById('unsupportedBrowserMessage').style.display = 'block';
-        //}
-
-        //        <div id="deviceConnectContainer">
-        //          <p id="unsupportedBrowserMessage" style="display:none; color: #ff6c6c;">
-        //            WebSerial is not supported in your browser.
-        //            Please use a <a href="https://developer.mozilla.org/en-US/docs/Web/API/Serial#browser_compatibility" target="_blank" style="color: #66ff66;">supported browser</a> to connect a device.
-        //          </p>
-        //        </div>
-
-        await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
-      } catch (error) {
-        console.log("Error: " + error);
-        Notification.failure('Failed to connect: ' + error.message);
-      }
-    });
-
     this.refreshModeList();
   }
 
   async onDeviceConnect() {
     console.log("Device connected: " + this.vortexPort.name);
-    const ledCount = this.devices[this.vortexPort.name].ledCount;
+    const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
     if (ledCount !== undefined) {
       this.lightshow.setLedCount(ledCount);
       console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
@@ -175,9 +146,9 @@ export default class ModesPanel extends Panel {
     }
 
     // update device selection and lock it so it can't change
-    this.updateSelectedDevice(this.vortexPort.name, true);
+    this.editor.ledSelectPanel.updateSelectedDevice(this.vortexPort.name, true);
 
-    this.selectAllLeds();
+    this.editor.ledSelectPanel.selectAllLeds();
   }
 
   deviceChange(deviceEvent) {

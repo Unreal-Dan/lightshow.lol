@@ -6,17 +6,7 @@ export default class LedSelectPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="ledSelectSection">
-        <div id="deviceTypeContainer" class="custom-dropdown">
-          <div id="deviceTypeSelected" class="custom-dropdown-selected">Select Device</div>
-          <div id="deviceTypeOptions" class="custom-dropdown-options">
-            <div class="custom-dropdown-option" data-value="Orbit" data-icon="public/images/orbit-logo-square-64.png">
-              <img src="public/images/orbit-logo-square-64.png" alt="Orbit Logo">
-              Orbit
-            </div>
-          </div>
-        </div>
         <fieldset id="ledsFieldset" style="display:none;">
-          <legend style="user-select:none;padding-top:15px;">Select Leds</legend>
           <div class="flex-container">
             <div id="deviceImageContainer">
               <!-- Device image and LED indicators will be dynamically added here -->
@@ -41,15 +31,6 @@ export default class LedSelectPanel extends Panel {
     this.vortexPort = editor.vortexPort;
 
     this.selectedDevice = 'None';
-    this.devices = {
-      'None': { image: 'public/images/none-logo-square-512.png', icon: 'public/images/none-logo-square-64.png', label: 'None', ledCount: 1 },
-      'Orbit': { image: 'public/images/orbit.png', icon: 'public/images/orbit-logo-square-64.png', label: 'Orbit', ledCount: 28 },
-      'Handle': { image: 'public/images/handle.png', icon: 'public/images/handle-logo-square-64.png', label: 'Handle', ledCount: 3 },
-      'Gloves': { image: 'public/images/gloves.png', icon: 'public/images/gloves-logo-square-64.png', label: 'Gloves', ledCount: 10 },
-      'Chromadeck': { image: 'public/images/chromadeck.png', icon: 'public/images/chromadeck-logo-square-64.png', label: 'Chromadeck', ledCount: 20 },
-      'Spark': { image: 'public/images/spark.png', icon: 'public/images/spark-logo-square-64.png', label: 'Spark', ledCount: 6 },
-      'Duo': { image: 'public/images/duo.png', icon: 'public/images/duo-logo-square-64.png', label: 'Duo', ledCount: 2 }
-    };
   }
 
   initialize() {
@@ -76,28 +57,31 @@ export default class LedSelectPanel extends Panel {
       this.renderLedIndicators(this.selectedDevice);
     });
 
-    // Initialize dropdown with icons
-    this.addIconsToDropdown();
-    // Add event listener for device type selection
-    document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
-      if (event.target && event.target.classList.contains('custom-dropdown-option')) {
-        const selectedValue = event.target.getAttribute('data-value');
-        this.updateSelectedDevice(selectedValue);
-      }
-    });
+    //// Initialize dropdown with icons
+    //this.addIconsToDropdown();
+    //// Add event listener for device type selection
+    //document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
+    //  if (event.target && event.target.classList.contains('custom-dropdown-option')) {
+    //    const selectedValue = event.target.getAttribute('data-value');
+    //    this.updateSelectedDevice(selectedValue);
+    //  }
+    //});
 
-    // Add event listener for the selected device type dropdown
-    document.getElementById('deviceTypeSelected').addEventListener('click', (event) => {
-      if (event.currentTarget.classList.contains('locked')) {
-        event.stopPropagation();
-        event.preventDefault();
-        return;
-      }
-      document.getElementById('deviceTypeOptions').classList.toggle('show');
-    });
+    //// Add event listener for the selected device type dropdown
+    //document.getElementById('deviceTypeSelected').addEventListener('click', (event) => {
+    //  if (event.currentTarget.classList.contains('locked')) {
+    //    event.stopPropagation();
+    //    event.preventDefault();
+    //    return;
+    //  }
+    //  document.getElementById('deviceTypeOptions').classList.toggle('show');
+    //});
 
     // Listen to pattern changes to refresh LED indicators as needed
     document.addEventListener('patternChange', () => this.updateLedIndicators());
+
+    // hide till device connects
+    this.hide();
   }
 
   lockDeviceSelection(locked) {
@@ -114,7 +98,7 @@ export default class LedSelectPanel extends Panel {
     const ledsFieldset = document.getElementById('ledsFieldset');
     const modesListScrollContainer = document.getElementById('modesListScrollContainer');
 
-    const deviceIcon = this.devices[device].icon;
+    const deviceIcon = this.editor.devices[device].icon;
 
     this.selectedDevice = device;
     document.dispatchEvent(new CustomEvent('deviceTypeChange', { detail: this.selectedDevice }));
@@ -129,6 +113,7 @@ export default class LedSelectPanel extends Panel {
       document.getElementById('spread_div').style.display = 'none';
       ledsFieldset.style.display = 'none';
       this.lockDeviceSelection(lock);
+      this.hide();
       return;
     }
 
@@ -139,7 +124,7 @@ export default class LedSelectPanel extends Panel {
       ${device}
     `;
 
-    this.lightshow.setLedCount(this.devices[device].ledCount);
+    this.lightshow.setLedCount(this.editor.devices[device].ledCount);
 
     if (modesListScrollContainer) {
       modesListScrollContainer.style.height = '200px';
@@ -148,12 +133,13 @@ export default class LedSelectPanel extends Panel {
     document.getElementById('deviceTypeOptions').classList.remove('show');
     this.lockDeviceSelection(lock);
     this.refreshLedList();
+    this.show();
   }
 
   addIconsToDropdown() {
     const deviceTypeOptions = document.getElementById('deviceTypeOptions');
-    deviceTypeOptions.innerHTML = Object.keys(this.devices).map(key => {
-      const device = this.devices[key];
+    deviceTypeOptions.innerHTML = Object.keys(this.editor.devices).map(key => {
+      const device = this.editor.devices[key];
       return `<div class="custom-dropdown-option" data-value="${key}">
                 <img src="${device.icon}" alt="${device.label} Logo">
                 ${device.label}
@@ -196,7 +182,7 @@ export default class LedSelectPanel extends Panel {
     deviceImageContainer.appendChild(overlay);
 
     const deviceData = await this.getLedPositions(deviceName);
-    const deviceImageSrc = this.devices[deviceName].image;
+    const deviceImageSrc = this.editor.devices[deviceName].image;
 
     if (deviceImageSrc) {
       const deviceImage = document.createElement('img');

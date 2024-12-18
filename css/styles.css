@@ -49,7 +49,7 @@ canvas {
 
 /* Panels */
 #updatePanel, #modesPanel, #welcomePanel, #aboutPanel, #animationPanel,
-#colorsetPanel, #patternPanel, #colorPickerPanel, #ledSelectPanel {
+#colorsetPanel, #patternPanel, #colorPickerPanel, #ledSelectPanel, #devicePanel {
   background-color: #181a1b;
   border: 1px solid #3e4446;
   border-radius: 5px;
@@ -66,7 +66,7 @@ canvas {
 }
 
 #ledSelectPanel {
-  top: 330px;
+  top: 438px;
   right: 5px;
 }
 
@@ -243,8 +243,14 @@ canvas {
   justify-content: space-between;
 }
 
-#modesPanel {
+#devicePanel {
   top: 5px;
+  right: 5px;
+  z-index: 5;
+}
+
+#modesPanel {
+  top: 113px;
   right: 5px;
 }
 
@@ -256,7 +262,7 @@ canvas {
 
 #deviceConnectionSection {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-between; /* Adjusts button positioning */
   align-items: center;
 }
@@ -270,7 +276,7 @@ canvas {
 }
 
 /* Connection Buttons */
-.mode-list-btn {
+.mode-list-btn, .device-control-btn {
   background-color: #202020;
   color: #d8d4cf;
   border: 1px solid #454545;
@@ -280,6 +286,19 @@ canvas {
   transition: background-color 0.2s;
   font-size: 20px;
   width: 52px;
+}
+
+.device-control-btn {
+  margin-left: 10px;
+}
+
+.device-control-btn.disconnect {
+  background-color: #ff4d4d; /* Red background for disconnect */
+  color: #fff; /* White text */
+}
+
+.device-control-btn.disconnect:hover {
+  background-color: #e63939; /* Darker red on hover */
 }
 
 .mode-list-btn:hover {
@@ -874,6 +893,7 @@ legend {
   width: 100%;             /* Optional: making the select box full width */
   height: auto;            /* Adjust height as needed */
   user-select: none;
+  margin-top: 5px;
 }
 
 /* Styling for options */
@@ -999,20 +1019,32 @@ legend {
   position: relative;
   display: inline-block;
   width: 100%;
-  margin-top: 10px;
 }
 
-.custom-dropdown-selected {
+.custom-dropdown-select {
   cursor: pointer;
   padding: 10px;
+  height: 20px;
+  line-height: 20px;
   border: 1px solid #454545;
   border-radius: 4px;
   background-color: #181a1b;
+  color: #d8d4cf;
   display: flex;
   align-items: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.custom-dropdown-selected img {
+.custom-dropdown-select:hover {
+  background-color: #3e4446;
+  color: #ffffff;
+}
+
+.custom-dropdown-select:active {
+  background-color: #2e3436;
+}
+
+.custom-dropdown-select img {
   width: 24px;
   height: 24px;
   margin-right: 10px;
@@ -1023,7 +1055,7 @@ legend {
   position: absolute;
   background-color: #121212;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  z-index: 5;
+  z-index: 10;
   width: 100%;
 }
 
