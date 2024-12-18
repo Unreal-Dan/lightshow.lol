@@ -89,12 +89,12 @@ export default class ModesPanel extends Panel {
     transmitButton.addEventListener('click', () => this.editor.transmitVL());
 
     document.addEventListener('patternChange', () => this.refresh(true));
-    document.addEventListener('deviceChange', this.handleDeviceConnected.bind(this));
+    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
 
     this.refreshModeList();
   }
 
-  async onDeviceConnect() {
+  onDeviceConnect(deviceName) {
     console.log("Device connected: " + this.vortexPort.name);
     const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
     if (ledCount !== undefined) {
@@ -153,17 +153,19 @@ export default class ModesPanel extends Panel {
     this.editor.ledSelectPanel.selectAllLeds();
   }
 
-  deviceChange(deviceEvent) {
+  handleDeviceEvent(deviceChangeEvent) {
+    // Access the custom data from `event.detail`
+    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
     if (deviceEvent === 'waiting') {
-      this.onDeviceWaiting();
+      this.onDeviceWaiting(deviceName);
     } else if (deviceEvent === 'connect') {
-      this.onDeviceConnect();
+      this.onDeviceConnect(deviceName);
     } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect();
+      this.onDeviceDisconnect(deviceName);
     }
   }
 
-  onDeviceWaiting() {
+  onDeviceWaiting(deviceName) {
     Notification.success("Waiting for device...");
     //let statusMessage = document.getElementById('deviceStatus');
     //statusMessage.textContent = 'Waiting for device...';
@@ -171,7 +173,7 @@ export default class ModesPanel extends Panel {
     //statusMessage.classList.remove('status-success', 'status-failure');
   }
 
-  onDeviceDisconnect() {
+  onDeviceDisconnect(deviceName) {
     console.log("Device disconnected");
     Notification.success(this.vortexPort.name + ' Disconnected!');
 

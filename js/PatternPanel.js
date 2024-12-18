@@ -30,7 +30,7 @@ export default class PatternPanel extends Panel {
     this.refresh();
     document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
-    document.addEventListener('deviceConnected', this.handleDeviceConnected.bind(this));
+    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
 
     // Attach event listeners for help and randomize buttons
     document.getElementById('patternRandomizeButton').addEventListener('click', () => this.randomizePattern());
@@ -70,13 +70,33 @@ export default class PatternPanel extends Panel {
     this.refresh(true);
   }
 
-  handleDeviceConnected() {
+  handleDeviceEvent(deviceChangeEvent) {
+    // Access the custom data from `event.detail`
+    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
+    if (deviceEvent === 'waiting') {
+      this.onDeviceWaiting(deviceName);
+    } else if (deviceEvent === 'connect') {
+      this.onDeviceConnect(deviceName);
+    } else if (deviceEvent === 'disconnect') {
+      this.onDeviceDisconnect(deviceName);
+    }
+  }
+
+  onDeviceWaiting(deviceName) {
+    // nothing yet
+  }
+
+  onDeviceConnect(deviceName) {
     this.multiEnabled = true;
     this.populatePatternDropdown();
     this.refresh(true);
     // uh is this supposed to be here?
     this.vortexPort.startReading();
     this.editor.demoModeOnDevice();
+  }
+
+  onDeviceDisconnect(deviceName) {
+    // nothing yet
   }
 
   setTargetSingles(selectedLeds = null) {

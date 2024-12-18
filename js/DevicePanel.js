@@ -25,12 +25,7 @@ export default class DevicePanel extends Panel {
 
   initialize() {
     document.getElementById('connectDeviceButton').addEventListener('click', async () => {
-      try {
-        await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
-      } catch (error) {
-        console.log("Error: " + error);
-        Notification.failure('Failed to connect: ' + error.message);
-      }
+      await this.connectDevice();
     });
 
     this.addIconsToDropdown();
@@ -52,7 +47,16 @@ export default class DevicePanel extends Panel {
     });
   }
 
-  deviceChange(deviceEvent) {
+  async connectDevice() {
+      try {
+        await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
+      } catch (error) {
+        console.log("Error: " + error);
+        Notification.failure('Failed to connect: ' + error.message);
+      }
+  }
+
+  deviceChange(eventType) {
     if (deviceEvent === 'connect') {
       this.onDeviceConnect();
     } else if (deviceEvent === 'disconnect') {
@@ -60,6 +64,9 @@ export default class DevicePanel extends Panel {
     } else if (deviceEvent === 'waiting') {
       Notification.success("Waiting for device...");
     }
+
+    // dispatch the device change event with the new device name
+    document.dispatchEvent(new CustomEvent('deviceChange', { deviceEvent, deviceName }));
   }
 
   onDeviceConnect() {
@@ -85,8 +92,6 @@ export default class DevicePanel extends Panel {
     const deviceName = this.vortexPort.name;
     this.editor.ledSelectPanel.updateSelectedDevice(deviceName, true);
     this.editor.ledSelectPanel.selectAllLeds();
-
-    document.dispatchEvent(new CustomEvent('deviceChange'));
   }
 
   onDeviceDisconnect() {
@@ -103,12 +108,7 @@ export default class DevicePanel extends Panel {
 
     // Restore event listener for connect
     connectDeviceButton.onclick = async () => {
-      try {
-        await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
-      } catch (error) {
-        console.log("Error: " + error);
-        Notification.failure('Failed to connect: ' + error.message);
-      }
+      await this.connectDevice();
     };
 
     // Unlock the dropdown to allow device selection
@@ -116,23 +116,6 @@ export default class DevicePanel extends Panel {
 
     document.dispatchEvent(new CustomEvent('deviceDisconnected'));
   }
-
-  //onDeviceConnect() {
-  //  Notification.success("Device Connected!");
-  //  document.getElementById('connectDeviceButton').disabled = true;
-  //  document.dispatchEvent(new CustomEvent('deviceConnected'));
-
-  //  // Update selected device
-  //  const deviceName = this.vortexPort.name;
-  //  this.editor.ledSelectPanel.updateSelectedDevice(deviceName, true);
-  //  this.editor.ledSelectPanel.selectAllLeds();
-  //}
-
-  //onDeviceDisconnect() {
-  //  Notification.success("Device Disconnected!");
-  //  document.getElementById('connectDeviceButton').disabled = false;
-  //  document.dispatchEvent(new CustomEvent('deviceDisconnected'));
-  //}
 
   addIconsToDropdown() {
     const deviceTypeOptions = document.getElementById('deviceTypeOptions');

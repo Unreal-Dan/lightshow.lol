@@ -46,12 +46,31 @@ export default class ColorsetPanel extends Panel {
       //console.log('LEDs changed:', this.targetLeds);
       this.refresh(true);
     });
-    document.addEventListener('deviceConnected', (event) => {
-      //console.log("Control Panel detected device conneted");
-      this.refresh(true);
-      this.vortexPort.startReading();
-      this.editor.demoModeOnDevice();
-    });
+    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
+  }
+
+  handleDeviceEvent(deviceChangeEvent) {
+    // Access the custom data from `event.detail`
+    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
+    if (deviceEvent === 'waiting') {
+      this.onDeviceWaiting(deviceName);
+    } else if (deviceEvent === 'connect') {
+      this.onDeviceConnect(deviceName);
+    } else if (deviceEvent === 'disconnect') {
+      this.onDeviceDisconnect(deviceName);
+    }
+  }
+
+  onDeviceWaiting(deviceName) {
+    // nothing yet
+  }
+
+  onDeviceConnect(deviceName) {
+    // nothing yet
+  }
+
+  onDeviceDisconnect(deviceName) {
+    // nothing yet
   }
 
   setTargetSingles(selectedLeds = null) {

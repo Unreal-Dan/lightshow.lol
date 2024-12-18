@@ -48,9 +48,9 @@ export default class UpdatePanel extends Panel {
       }
     });
 
-    document.addEventListener('deviceConnected', () => {
-      Notification.success('Device connected. Ready to flash firmware.');
-    });
+    //document.addEventListener('deviceChange', () => { 
+    // do anything if the device changes...?
+    //});
 
     this.toggleCollapse(false);
     this.hide();
