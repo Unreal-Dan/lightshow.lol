@@ -56,7 +56,7 @@ export default class DevicePanel extends Panel {
       }
   }
 
-  deviceChange(eventType) {
+  deviceChange(deviceEvent) {
     if (deviceEvent === 'connect') {
       this.onDeviceConnect();
     } else if (deviceEvent === 'disconnect') {
@@ -68,7 +68,9 @@ export default class DevicePanel extends Panel {
     }
 
     // dispatch the device change event with the new device name
-    document.dispatchEvent(new CustomEvent('deviceChange', { deviceEvent, deviceName }));
+    document.dispatchEvent(new CustomEvent('deviceChange', { 
+      detail: { deviceEvent, deviceName: this.selectedDevice }
+    }));
   }
 
   onDeviceConnect() {

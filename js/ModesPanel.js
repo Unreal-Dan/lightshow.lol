@@ -146,11 +146,6 @@ export default class ModesPanel extends Panel {
     if (modesListScrollContainer) {
       modesListScrollContainer.style.height = '200px';
     }
-
-    // update device selection and lock it so it can't change
-    this.editor.ledSelectPanel.updateSelectedDevice(this.vortexPort.name, true);
-
-    this.editor.ledSelectPanel.selectAllLeds();
   }
 
   handleDeviceEvent(deviceChangeEvent) {

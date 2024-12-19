@@ -72,7 +72,7 @@ export default class PatternPanel extends Panel {
 
   handleDeviceEvent(deviceChangeEvent) {
     // Access the custom data from `event.detail`
-    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
+    const { deviceEvent, deviceName } = deviceChangeEvent;
     if (deviceEvent === 'waiting') {
       this.onDeviceWaiting(deviceName);
     } else if (deviceEvent === 'connect') {
