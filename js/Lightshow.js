@@ -36,8 +36,53 @@ export default class Lightshow {
     this.applyModeData();
     this.targetLeds = [0];
 
+    this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Center default
+    this.targetPosition = { x: this.cursorPosition.x, y: this.cursorPosition.y };
+    this.velocity = { x: 0, y: 0 };
+    this.friction = 0.8; // Friction for glide effect
+    this.isDragging = false;
+
+    // Event listeners for desktop and mobile
+    this.addInteractionListeners();
+
     // Initialize histories for each LED
     this.updateHistories();
+  }
+
+  addInteractionListeners() {
+    // Mouse interactions
+    window.addEventListener('mousemove', (event) => {
+      this.targetPosition.x = event.clientX;
+      this.targetPosition.y = event.clientY;
+    });
+
+    window.addEventListener('mousedown', (event) => {
+      this.isDragging = true;
+      this.velocity = { x: 0, y: 0 }; // Reset momentum
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isDragging = false; // Release drag
+    });
+
+    // Touch interactions for mobile
+    window.addEventListener('touchstart', (event) => {
+      const touch = event.touches[0];
+      this.targetPosition.x = touch.clientX;
+      this.targetPosition.y = touch.clientY;
+      this.isDragging = true;
+      this.velocity = { x: 0, y: 0 };
+    });
+
+    window.addEventListener('touchmove', (event) => {
+      const touch = event.touches[0];
+      this.targetPosition.x = touch.clientX;
+      this.targetPosition.y = touch.clientY;
+    });
+
+    window.addEventListener('touchend', () => {
+      this.isDragging = false;
+    });
   }
 
   setLedCount(count) {
@@ -133,11 +178,86 @@ export default class Lightshow {
   // function to set the shape
   setShape(shape) {
     if (this.currentShape === shape) {
-      this.direction *= -1;
+      this.direction *= -1; // Reverse direction for the same shape
     } else {
       this.currentShape = shape;
     }
+
+    if (shape === 'cursor') {
+      this.enableCursorFollow();
+    } else {
+      this.disableCursorFollow();
+    }
   }
+
+  enableCursorFollow() {
+    if (!this.cursorMoveListener) {
+      this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Default center
+      this.cursorMoveListener = (event) => {
+        this.cursorPosition.x = event.clientX;
+        this.cursorPosition.y = event.clientY;
+      };
+      window.addEventListener('mousemove', this.cursorMoveListener);
+    }
+  }
+
+  disableCursorFollow() {
+    if (this.cursorMoveListener) {
+      window.removeEventListener('mousemove', this.cursorMoveListener);
+      this.cursorMoveListener = null;
+    }
+    this.targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    this.velocity = { x: 0, y: 0 };
+    this.cursorPosition = { x: this.targetPosition.x, y: this.targetPosition.y };
+  }
+
+
+  feedCursorPoints() {
+    const { x: currentX, y: currentY } = this.cursorPosition;
+
+    const frac = (this.tickRate / 300);
+
+    // Apply velocity for smooth movement
+    this.velocity.x += (this.targetPosition.x - currentX) * (frac * 3); // Acceleration toward target
+    this.velocity.y += (this.targetPosition.y - currentY) * (frac * 3);
+
+    // constant fraction of tickrate used to effect velocity
+    const ratio = frac + this.friction;
+
+    this.velocity.x *= this.friction; // Apply friction but effected by speed
+    this.velocity.y *= this.friction;
+
+    this.cursorPosition.x += this.velocity.x;
+    this.cursorPosition.y += this.velocity.y;
+
+    const { x: cursorX, y: cursorY } = this.cursorPosition;
+
+    for (let i = 0; i < (this.tickRate / 2); i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) {
+        continue;
+      }
+
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
+      leds.forEach((col, index) => {
+        const angle = (Math.PI * 2 * index) / leds.length;
+        const radius = 30 + index * this.spread;
+
+        const x = cursorX + radius * Math.cos(angle);
+        const y = cursorY + radius * Math.sin(angle);
+
+        if (!col) col = { red: 0, green: 0, blue: 0 };
+
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
+
+
 
   draw() {
     switch (this.currentShape) {
@@ -152,6 +272,9 @@ export default class Lightshow {
         break;
       case 'box':
         this.feedBoxPoints();
+        break;
+      case 'cursor':
+        this.feedCursorPoints();
         break;
       default:
         console.warn('Unknown shape:', this.currentShape);
