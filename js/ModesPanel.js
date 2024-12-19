@@ -322,7 +322,7 @@ export default class ModesPanel extends Panel {
     //}
 
     // check version numbers
-    //this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
+    this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
 
     // show device options
     //document.getElementById('deviceActionContainer').style.display = 'flex';
