@@ -1939,6 +1939,7 @@ i {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 .device-info img {
@@ -1948,7 +1949,6 @@ i {
 }
 
 #firmwareProgress {
-  margin-top: 10px;
   height: 20px;
   background-color: #e0e0e0;
   border-radius: 10px;

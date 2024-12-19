@@ -64,7 +64,7 @@ export default class ChromalinkPanel extends Panel {
         const firmwareData = new Uint8Array(e.target.result);
         try {
           await this.vortexPort.flashFirmware(
-            this.modesPanel.lightshow.vortexLib,
+            this.editor.vortexLib,
             firmwareData,
             (chunk, totalChunks) => {
               const progress = Math.round((chunk / totalChunks) * 100);
@@ -88,7 +88,7 @@ export default class ChromalinkPanel extends Panel {
 
   async connect() {
     try {
-      this.duoHeader = await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib);
+      this.duoHeader = await this.vortexPort.connectChromalink(this.editor.vortexLib);
       if (!this.duoHeader) {
         throw new Error('Failed to read Duo save header');
       }
@@ -149,7 +149,7 @@ export default class ChromalinkPanel extends Panel {
       const firmwareData = new Uint8Array(await firmwareResponse.arrayBuffer());
       Notification.success('Flashing firmware...');
       await this.vortexPort.flashFirmware(
-        this.modesPanel.lightshow.vortexLib,
+        this.editor.vortexLib,
         firmwareData,
         (chunk, totalChunks) => {
           const progress = Math.round((chunk / totalChunks) * 100);
