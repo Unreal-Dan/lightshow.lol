@@ -2,7 +2,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 export default class ChromalinkPanel extends Panel {
-  constructor(editor, modesPanel) {
+  constructor(editor) {
     const content = `
       <div id="chromalinkOptions">
         <button id="chromalinkConnect" class="chromalink-button">Connect Duo</button>
@@ -29,7 +29,6 @@ export default class ChromalinkPanel extends Panel {
     super('chromalinkPanel', content, 'Chromalink Duo');
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
-    this.modesPanel = modesPanel;
     this.isConnected = false;
   }
 
@@ -103,9 +102,9 @@ export default class ChromalinkPanel extends Panel {
       }
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
-      this.modesPanel.updateSelectedDevice('Duo', true);
-      //this.modesPanel.renderLedIndicators('Duo');
-      this.modesPanel.selectAllLeds();
+      this.editor.modesPanel.updateSelectedDevice('Duo', true);
+      //this.editor.modesPanel.renderLedIndicators('Duo');
+      this.editor.modesPanel.selectAllLeds();
       // update ui
       document.getElementById('duoIcon').style.display = 'block';
       document.getElementById('duoInfo').style.display = 'block';
@@ -134,9 +133,9 @@ export default class ChromalinkPanel extends Panel {
         throw new Error('Failed to restore old modes');
       }
       this.oldModes = null;
-      this.modesPanel.updateSelectedDevice('Chromadeck', true);
-      this.modesPanel.renderLedIndicators('Chromadeck');
-      this.modesPanel.selectAllLeds();
+      this.editor.modesPanel.updateSelectedDevice('Chromadeck', true);
+      this.editor.modesPanel.renderLedIndicators('Chromadeck');
+      this.editor.modesPanel.selectAllLeds();
       const flashButton = document.getElementById('chromalinkFlash');
       const updateButton = document.getElementById('chromalinkUpdate');
       flashButton.disabled = true;
@@ -190,7 +189,7 @@ export default class ChromalinkPanel extends Panel {
     } catch (error) {
       Notification.failure('Failed to pull modes: ' + error.message);
     }
-    this.modesPanel.refreshModeList(); // Refresh modes in the UI
+    this.editor.modesPanel.refreshModeList(); // Refresh modes in the UI
   }
 
   // Push modes to Duo via Chromalink
