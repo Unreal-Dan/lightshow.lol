@@ -110,6 +110,8 @@ export default class ChromalinkPanel extends Panel {
       document.getElementById('duoInfo').style.display = 'block';
       document.getElementById('duoVersion').textContent = this.duoHeader.version;
       document.getElementById('duoModes').textContent = this.duoHeader.numModes;
+      const chromalinkDetails = document.getElementById('chromalinkDetails');
+      chromalinkDetails.style.display = 'block';
       const flashButton = document.getElementById('chromalinkFlash');
       const updateButton = document.getElementById('chromalinkUpdate');
       flashButton.disabled = false;
@@ -134,8 +136,9 @@ export default class ChromalinkPanel extends Panel {
       }
       this.oldModes = null;
       this.editor.modesPanel.updateSelectedDevice('Chromadeck', true);
-      this.editor.modesPanel.renderLedIndicators('Chromadeck');
       this.editor.modesPanel.selectAllLeds();
+      const chromalinkDetails = document.getElementById('chromalinkDetails');
+      chromalinkDetails.style.display = 'none';
       const flashButton = document.getElementById('chromalinkFlash');
       const updateButton = document.getElementById('chromalinkUpdate');
       flashButton.disabled = true;
