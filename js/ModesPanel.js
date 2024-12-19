@@ -342,6 +342,8 @@ export default class ModesPanel extends Panel {
 
     // update device selection and lock it so it can't change
     this.updateSelectedDevice(this.vortexPort.name, true);
+
+    this.selectAllLeds();
   }
 
   showOutdatedFirmwareNotification(device, version, latestVersion, downloadUrl) {
