@@ -51,26 +51,6 @@ export default class LedSelectPanel extends Panel {
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
 
-    //// Initialize dropdown with icons
-    //this.addIconsToDropdown();
-    //// Add event listener for device type selection
-    //document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
-    //  if (event.target && event.target.classList.contains('custom-dropdown-option')) {
-    //    const selectedValue = event.target.getAttribute('data-value');
-    //    this.updateSelectedDevice(selectedValue);
-    //  }
-    //});
-
-    //// Add event listener for the selected device type dropdown
-    //document.getElementById('deviceTypeSelected').addEventListener('click', (event) => {
-    //  if (event.currentTarget.classList.contains('locked')) {
-    //    event.stopPropagation();
-    //    event.preventDefault();
-    //    return;
-    //  }
-    //  document.getElementById('deviceTypeOptions').classList.toggle('show');
-    //});
-
     // Listen to pattern changes to refresh LED indicators as needed
     document.addEventListener('patternChange', () => this.updateLedIndicators());
 
@@ -78,16 +58,7 @@ export default class LedSelectPanel extends Panel {
     this.hide();
   }
 
-  lockDeviceSelection(locked) {
-    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
-    if (locked) {
-      deviceTypeSelected.classList.add('locked');
-    } else {
-      deviceTypeSelected.classList.remove('locked');
-    }
-  }
-
-  updateSelectedDevice(device, lock = false) {
+  updateSelectedDevice(device) {
     const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const ledsFieldset = document.getElementById('ledsFieldset');
     const modesListScrollContainer = document.getElementById('modesListScrollContainer');
@@ -103,7 +74,6 @@ export default class LedSelectPanel extends Panel {
       }
       document.getElementById('spread_div').style.display = 'none';
       ledsFieldset.style.display = 'none';
-      this.lockDeviceSelection(lock);
       this.hide();
       return;
     }
@@ -123,7 +93,7 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.style.display = 'block';
     document.getElementById('deviceTypeOptions').classList.remove('show');
     this.renderLedIndicators(device);
-    this.lockDeviceSelection(lock);
+    this.selectAllLeds();
     this.refreshLedList();
     this.show();
   }

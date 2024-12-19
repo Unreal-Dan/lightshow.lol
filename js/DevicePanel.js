@@ -95,6 +95,7 @@ export default class DevicePanel extends Panel {
     // Update selected device
     const deviceName = this.vortexPort.name;
     this.updateSelectedDevice(deviceName, true);
+    this.lockDeviceSelection(true);
   }
 
   onDeviceDisconnect() {
@@ -118,6 +119,9 @@ export default class DevicePanel extends Panel {
     document.getElementById('deviceTypeSelected').classList.remove('locked');
 
     document.dispatchEvent(new CustomEvent('deviceDisconnected'));
+
+    // unlock device selection
+    this.lockDeviceSelection(false);
   }
 
   addIconsToDropdown() {
@@ -147,8 +151,15 @@ export default class DevicePanel extends Panel {
 
     // Update and show the LED Select Panel
     this.editor.ledSelectPanel.updateSelectedDevice(device);
-    this.editor.ledSelectPanel.selectAllLeds();
-    this.editor.ledSelectPanel.show();
+  }
+
+  lockDeviceSelection(locked) {
+    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
+    if (locked) {
+      deviceTypeSelected.classList.add('locked');
+    } else {
+      deviceTypeSelected.classList.remove('locked');
+    }
   }
 }
 
