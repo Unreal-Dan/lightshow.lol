@@ -851,7 +851,7 @@ legend {
   border-radius: 4px; /* Rounded borders */
   padding: 16px; /* Padding */
   position: fixed; /* Sit on top of the screen */
-  z-index: 10; /* Add a z-index if needed */
+  z-index: 1000; /* Add a z-index if needed */
   left: 50%; /* Center the div */
   top: 30px; /* 30px from the top */
 }
@@ -1976,6 +1976,7 @@ i {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 .device-info img {
@@ -1985,7 +1986,6 @@ i {
 }
 
 #firmwareProgress {
-  margin-top: 10px;
   height: 20px;
   background-color: #e0e0e0;
   border-radius: 10px;

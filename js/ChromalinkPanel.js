@@ -2,7 +2,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 export default class ChromalinkPanel extends Panel {
-  constructor(editor, modesPanel) {
+  constructor(editor) {
     const content = `
       <div id="chromalinkOptions">
         <button id="chromalinkConnect" class="chromalink-button">Connect Duo</button>
@@ -15,21 +15,20 @@ export default class ChromalinkPanel extends Panel {
               <p id="deviceLatestVersionLabel"><strong>Modes:</strong> <span id="duoModes"></span></p>
             </div>
           </div>
-          <button id="chromalinkFlash" class="chromalink-button" disabled>Flash Custom Firmware</button>
-          <button id="chromalinkUpdate" class="chromalink-button" disabled>Update Firmware</button>
-          <div class="progress-container">
-            <div id="firmwareProgress" class="progress-bar">
-              <div id="firmwareProgressBar"></div>
-            </div>
-          </div>
-          <input type="file" id="firmwareFileInput" style="display:none;" />
         </div>
+        <button id="chromalinkFlash" class="chromalink-button" disabled>Flash Custom Firmware</button>
+        <button id="chromalinkUpdate" class="chromalink-button" disabled>Update Firmware</button>
+        <div class="progress-container">
+          <div id="firmwareProgress" class="progress-bar">
+            <div id="firmwareProgressBar"></div>
+          </div>
+        </div>
+        <input type="file" id="firmwareFileInput" style="display:none;" />
       </div>
     `;
     super('chromalinkPanel', content, 'Chromalink Duo');
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
-    this.modesPanel = modesPanel;
     this.isConnected = false;
   }
 
@@ -64,7 +63,7 @@ export default class ChromalinkPanel extends Panel {
         const firmwareData = new Uint8Array(e.target.result);
         try {
           await this.vortexPort.flashFirmware(
-            this.modesPanel.lightshow.vortexLib,
+            this.editor.vortexLib,
             firmwareData,
             (chunk, totalChunks) => {
               const progress = Math.round((chunk / totalChunks) * 100);
@@ -88,50 +87,60 @@ export default class ChromalinkPanel extends Panel {
 
   async connect() {
     try {
-      this.duoHeader = await this.vortexPort.connectChromalink(this.modesPanel.lightshow.vortexLib);
+      // Use the connect function from VortexPort
+      this.duoHeader = await this.vortexPort.connectChromalink(this.editor.vortexLib);
       if (!this.duoHeader) {
         throw new Error('Failed to read Duo save header');
       }
-
       this.isConnected = true;
-      this.updateUIAfterConnect();
-      Notification.success(`Successfully Chromalinked Duo v${this.duoHeader.version}`);
+      //await this.editor.checkVersion('Duo', this.duoHeader.version);
+      const connectButton = document.getElementById('chromalinkConnect');
+      connectButton.innerHTML = 'Disconnect Duo'
+      this.oldModes = new this.editor.vortexLib.ByteStream();
+      if (!this.editor.lightshow.vortex.getModes(this.oldModes)) {
+        throw new Error('Failed to backup old modes');
+      }
+      this.editor.lightshow.vortex.clearModes();
+      this.editor.lightshow.setLedCount(2);
+      this.editor.modesPanel.updateSelectedDevice('Duo', true);
+      //this.editor.modesPanel.renderLedIndicators('Duo');
+      this.editor.modesPanel.selectAllLeds();
+      // update ui
+      document.getElementById('duoIcon').style.display = 'block';
+      document.getElementById('duoInfo').style.display = 'block';
+      document.getElementById('duoVersion').textContent = this.duoHeader.version;
+      document.getElementById('duoModes').textContent = this.duoHeader.numModes;
+      const chromalinkDetails = document.getElementById('chromalinkDetails');
+      chromalinkDetails.style.display = 'block';
+      // give a notification
+      Notification.success('Successfully Chromalinked Duo v' + this.duoHeader.version);
     } catch (error) {
       Notification.failure('Failed to connect: ' + error.message);
     }
   }
-
+  
   async disconnect() {
     try {
+      // Use the connect function from VortexPort
+      const connectButton = document.getElementById('chromalinkConnect');
+      connectButton.innerHTML = 'Connect Duo'
       this.isConnected = false;
-      this.updateUIAfterDisconnect();
+      this.editor.lightshow.vortex.clearModes();
+      this.editor.lightshow.setLedCount(20);
+      if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
+        throw new Error('Failed to restore old modes');
+      }
+      this.oldModes = null;
+      this.editor.modesPanel.updateSelectedDevice('Chromadeck', true);
+      this.editor.modesPanel.selectAllLeds();
+      const chromalinkDetails = document.getElementById('chromalinkDetails');
+      chromalinkDetails.style.display = 'none';
+      document.getElementById('duoIcon').style.display = 'none';
+      document.getElementById('duoInfo').style.display = 'none';
       Notification.success('Successfully Disconnected Chromalink');
     } catch (error) {
-      Notification.failure('Failed to disconnect: ' + error.message);
+      Notification.failure('Failed to connect: ' + error.message);
     }
-  }
-
-  updateUIAfterConnect() {
-    const connectButton = document.getElementById('chromalinkConnect');
-    const chromalinkDetails = document.getElementById('chromalinkDetails');
-    connectButton.textContent = 'Disconnect Duo';
-
-    document.getElementById('duoVersion').textContent = this.duoHeader.version;
-    document.getElementById('duoModes').textContent = this.duoHeader.numModes;
-
-    chromalinkDetails.style.display = 'block';
-    document.getElementById('chromalinkFlash').disabled = false;
-    document.getElementById('chromalinkUpdate').disabled = false;
-  }
-
-  updateUIAfterDisconnect() {
-    const connectButton = document.getElementById('chromalinkConnect');
-    const chromalinkDetails = document.getElementById('chromalinkDetails');
-    connectButton.textContent = 'Connect Duo';
-
-    chromalinkDetails.style.display = 'none';
-    document.getElementById('chromalinkFlash').disabled = true;
-    document.getElementById('chromalinkUpdate').disabled = true;
   }
 
   async updateFirmware() {
@@ -149,7 +158,7 @@ export default class ChromalinkPanel extends Panel {
       const firmwareData = new Uint8Array(await firmwareResponse.arrayBuffer());
       Notification.success('Flashing firmware...');
       await this.vortexPort.flashFirmware(
-        this.modesPanel.lightshow.vortexLib,
+        this.editor.vortexLib,
         firmwareData,
         (chunk, totalChunks) => {
           const progress = Math.round((chunk / totalChunks) * 100);
@@ -175,7 +184,7 @@ export default class ChromalinkPanel extends Panel {
     } catch (error) {
       Notification.failure('Failed to pull modes: ' + error.message);
     }
-    this.modesPanel.refreshModeList(); // Refresh modes in the UI
+    this.editor.modesPanel.refreshModeList(); // Refresh modes in the UI
   }
 
   // Push modes to Duo via Chromalink
