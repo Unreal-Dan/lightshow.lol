@@ -93,7 +93,7 @@ export default class ChromalinkPanel extends Panel {
         throw new Error('Failed to read Duo save header');
       }
       this.isConnected = true;
-      await this.editor.checkVersion('Duo', this.duoHeader.version);
+      //await this.editor.checkVersion('Duo', this.duoHeader.version);
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Disconnect Duo'
       this.oldModes = new this.editor.vortexLib.ByteStream();

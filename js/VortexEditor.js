@@ -110,7 +110,7 @@ export default class VortexEditor {
 
     // Fetch the latest firmware versions from vortex.community
     let latestFirmwareVersions;
-    if (window.location.hostname.startsWith('vortex.community')) {
+    if (window.location.hostname.startsWith('lightshow.lol')) {
       const response = await fetch('https://vortex.community/downloads/json');
       latestFirmwareVersions = await response.json();
     } else {
