@@ -57,16 +57,20 @@ export default class VortexPort {
   }
 
   resetState() {
-    // Reset properties to default state
-    this.serialPort = null;
+    if (this.reader) {
+      try {
+        console.log("resetState(): Release reader");
+        this.reader.releaseLock();
+      } catch (error) {
+        console.warn('Error releasing reader in resetState:', error);
+      } finally {
+        this.reader = null;
+      }
+    }
     this.portActive = false;
     this.name = '';
     this.version = 0;
     this.buildDate = '';
-    if (this.reader) {
-      this.reader.releaseLock();
-      this.reader = null;
-    }
     this.isTransmitting = false; // Reset the transmission state on reset
     this.hasUPDI = false;
     // Further state reset logic if necessary
@@ -77,24 +81,30 @@ export default class VortexPort {
   }
 
   async requestDevice(callback) {
+    this.deviceCallback = callback;
     try {
       if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
         if (!this.serialPort) {
           throw new Error('Failed to open serial port');
         }
-        await this.serialPort.open({ baudRate: 9600 });
+        await this.serialPort.open({ baudRate: 115200 });
+        // is this necessary...? I don't remember why it's here
+        await this.serialPort.setSignals({ dataTerminalReady: true });
+        if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+          this.deviceCallback('waiting');
+        }
       }
-      // is this necessary...? I don't remember why it's here
-      await this.serialPort.setSignals({ dataTerminalReady: true });
-      this.portActive = false;
-      if (callback && typeof callback === 'function') {
-        callback('waiting');
-      }
-      this.listenForGreeting(callback);
+      await this.beginConnection();
     } catch (error) {
       console.error('Error:', error);
     }
+  }
+
+  async beginConnection(){
+    console.log("Beginning connection...");
+    this.portActive = false;
+    this.listenForGreeting();
   }
 
   async writeData(data) {
@@ -127,23 +137,26 @@ export default class VortexPort {
     return true;
   }
 
-  listenForGreeting = async (callback) => {
+  listenForGreeting = async () => {
     while (!this.portActive && !this.cancelListeningForGreeting) {
       if (this.serialPort) {
         try {
+          console.log("Listening for greeting...");
           // Read data from the serial port
-          const response = await this.readData();
+          const response = await this.readData(true);
           if (!response) {
             console.log("Error: Connection broken");
             // broken connection
-            break;
+            continue;
           }
 
-          let responseRegex = /^== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==$/;
+          console.log("Matching: [" + response + "]...");
+
+          let responseRegex = /== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==/;
           let match = response.match(responseRegex);
           if (!match) {
             // TODO: removeme later! backwards compatibility for old connection string
-            responseRegex = /^== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==$/;
+            responseRegex = /== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==/;
             match = response.match(responseRegex);
           }
 
@@ -176,10 +189,10 @@ export default class VortexPort {
 
             this.portActive = true;
             this.serialPort.addEventListener("disconnect", (event) => {
-              this.disconnect(callback);
+              this.disconnect();
             });
-            if (callback && typeof callback === 'function') {
-              callback('connect');
+            if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+              this.deviceCallback('connect');
             }
           }
         } catch (err) {
@@ -191,15 +204,22 @@ export default class VortexPort {
           }
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
     this.cancelListeningForGreeting = false;
   }
 
-  disconnect(callback = null) {
-    this.resetState(); // Reset the state of the class
-    if (callback && typeof callback === 'function') {
-      callback('disconnect');
+  async restartConnecton() {
+    await this.beginConnection();
+  }
+
+  async disconnect() {
+    if (this.reader) {
+      await this.reader.cancel();
+    }
+    this.resetState();
+    if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+      this.deviceCallback('disconnect');
     }
   }
 
@@ -211,24 +231,35 @@ export default class VortexPort {
     // todo: implement async read cancel
   }
 
-  async readData() {
+  async readData(fullResponse) {
     if (!this.serialPort || !this.serialPort.readable) {
       return null;
     }
+    if (this.accumulatedData.length > 0) {
+      // check the buffer first...
+      // Return any single byte
+      const singleByte = this.accumulatedData[0];
+      this.accumulatedData = this.accumulatedData.substring(1);
+      return singleByte;
+    }
     if (this.reader) {
       try {
+        console.log("readData(): Release reader0");
         this.reader.releaseLock();
       } catch (error) {
         console.warn('Failed to release reader lock:', error);
       }
     }
     this.reader = this.serialPort.readable.getReader();
+    console.log("readData(): Got reader");
     try {
       while (true) {
+        console.log("Reading...");
         const { value, done } = await this.reader.read();
         if (done) {
           // Ensure the reader is not released multiple times
           if (this.reader) {
+            console.log("readData(): Release reader");
             this.reader.releaseLock();
             this.reader = null;
           }
@@ -236,17 +267,26 @@ export default class VortexPort {
         }
 
         const text = new TextDecoder().decode(value);
+        console.log("Read data: " + text);
         this.accumulatedData += text;
 
-        // If it starts with '=' or '==', look for the end delimiter '=='
-        if (this.accumulatedData.startsWith('=') || this.accumulatedData.startsWith('==')) {
-          const endIndex = this.accumulatedData.indexOf('==', 2); // Search for '==' after the first one.
-
-          if (endIndex >= 0) {
-            const fullMessage = this.accumulatedData.substring(0, endIndex + 2).trim();
-            this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
-            return fullMessage; // Return the full message
+        if (fullResponse) {
+          const responseRegex = /==.*==/;
+          const match = this.accumulatedData.match(responseRegex);
+          if (match) {
+            const result = this.accumulatedData;
+            this.accumulatedData = '';
+            return result;
           }
+        // If it starts with '=' or '==', look for the end delimiter '=='
+        //if (this.accumulatedData.startsWith('=') || this.accumulatedData.startsWith('==')) {
+        //  const endIndex = this.accumulatedData.indexOf('==', 2); // Search for '==' after the first one.
+
+        //  if (endIndex >= 0) {
+        //    const fullMessage = this.accumulatedData.substring(0, endIndex + 2).trim();
+        //    this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
+        //    return fullMessage; // Return the full message
+        //  }
         } else {
           // Return any single byte
           const singleByte = this.accumulatedData[0];
@@ -260,6 +300,7 @@ export default class VortexPort {
     } finally {
       if (this.reader) {
         try {
+          console.log("readData(): Release reader2");
           this.reader.releaseLock(); // Ensure release of reader in the finally block
         } catch (error) {
           console.warn('Failed to release reader lock in finally:', error);
@@ -564,7 +605,6 @@ export default class VortexPort {
       if (headerStream.size() > 5) {
         duoHeader.vBuild = headerData[5];
       }
-      console.log(JSON.stringify(headerData));
       // construct a full version string
       duoHeader.version = duoHeader.vMajor + '.' + duoHeader.vMinor + '.' + duoHeader.vBuild;
       duoHeader.rawData = headerData;
@@ -767,9 +807,11 @@ export default class VortexPort {
     }
 
     if (this.reader) {
+      console.log("readFromSerialPort(): Release reader");
       this.reader.releaseLock();
     }
     this.reader = this.serialPort.readable.getReader();
+    console.log("readFromSerialPort(): Got reader");
     let result = null;
     try {
       result = await this.reader.read();
@@ -778,6 +820,7 @@ export default class VortexPort {
       // do nothing?
       console.log("Failed to read: " + error);
     }
+    console.log("readFromSerialPort(): Release reader2");
     this.reader.releaseLock();
     this.reader = null;
     return result;

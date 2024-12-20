@@ -47,13 +47,18 @@ export default class DevicePanel extends Panel {
     });
   }
 
+  async disconnectDevice() {
+    await this.vortexPort.disconnect(); 
+    this.onDeviceDisconnect();
+  }
+
   async connectDevice() {
-      try {
-        await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
-      } catch (error) {
-        console.log("Error: " + error);
-        Notification.failure('Failed to connect: ' + error.message);
-      }
+    try {
+      await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
+    } catch (error) {
+      console.log("Error: " + error);
+      Notification.failure('Failed to connect: ' + error.message);
+    }
   }
 
   deviceChange(deviceEvent) {
@@ -104,9 +109,7 @@ export default class DevicePanel extends Panel {
     const connectDeviceButton = document.getElementById('connectDeviceButton');
 
     // Change button back to "Connect Device"
-    connectDeviceButton.innerHTML = `
-    <i class="fa-brands fa-usb"></i> Connect Device
-  `;
+    connectDeviceButton.innerHTML = `<i class="fa-brands fa-usb"></i>`;
     connectDeviceButton.title = "Connect Device";
     connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
 
