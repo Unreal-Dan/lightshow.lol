@@ -35,7 +35,7 @@ jobs:
       run: |
         git clone https://github.com/emscripten-core/emsdk.git
         cd emsdk
-        ./emsdk install latest
+        ./emsdk install b363a836e75a245c548b7a6a021822d8c9e4c6df
         ./emsdk activate latest
         source ./emsdk_env.sh
 
