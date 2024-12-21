@@ -1848,6 +1848,9 @@ i {
   height: 40px; /* Fixed height */
   box-sizing: border-box; /* Include padding in size */
   overflow: none;
+
+  transition: transform 0.2s ease;
+  position: relative;
 }
 
 .color-box.empty {
@@ -1857,6 +1860,40 @@ i {
   justify-content: center; /* Center content */
   overflow: none;
 }
+
+.color-box.empty:hover {
+  background: #222; /* Slightly darker on hover */
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-hex-input:focus {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.color-box .color-entry:hover {
+  flex: 0 0 50%;
+}
+
+.color-box.dragging {
+  margin-top: 50px;
+  position: static;
+  pointer-events: none;
+  border: 1px solid gray;
+}
+
+.color-box.placeholder {
+  background: rgba(0, 0, 0, 0.1);
+  border: 2px dashed #ccc;
+  height: 50px; /* Match the color box height */
+}
+
+.color-box.over {
+  transform: translateY(10px); /* Example visual cue */
+}
+
+
 
 .color-entry {
   width: 50px;
@@ -1879,21 +1916,6 @@ i {
   color: #fff;
   padding: 0 5px;
   text-align: center;
-}
-
-.color-box.empty:hover {
-  background: #222; /* Slightly darker on hover */
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-
-.color-box .color-hex-input:focus {
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-
-.color-box .color-entry:hover {
-  flex: 0 0 50%;
 }
 
 
@@ -2025,46 +2047,4 @@ i {
 
 .led-dot.selected {
   background: #00ff00; /* Green for selected */
-}
-
-
-
-
-
-
-.color-box {
-  transition: transform 0.2s ease;
-}
-
-.color-box.dragging {
-  opacity: 0.5;
-}
-
-.color-box.placeholder {
-  background: rgba(0, 0, 0, 0.1);
-  border: 2px dashed #ccc;
-  height: 50px; /* Match the color box height */
-}
-
-.color-box.over {
-  transform: translateY(10px); /* Example visual cue */
-}
-
-
-
-.color-box {
-  position: relative;
-  transition: transform 0.2s ease;
-}
-
-.color-box.placeholder {
-  background: rgba(0, 0, 0, 0.1);
-  border: 2px dashed #ccc;
-  height: 50px; /* Match the color box height */
-}
-
-.color-box.dragging {
-  opacity: 0.8;
-  cursor: grabbing;
-  transition: none; /* Disable transitions for the dragged element */
 }

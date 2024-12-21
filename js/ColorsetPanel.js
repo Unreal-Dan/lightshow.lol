@@ -5,8 +5,8 @@ import ColorPickerPanel from './ColorPickerPanel.js';
 
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
+    //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
-            <div id="colorset-selected-leds" class="selected-leds-bar"></div>
             <div id="colorset" class="grid-container"></div>
         `;
 
@@ -156,95 +156,132 @@ export default class ColorsetPanel extends Panel {
     let dragStartIndex = null;
     let placeholder = null;
 
-    // Create a placeholder element for visual feedback
-    function createPlaceholder() {
+    const createPlaceholder = () => {
       placeholder = document.createElement('div');
       placeholder.className = 'color-box placeholder';
-      colorsetElement.appendChild(placeholder);
-    }
+      placeholder.style.height = `${draggingElement.offsetHeight}px`;
+    };
 
-    // Move the placeholder to the correct position
-    function updatePlaceholder(target) {
-      if (!placeholder || !target) return;
+    const updatePlaceholder = (target) => {
+      if (!placeholder || !target || placeholder === target) return;
+      if (target.classList.contains('empty')) return;
       colorsetElement.insertBefore(placeholder, target);
-    }
+    };
 
-    function handlePointerDown(e) {
+    const DRAG_THRESHOLD = 5; // Adjust for better responsiveness
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    const handlePointerDown = (e) => {
       const target = e.target.closest('.color-box');
       if (!target) return;
 
+      const isDeleteButton = e.target.classList.contains('delete-color');
+      if (isDeleteButton) return;
+
       draggingElement = target;
       dragStartIndex = parseInt(target.dataset.index, 10);
-      target.classList.add('dragging');
 
-      const rect = target.getBoundingClientRect();
-      draggingElement.style.position = 'absolute';
-      draggingElement.style.width = `${rect.width}px`;
-      draggingElement.style.height = `${rect.height}px`;
-      draggingElement.style.zIndex = 1000;
-      draggingElement.style.pointerEvents = 'none';
+      startX = e.clientX;
+      startY = e.clientY;
 
-      // Set the starting position
-      const offsetX = e.clientX - rect.left;
-      const offsetY = e.clientY - rect.top;
-      draggingElement.dataset.offsetX = offsetX;
-      draggingElement.dataset.offsetY = offsetY;
+      document.addEventListener('pointermove', checkForDragStart);
+      document.addEventListener('pointerup', cancelDragStart);
+    };
 
-      createPlaceholder();
-      updatePlaceholder(draggingElement.nextSibling);
+    const checkForDragStart = (e) => {
+      const movedX = Math.abs(e.clientX - startX);
+      const movedY = Math.abs(e.clientY - startY);
 
-      document.addEventListener('pointermove', handlePointerMove);
-      document.addEventListener('pointerup', handlePointerUp);
-    }
+      if (movedX > DRAG_THRESHOLD || movedY > DRAG_THRESHOLD) {
+        isDragging = true;
 
-    function handlePointerMove(e) {
-      if (!draggingElement) return;
+        draggingElement.classList.add('dragging');
+        draggingElement.style.position = 'absolute';
+        draggingElement.style.zIndex = 1000;
+        draggingElement.style.pointerEvents = 'none';
 
-      // Move the dragged element with the cursor
-      const offsetX = parseFloat(draggingElement.dataset.offsetX);
-      const offsetY = parseFloat(draggingElement.dataset.offsetY);
-      draggingElement.style.left = `${e.clientX - offsetX}px`;
-      draggingElement.style.top = `${e.clientY - offsetY}px`;
+        createPlaceholder();
+        updatePlaceholder(draggingElement.nextSibling);
 
-      // Find the nearest color box and update placeholder position
-      const target = document.elementFromPoint(e.clientX, e.clientY + 15)?.closest('.color-box:not(.dragging)');
-      if (target) updatePlaceholder(target);
-    }
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
 
-    function handlePointerUp() {
-      if (!draggingElement || !placeholder) return;
+        document.removeEventListener('pointermove', checkForDragStart);
+        document.removeEventListener('pointerup', cancelDragStart);
+      }
+    };
 
-      const dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
+    const cancelDragStart = () => {
+      document.removeEventListener('pointermove', checkForDragStart);
+      document.removeEventListener('pointerup', cancelDragStart);
 
-      if (dragStartIndex !== dropIndex && dropIndex >= 0) {
-        // Swap colors using VortexLib API
+      draggingElement = null;
+      isDragging = false;
+    };
+
+    const handlePointerMove = (e) => {
+      if (!draggingElement || !isDragging) return;
+
+      const rect = colorsetElement.getBoundingClientRect();
+      draggingElement.style.left = `${e.clientX - rect.left}px`;
+      draggingElement.style.top = `${e.clientY - rect.top}px`;
+
+      const children = Array.from(colorsetElement.children);
+      const addColorContainer = children.find(child => child.classList.contains('empty'));
+
+      // Ensure we do not allow the placeholder to interact with the "add color" slot
+      const target = document.elementFromPoint(e.clientX, e.clientY + 30)?.closest('.color-box:not(.dragging):not(.empty)');
+
+      if (!target) {
+        const lastChild = addColorContainer
+          ? children[children.indexOf(addColorContainer) - 1] // Get the last actual color slot
+          : children[children.length - 1];
+        const rect = lastChild.getBoundingClientRect();
+        const midPoint = rect.top + (rect.height / 2);
+        if (lastChild && e.clientY > midPoint) {
+          colorsetElement.insertBefore(placeholder, addColorContainer || null); // Place before "add color" if it exists
+          return;
+        }
+      }
+      if (target) {
+        updatePlaceholder(target);
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (!draggingElement || !isDragging) return;
+
+      let dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
+
+      if (dragStartIndex !== dropIndex) {
         const set = cur.getColorset(this.targetLed);
-        const col1 = set.get(dragStartIndex);
-        const col2 = set.get(dropIndex);
-        cur.getColorset(this.targetLed).swapColors(dragStartIndex, dropIndex);
-        cur.init(); // Reinitialize the mode
-        this.lightshow.vortex.engine().modes().saveCurMode(); // Save changes
+        if (dropIndex > dragStartIndex) dropIndex -= 1;
+
+        set.shift(dragStartIndex, dropIndex);
+        cur.setColorset(set, this.targetLed);
+        cur.init();
+        this.lightshow.vortex.engine().modes().saveCurMode();
       }
 
-      // Cleanup
-      placeholder.remove();
+      placeholder?.remove();
       placeholder = null;
 
       draggingElement.classList.remove('dragging');
       draggingElement.style.position = '';
-      draggingElement.style.width = '';
-      draggingElement.style.height = '';
       draggingElement.style.zIndex = '';
       draggingElement.style.pointerEvents = '';
       draggingElement.style.left = '';
       draggingElement.style.top = '';
       draggingElement = null;
+      isDragging = false;
 
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
 
-      //this.refreshColorset(); // Refresh the UI
-    }
+      this.refreshColorset();
+    };
 
     for (let i = 0; i < numColors; i++) {
       const container = document.createElement('div');
@@ -254,34 +291,33 @@ export default class ColorsetPanel extends Panel {
       const col = set.get(i);
       const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
 
-      // Create color entry
       const colorEntry = document.createElement('div');
       colorEntry.style.backgroundColor = hexColor;
       colorEntry.className = 'color-entry';
       colorEntry.dataset.index = i;
-      colorEntry.addEventListener('click', () =>
-        this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this))
-      );
 
-      // Create hex label
+      // Ensure single-click opens color picker
+      colorEntry.addEventListener('click', (e) => {
+        if (!isDragging) {
+          this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+        }
+      });
+
       const hexLabel = document.createElement('label');
       hexLabel.textContent = hexColor;
 
-      // Create delete button
       const deleteButton = document.createElement('span');
       deleteButton.className = 'delete-color';
       deleteButton.dataset.index = i;
       deleteButton.textContent = '×';
       deleteButton.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent triggering color picker
+        e.stopPropagation();
         this.delColor(Number(deleteButton.dataset.index));
         document.dispatchEvent(new CustomEvent('patternChange'));
       });
 
-      // Attach custom drag-and-drop handlers
-      container.addEventListener('pointerdown', handlePointerDown.bind(this));
+      container.addEventListener('pointerdown', handlePointerDown);
 
-      // Append elements to container
       container.appendChild(colorEntry);
       container.appendChild(hexLabel);
       container.appendChild(deleteButton);
@@ -289,7 +325,6 @@ export default class ColorsetPanel extends Panel {
       colorsetElement.appendChild(container);
     }
 
-    // Add empty slots for adding colors
     if (numColors < 8) {
       const addColorContainer = document.createElement('div');
       addColorContainer.className = 'color-box empty';
@@ -302,69 +337,6 @@ export default class ColorsetPanel extends Panel {
     }
   }
 
-  //async refreshColorset(fromEvent = false) {
-  //  const colorsetElement = document.getElementById('colorset');
-  //  const cur = this.lightshow.vortex.engine().modes().curMode();
-  //  colorsetElement.innerHTML = ''; // Clear colorset
-
-  //  if (!cur) {
-  //    return;
-  //  }
-
-  //  const set = cur.getColorset(this.targetLed);
-  //  const numColors = set ? set.numColors() : 0;
-
-  //  for (let i = 0; i < numColors; i++) {
-  //    const container = document.createElement('div');
-  //    container.className = 'color-box';
-
-  //    const col = set.get(i);
-  //    const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
-
-  //    // Create color entry
-  //    const colorEntry = document.createElement('div');
-  //    colorEntry.style.backgroundColor = hexColor;
-  //    colorEntry.className = 'color-entry';
-  //    colorEntry.dataset.index = i;
-  //    colorEntry.addEventListener('click', () =>
-  //      this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this))
-  //    );
-
-  //    // Create hex label
-  //    const hexLabel = document.createElement('label');
-  //    hexLabel.textContent = hexColor;
-
-  //    // Create delete button
-  //    const deleteButton = document.createElement('span');
-  //    deleteButton.className = 'delete-color';
-  //    deleteButton.dataset.index = i;
-  //    deleteButton.textContent = '×';
-  //    deleteButton.addEventListener('click', (e) => {
-  //      e.stopPropagation(); // Prevent triggering color picker
-  //      this.delColor(Number(deleteButton.dataset.index));
-  //      document.dispatchEvent(new CustomEvent('patternChange'));
-  //    });
-
-  //    // Append elements to container
-  //    container.appendChild(colorEntry);
-  //    container.appendChild(hexLabel);
-  //    container.appendChild(deleteButton);
-
-  //    colorsetElement.appendChild(container);
-  //  }
-
-  //  // Add empty slots for adding colors
-  //  if (numColors < 8) {
-  //    const addColorContainer = document.createElement('div');
-  //    addColorContainer.className = 'color-box empty';
-  //    addColorContainer.textContent = '+';
-  //    addColorContainer.addEventListener('click', () => {
-  //      this.addColor();
-  //      document.dispatchEvent(new CustomEvent('patternChange'));
-  //    });
-  //    colorsetElement.appendChild(addColorContainer);
-  //  }
-  //}
 
   // Helper: Update Color from Hex Input
   updateColorHex(index, hexValue) {

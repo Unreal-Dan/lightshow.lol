@@ -88,51 +88,51 @@ export default class UpdatePanel extends Panel {
     }
     const firmwareApiUrl = `https://vortex.community/downloads/json/${targetDevice}`;
     let firmwareFiles;
-    //try {
-    //  // Fetch the firmware metadata
-    //  const apiResponse = await fetch(firmwareApiUrl);
-    //  if (!apiResponse.ok) {
-    //    throw new Error('Failed to fetch firmware metadata');
-    //  }
+    try {
+      // Fetch the firmware metadata
+      const apiResponse = await fetch(firmwareApiUrl);
+      if (!apiResponse.ok) {
+        throw new Error('Failed to fetch firmware metadata');
+      }
 
-    //  const firmwareData = await apiResponse.json();
-    //  const firmwareZipUrl = firmwareData.firmware?.fileUrl;
-    //  if (!firmwareZipUrl) {
-    //    throw new Error('Firmware file URL not found in API response');
-    //  }
+      const firmwareData = await apiResponse.json();
+      const firmwareZipUrl = firmwareData.firmware?.fileUrl;
+      if (!firmwareZipUrl) {
+        throw new Error('Firmware file URL not found in API response');
+      }
 
-    //  // Fetch the firmware zip
-    //  const zipResponse = await fetch(firmwareZipUrl);
-    //  if (!zipResponse.ok) {
-    //    throw new Error('Failed to fetch firmware zip');
-    //  }
+      // Fetch the firmware zip
+      const zipResponse = await fetch(firmwareZipUrl);
+      if (!zipResponse.ok) {
+        throw new Error('Failed to fetch firmware zip');
+      }
 
-    //  const zipData = await zipResponse.arrayBuffer();
-    //  firmwareFiles = await this.unzipFirmware(zipData);
+      const zipData = await zipResponse.arrayBuffer();
+      firmwareFiles = await this.unzipFirmware(zipData);
 
-    //  firmwareFiles.forEach(file => {
-    //    console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
-    //  });
+      firmwareFiles.forEach(file => {
+        console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
+      });
 
-    //  // Add the boot_app0.bin from the local server
-    //  const bootAppResponse = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
-    //  if (!bootAppResponse.ok) {
-    //    throw new Error('Failed to fetch boot_app0.bin from local server');
-    //  }
+      // Add the boot_app0.bin from the local server
+      const bootAppResponse = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
+      if (!bootAppResponse.ok) {
+        throw new Error('Failed to fetch boot_app0.bin from local server');
+      }
 
-    //  // Create the boot_app0.bin entry
-    //  const bootAppEntry = {
-    //    path: './public/data/boot_app0.bin',
-    //    address: 0xE000,
-    //    data: new Uint8Array(await bootAppResponse.arrayBuffer()),
-    //  };
+      // Create the boot_app0.bin entry
+      const bootAppEntry = {
+        path: './public/data/boot_app0.bin',
+        address: 0xE000,
+        data: new Uint8Array(await bootAppResponse.arrayBuffer()),
+      };
 
-    //  // Insert boot_app0.bin as the 3rd item in the list
-    //  firmwareFiles.splice(2, 0, bootAppEntry);
-    //} catch (error) {
-    //  console.error('Error during firmware fetching:', error.message);
-    //  throw error;
-    //}
+      // Insert boot_app0.bin as the 3rd item in the list
+      firmwareFiles.splice(2, 0, bootAppEntry);
+    } catch (error) {
+      console.error('Error during firmware fetching:', error.message);
+      throw error;
+    }
 
     // Cancel listening for the greeting just in case
     if (!this.vortexPort.portActive) {
@@ -171,52 +171,52 @@ export default class UpdatePanel extends Panel {
     const progressBar = document.getElementById('overallProgressBar');
     const progressMessage = document.getElementById('updateProgress');
 
-    //let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
-    //let totalBytesFlashed = 0;
+    let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
+    let totalBytesFlashed = 0;
 
-    //for (const file of files) {
-    //  try {
-    //    console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
-    //    progressMessage.textContent = 'Flashing firmware...';
+    for (const file of files) {
+      try {
+        console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
+        progressMessage.textContent = 'Flashing firmware...';
 
-    //    // Create a File object from the Uint8Array
-    //    const blob = new Blob([file.data], { type: 'application/octet-stream' });
-    //    const fileObject = new File([blob], file.path.split('/').pop(), {
-    //      type: 'application/octet-stream',
-    //      lastModified: Date.now(),
-    //    });
+        // Create a File object from the Uint8Array
+        const blob = new Blob([file.data], { type: 'application/octet-stream' });
+        const fileObject = new File([blob], file.path.split('/').pop(), {
+          type: 'application/octet-stream',
+          lastModified: Date.now(),
+        });
 
-    //    const readUploadedFileAsArrayBuffer = (inputFile) => {
-    //      const reader = new FileReader();
-    //      return new Promise((resolve, reject) => {
-    //        reader.onerror = () => {
-    //          reader.abort();
-    //          reject(new DOMException("Problem parsing input file."));
-    //        };
-    //        reader.onload = () => {
-    //          resolve(reader.result);
-    //        };
-    //        reader.readAsArrayBuffer(inputFile);
-    //      });
-    //    };
+        const readUploadedFileAsArrayBuffer = (inputFile) => {
+          const reader = new FileReader();
+          return new Promise((resolve, reject) => {
+            reader.onerror = () => {
+              reader.abort();
+              reject(new DOMException("Problem parsing input file."));
+            };
+            reader.onload = () => {
+              resolve(reader.result);
+            };
+            reader.readAsArrayBuffer(inputFile);
+          });
+        };
 
-    //    const contents = await readUploadedFileAsArrayBuffer(fileObject);
-    //    await this.espStub.flashData(
-    //      contents,
-    //      (bytesWritten, totalThisFile) => {
-    //        totalBytesFlashed += bytesWritten;
-    //        progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
-    //      },
-    //      file.address
-    //    );
-    //    await this.sleep(100);
-    //    console.log(`${file.path} flashed successfully.`);
-    //    document.getElementById('updateProgress').classList.add('hidden');
-    //  } catch (error) {
-    //    console.error(`Error flashing ${file.path}:`, error);
-    //    throw error;
-    //  }
-    //}
+        const contents = await readUploadedFileAsArrayBuffer(fileObject);
+        await this.espStub.flashData(
+          contents,
+          (bytesWritten, totalThisFile) => {
+            totalBytesFlashed += bytesWritten;
+            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
+          },
+          file.address
+        );
+        await this.sleep(100);
+        console.log(`${file.path} flashed successfully.`);
+        document.getElementById('updateProgress').classList.add('hidden');
+      } catch (error) {
+        console.error(`Error flashing ${file.path}:`, error);
+        throw error;
+      }
+    }
 
     console.log('All files flashed successfully.');
     try {
