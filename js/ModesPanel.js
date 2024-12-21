@@ -320,24 +320,37 @@ export default class ModesPanel extends Panel {
 
   addMode() {
     let modeCount = this.lightshow.vortex.numModes();
-    switch (this.editor.devicePanel.selectedDevice) {
-    case 'Orbit':
-    case 'Handle':
-    case 'Gloves':
-      if (modeCount >= 14) {
-        Notification.failure("This device can only hold 14 modes");
-        return;
-      }
-      break;
-    case 'Duo':
-      // TODO: version check?
-      if (modeCount >= 5) {
-        Notification.failure("This device can only hold 5 modes");
-        return;
-      }
-      break;
-    default:
-      break;
+    let maxModes = 16;
+    const device = this.editor.devicePanel.selectedDevice;
+    switch (device) {
+      case 'Orbit':
+      case 'Handle':
+      case 'Gloves':
+        // these devices had 14
+        maxModes = 14;
+        break;
+      case 'Duo':
+        // default duo max is 5
+        maxModes = 5;
+        if (this.editor && this.editor.chromalinkPanel) {
+          const clPanel = this.editor.chromalinkPanel;
+          if (clPanel.duoHeader && clPanel.duoHeader.vMinor >= 4) {
+            // allow 9 modes after 1.4.x duo
+            maxModes = 9;
+          }
+        }
+        break;
+      case 'Chromadeck':
+      case 'Spark':
+        // 16 modes
+        break;
+      default:
+        break;
+    }
+    // check the mode count against max
+    if (modeCount >= maxModes) {
+      Notification.failure(`The ${device} can only hold ${maxModes} modes`);
+      return;
     }
     if (!this.lightshow.vortex.addNewMode(false)) {
       Notification.failure("Failed to add another mode");
