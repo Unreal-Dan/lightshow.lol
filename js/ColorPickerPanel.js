@@ -38,6 +38,11 @@ export default class ColorPickerPanel extends Panel {
     this.initHueCircle(h);
   }
 
+  hide() {
+    this.editor.demoModeOnDevice();
+    super.hide();
+  }
+
   rgbToHsv(r, g, b) {
     const RGBCol = new this.lightshow.vortexLib.RGBColor(r, g, b);
     const HSVCol = this.lightshow.vortexLib.rgb_to_hsv_generic(RGBCol);
@@ -301,6 +306,7 @@ export default class ColorPickerPanel extends Panel {
         document.removeEventListener('mousemove', moveEventHandler);
         document.removeEventListener('mouseup', stopDragging);
         updateColorUI(false); // Final update after dragging ends
+        this.editor.demoModeOnDevice();
       };
 
       moveHandler(event, isDragging);

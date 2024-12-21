@@ -15,15 +15,15 @@ export default class ChromalinkPanel extends Panel {
               <p id="deviceLatestVersionLabel"><strong>Modes:</strong> <span id="duoModes"></span></p>
             </div>
           </div>
-          <button id="chromalinkFlash" class="chromalink-button" disabled>Flash Custom Firmware</button>
-          <button id="chromalinkUpdate" class="chromalink-button" disabled>Update Firmware</button>
-          <div class="progress-container">
-            <div id="firmwareProgress" class="progress-bar">
-              <div id="firmwareProgressBar"></div>
-            </div>
-          </div>
-          <input type="file" id="firmwareFileInput" style="display:none;" />
         </div>
+        <button id="chromalinkFlash" class="chromalink-button">Flash Custom Firmware</button>
+        <button id="chromalinkUpdate" class="chromalink-button">Update Firmware</button>
+        <div class="progress-container">
+          <div id="firmwareProgress" class="progress-bar">
+            <div id="firmwareProgressBar"></div>
+          </div>
+        </div>
+        <input type="file" id="firmwareFileInput" style="display:none;" />
       </div>
     `;
     super('chromalinkPanel', content, 'Chromalink Duo');
@@ -102,9 +102,8 @@ export default class ChromalinkPanel extends Panel {
       }
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
-      this.editor.modesPanel.updateSelectedDevice('Duo', true);
-      //this.editor.modesPanel.renderLedIndicators('Duo');
-      this.editor.modesPanel.selectAllLeds();
+      this.editor.devicePanel.updateSelectedDevice('Duo', true);
+      this.editor.modesPanel.refreshModeList();
       // update ui
       document.getElementById('duoIcon').style.display = 'block';
       document.getElementById('duoInfo').style.display = 'block';
@@ -112,10 +111,6 @@ export default class ChromalinkPanel extends Panel {
       document.getElementById('duoModes').textContent = this.duoHeader.numModes;
       const chromalinkDetails = document.getElementById('chromalinkDetails');
       chromalinkDetails.style.display = 'block';
-      const flashButton = document.getElementById('chromalinkFlash');
-      const updateButton = document.getElementById('chromalinkUpdate');
-      flashButton.disabled = false;
-      updateButton.disabled = false;
       // give a notification
       Notification.success('Successfully Chromalinked Duo v' + this.duoHeader.version);
     } catch (error) {
@@ -134,15 +129,11 @@ export default class ChromalinkPanel extends Panel {
       if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
         throw new Error('Failed to restore old modes');
       }
+      this.editor.modesPanel.refreshModeList();
       this.oldModes = null;
-      this.editor.modesPanel.updateSelectedDevice('Chromadeck', true);
-      this.editor.modesPanel.selectAllLeds();
+      this.editor.devicePanel.updateSelectedDevice('Chromadeck', true);
       const chromalinkDetails = document.getElementById('chromalinkDetails');
       chromalinkDetails.style.display = 'none';
-      const flashButton = document.getElementById('chromalinkFlash');
-      const updateButton = document.getElementById('chromalinkUpdate');
-      flashButton.disabled = true;
-      updateButton.disabled = true;
       document.getElementById('duoIcon').style.display = 'none';
       document.getElementById('duoInfo').style.display = 'none';
       Notification.success('Successfully Disconnected Chromalink');

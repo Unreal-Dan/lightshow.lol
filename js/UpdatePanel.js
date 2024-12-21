@@ -2,7 +2,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 export default class UpdatePanel extends Panel {
-  constructor(editor, modesPanel) {
+  constructor(editor) {
     const content = `
       <div id="updateOptions">
         <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
@@ -19,7 +19,6 @@ export default class UpdatePanel extends Panel {
     super('updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
-    this.modesPanel = modesPanel;
     this.espStub = null;
   }
 
@@ -49,9 +48,9 @@ export default class UpdatePanel extends Panel {
       }
     });
 
-    document.addEventListener('deviceConnected', () => {
-      Notification.success('Device connected. Ready to flash firmware.');
-    });
+    //document.addEventListener('deviceChange', () => { 
+    // do anything if the device changes...?
+    //});
 
     this.toggleCollapse(false);
     this.hide();
@@ -63,11 +62,10 @@ export default class UpdatePanel extends Panel {
         throw new Error('No serial port available.');
       }
 
-      const esploaderMod = await window.esptoolPackage;
-      const esploader = new esploaderMod.ESPLoader(this.vortexPort.serialPort, console);
-
-      await esploader.initialize();
-      this.espStub = await esploader.runStub();
+      const esptool = await window.esptoolPackage;
+      this.espLoader = new esptool.ESPLoader(this.vortexPort.serialPort, console);
+      await this.espLoader.initialize();
+      this.espStub = await this.espLoader.runStub();
     } catch (error) {
       throw new Error('Failed to initialize ESP flasher: ' + error.message);
     }
@@ -80,7 +78,7 @@ export default class UpdatePanel extends Panel {
   async fetchAndFlashFirmware() {
     let targetDevice = this.vortexPort.name.toLowerCase();
     if (!targetDevice) {
-      targetDevice = this.editor.modesPanel.selectedDevice.toLowerCase();
+      targetDevice = this.editor.devicePanel.selectedDevice.toLowerCase();
     }
     if (targetDevice === 'none') {
       throw new Error(`Select a device first`);
@@ -222,9 +220,15 @@ export default class UpdatePanel extends Panel {
 
     console.log('All files flashed successfully.');
     try {
+      console.log('ESP32 reset complete.');
+      if (this.espLoader) {
+        //await this.espLoader.disconnect();
+        await this.espLoader._reader.releaseLock();
+        console.log('Disconnected ESP Loader.');
+      }
       console.log('Resetting ESP32...');
       await this.espStub.hardReset();
-      console.log('ESP32 reset complete.');
+      await this.editor.vortexPort.restartConnecton();
     } catch (resetError) {
       console.error('Failed to reset ESP32:', resetError);
     }
