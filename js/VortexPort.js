@@ -244,14 +244,12 @@ export default class VortexPort {
     }
     if (this.reader) {
       try {
-        console.log("readData(): Release reader0");
         this.reader.releaseLock();
       } catch (error) {
         console.warn('Failed to release reader lock:', error);
       }
     }
     this.reader = this.serialPort.readable.getReader();
-    console.log("readData(): Got reader");
     try {
       while (true) {
         console.log("Reading...");
@@ -259,7 +257,6 @@ export default class VortexPort {
         if (done) {
           // Ensure the reader is not released multiple times
           if (this.reader) {
-            console.log("readData(): Release reader");
             this.reader.releaseLock();
             this.reader = null;
           }
@@ -267,7 +264,6 @@ export default class VortexPort {
         }
 
         const text = new TextDecoder().decode(value);
-        console.log("Read data: " + text);
         this.accumulatedData += text;
 
         if (fullResponse) {
@@ -300,7 +296,6 @@ export default class VortexPort {
     } finally {
       if (this.reader) {
         try {
-          console.log("readData(): Release reader2");
           this.reader.releaseLock(); // Ensure release of reader in the finally block
         } catch (error) {
           console.warn('Failed to release reader lock in finally:', error);
