@@ -103,6 +103,7 @@ export default class ChromalinkPanel extends Panel {
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
       this.editor.devicePanel.updateSelectedDevice('Duo', true);
+      this.editor.modesPanel.refreshModeList();
       // update ui
       document.getElementById('duoIcon').style.display = 'block';
       document.getElementById('duoInfo').style.display = 'block';
@@ -128,6 +129,7 @@ export default class ChromalinkPanel extends Panel {
       if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
         throw new Error('Failed to restore old modes');
       }
+      this.editor.modesPanel.refreshModeList();
       this.oldModes = null;
       this.editor.devicePanel.updateSelectedDevice('Chromadeck', true);
       const chromalinkDetails = document.getElementById('chromalinkDetails');
