@@ -16,8 +16,8 @@ export default class ChromalinkPanel extends Panel {
             </div>
           </div>
         </div>
-        <button id="chromalinkFlash" class="chromalink-button" disabled>Flash Custom Firmware</button>
-        <button id="chromalinkUpdate" class="chromalink-button" disabled>Update Firmware</button>
+        <button id="chromalinkFlash" class="chromalink-button">Flash Custom Firmware</button>
+        <button id="chromalinkUpdate" class="chromalink-button">Update Firmware</button>
         <div class="progress-container">
           <div id="firmwareProgress" class="progress-bar">
             <div id="firmwareProgressBar"></div>
@@ -102,9 +102,8 @@ export default class ChromalinkPanel extends Panel {
       }
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
-      this.editor.modesPanel.updateSelectedDevice('Duo', true);
-      //this.editor.modesPanel.renderLedIndicators('Duo');
-      this.editor.modesPanel.selectAllLeds();
+      this.editor.devicePanel.updateSelectedDevice('Duo', true);
+      this.editor.modesPanel.refreshModeList();
       // update ui
       document.getElementById('duoIcon').style.display = 'block';
       document.getElementById('duoInfo').style.display = 'block';
@@ -130,9 +129,9 @@ export default class ChromalinkPanel extends Panel {
       if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
         throw new Error('Failed to restore old modes');
       }
+      this.editor.modesPanel.refreshModeList();
       this.oldModes = null;
-      this.editor.modesPanel.updateSelectedDevice('Chromadeck', true);
-      this.editor.modesPanel.selectAllLeds();
+      this.editor.devicePanel.updateSelectedDevice('Chromadeck', true);
       const chromalinkDetails = document.getElementById('chromalinkDetails');
       chromalinkDetails.style.display = 'none';
       document.getElementById('duoIcon').style.display = 'none';
