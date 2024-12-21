@@ -501,7 +501,7 @@ legend {
 
 #modesListScrollContainer {
   height: 200px;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   border: 1px solid #454545;
   border-radius: 4px;
@@ -509,7 +509,6 @@ legend {
 }
 
 #modesListContainer {
-  height: 398px;
   width: 95%;
 }
 

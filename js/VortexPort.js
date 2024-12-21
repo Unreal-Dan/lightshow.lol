@@ -59,7 +59,6 @@ export default class VortexPort {
   resetState() {
     if (this.reader) {
       try {
-        console.log("resetState(): Release reader");
         this.reader.releaseLock();
       } catch (error) {
         console.warn('Error releasing reader in resetState:', error);
@@ -252,7 +251,6 @@ export default class VortexPort {
     this.reader = this.serialPort.readable.getReader();
     try {
       while (true) {
-        console.log("Reading...");
         const { value, done } = await this.reader.read();
         if (done) {
           // Ensure the reader is not released multiple times
@@ -802,7 +800,6 @@ export default class VortexPort {
     }
 
     if (this.reader) {
-      console.log("readFromSerialPort(): Release reader");
       this.reader.releaseLock();
     }
     this.reader = this.serialPort.readable.getReader();
@@ -815,7 +812,6 @@ export default class VortexPort {
       // do nothing?
       console.log("Failed to read: " + error);
     }
-    console.log("readFromSerialPort(): Release reader2");
     this.reader.releaseLock();
     this.reader = null;
     return result;
