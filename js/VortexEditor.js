@@ -133,6 +133,33 @@ export default class VortexEditor {
         this.updatePanel.show();
       }
     });
+
+    // detect the postmessage from vortex community to send over a mode
+    window.addEventListener('message', (event) => {
+      console.log('Received message:', event);
+      if (event.origin !== 'https://vortex.community') {
+        console.warn('Rejected message from unauthorized origin:', event.origin);
+        return;
+      }
+      const { type, data } = event.data;
+      const parsedData = JSON.parse(atob(data));
+      if (type === 'mode') {
+        try {
+          this.modesPanel.importModeFromData(parsedData, true);
+          console.log('Mode loaded successfully via postMessage');
+        } catch (error) {
+          console.error('Error loading mode via postMessage:', error);
+        }
+      }
+      if (type === 'pattern') {
+        try {
+          this.modesPanel.importPatternFromData(parsedData, true);
+          console.log('Mode loaded successfully via postMessage');
+        } catch (error) {
+          console.error('Error loading pattern via postMessage:', error);
+        }
+      }
+    });
   }
 
   importModeDataFromUrl() {
@@ -141,7 +168,7 @@ export default class VortexEditor {
 
     if (encodedData) {
       try {
-        this.modesPanel.importPatternFromData(atob(encodedData), false);
+        this.modesPanel.importPatternFromData(JSON.parse(atob(encodedData)), false);
       } catch (error) {
         console.error('Error parsing mode data:', error);
       }

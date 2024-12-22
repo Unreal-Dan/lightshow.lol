@@ -318,10 +318,8 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  addMode() {
-    let modeCount = this.lightshow.vortex.numModes();
+  getMaxModes(device) {
     let maxModes = 16;
-    const device = this.editor.devicePanel.selectedDevice;
     switch (device) {
       case 'Orbit':
       case 'Handle':
@@ -347,7 +345,14 @@ export default class ModesPanel extends Panel {
       default:
         break;
     }
+    return maxModes;
+  }
+
+  addMode() {
+    let modeCount = this.lightshow.vortex.numModes();
     // check the mode count against max
+    const device = this.editor.devicePanel.selectedDevice;
+    const maxModes = this.getMaxModes(device)
     if (modeCount >= maxModes) {
       Notification.failure(`The ${device} can only hold ${maxModes} modes`);
       return;
@@ -417,144 +422,55 @@ export default class ModesPanel extends Panel {
       placeholder: 'Paste a JSON mode',
       title: 'Import/Paste a Mode',
       onInput: (event) => {
-        this.importModeFromData(event.target.value);
+        this.importModeFromData(JSON.parse(event.target.value));
       }
     });
     this.importModal.selectText();
   }
 
-  importPatternFromData(patternJson) {
-    if (!patternJson) {
+  importPatternFromData(patternData, addNew = false) {
+    if (!patternData) {
       Notification.failure("No pattern data");
       return;
     }
-    let patternData;
-    try {
-      patternData = JSON.parse(patternJson);
-    } catch (error) {
-      Notification.failure("Invalid JSON pattern");
-      return;
-    }
-    if (!patternData) {
-      Notification.failure("Invalid pattern data");
-      return;
-    }
-    if ('num_leds' in patternData) {
-      let initialDevice = null;
-      switch (patternData.num_leds) {
-        case 28:
-          this.lightshow.setLedCount(28);
-          initialDevice = 'Orbit';
-          break;
-        case 3:
-          this.lightshow.setLedCount(3);
-          initialDevice = 'Handle';
-          break;
-        case 10:
-          this.lightshow.setLedCount(10);
-          initialDevice = 'Gloves';
-          break;
-        case 20:
-          this.lightshow.setLedCount(20);
-          initialDevice = 'Chromadeck';
-          break;
-        case 6:
-          this.lightshow.setLedCount(6);
-          initialDevice = 'Spark';
-          break;
-        case 2:
-          this.lightshow.setLedCount(2);
-          initialDevice = 'Duo';
-          break;
-        default:
-          // technically this doesn't really need to be done, the engine starts at 1
-          this.lightshow.setLedCount(1);
-          break;
-      }
-      this.refreshModeList();
-      this.renderLedIndicators(initialDevice);
-      this.handleLedSelectionChange();
-      // Change the height of the #modesListScrollContainer when the device connects
-      const modesListScrollContainer = document.getElementById('modesListScrollContainer');
-      if (modesListScrollContainer) {
-        modesListScrollContainer.style.height = '200px';
-      }
-      return this.importModeFromData(patternJson, false);
-    }
-
-    let curSel;
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-
-    if (!patternData.colorset) {
-      Notification.failure("Invalid pattern data");
-      return;
-    }
-
-    const set = new this.lightshow.vortexLib.Colorset();
-    patternData.colorset.forEach(hexCode => {
-      const normalizedHex = hexCode.replace('0x', '#');
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
-      if (result) {
-        set.addColor(new this.lightshow.vortexLib.RGBColor(
-          parseInt(result[1], 16),
-          parseInt(result[2], 16),
-          parseInt(result[3], 16)
-        ));
-      }
-    });
-
-    cur.setColorset(set, 0); // Assuming the pattern data is for the first pattern slot
-    const patID = this.lightshow.vortexLib.intToPatternID(patternData.pattern_id);
-    cur.setPattern(patID, 0, null, null);
-    const args = new this.lightshow.vortexLib.PatternArgs();
-    patternData.args.forEach(arg => args.addArgs(arg));
-    this.lightshow.vortex.setPatternArgs(this.lightshow.vortex.engine().leds().ledCount(), args, 0);
-
-    cur.init();
-    this.lightshow.vortex.engine().modes().saveCurMode();
-
-    this.refreshPatternControlPanel();
-    this.refresh();
-    Notification.success("Successfully imported pattern");
+    const modeData = {
+      flags: 6,
+      num_leds: 1,
+      single_pats: [
+        patternData
+      ]
+    };
+    return this.importModeFromData(modeData, addNew);
   }
 
-  importModeFromData(modeJson, addNew = true) {
-    if (!modeJson) {
+  importModeFromData(modeData, addNew = true) {
+    if (!modeData) {
       Notification.failure("No mode data");
       return;
     }
-    let modeData;
-    try {
-      modeData = JSON.parse(modeJson);
-    } catch (error) {
-      Notification.failure("Invalid JSON mode");
-      return;
-    }
-    if (!modeData) {
-      Notification.failure("Invalid mode data");
-      return;
-    }
-
-    const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
-    if (!patterns) {
-      console.log("Patterns empty!");
-      return;
-    }
+    let initialDevice = null;
+    const deviceMap = {
+      28: 'Orbit',
+      3: 'Handle',
+      10: 'Gloves',
+      20: 'Chromadeck',
+      6: 'Spark',
+      2: 'Duo'
+    };
+    initialDevice = deviceMap[modeData.num_leds] || (() => {
+      modeData.num_leds = 1; // Default case
+    })();
+    this.lightshow.setLedCount(modeData.num_leds);
     let curSel;
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
       let modeCount = this.lightshow.vortex.numModes();
-      switch (this.editor.devicePanel.selectedDevice) {
-      case 'Orbit':
-      case 'Handle':
-      case 'Gloves':
-        if (modeCount >= 14) {
-          Notification.failure("This device can only hold 14 modes");
-          return;
-        }
-        break;
-      default:
-        break;
+      // check the mode count against max
+      const device = this.editor.devicePanel.selectedDevice;
+      const maxModes = this.getMaxModes(device)
+      if (modeCount >= maxModes) {
+        Notification.failure(`The ${device} can only hold ${maxModes} modes`);
+        return;
       }
       if (!this.lightshow.vortex.addNewMode(false)) {
         Notification.failure("Failed to add another mode");
@@ -573,6 +489,11 @@ export default class ModesPanel extends Panel {
     //       actually might have been the fetching of cur once for all operations
     cur.init();
 
+    const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
+    if (!patterns) {
+      console.log("Patterns empty!");
+      return;
+    }
     patterns.forEach((pat, index) => {
       if (!pat.colorset) {
         Notification.failure("Invalid pattern data");
@@ -610,6 +531,9 @@ export default class ModesPanel extends Panel {
       this.lightshow.vortex.setCurMode(curSel, false);
     }
 
+    this.refreshModeList();
+    this.editor.ledSelectPanel.renderLedIndicators(initialDevice);
+    this.editor.ledSelectPanel.handleLedSelectionChange();
     this.refreshPatternControlPanel();
     this.refresh();
     Notification.success("Successfully imported mode");
