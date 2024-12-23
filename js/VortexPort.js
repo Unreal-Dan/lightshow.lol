@@ -803,7 +803,6 @@ export default class VortexPort {
       this.reader.releaseLock();
     }
     this.reader = this.serialPort.readable.getReader();
-    console.log("readFromSerialPort(): Got reader");
     let result = null;
     try {
       result = await this.reader.read();
