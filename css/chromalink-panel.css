@@ -1,0 +1,83 @@
+/* chromalink-panel.css */
+#chromalinkPanel {
+  background-color: #181a1b;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  color: #d8d4cf;
+  padding: 10px;
+  position: absolute;
+  width: 150px;
+  z-index: 4;
+  top: 5px;
+  right: 390px;
+  width: 200px;
+}
+
+#chromalinkPanel h2 {
+  margin-bottom: 10px;
+  margin-top: 5px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.chromalink-button {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  margin: 10px 0 0 0;
+  background-color: #444;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chromalink-button:hover {
+  background-color: #666;
+}
+
+.chromalink-update-progress-container {
+  margin: 5px;
+  margin-top: 10px;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.chromalink-update-progress-bar {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.device-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  margin-top: 10px;
+}
+
+.device-info img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+#firmwareProgress {
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#firmwareProgressBar {
+  height: 100%;
+  background-color: #007bff;
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+

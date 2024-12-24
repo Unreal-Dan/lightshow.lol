@@ -120,10 +120,18 @@ export default class AnimationPanel extends Panel {
     this.attachShapeButtonListeners();
 
     // hide the spread slider
-    document.getElementById('spread_div').style.display = 'none';
+    this.spreadDiv = document.getElementById('spread_div');
 
     // collapse the animation panel by default
     this.toggleCollapse(false);
+  }
+
+  showSpreadSlider() {
+    this.spreadDiv.style.display = 'block';
+  }
+
+  hideSpreadSlider() {
+    this.spreadDiv.style.display = 'none';
   }
 
   attachShapeButtonListeners() {

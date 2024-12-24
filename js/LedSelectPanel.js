@@ -59,55 +59,19 @@ export default class LedSelectPanel extends Panel {
   }
 
   updateSelectedDevice(device) {
-    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const ledsFieldset = document.getElementById('ledsFieldset');
-    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
-
-    const deviceIcon = this.editor.devices[device].icon;
 
     if (device === 'None') {
-      deviceTypeSelected.innerHTML = 'Select Device';
-      document.getElementById('deviceTypeOptions').classList.remove('show');
-      this.lightshow.setLedCount(1);
-      if (modesListScrollContainer) {
-        modesListScrollContainer.style.height = '200px';
-      }
-      document.getElementById('spread_div').style.display = 'none';
       ledsFieldset.style.display = 'none';
       this.hide();
       return;
     }
 
-    document.getElementById('spread_div').style.display = 'block';
-
-    deviceTypeSelected.innerHTML = `
-      <img src="${deviceIcon}" alt="${device} Logo">
-      ${device}
-    `;
-
-    this.lightshow.setLedCount(this.editor.devices[device].ledCount);
-
-    if (modesListScrollContainer) {
-      modesListScrollContainer.style.height = '200px';
-    }
     ledsFieldset.style.display = 'block';
-    document.getElementById('deviceTypeOptions').classList.remove('show');
     this.renderLedIndicators(device);
     this.selectAllLeds();
     this.refreshLedList();
     this.show();
-  }
-
-  addIconsToDropdown() {
-    const deviceTypeOptions = document.getElementById('deviceTypeOptions');
-    deviceTypeOptions.innerHTML = Object.keys(this.editor.devices).map(key => {
-      const device = this.editor.devices[key];
-      return `<div class="custom-dropdown-option" data-value="${key}">
-                <img src="${device.icon}" alt="${device.label} Logo">
-                ${device.label}
-              </div>
-            `;
-    }).join('');
   }
 
   async getLedPositions(deviceName) {

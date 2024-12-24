@@ -117,8 +117,13 @@ export default class VortexEditor {
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
 
-    // Listen for window resize to adjust lightshow
-    window.addEventListener('resize', () => this.lightshow.resetToCenter());
+    // Add a keydown event to toggle layouts with the Delete key
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Delete') {
+        this.isMobile = !this.isMobile; // Toggle between mobile and desktop layouts
+        this.applyLayout();
+      }
+    });
 
     // Keydown event to show updatePanel
     document.addEventListener('keydown', (event) => {
@@ -160,6 +165,50 @@ export default class VortexEditor {
         }
       }
     });
+
+    window.addEventListener('resize', () => {
+      const isNowMobile = this.detectMobile();
+      if (isNowMobile !== this.isMobile) {
+        this.isMobile = isNowMobile;
+      }
+      this.applyLayout();
+      this.lightshow.resetToCenter();
+    });
+  }
+
+  detectMobile() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
+  }
+
+  applyLayout() {
+    if (this.isMobile) {
+      this.applyMobileLayout();
+    } else {
+      this.applyDesktopLayout();
+    }
+
+    // Update layout for all panels
+    this.panels.forEach(panel => {
+      panel.updateLayout(this.isMobile);
+    });
+
+    // update the lightshow layout
+    this.lightshow.updateLayout(this.isMobile);
+  }
+
+  applyMobileLayout() {
+    // Set up mobile-specific layout
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight / 2;
+    document.body.classList.add('mobile-layout'); // Ensure specific styles apply
+  }
+
+  applyDesktopLayout() {
+    // Set up desktop-specific layout
+    this.canvas.width = 800;
+    this.canvas.height = 600;
+    document.body.classList.remove('mobile-layout'); // Ensure specific styles apply
   }
 
   importModeDataFromUrl() {

@@ -142,9 +142,20 @@ export default class DevicePanel extends Panel {
     const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const deviceIcon = this.editor.devices[device].icon;
 
-    // Update the UI of the dropdown
-    deviceTypeSelected.innerHTML = `
-    <img src="${deviceIcon}" alt="${device} Logo"> ${device}`;
+    // ensure the dropdown is closed
+    document.getElementById('deviceTypeOptions').classList.remove('show');
+
+    if (device === 'None') {
+      // Update the UI of the dropdown to 'select device'
+      deviceTypeSelected.innerHTML = 'Select Device';
+      // hide the spread slider in animation panel
+      this.editor.animationPanel.hideSpreadSlider();
+    } else {
+      // Update the UI of the dropdown to device name
+      deviceTypeSelected.innerHTML = `<img src="${deviceIcon}" alt="${device} Logo"> ${device}`;
+      // show the spread slider in animation panel
+      this.editor.animationPanel.showSpreadSlider();
+    }
 
     // store the selected device
     this.selectedDevice = device;

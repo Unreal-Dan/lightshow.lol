@@ -1,0 +1,89 @@
+/* draggable panels */
+
+.draggable-panel {
+  position: absolute;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  background-color: #181a1b;
+  user-select: none;
+  color: #d8d4cf;
+  padding: 5px;
+  width: 370px;
+  z-index: 3;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  padding-left: 7px;
+  background-color: #292c2e;
+  border-bottom: 1px solid #3e4446;
+  cursor: move;
+  border-radius: 5px;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 5px;
+  width: auto;
+}
+
+.collapse-btn:hover {
+  color: #66ff66;
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #d8d4cf;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  padding-top: 10px;
+  padding: 10px;
+}
+
+.close-btn {
+  color: #aaa;
+  margin-bottom: -8px;
+  margin-top: -6px;
+  font-size: 28px;
+  font-weight: bold;
+  margin-right: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+  color: red;
+  text-decoration: none;
+  cursor: pointer;
+  user-select:none;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  user-select: none;
+}
+
+.close:hover,
+.close:focus {
+  color: red;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+

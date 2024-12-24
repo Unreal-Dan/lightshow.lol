@@ -47,6 +47,24 @@ export default class Lightshow {
 
     // Initialize histories for each LED
     this.updateHistories();
+
+    // Determine the initial layout and apply it
+    const isMobile = window.innerWidth < 1200;
+    this.updateLayout(isMobile);
+  }
+
+  updateLayout(isMobile) {
+    if (isMobile) {
+      // Mobile layout: canvas takes up the top half of the screen
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = Math.floor(window.innerHeight / 2);
+      this.resetToCenter(); // Adjust the canvas to reflect the new size
+    } else {
+      // Desktop layout: canvas takes up the entire screen
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+      this.resetToCenter(); // Adjust the canvas to reflect the new size
+    }
   }
 
   addInteractionListeners() {
@@ -91,8 +109,6 @@ export default class Lightshow {
   }
 
   resetToCenter() {
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight;
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;
     this.ctx.fillStyle = 'rgba(0, 0, 0)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);

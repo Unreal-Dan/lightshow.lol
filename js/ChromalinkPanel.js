@@ -18,8 +18,8 @@ export default class ChromalinkPanel extends Panel {
         </div>
         <button id="chromalinkFlash" class="chromalink-button">Flash Custom Firmware</button>
         <button id="chromalinkUpdate" class="chromalink-button">Update Firmware</button>
-        <div class="progress-container">
-          <div id="firmwareProgress" class="progress-bar">
+        <div class="chromalink-update-progress-container">
+          <div id="firmwareProgress" class="chromalink-update-progress-bar">
             <div id="firmwareProgressBar"></div>
           </div>
         </div>

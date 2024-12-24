@@ -299,5 +299,39 @@ export default class Panel {
     });
     return snapPoints;
   }
+
+  updateLayout(isMobile) {
+    if (isMobile) {
+      this.applyMobileLayout();
+    } else {
+      this.applyDesktopLayout();
+    }
+  }
+
+  applyDesktopLayout() {
+    //// Default behavior for desktop layout
+    //this.panel.classList.add('desktop-panel');
+    //this.panel.classList.remove('mobile-panel');
+    //this.panel.style.position = 'absolute';
+    //this.panel.style.display = ''; // Ensure it's visible
+    //this.panel.style.width = '370px'; // Default panel width
+    //this.panel.style.height = ''; // Reset height if needed
+  }
+
+  applyMobileLayout() {
+    //// Default behavior for mobile layout
+    //this.panel.classList.add('mobile-panel');
+    //this.panel.classList.remove('desktop-panel');
+    //this.panel.style.position = 'relative'; // No absolute positioning
+    //this.panel.style.width = '100%'; // Full width
+    //this.panel.style.height = 'auto'; // Adjust height automatically
+    //this.panel.style.display = 'none'; // Initially hidden; show only active tab
+  }
+
+  setActiveForMobile(isActive) {
+    // Show/hide the panel content for mobile
+    this.panel.style.display = isActive ? '' : 'none';
+  }
+
 }
 

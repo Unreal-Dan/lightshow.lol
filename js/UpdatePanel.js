@@ -6,7 +6,7 @@ export default class UpdatePanel extends Panel {
     const content = `
       <div id="updateOptions">
         <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
-        <div class="progress-container">
+        <div class="update-progress-container">
           <div id="overallProgress" class="progress-bar">
             <div id="overallProgressBar"></div>
           </div>
@@ -280,12 +280,12 @@ export default class UpdatePanel extends Panel {
     if (['chromadeck', 'spark'].includes(lowerDevice)) {
       content += `
         <button id="updateFlash" class="update-button">Update Firmware Now</button>
-        <div class="progress-container">
-          <div id="overallProgress" class="progress-bar">
+        <div class="update-progress-container">
+          <div id="overallProgress" class="update-progress-bar">
             <div id="overallProgressBar"></div>
           </div>
         </div>
-        <div class="update-progress-container">
+        <div class="update-status-container">
           <span id="updateProgress"></span>
         </div>
       `;

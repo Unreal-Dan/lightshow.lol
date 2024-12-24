@@ -1,0 +1,147 @@
+#modesPanel {
+  top: 113px;
+  right: 5px;
+}
+
+#modeButtonsSection {
+  display: flex;
+  padding: 3px;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.mode-list-btn:hover {
+  background-color: #3e4446;
+}
+
+.mode-list-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mode-list-btn:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+}
+
+#modesListScrollContainer {
+  height: 200px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding-left: 5px;
+}
+
+#modesListContainer {
+  width: 95%;
+}
+
+.mode-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+  border: 1px solid #454545;
+  margin: 5px 0;
+  width: 100%;
+  height: 30px;
+  border-radius: 4px; /* Slightly rounded corners */
+  transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+  cursor: pointer;
+}
+
+@-moz-document url-prefix() {
+  #modesListContainer {
+    padding-right: 17px; /* Additional padding for Firefox */
+  }
+}
+
+.mode-entry.selected {
+  background-color: #333; /* Highlight color for selected item */
+}
+
+.mode-entry.click-animation {
+  background-color: #444; /* Temporary darker color on click */
+}
+
+.mode-entry.pressed {
+  background-color: #333; /* Color change for pressed state */
+  transition: background-color 0.1s ease; /* Quick transition for responsiveness */
+}
+
+.mode-name {
+  margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.mode-btn-container {
+  display: flex;
+  justify-content: right;
+  align-items: top;
+  transition: background-color 0.1s ease; /* matches 100ms in mode entry event listener */
+  cursor: pointer;
+}
+
+.mode-btn {
+  position: relative;
+  background-color: transparent; /* Background set to transparent */
+  border: none;
+  color: #aaa;
+  float: right;
+  font-size: 16px;
+  user-select: none;
+  width: auto;
+  padding: 1px 6px;
+  margin-left: 2px;
+}
+
+.mode-btn:hover, .mode-btn:focus {
+  background-color: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.share-mode-btn i:hover, .share-mode-btn i:focus {
+  color: lightgreen;
+}
+
+.link-mode-btn i:hover, .link-mode-btn i:focus {
+  color: lightblue;
+}
+
+.export-mode-btn i:hover, .export-mode-btn i:focus {
+  color: darkgray;
+}
+
+.delete-mode-btn {
+  position: relative;
+  top: -4px; /* it's a button so it has extra space on the top */
+  background-color: transparent;
+  border: none;
+  color: #aaa;
+  float: right;
+  font-size: 32px;
+  font-weight: bold;
+  user-select: none;
+  width: auto;
+  margin: 0;
+  padding: 1px 6px;
+}
+
+.delete-mode-btn:hover, .delete-mode-btn:focus {
+  color: red;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+}
+
+

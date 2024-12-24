@@ -24,7 +24,7 @@ export default class ModesPanel extends Panel {
           <i class="fa-solid fa-satellite-dish"></i>
         </button>
       </div>
-      <div id="modesListScrollContainer">
+      <div id="modesListScrollContainer" style="height:200px;">
         <div id="modesListContainer">
           <!-- Dynamic list of modes will be populated here -->
         </div>
@@ -40,41 +40,8 @@ export default class ModesPanel extends Panel {
   }
 
   initialize() {
-    // Hide device connection section and leds fieldset initially
-    //document.getElementById('deviceConnectionSection').style.display = 'block';
-    //document.getElementById('ledsFieldset').style.display = 'none';
-
-    // optionally initialize the chromalink now:
-    //this.chromalinkPanel = new ChromalinkPanel(this.editor, this);
-    //this.chromalinkPanel.appendTo(document.body); // Or any other parent element
-    //this.chromalinkPanel.initialize();
-
-
-    //const hamburgerButton = document.getElementById('hamburgerButton');
-    //const hamburgerMenu = document.getElementById('hamburgerMenu');
-
-    //hamburgerButton.addEventListener('click', function() {
-    //  hamburgerMenu.style.display = (hamburgerMenu.style.display === 'block' ? 'none' : 'block');
-    //});
-
-    //document.addEventListener('click', function(event) {
-    //  if (!hamburgerButton.contains(event.target) && !hamburgerMenu.contains(event.target)) {
-    //    hamburgerMenu.style.display = 'none';
-    //  }
-    //});
-
-
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());
-
-    //const shareModeButton = document.getElementById('shareModeButton');
-    //shareModeButton.addEventListener('click', () => this.shareMode());
-
-    //const linkModeButton = document.getElementById('linkModeButton');
-    //linkModeButton.addEventListener('click', () => this.linkMode());
-
-    //const exportModeButton = document.getElementById('exportModeButton');
-    //exportModeButton.addEventListener('click', () => this.exportMode());
 
     const importModeButton = document.getElementById('importModeButton');
     importModeButton.addEventListener('click', () => this.importMode());
@@ -104,11 +71,6 @@ export default class ModesPanel extends Panel {
       console.log(`Device name ${this.vortexPort.name} not recognized`);
     }
     this.refresh(true);
-    //Notification.success(this.vortexPort.name + ' Connected!');
-    //let statusMessage = document.getElementById('deviceStatus');
-    //statusMessage.textContent = this.vortexPort.name + ' Connected!';
-    //statusMessage.classList.add('status-success');
-    //statusMessage.classList.remove('status-pending', 'status-failure');
     Notification.success("Successfully Connected " + this.vortexPort.name);
 
     // Enable the 3 buttons when a device is connected
@@ -131,21 +93,8 @@ export default class ModesPanel extends Panel {
     // check version numbers
     this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
 
-    // show device options
-    //document.getElementById('deviceActionContainer').style.display = 'flex';
-    //document.getElementById('deviceConnectContainer').style.display = 'none';
-
-    // Show the device connection section and leds fieldset
-    //document.getElementById('deviceConnectionSection').style.display = 'block';
-
     // display the spread slider
     document.getElementById('spread_div').style.display = 'block';
-
-    // Change the height of the #modesListScrollContainer when the device connects
-    const modesListScrollContainer = document.getElementById('modesListScrollContainer');
-    if (modesListScrollContainer) {
-      modesListScrollContainer.style.height = '200px';
-    }
   }
 
   handleDeviceEvent(deviceChangeEvent) {
@@ -164,10 +113,6 @@ export default class ModesPanel extends Panel {
 
   onDeviceWaiting(deviceName) {
     Notification.success("Waiting for device...");
-    //let statusMessage = document.getElementById('deviceStatus');
-    //statusMessage.textContent = 'Waiting for device...';
-    //statusMessage.classList.add('status-pending');
-    //statusMessage.classList.remove('status-success', 'status-failure');
   }
 
   onDeviceDisconnect(deviceName) {
@@ -179,12 +124,6 @@ export default class ModesPanel extends Panel {
     document.getElementById('pullFromDeviceButton').disabled = true;
     document.getElementById('transmitVLButton').disabled = true;
     document.getElementById('connectDeviceButton').disabled = false;
-
-    //let statusMessage = document.getElementById('deviceStatus');
-    //statusMessage.textContent = this.vortexPort.name + ' Disconnected!';
-    //statusMessage.classList.remove('status-success', 'status-pending');
-    //statusMessage.classList.add('status-failure');
-    //this.lockDeviceSelection(false);
   }
 
   onDeviceSelected(devicename) {

@@ -1,0 +1,73 @@
+#welcomePanel {
+  top: 75px;
+  left: 50%; /* Center the div */
+  width: 900px;
+  transform: translate(-25%, 0%);
+  text-align: left;
+  z-index: 50;
+}
+
+#welcomePanel label {
+  font-size: 20px;
+}
+#welcomePanel input {
+  height: 16px;
+  width: 16px;
+}
+
+#welcomePanel p {
+  font-size: 20px;
+}
+
+#welcomePanel h2 {
+  margin-bottom: 0;
+}
+
+/* public/css/components/welcome-panel.css */
+.wiki-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  background-color: #28a745; /* Green color */
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin: 20px 0;
+}
+
+.wiki-button .arrow {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+.wiki-button:hover {
+  background-color: #218838; /* Darker green on hover */
+  transform: translateY(-2px);
+}
+
+.wiki-button:active {
+  background-color: #1e7e34; /* Even darker green on click */
+  transform: translateY(1px);
+}
+
+/* Container for the checkbox to help with positioning */
+.checkbox-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px; /* Adjust the margin to position it lower */
+}
+
+/* Label for the checkbox */
+.checkbox-container label {
+  font-size: 1rem;
+}
+
+/* Style for the checkbox itself */
+.checkbox-container input[type="checkbox"] {
+  margin-right: 10px;
+}
