@@ -17,7 +17,7 @@ export default class LedSelectPanel extends Panel {
               <button id="invertLeds" title="Invert Selection">Invert</button>
               <button id="evenLeds" title="Select Even">Evens</button>
               <button id="oddLeds" title="Select Odd">Odds</button>
-              <button id="randomLeds" title="Select Random">Random</button>
+              <button id="randomLeds" title="Select Random">Rand</button>
             </div>
             <select id="ledList" size="8" multiple style="display:none;"></select>
           </div>
