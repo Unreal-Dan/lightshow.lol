@@ -123,8 +123,39 @@ export default class AnimationPanel extends Panel {
     this.spreadDiv = document.getElementById('spread_div');
 
     // collapse the animation panel by default
-    this.toggleCollapse(false);
+    if (!this.editor.detectMobile()) {
+      this.toggleCollapse(false);
+    }
   }
+
+  //// Inside AnimationPanel class
+  //applyMobileLayout() {
+  //  this.panel.classList.add('mobile-panel');
+  //  this.panel.classList.remove('desktop-panel');
+  //  this.setActiveForMobile(false); // Initially hide in mobile layout
+
+  //  // Adjust slider sizes for mobile
+  //  this.controls.forEach(control => {
+  //    const element = this.panel.querySelector(`#${control.id}`);
+  //    if (element) {
+  //      element.style.width = '90%'; // Make sliders full width for mobile
+  //    }
+  //  });
+  //}
+
+  //applyDesktopLayout() {
+  //  this.panel.classList.remove('mobile-panel');
+  //  this.panel.classList.add('desktop-panel');
+  //  this.panel.style.display = ''; // Restore default display behavior
+
+  //  // Revert slider sizes for desktop
+  //  this.controls.forEach(control => {
+  //    const element = this.panel.querySelector(`#${control.id}`);
+  //    if (element) {
+  //      element.style.width = '80%'; // Restore default width
+  //    }
+  //  });
+  //}
 
   showSpreadSlider() {
     this.spreadDiv.style.display = 'block';

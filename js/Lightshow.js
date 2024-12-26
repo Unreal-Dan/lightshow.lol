@@ -57,7 +57,7 @@ export default class Lightshow {
     if (isMobile) {
       // Mobile layout: canvas takes up the top half of the screen
       this.canvas.width = window.innerWidth;
-      this.canvas.height = Math.floor(window.innerHeight / 2);
+      this.canvas.height = Math.floor(window.innerHeight * 0.40);
       this.resetToCenter(); // Adjust the canvas to reflect the new size
     } else {
       // Desktop layout: canvas takes up the entire screen

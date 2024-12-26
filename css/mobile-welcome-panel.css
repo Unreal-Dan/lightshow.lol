@@ -1,10 +1,5 @@
-/* welcome-panel.css */
+/* mobile-welcome-panel.css */
 #welcomePanel {
-  top: 75px;
-  left: 50%; /* Center the div */
-  width: 900px;
-  transform: translate(-25%, 0%);
-  text-align: left;
   z-index: 50;
 }
 
@@ -17,7 +12,6 @@
 }
 
 #welcomePanel p {
-  font-size: 20px;
 }
 
 #welcomePanel h2 {
@@ -30,7 +24,6 @@
   align-items: center;
   justify-content: center;
   padding: 12px 20px;
-  font-size: 18px;
   font-weight: bold;
   text-decoration: none;
   color: white;
@@ -43,11 +36,6 @@
 .wiki-button .arrow {
   margin-left: 10px;
   font-size: 20px;
-}
-
-.wiki-button:hover {
-  background-color: #218838; /* Darker green on hover */
-  transform: translateY(-2px);
 }
 
 .wiki-button:active {

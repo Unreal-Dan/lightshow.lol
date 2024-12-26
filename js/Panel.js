@@ -6,6 +6,7 @@ export default class Panel {
     this.panel = document.createElement('div');
     this.panel.id = id;
     this.panel.className = 'draggable-panel';
+    this.panel.title = title;
 
     const { showCloseButton = false } = options;
 
@@ -58,12 +59,27 @@ export default class Panel {
     this.panel.style.top = `${rect.top}px`;
   }
 
+
   show() {
+    const tabContainer = document.querySelector('.mobile-panel-content');
+
     if (!this.isVisible) {
       this.isVisible = true;
-      this.panel.style.display = '';
+
+      if (tabContainer) {
+        // For mobile: Add 'active' class and display the panel in the content area
+        const activePanels = tabContainer.querySelectorAll('.active');
+        activePanels.forEach(activePanel => activePanel.classList.remove('active'));
+
+        this.panel.classList.add('active');
+        this.panel.style.display = ''; // Ensure it's visible
+      } else {
+        // For desktop: Just ensure visibility
+        this.panel.style.display = '';
+      }
     }
-    if (this.isCollapsed) {
+
+    if (this.isCollapsed && !document.querySelector('.mobile-panel-container')) {
       this.toggleCollapse();
     }
   }
@@ -71,7 +87,14 @@ export default class Panel {
   hide() {
     if (this.isVisible) {
       this.isVisible = false;
-      this.panel.style.display = 'none';
+
+      if (!document.querySelector('.mobile-panel-container')) {
+        // For desktop: Directly hide the panel
+        this.panel.style.display = 'none';
+      } else {
+        // For mobile: Just remove 'active' class
+        this.panel.classList.remove('active');
+      }
     }
   }
 
@@ -157,6 +180,10 @@ export default class Panel {
     let offsetX, offsetY;
 
     const onMouseDown = (e) => {
+      // Skip dragging in mobile layout
+      if (this.panel.classList.contains('mobile-panel')) {
+        return;
+      }
       if (e.target === this.panel || e.target.closest('.panel-header')) {
         isDragging = true;
         offsetX = e.clientX - this.panel.offsetLeft;
@@ -308,29 +335,36 @@ export default class Panel {
     }
   }
 
-  applyDesktopLayout() {
-    //// Default behavior for desktop layout
-    //this.panel.classList.add('desktop-panel');
-    //this.panel.classList.remove('mobile-panel');
-    //this.panel.style.position = 'absolute';
-    //this.panel.style.display = ''; // Ensure it's visible
-    //this.panel.style.width = '370px'; // Default panel width
-    //this.panel.style.height = ''; // Reset height if needed
+  setActiveForMobile(isActive) {
+    if (isActive) {
+      this.show();
+    } else {
+      this.hide();
+    }
   }
+
 
   applyMobileLayout() {
-    //// Default behavior for mobile layout
-    //this.panel.classList.add('mobile-panel');
-    //this.panel.classList.remove('desktop-panel');
-    //this.panel.style.position = 'relative'; // No absolute positioning
-    //this.panel.style.width = '100%'; // Full width
-    //this.panel.style.height = 'auto'; // Adjust height automatically
-    //this.panel.style.display = 'none'; // Initially hidden; show only active tab
+    const tabContainer = document.querySelector('.mobile-panel-content');
+    if (tabContainer) {
+      tabContainer.appendChild(this.panel);
+    }
+
+    this.panel.style.border = 'none';
+    this.panel.style.backgroundColor = 'transparent';
+
+    // Ensure the panel is shown in mobile layout
+    this.show();
   }
 
-  setActiveForMobile(isActive) {
-    // Show/hide the panel content for mobile
-    this.panel.style.display = isActive ? '' : 'none';
+
+
+  applyDesktopLayout() {
+    const originalParent = document.body;
+    if (originalParent) {
+      originalParent.appendChild(this.panel); // Move panel back to the body
+    }
+    this.panel.style.display = ''; // Ensure it displays properly
   }
 
   addClickListener(buttonId, callback) {

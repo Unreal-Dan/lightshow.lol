@@ -81,7 +81,8 @@
   display: flex;
   justify-content: space-between;
   gap: 5px; /* Space between buttons */
-  margin-top: 10px; /* Space above the button group */
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 #ledControls button {

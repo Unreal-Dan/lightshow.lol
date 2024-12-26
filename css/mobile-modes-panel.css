@@ -1,4 +1,4 @@
-/* modes-panel.css */
+/* mobile-modes-panel.css */
 #modesPanel {
   top: 113px;
   right: 5px;
@@ -144,4 +144,5 @@
   user-select: none;
   background-color: transparent;
 }
+
 

@@ -1,0 +1,64 @@
+/* mobile-modal.css */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #181a1b;
+  margin: 10% auto; /* Centering the modal */
+  padding: 20px;
+  border: 1px solid #3e4446;
+  border-radius: 5px;
+  width: 40%; /* Fixed width */
+  color: #d8d4cf; /* Text color */
+  text-align: center;
+}
+
+.modal-content input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  padding-right: 0px;
+  margin: 10px 0px;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  background-color: #292c2e;
+  color: #d8d4cf;
+  user-select: none;
+}
+
+.modal-title {
+  user-select: none;
+}
+
+.modal-content button {
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#modalInput {
+  width: 98%;
+}
+
+.modal-content button:hover {
+  background-color: #3e4446;
+}
+
+.modal-buttons button {
+  /* Add your button styling here */
+  margin-top: 15px;
+}

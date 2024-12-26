@@ -59,6 +59,17 @@ export default class VortexEditor {
       this.updatePanel,
       this.chromalinkPanel
     ];
+    this.mobileTabs = [
+      // IDs of panels to include as tabs on mobile
+      'welcomePanel',
+      'aboutPanel',
+      'animationPanel',
+      'patternPanel',
+      'colorsetPanel',
+      'devicePanel',
+      'modesPanel',
+      'ledSelectPanel'
+    ]; 
     this.devices = {
       'None': { 
         image: 'public/images/none-logo-square-512.png',
@@ -121,14 +132,6 @@ export default class VortexEditor {
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
 
-    // Add a keydown event to toggle layouts with the Delete key
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Delete') {
-        this.isMobile = !this.isMobile; // Toggle between mobile and desktop layouts
-        this.applyLayout();
-      }
-    });
-
     // Keydown event to show updatePanel
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Insert') {
@@ -171,14 +174,67 @@ export default class VortexEditor {
     });
 
     window.addEventListener('resize', () => {
-      const isNowMobile = this.detectMobile();
-      if (isNowMobile !== this.isMobile) {
-        // when switching from mobile to non mobile update the layout
-        this.isMobile = isNowMobile;
-        this.applyLayout();
-      }
+      // update the layout
+      this.applyLayout();
       // always shift the lightshow to be centered
       this.lightshow.resetToCenter();
+    });
+
+    // In `VortexEditor.js` inside the `initialize` method:
+    if (this.detectMobile()) {
+      const panelContainer = document.createElement('div');
+      panelContainer.className = 'mobile-panel-container';
+
+      // Create tab buttons container
+      const tabButtonsContainer = document.createElement('div');
+      tabButtonsContainer.className = 'mobile-tab-buttons';
+
+      // Create panel content container
+      const panelContentContainer = document.createElement('div');
+      panelContentContainer.className = 'mobile-panel-content';
+
+      // Append tabs and content containers
+      panelContainer.appendChild(tabButtonsContainer);
+      panelContainer.appendChild(panelContentContainer);
+      document.body.appendChild(panelContainer);
+
+      // add panels to mobile tabs list
+      this.panels.forEach((panel) => {
+        if (this.mobileTabs.includes(panel.panel.id)) {
+          const tabButton = document.createElement('button');
+          tabButton.className = 'mobile-tab-button';
+          tabButton.dataset.panelId = panel.panel.id; // Link tab to panel by ID
+          tabButton.innerText = panel.panel.title;
+          tabButton.addEventListener('click', () => {
+            this.setActiveTab(panel.panel.id);
+          });
+          tabButtonsContainer.appendChild(tabButton);
+        }
+      });
+
+      // apply the mobile layout
+      this.applyLayout();
+    }
+  }
+
+  setActiveTab(panelId) {
+    const panelContentContainer = document.querySelector('.mobile-panel-content');
+
+    // Hide all panels except the selected one
+    this.panels.forEach(panel => {
+      const isActive = panel.panel.id === panelId;
+      panel.setActiveForMobile(isActive);
+
+      if (isActive) {
+        panelContentContainer.innerHTML = ''; // Clear previous panel
+        panelContentContainer.appendChild(panel.panel); // Show the active panel
+      }
+    });
+
+    // Update the active state of the tab buttons
+    const tabButtons = document.querySelectorAll('.mobile-tab-button');
+    tabButtons.forEach(button => {
+      button.classList.toggle('active', button.dataset.panelId === panelId);
     });
   }
 
@@ -196,11 +252,12 @@ export default class VortexEditor {
     );
   }
 
-  // Utility to dynamically load a script
+  // Utility to dynamically load a script with cache buster
   loadScript(name, src, isModule = false) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = src;
+      const cacheBuster = `?v=${new Date().getTime()}`;
+      script.src = `${src}${cacheBuster}`;
       script.id = name;
       if (isModule) script.type = 'module';
       script.onload = resolve;
@@ -209,12 +266,13 @@ export default class VortexEditor {
     });
   }
 
-  // Utility to dynamically load a stylesheet
+  // Utility to dynamically load a stylesheet with cache buster
   loadStylesheet(name, href) {
     const link = document.createElement('link');
+    const cacheBuster = `?v=${new Date().getTime()}`;
     link.rel = 'stylesheet';
     link.id = name;
-    link.href = href;
+    link.href = `${href}${cacheBuster}`;
     document.head.appendChild(link);
   }
 
@@ -224,10 +282,18 @@ export default class VortexEditor {
   }
 
   applyLayout() {
-    if (this.isMobile) {
-      this.applyMobileLayout();
-    } else {
-      this.applyDesktopLayout();
+    const isNowMobile = this.detectMobile();
+    if (isNowMobile === this.isMobile) {
+      // nothing to change
+      return;
+    }
+    // when switching between mobile and non mobile update the layout
+    this.isMobile = isNowMobile;
+
+    // update the stylesheet
+    const currentStylesheet = document.getElementById('mainStyles');
+    if (currentStylesheet) {
+      currentStylesheet.href = this.isMobile ? 'css/mobile-styles.css' : 'css/styles.css';
     }
 
     // Update layout for all panels
@@ -237,20 +303,34 @@ export default class VortexEditor {
 
     // update the lightshow layout
     this.lightshow.updateLayout(this.isMobile);
+
+    // set the active tab if mobile
+    if (this.isMobile && this.panels.length > 0) {
+      this.setActiveTab(this.panels[0].panel.id);
+    }
   }
 
-  applyMobileLayout() {
-    // Set up mobile-specific layout
-    this.canvas.width = window.innerWidth;
-    this.canvas.height = window.innerHeight / 2;
-    document.body.classList.add('mobile-layout'); // Ensure specific styles apply
-  }
+  setActiveTab(panelId) {
+    const panelContentContainer = document.querySelector('.mobile-panel-content');
 
-  applyDesktopLayout() {
-    // Set up desktop-specific layout
-    this.canvas.width = 800;
-    this.canvas.height = 600;
-    document.body.classList.remove('mobile-layout'); // Ensure specific styles apply
+    // Ensure only the active panel is visible
+    this.panels.forEach(panel => {
+      const isActive = panel.panel.id === panelId;
+
+      if (isActive) {
+        panel.panel.classList.add('active'); // Mark as active
+        panelContentContainer.innerHTML = ''; // Clear any previously active panel
+        panelContentContainer.appendChild(panel.panel); // Show the active panel
+      } else {
+        panel.panel.classList.remove('active'); // Mark as inactive
+      }
+    });
+
+    // Update tab button states
+    const tabButtons = document.querySelectorAll('.mobile-tab-button');
+    tabButtons.forEach(button => {
+      button.classList.toggle('active', button.dataset.panelId === panelId);
+    });
   }
 
   importModeDataFromUrl() {

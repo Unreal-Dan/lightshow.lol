@@ -17,7 +17,6 @@ export default class LedSelectPanel extends Panel {
               <button id="invertLeds" title="Invert Selection">Invert</button>
               <button id="evenLeds" title="Select Even">Evens</button>
               <button id="oddLeds" title="Select Odd">Odds</button>
-              <button id="randomLeds" title="Select Random">Rand</button>
             </div>
             <select id="ledList" size="8" multiple style="display:none;"></select>
           </div>
@@ -44,7 +43,7 @@ export default class LedSelectPanel extends Panel {
     document.getElementById('invertLeds').addEventListener('click', () => this.invertLeds());
     document.getElementById('evenLeds').addEventListener('click', () => this.evenLeds());
     document.getElementById('oddLeds').addEventListener('click', () => this.oddLeds());
-    document.getElementById('randomLeds').addEventListener('click', () => this.randomLeds());
+    //document.getElementById('randomLeds').addEventListener('click', () => this.randomLeds());
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));

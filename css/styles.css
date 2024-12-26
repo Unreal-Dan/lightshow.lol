@@ -1,3 +1,4 @@
+/* desktop styles */
 @import url('vortex-editor.css');
 @import url('notification.css');
 @import url('panel.css');
@@ -14,4 +15,3 @@
 @import url('update-panel.css');
 @import url('welcome-panel.css');
 @import url('pattern-panel.css');
-

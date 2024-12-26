@@ -1,0 +1,10 @@
+/* mobile-chromalink-panel.css */
+#chromalinkPanel {
+  width: 100%;
+  text-align: left;
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  background-color: #292c2e;
+}
+
