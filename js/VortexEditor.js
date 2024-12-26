@@ -14,6 +14,7 @@ import WelcomePanel from './WelcomePanel.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
+import VortexLib from './VortexLib.js';
 
 export default class VortexEditor {
   constructor(vortexLib) {
@@ -104,7 +105,10 @@ export default class VortexEditor {
     };
   }
 
-  initialize() {
+  async initialize() {
+    // Load dependencies
+    await this.loadDependencies();
+
     // Start the lightshow
     this.lightshow.start();
 
@@ -171,7 +175,6 @@ export default class VortexEditor {
       if (isNowMobile !== this.isMobile) {
         // when switching from mobile to non mobile update the layout
         this.isMobile = isNowMobile;
-        this.updateStylesheet(this.isMobile);
         this.applyLayout();
       }
       // always shift the lightshow to be centered
@@ -179,14 +182,45 @@ export default class VortexEditor {
     });
   }
 
+  async loadDependencies() {
+    this.loadStylesheet("mainStyles", "css/styles.css");
+    this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
+    await this.loadScript("pako", "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js");
+    await this.loadScript("jszip", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+
+    // Dynamically load ESPTool
+    window.esptoolPackage = await import(
+      window.location.hostname === "localhost"
+      ? "/dist/web/index.js"
+      : "https://cdn.jsdelivr.net/gh/adafruit/Adafruit_WebSerial_ESPTool@latest/dist/web/index.js"
+    );
+  }
+
+  // Utility to dynamically load a script
+  loadScript(name, src, isModule = false) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.id = name;
+      if (isModule) script.type = 'module';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // Utility to dynamically load a stylesheet
+  loadStylesheet(name, href) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.id = name;
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
   detectMobile() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
-  }
-
-  updateStylesheet(isMobile) {
-    const layoutStylesheet = document.getElementById('layoutStylesheet');
-    layoutStylesheet.href = isMobile ? 'css/mobile_styles.css' : 'css/styles.css';
   }
 
   applyLayout() {
@@ -335,3 +369,9 @@ export default class VortexEditor {
   }
 }
 
+// Main initialization of VortexLib and Vortex Editor
+VortexLib().then(async (vortexLib) => {
+  // Instantiate and initialize VortexEditor
+  const vortexEditor = new VortexEditor(vortexLib);
+  await vortexEditor.initialize();
+});
