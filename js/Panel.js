@@ -333,5 +333,22 @@ export default class Panel {
     this.panel.style.display = isActive ? '' : 'none';
   }
 
+  addClickListener(buttonId, callback) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+      button.addEventListener('click', callback.bind(this));
+    } else {
+      console.error(`Button with ID ${buttonId} not found.`);
+    }
+  }
+
+  removeClickListener(buttonId, callback) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+      button.removeEventListener('click', callback.bind(this));
+    } else {
+      console.error(`Button with ID ${buttonId} not found for removal.`);
+    }
+  }
 }
 

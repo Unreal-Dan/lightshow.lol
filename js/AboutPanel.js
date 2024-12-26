@@ -28,13 +28,9 @@ export default class AboutPanel extends Panel {
     this.toggleCollapse(false);
   }
 
-  addClickListener(buttonId, callback) {
-    const button = document.getElementById(buttonId);
-    if (button) {
-      button.addEventListener('click', callback.bind(this));
-    } else {
-      console.error(`Button with ID ${buttonId} not found.`);
-    }
+  destroy() {
+    this.removeClickListener('patternHelpButton', this.showHelp);
+    this.removeClickListener('githubLinkButton', this.gotoGithub);
   }
 
   gotoGithub() {

@@ -169,9 +169,12 @@ export default class VortexEditor {
     window.addEventListener('resize', () => {
       const isNowMobile = this.detectMobile();
       if (isNowMobile !== this.isMobile) {
+        // when switching from mobile to non mobile update the layout
         this.isMobile = isNowMobile;
+        this.updateStylesheet(this.isMobile);
+        this.applyLayout();
       }
-      this.applyLayout();
+      // always shift the lightshow to be centered
       this.lightshow.resetToCenter();
     });
   }
@@ -179,6 +182,11 @@ export default class VortexEditor {
   detectMobile() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
+  }
+
+  updateStylesheet(isMobile) {
+    const layoutStylesheet = document.getElementById('layoutStylesheet');
+    layoutStylesheet.href = isMobile ? 'css/mobile_styles.css' : 'css/styles.css';
   }
 
   applyLayout() {
