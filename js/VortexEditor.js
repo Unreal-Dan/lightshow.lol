@@ -238,7 +238,7 @@ export default class VortexEditor {
   }
 
   async loadDependencies() {
-    this.loadStylesheet("mainStyles", "css/styles.css");
+    this.loadStylesheet("mainStyles", "css/styles.css" + __CACHE_BUSTER__);
     this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
     await this.loadScript("pako", "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js");
     await this.loadScript("jszip", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
@@ -292,7 +292,8 @@ export default class VortexEditor {
     // update the stylesheet
     const currentStylesheet = document.getElementById('mainStyles');
     if (currentStylesheet) {
-      currentStylesheet.href = this.isMobile ? 'css/mobile-styles.css' : 'css/styles.css';
+      const styleSheet = this.isMobile ? 'css/mobile-styles.css' : 'css/styles.css';
+      currentStylesheet.href = styleSheet + __CACHE_BUSTER__;
     }
 
     // Update layout for all panels
