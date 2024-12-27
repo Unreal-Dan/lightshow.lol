@@ -16,8 +16,7 @@ export default class DevicePanel extends Panel {
         </button>
       </div>
     `;
-    super('devicePanel', content, 'Device Controls');
-
+    super('devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.selectedDevice = 'None';

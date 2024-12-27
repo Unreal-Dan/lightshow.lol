@@ -1,21 +1,25 @@
 /* mobile-animation-panel.css */
 #animationPanel {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  text-align: left;
-  padding: 15px;
-  box-sizing: border-box;
-  overflow-y: auto;
+  height: 100%; /* Ensure the panel fills its container */
+  box-sizing: border-box; /* Include padding and border in size */
   background-color: #292c2e;
+  overflow: hidden; /* Prevent overflow issues */
+  padding: 10px; /* Adjust padding to fix gaps */
 }
 
 #animationPanel .animation-buttons-container {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
+  justify-content: space-between; /* Evenly distribute buttons */
+  align-items: center;
+  gap: 8px; /* Add spacing between buttons */
+  margin-bottom: 10px; /* Spacing between buttons and sliders */
 }
 
 #animationPanel .animation-button {
-  width: 50px;
+  flex: 1; /* Distribute buttons evenly across the container */
   height: 50px;
   background-color: #202020;
   border: 1px solid #454545;
@@ -23,15 +27,64 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#animationPanel .animation-button:hover {
+  background-color: #3e4446;
 }
 
 #animationPanel .animation-button i {
-  font-size: 24px;
+  font-size: 20px;
 }
 
 #animationPanel #animationControls {
+  flex: 1; /* Allow controls to take up the remaining space */
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px; /* Add more spacing between sliders */
+  overflow-y: auto; /* Enable scrolling if necessary */
+  padding-right: 5px; /* Fix the right-side gap */
+}
+
+#animationPanel #animationControls > div {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* Ensure child elements take full width */
+  width: 100%; /* Explicitly set width to 100% */
+}
+
+#animationPanel #animationControls label {
+  font-size: 16px; /* Larger font for better readability */
+  margin-bottom: 5px;
+  color: #d8d4cf;
+}
+
+#animationPanel #animationControls input[type="range"] {
+  width: 100%; /* Full-width sliders */
+  height: 20px; /* Fatter sliders for easier interaction */
+  background: #454545;
+  border-radius: 4px;
+  -webkit-appearance: none; /* Remove default styling */
+  appearance: none;
+  margin: 0; /* Remove default margin */
+}
+
+#animationPanel #animationControls input[type="range"]::-webkit-slider-thumb {
+  width: 20px; /* Larger thumb for better usability */
+  height: 20px;
+  background: #66ff66; /* Highlighted thumb */
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+#animationPanel #animationControls input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #66ff66;
+  border-radius: 50%;
+  cursor: pointer;
 }
 

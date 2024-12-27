@@ -23,8 +23,7 @@ export default class LedSelectPanel extends Panel {
         </fieldset>
       </div>
     `;
-
-    super('ledSelectPanel', content, 'LED Selection');
+    super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

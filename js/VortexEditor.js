@@ -62,7 +62,6 @@ export default class VortexEditor {
     this.mobileTabs = [
       // IDs of panels to include as tabs on mobile
       'welcomePanel',
-      'aboutPanel',
       'animationPanel',
       'patternPanel',
       'colorsetPanel',
@@ -174,8 +173,8 @@ export default class VortexEditor {
     });
 
     window.addEventListener('resize', () => {
-      // update the layout
-      this.applyLayout();
+      // TODO: Responsive layout
+      //this.applyLayout();
       // always shift the lightshow to be centered
       this.lightshow.resetToCenter();
     });

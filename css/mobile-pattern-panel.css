@@ -1,161 +1,121 @@
 /* mobile-pattern-panel.css */
 #patternPanel {
-  left: 5px;
-  top: 103px;
-  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%; /* Full height of the container */
+  box-sizing: border-box; /* Include padding in size calculation */
+  background-color: #292c2e;
+  padding: 10px; /* Add padding for better spacing */
+  overflow: hidden; /* Prevent unnecessary scrollbars */
 }
 
-#patternDivider {
-  margin-left: 10px;
-  margin-right: 10px;
-  border-color: rgba(0, 0, 0, 0.3);
+#patternDropdownContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Spread elements evenly */
+  gap: 2px; /* Space between dropdown and buttons */
+  margin-bottom: 10px; /* Add spacing below dropdown */
 }
 
 #patternDropdown {
-  width: 100%;
-  margin-right: 5px;
+  flex: 1; /* Allow dropdown to take up as much space as possible */
+  padding: 8px; /* Add padding for better usability */
   background-color: #333; /* Dark background */
   color: #fff; /* Light text color for contrast */
-  border: 1px solid #555; /* Dark border for distinction */
-  padding: 5px; /* Padding for aesthetic spacing */
+  border: 1px solid #555; /* Subtle border */
   border-radius: 4px; /* Rounded corners for a modern look */
-
-  /* Additional styles for a more polished look */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* subtle shadow for depth */
-  font-size: 1rem; /* Adjust font size as needed */
+  font-size: 16px; /* Increase font size for better usability */
 }
 
-/* Styling for options in the dropdown */
-#patternDropdown option {
-  background-color: #444; /* Slightly lighter background for options */
-  color: white; /* Light text color for options */
+.pattern-buttons {
+  display: flex;
+  gap: 1px; /* Space between buttons */
+}
+
+.pattern-buttons button {
+  width: 50px; /* Fixed width for buttons */
+  height: 50px; /* Fixed height for buttons */
+  background-color: #202020;
+  border: 1px solid #454545;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.pattern-buttons button:hover {
+  background-color: #3e4446;
+}
+
+#patternDivider {
+  margin: 10px 0; /* Space above and below the divider */
+  border-color: rgba(0, 0, 0, 0.3); /* Subtle color for the divider */
 }
 
 #patternParams {
-  margin-top: 10px;
+  flex: 1; /* Take up remaining space */
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Space between control groups */
+  overflow-y: auto; /* Enable scrolling if content overflows */
+  padding-right: 5px; /* Add some padding to avoid cutting off content */
+  box-sizing: border-box;
 }
 
+/* Desktop layout */
 .control-line {
+  margin-bottom: 10px;
+}
+
+.control-slider-container-desktop {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  height: 30px; /* Consistent height for rows */
+  gap: 10px;
+  flex: 1;
 }
 
-.control-slider-container {
-  position: relative;
-  flex: 5;
-  height: 100%;
+/* Mobile layout */
+.control-line-mobile {
   display: flex;
-  align-items: center; /* Align slider and label vertically */
-  overflow: hidden; /* Prevent overlapping visuals */
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  margin-bottom: 10px;
 }
 
+.control-slider-container-mobile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Common styles for slider and input */
 .control-label {
-  position: absolute;
-  z-index: 2;
   font-weight: bold;
   color: #d8d4cf;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%); /* Center vertically */
-  pointer-events: none; /* Ensure it doesn’t interfere with slider interaction */
+  font-size: 14px;
 }
 
 .control-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e 50%, #3e3e3e 50%); /* Placeholder gradient */
-  margin-right: 0;
-  outline: none;
-  position: relative;
-  border-top-left-radius: 4px; /* Ensure full rounding */
-  border-bottom-left-radius: 4px; /* Ensure full rounding */
-  position: relative; /* Needed for ::before */
-}
-
-.control-slider::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill)); /* Dynamic fill */
-  border: none;
-}
-
-.control-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 2px;
-  height: 100%;
-  background: #111; /* The draggable "line" */
-  cursor: pointer;
-  z-index: 3; /* Ensure it's above the slider track */
-}
-
-.control-slider::-moz-range-track {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill));
-  border: none;
-}
-
-.control-slider::-moz-range-thumb {
-  width: 2px;
-  height: 100%;
-  background: #111;
-  cursor: pointer;
-  border: none;
+  flex: 1;
+  height: 24px;
+  background: #5e5e5e;
+  border-radius: 4px;
 }
 
 .control-input {
-  flex: 1;
-  height: 30px;
+  width: 60px;
+  height: 40px;
   background: #292c2e;
   color: #d8d4cf;
-  border: none;
   text-align: center;
-  margin: 0;
-  padding: 0;
-  border: 1px solid black;
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+  border: 1px solid #444;
+  border-radius: 4px;
 }
 
-.control-input:focus {
-  outline: none;
-}
-
-.control-slider-container.disabled .control-slider.disabled {
-  background: #111111;
-  pointer-events: none;
-}
-
-.control-slider-container.disabled .control-label {
-  color: #333;
-}
-
-.control-input.disabled {
-  background: #1e1e1e;
-  pointer-events: none;
-}
-
-#patternDropdownContainer {
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pattern-buttons {
-  display: flex;
-  gap: 5px;
-}
-
-#patternRandomizeButton {
-  font-size: 22px;
-  padding: 1px;
-  margin-left: 5px;
-  margin-right: 5px;
-}

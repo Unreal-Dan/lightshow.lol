@@ -128,34 +128,36 @@ export default class AnimationPanel extends Panel {
     }
   }
 
-  //// Inside AnimationPanel class
-  //applyMobileLayout() {
-  //  this.panel.classList.add('mobile-panel');
-  //  this.panel.classList.remove('desktop-panel');
-  //  this.setActiveForMobile(false); // Initially hide in mobile layout
+  applyMobileLayout() {
+    const tabContainer = document.querySelector('.mobile-panel-content');
+    if (!tabContainer) return;
 
-  //  // Adjust slider sizes for mobile
-  //  this.controls.forEach(control => {
-  //    const element = this.panel.querySelector(`#${control.id}`);
-  //    if (element) {
-  //      element.style.width = '90%'; // Make sliders full width for mobile
-  //    }
-  //  });
-  //}
+    // Append the panel to the mobile panel container
+    tabContainer.appendChild(this.panel);
 
-  //applyDesktopLayout() {
-  //  this.panel.classList.remove('mobile-panel');
-  //  this.panel.classList.add('desktop-panel');
-  //  this.panel.style.display = ''; // Restore default display behavior
+    // Remove unnecessary borders and set transparent background
+    this.panel.style.border = 'none';
+    this.panel.style.backgroundColor = 'transparent';
 
-  //  // Revert slider sizes for desktop
-  //  this.controls.forEach(control => {
-  //    const element = this.panel.querySelector(`#${control.id}`);
-  //    if (element) {
-  //      element.style.width = '80%'; // Restore default width
-  //    }
-  //  });
-  //}
+    // Calculate the available height for the panel
+    const viewportHeight = window.innerHeight;
+    const tabContainerRect = tabContainer.getBoundingClientRect();
+    const availableHeight = viewportHeight - tabContainerRect.top;
+
+    // Set the panel height to fit the remaining space
+    this.panel.style.height = `${availableHeight}px`;
+
+    // Adjust the height of the content area
+    const buttonsContainer = this.panel.querySelector('.animation-buttons-container');
+    const buttonsHeight = buttonsContainer ? buttonsContainer.offsetHeight : 0;
+
+    const controls = this.panel.querySelector('#animationControls');
+    const controlsHeight = availableHeight - buttonsHeight - 20; // Adjust for padding/margins
+    controls.style.flex = '1';
+    controls.style.height = `${controlsHeight}px`;
+    controls.style.overflowY = 'auto'; // Scrollable if necessary
+    controls.style.paddingBottom = '10px'; // Fix bottom spacing issue
+  }
 
   showSpreadSlider() {
     this.spreadDiv.style.display = 'block';

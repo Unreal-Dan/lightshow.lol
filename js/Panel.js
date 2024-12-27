@@ -357,8 +357,6 @@ export default class Panel {
     this.show();
   }
 
-
-
   applyDesktopLayout() {
     const originalParent = document.body;
     if (originalParent) {

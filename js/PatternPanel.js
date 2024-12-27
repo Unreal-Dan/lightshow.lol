@@ -242,6 +242,8 @@ export default class PatternPanel extends Panel {
     const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
     paramsDiv.innerHTML = ''; // Clear existing params
 
+    const isMobile = this.editor.detectMobile(); // Check for mobile layout
+
     for (let i = 0; i < 7; i++) {
       const container = document.createElement('div');
       container.className = 'control-line';
@@ -255,14 +257,13 @@ export default class PatternPanel extends Panel {
       label.className = 'control-label';
 
       let customParams = this.lightshow.vortex.getCustomParams(patternID);
-      const param = customParams.get(i)
+      const param = customParams.get(i);
       if (param) {
-        // convert to all lowercase cleaned version
+        // Convert to a user-friendly label
         const sliderNameClean = param.slice(2)
           .replace(/([a-z])([A-Z])/g, '$1 $2')
           .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
           .toLowerCase();
-        // lookup the friendly nice name with clean version
         label.textContent = this.getTooltipNiceName(sliderNameClean);
       }
 
@@ -297,11 +298,26 @@ export default class PatternPanel extends Panel {
         this.updateSliderFill(slider); // Update gradient
       });
 
-      sliderContainer.append(label, slider);
-      container.append(sliderContainer, input);
+      if (isMobile) {
+        // Mobile-specific layout: Stack label, slider, and input
+        const mobileContainer = document.createElement('div');
+        mobileContainer.className = 'control-slider-container-mobile';
+        mobileContainer.appendChild(slider);
+        mobileContainer.appendChild(input);
+
+        container.style.flexDirection = 'column'; // Stack elements vertically
+        container.appendChild(label);
+        container.appendChild(mobileContainer);
+      } else {
+        // Desktop layout: Inline label, slider, and input
+        sliderContainer.append(label, slider);
+        container.append(sliderContainer, input);
+      }
+
       paramsDiv.appendChild(container);
     }
   }
+
 
   updateSliderFill(slider) {
     const value = slider.value;
