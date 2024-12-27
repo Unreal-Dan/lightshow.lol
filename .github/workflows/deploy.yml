@@ -71,6 +71,6 @@ jobs:
         scp VortexEngine/VortexEngine/VortexCLI/vortex lightshow@172.232.170.43:/home/lightshow/vortex
         ssh lightshow@172.232.170.43 'sudo /usr/bin/mv /home/lightshow/vortex /usr/local/bin/vortex'
         #ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
-        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git pull'
+        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git reset --hard && git pull && chmod +x ./add_cache_busters.sh && ./add_cache_busters.sh'
         #ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
 
