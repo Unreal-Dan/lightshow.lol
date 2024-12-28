@@ -8,6 +8,7 @@ export default class ColorsetPanel extends Panel {
     //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
       <div id="colorset-status">
+        <button id="colorset-preset-one" class="preset-button"></button>
         <button id="colorset-preset-two" class="preset-button"></button>
         <button id="colorset-preset-three" class="preset-button"></button>
         <button id="colorset-preset-four" class="preset-button"></button>
@@ -36,6 +37,7 @@ export default class ColorsetPanel extends Panel {
     document.getElementById('colorset-preset-grayscale').addEventListener('click', () => this.applyPreset('grayscale'));
     document.getElementById('colorset-preset-pastel').addEventListener('click', () => this.applyPreset('pastel'));
     document.getElementById('colorset-preset-dark').addEventListener('click', () => this.applyPreset('dark'));
+    document.getElementById('colorset-preset-one').addEventListener('click', () => this.applyPreset('one'));
     document.getElementById('colorset-preset-two').addEventListener('click', () => this.applyPreset('two'));
     document.getElementById('colorset-preset-three').addEventListener('click', () => this.applyPreset('three'));
     document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
@@ -73,10 +75,13 @@ export default class ColorsetPanel extends Panel {
 
     const set = cur.getColorset(this.targetLed);
     set.clear();
-    const numCols = ((Math.random() * 100) % 8);
+    let numCols = ((Math.random() * 100) % 8);
 
     switch (preset) {
     case 'rainbow':
+      if (numCols < 5) {
+        numCols = 4 + (numCols % 4);
+      }
       for (let i = 0; i < numCols; i++) {
         const hue = (i / numCols) * 360;
         const rgb = this.hslToRgb(hue, 1, 0.5); // Full saturation, medium lightness
@@ -100,7 +105,7 @@ export default class ColorsetPanel extends Panel {
       }
       break;
     case 'dark':
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < numCols; i++) {
         const dark = {
           r: Math.floor(Math.random() * 128),
           g: Math.floor(Math.random() * 128),
@@ -109,29 +114,25 @@ export default class ColorsetPanel extends Panel {
         set.addColor(new this.lightshow.vortexLib.RGBColor(dark.r, dark.g, dark.b));
       }
       break;
+    case 'one':
+      const color = this.getRandomColor();
+      set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+      break;
     case 'two':
-      const color1 = this.getRandomColor();
-      const color2 = this.getRandomColor();
       for (let i = 0; i < 2; i++) {
-        const color = i % 2 === 0 ? color1 : color2;
+        const color = this.getRandomColor();
         set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
       }
       break;
     case 'three':
-      const c1 = this.getRandomColor();
-      const c2 = this.getRandomColor();
-      const c3 = this.getRandomColor();
       for (let i = 0; i < 3; i++) {
-        const color = [c1, c2, c3][i % 3];
+        const color = this.getRandomColor();
         set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
       }
       break;
     case 'four':
-      const fourColors = Array(4)
-        .fill(0)
-        .map(() => this.getRandomColor());
       for (let i = 0; i < 4; i++) {
-        const color = fourColors[i % 4];
+        const color = this.getRandomColor();
         set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
       }
       break;

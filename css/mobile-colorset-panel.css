@@ -5,127 +5,127 @@
   z-index: 3;
 }
 
-#colorset {
-  display: column;
-  grid-template-columns: repeat(4, 1fr); /* 4 columns */
-  gap: 10px; /* Space between slots */
+#colorset-status {
+  display: flex;
+  justify-content: right;
+  align-items: center;
+  padding: 5px 10px;
+  color: #fff;
 }
 
-.color-box {
+#colorset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  gap: 6px;
+  overflow-x: auto;
+  flex-wrap: nowrap; /* Prevent wrapping */
+  min-height: 52px; /* Consistent container height */
+}
+
+/* Color Cube Styling */
+.color-cube {
+  width: 32px; /* Consistent width */
+  height: 32px; /* Consistent height */
+  border-radius: 8px;
+  background: #333;
+  box-shadow: 0 0 10px #222;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  border: 2px solid #444; /* Border for all slots */
-  border-bottom-right-radius: 5px;
-  border-top-right-radius: 5px;
-  border-radius: 5px;
-  padding: 0;
-  margin-left: 0;
-  margin-bottom: 3px;
-  height: 40px; /* Fixed height */
-  box-sizing: border-box; /* Include padding in size */
-  overflow: none;
-  transition: transform 0.2s ease;
-  position: relative;
+  justify-content: center;
 }
 
-.color-box.empty {
-  background: #1a1a1a; /* Dark background for empty slots */
-  border: 2px dashed #666; /* Dotted border for empty slots */
-  color: #999; /* Placeholder text color */
-  justify-content: center; /* Center content */
-  overflow: none;
+.color-cube:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
 }
 
-.color-box.empty:hover {
-  background: #222; /* Slightly darker on hover */
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-
-.color-box .color-hex-input:focus {
-  border-top-left-radius: 5px;
-  border-bottom-left-radius: 5px;
-}
-
-.color-box .color-entry:hover {
-  flex: 0 0 50%;
-}
-
-.color-box.dragging {
-  margin-top: 50px;
-  position: static;
-  pointer-events: none;
-  border: 1px solid gray;
-}
-
-.color-box.placeholder {
-  background: rgba(0, 0, 0, 0.1);
-  border: 2px dashed #ccc;
-  height: 50px; /* Match the color box height */
-}
-
-.color-box.over {
-  transform: translateY(10px); /* Example visual cue */
-}
-
-.color-entry {
-  width: 50px;
-  display: inline-block;
-  flex: 0 0 30%; /* Take 30% of the box width */
-  height: 100%;
-  cursor: pointer;
-  border: none;
-  border-right: 2px solid #333;
-  margin-left: 0;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-  transition: flex 0.3s ease; /* Smooth transition for width */
-}
-
-.color-hex-input {
-  flex: 1; /* Fill remaining space */
-  border: none;
-  background: transparent;
+.color-cube.add-color {
+  background: #444;
   color: #fff;
-  padding: 0 5px;
-  text-align: center;
-}
-
-.delete-color {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
+  font-size: 1.5rem;
   font-weight: bold;
-  user-select:none;
-  margin-right: 10px;
 }
 
-.delete-color:hover,
-.delete-color:focus {
-  color: red;
-  text-decoration: none;
-  cursor: pointer;
-  user-select:none;
+.color-cube.add-color:hover {
+  background: #555;
+  transform: scale(1.2);
 }
 
-/* TODO: MAYBE? Container for the selected LEDs bar */
-#colorset-selected-leds {
+.color-cube.empty {
+  background: transparent;
+  border: 2px dashed #555;
+  box-shadow: none;
+}
+
+
+#colorset-randomize {
+  font-size: 22px;
+  padding: 1px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+
+#colorset-controls {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-around;
   align-items: center;
   padding: 5px;
-  margin-bottom: 5px;
-  border-bottom: 1px solid #3e4446;
+  gap: 10px;
 }
-/* Individual LED dots */
-.led-dot {
-  width: 10px;
-  height: 10px;
-  background: #444;
-  border-radius: 50%;
-  margin: 2px;
+
+.preset-button {
+  font-size: 22px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #555;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-right: 8px;
 }
-.led-dot.selected {
-  background: #00ff00; /* Green for selected */
+
+.preset-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Rainbow Button */
+#colorset-preset-rainbow {
+  background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
+}
+
+/* Grayscale Button */
+#colorset-preset-grayscale {
+  background: linear-gradient(135deg, #000, #333, #666, #999, #ccc, #eee, #fff);
+}
+
+/* Pastel Button */
+#colorset-preset-pastel {
+  background: linear-gradient(135deg, #FFB3BA, #FFDFBA, #FFFFBA, #BAFFC9, #BAE1FF);
+}
+
+/* Dark Colors */
+#colorset-preset-dark {
+  background: linear-gradient(135deg, #200, #444, #006);
+}
+
+/* Two Colors */
+#colorset-preset-two {
+  background: linear-gradient(90deg, red 50%, blue 50%);
+}
+
+/* Three-Color Button */
+#colorset-preset-three {
+  background: linear-gradient(90deg, red 0%, red 33.33%, green 33.33%, green 66.66%, blue 66.66%, blue 100%);
+}
+
+/* Four-Color Button */
+#colorset-preset-four {
+  background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, blue 50%, blue 75%, orange 75%, orange 100%);
 }

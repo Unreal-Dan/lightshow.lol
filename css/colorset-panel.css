@@ -115,17 +115,22 @@
   background: linear-gradient(135deg, #200, #444, #006);
 }
 
+/* One Color */
+#colorset-preset-one {
+  background: red;
+}
+
 /* Two Colors */
 #colorset-preset-two {
-  background: linear-gradient(90deg, red 50%, blue 50%);
+  background: linear-gradient(90deg, red 50%, #00a2e8 50%);
 }
 
 /* Three-Color Button */
 #colorset-preset-three {
-  background: linear-gradient(90deg, red 0%, red 33.33%, green 33.33%, green 66.66%, blue 66.66%, blue 100%);
+  background: linear-gradient(90deg, red 0%, red 33.33%, green 33.33%, green 66.66%, #00a2e8 66.66%, #00a2e8 100%);
 }
 
 /* Four-Color Button */
 #colorset-preset-four {
-  background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, blue 50%, blue 75%, orange 75%, orange 100%);
+  background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, #00a2e8 50%, #00a2e8 75%, orange 75%, orange 100%);
 }
