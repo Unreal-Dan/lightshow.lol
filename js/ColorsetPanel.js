@@ -271,9 +271,23 @@ export default class ColorsetPanel extends Panel {
 
     const updatePlaceholder = (target) => {
       if (!placeholder || !target || placeholder === target) return;
-      if (target.classList.contains('empty')) return;
-      colorsetElement.insertBefore(placeholder, target);
+      if (target.classList.contains('empty') || target.classList.contains('add-color')) return; // Skip the + icon
+
+      const targetRect = target.getBoundingClientRect();
+      const placeholderRect = placeholder.getBoundingClientRect();
+
+      // Check if dragging to the right or left
+      const isDraggingRight = draggingElement.getBoundingClientRect().left > targetRect.left;
+
+      if (isDraggingRight) {
+        // Insert the placeholder after the target
+        colorsetElement.insertBefore(placeholder, target.nextSibling);
+      } else {
+        // Insert the placeholder before the target
+        colorsetElement.insertBefore(placeholder, target);
+      }
     };
+
 
     const DRAG_THRESHOLD = 5; // Adjust for better responsiveness
     let isDragging = false;
@@ -281,6 +295,11 @@ export default class ColorsetPanel extends Panel {
     let startY = 0;
 
     const handlePointerDown = (e) => {
+      if (e.button !== 0) {
+        e.preventDefault(); // Prevent default right-click behavior if necessary
+        return; // Abort drag handling for non-left-clicks
+      }
+
       const target = e.target.closest('.color-cube');
       if (!target || target.classList.contains('empty')) return;
 
@@ -293,6 +312,7 @@ export default class ColorsetPanel extends Panel {
       document.addEventListener('pointermove', checkForDragStart);
       document.addEventListener('pointerup', cancelDragStart);
     };
+
 
     const checkForDragStart = (e) => {
       const movedX = Math.abs(e.clientX - startX);
@@ -339,12 +359,12 @@ export default class ColorsetPanel extends Panel {
     const handlePointerUp = () => {
       if (!draggingElement || !isDragging) return;
 
-      const dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
+      const children = Array.from(colorsetElement.children);
+      let dropIndex = children.indexOf(placeholder);
 
+      if (dropIndex > dragStartIndex) dropIndex -= 1; // Adjust for placeholder
       if (dragStartIndex !== dropIndex && dropIndex >= 0) {
         const set = cur.getColorset(this.targetLed);
-        if (dropIndex > dragStartIndex) dropIndex -= 1;
-
         set.shift(dragStartIndex, dropIndex);
         cur.setColorset(set, this.targetLed);
         cur.init();
