@@ -2,10 +2,11 @@
 
 # If an argument is provided, use it as the cache-buster.
 # Otherwise, default to ?v=<epoch_timestamp>
+CACHE_STR=$(date +%s)
 if [ -n "$1" ]; then
   CACHE_BUSTER="$1"
 else
-  CACHE_BUSTER="?v=$(date +%s)"
+  CACHE_BUSTER="?v=$(CACHE_STR)"
 fi
 
 echo "Using cache-buster: $CACHE_BUSTER"
@@ -61,7 +62,7 @@ for jsFile in ./js/*.js; do
   sed -i.bak "s|\(\import[[:space:]][^;]* from[[:space:]]*[\"'][^\"']*\.js\)\([\"']\)|\1$CACHE_BUSTER\2|g" "$jsFile"
 
   # Replace any manual placeholders __CACHE_BUSTER__
-  sed -i.bak "s|__CACHE_BUSTER__|'$CACHE_BUSTER'|g" "$jsFile"
+  sed -i.bak "s|__CACHE_BUSTER__|$CACHE_STR|g" "$jsFile"
 
   rm -f "$jsFile.bak"
 done

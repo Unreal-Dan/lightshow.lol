@@ -12,7 +12,10 @@ export default class PatternPanel extends Panel {
           </div>
         </div>
         <hr id="patternDivider">
-        <div id="patternParams" class="grid-container"></div>
+        <button id="togglePatternParams" class="icon-button" title="Show/Hide Advanced">
+          <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div id="patternParams" class="grid-container hidden"></div>
     `;
     super('patternPanel', content, 'Pattern');
     this.editor = editor;
@@ -34,6 +37,43 @@ export default class PatternPanel extends Panel {
 
     // Attach event listeners for help and randomize buttons
     document.getElementById('patternRandomizeButton').addEventListener('click', () => this.randomizePattern());
+
+    // Toggle pattern parameters visibility
+    const toggleButton = document.getElementById('togglePatternParams');
+    toggleButton.addEventListener('click', () => this.togglePatternParams());
+  }
+
+  togglePatternParams() {
+    const patternPanel = document.getElementById('patternPanel');
+    const patternParams = document.getElementById('patternParams');
+    const toggleButton = document.getElementById('togglePatternParams');
+
+    // Step 1: Capture the previous height and identify snapped panels
+    const previousHeight = patternPanel.offsetHeight;
+    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
+
+    // Step 2: Toggle the visibility
+    const isHidden = patternParams.classList.toggle('hidden');
+
+    // Update the toggle button icon
+    const icon = toggleButton.querySelector('i');
+    if (isHidden) {
+      icon.classList.remove('fa-chevron-up');
+      icon.classList.add('fa-chevron-down');
+    } else {
+      icon.classList.remove('fa-chevron-down');
+      icon.classList.add('fa-chevron-up');
+    }
+
+    // Step 3: Calculate the new height
+    const heightChange = patternPanel.offsetHeight - previousHeight;
+
+    // Step 4: Move snapped panels after the height change
+    snappedPanels.forEach((otherPanel) => {
+      otherPanel.moveSnappedPanels(heightChange);
+      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+    });
   }
 
   randomizePattern() {

@@ -142,9 +142,8 @@ export default class Panel {
       snappedPanels.forEach((otherPanel) => {
         // Propagate movement recursively
         otherPanel.moveSnappedPanels(heightChange);
-        otherPanel.panel.style.top = `${
-          parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top) + heightChange
-        }px`;
+        const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+        otherPanel.panel.style.top = `${currentTop + heightChange}px`;
       });
     }
 

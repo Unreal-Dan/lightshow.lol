@@ -121,11 +121,6 @@ export default class AnimationPanel extends Panel {
 
     // hide the spread slider
     this.spreadDiv = document.getElementById('spread_div');
-
-    // collapse the animation panel by default
-    if (!this.editor.detectMobile()) {
-      this.toggleCollapse(false);
-    }
   }
 
   applyMobileLayout() {

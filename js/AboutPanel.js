@@ -24,10 +24,6 @@ export default class AboutPanel extends Panel {
   initialize() {
     this.addClickListener('patternHelpButton', this.showHelp);
     this.addClickListener('githubLinkButton', this.gotoGithub);
-    // collapse the about panel by default
-    if (!this.editor.detectMobile()) {
-      this.toggleCollapse(false);
-    }
   }
 
   destroy() {
