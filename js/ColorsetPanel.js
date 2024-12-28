@@ -7,9 +7,18 @@ export default class ColorsetPanel extends Panel {
   constructor(editor) {
     //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
-            <div id="colorset" class="grid-container"></div>
-        `;
-
+      <div id="colorset-status">
+        <button id="colorset-preset-two" class="preset-button"></button>
+        <button id="colorset-preset-three" class="preset-button"></button>
+        <button id="colorset-preset-four" class="preset-button"></button>
+        <button id="colorset-preset-rainbow" class="preset-button"></button>
+        <button id="colorset-preset-grayscale" class="preset-button"></button>
+        <button id="colorset-preset-pastel" class="preset-button"></button>
+        <button id="colorset-preset-dark" class="preset-button"></button>
+      </div>
+      <hr id="patternDivider">
+      <div id="colorset" class="color-row"></div>
+    `;
     super('colorsetPanel', content, 'Colorset');
     this.editor = editor
     this.lightshow = editor.lightshow;
@@ -22,6 +31,14 @@ export default class ColorsetPanel extends Panel {
 
   initialize() {
     this.refresh();
+    // Add event listeners for preset buttons
+    document.getElementById('colorset-preset-rainbow').addEventListener('click', () => this.applyPreset('rainbow'));
+    document.getElementById('colorset-preset-grayscale').addEventListener('click', () => this.applyPreset('grayscale'));
+    document.getElementById('colorset-preset-pastel').addEventListener('click', () => this.applyPreset('pastel'));
+    document.getElementById('colorset-preset-dark').addEventListener('click', () => this.applyPreset('dark'));
+    document.getElementById('colorset-preset-two').addEventListener('click', () => this.applyPreset('two'));
+    document.getElementById('colorset-preset-three').addEventListener('click', () => this.applyPreset('three'));
+    document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
       //console.log("Mode change detected by control panel, refreshing");
@@ -48,6 +65,132 @@ export default class ColorsetPanel extends Panel {
       this.refresh(true);
     });
     document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
+  }
+
+  applyPreset(preset) {
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const set = cur.getColorset(this.targetLed);
+    set.clear();
+    const numCols = ((Math.random() * 100) % 8);
+
+    switch (preset) {
+    case 'rainbow':
+      for (let i = 0; i < numCols; i++) {
+        const hue = (i / numCols) * 360;
+        const rgb = this.hslToRgb(hue, 1, 0.5); // Full saturation, medium lightness
+        set.addColor(new this.lightshow.vortexLib.RGBColor(rgb.r, rgb.g, rgb.b));
+      }
+      break;
+    case 'grayscale':
+      for (let i = 0; i < numCols; i++) {
+        const gray = Math.floor(Math.random() * 256);
+        set.addColor(new this.lightshow.vortexLib.RGBColor(gray, gray, gray));
+      }
+      break;
+    case 'pastel':
+      for (let i = 0; i < numCols; i++) {
+        const pastel = {
+          r: Math.floor(Math.random() * 128 + 127),
+          g: Math.floor(Math.random() * 128 + 127),
+          b: Math.floor(Math.random() * 128 + 127),
+        };
+        set.addColor(new this.lightshow.vortexLib.RGBColor(pastel.r, pastel.g, pastel.b));
+      }
+      break;
+    case 'dark':
+      for (let i = 0; i < 8; i++) {
+        const dark = {
+          r: Math.floor(Math.random() * 128),
+          g: Math.floor(Math.random() * 128),
+          b: Math.floor(Math.random() * 128),
+        };
+        set.addColor(new this.lightshow.vortexLib.RGBColor(dark.r, dark.g, dark.b));
+      }
+      break;
+    case 'two':
+      const color1 = this.getRandomColor();
+      const color2 = this.getRandomColor();
+      for (let i = 0; i < 2; i++) {
+        const color = i % 2 === 0 ? color1 : color2;
+        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+      }
+      break;
+    case 'three':
+      const c1 = this.getRandomColor();
+      const c2 = this.getRandomColor();
+      const c3 = this.getRandomColor();
+      for (let i = 0; i < 3; i++) {
+        const color = [c1, c2, c3][i % 3];
+        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+      }
+      break;
+    case 'four':
+      const fourColors = Array(4)
+        .fill(0)
+        .map(() => this.getRandomColor());
+      for (let i = 0; i < 4; i++) {
+        const color = fourColors[i % 4];
+        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+      }
+      break;
+    default:
+      break;
+    }
+    cur.setColorset(set, this.targetLed);
+    cur.init();
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.refreshColorset();
+  }
+
+  hslToRgb(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    const m = l - c / 2;
+    let r = 0,
+      g = 0,
+      b = 0;
+
+    if (h >= 0 && h < 60) {
+      r = c;
+      g = x;
+      b = 0;
+    } else if (h >= 60 && h < 120) {
+      r = x;
+      g = c;
+      b = 0;
+    } else if (h >= 120 && h < 180) {
+      r = 0;
+      g = c;
+      b = x;
+    } else if (h >= 180 && h < 240) {
+      r = 0;
+      g = x;
+      b = c;
+    } else if (h >= 240 && h < 300) {
+      r = x;
+      g = 0;
+      b = c;
+    } else if (h >= 300 && h < 360) {
+      r = c;
+      g = 0;
+      b = x;
+    }
+
+    return {
+      r: Math.round((r + m) * 255),
+      g: Math.round((g + m) * 255),
+      b: Math.round((b + m) * 255),
+    };
+  }
+
+  getRandomColor() {
+    return {
+      r: Math.floor(Math.random() * 256),
+      g: Math.floor(Math.random() * 256),
+      b: Math.floor(Math.random() * 256),
+    };
   }
 
   handleDeviceEvent(deviceChangeEvent) {
@@ -104,50 +247,12 @@ export default class ColorsetPanel extends Panel {
     this.refreshColorset(fromEvent);
   }
 
-
-  refreshSelectedLedsBar() {
-    const selectedLedsBar = document.getElementById('colorset-selected-leds');
-    if (!selectedLedsBar) return;
-
-    selectedLedsBar.innerHTML = '';
-
-    const ledCount = this.lightshow.vortex.engine().leds().ledCount();
-
-    // Calculate dot size dynamically
-    const barWidth = selectedLedsBar.clientWidth;
-    const marginPerDot = 4; // total horizontal space per dot from margin
-    const desiredDotSize = 10; // base size
-    const totalNeededWidth = (desiredDotSize + marginPerDot) * ledCount;
-
-    let dotSize = desiredDotSize;
-    if (totalNeededWidth > barWidth) {
-      // Scale down if they don't fit
-      dotSize = Math.floor((barWidth / ledCount) - marginPerDot);
-      if (dotSize < 4) {
-        dotSize = 4; // minimum size
-      }
-    }
-
-    for (let i = 0; i < ledCount; i++) {
-      const dot = document.createElement('div');
-      dot.classList.add('led-dot');
-      dot.style.width = `${dotSize}px`;
-      dot.style.height = `${dotSize}px`;
-      if (this.isMulti || this.targetLeds.includes(i)) {
-        dot.classList.add('selected');
-      }
-      selectedLedsBar.appendChild(dot);
-    }
-  }
-
   async refreshColorset(fromEvent = false) {
     const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
     colorsetElement.innerHTML = ''; // Clear colorset
 
-    if (!cur) {
-      return;
-    }
+    if (!cur) return;
 
     const set = cur.getColorset(this.targetLed);
     const numColors = set ? set.numColors() : 0;
@@ -158,7 +263,8 @@ export default class ColorsetPanel extends Panel {
 
     const createPlaceholder = () => {
       placeholder = document.createElement('div');
-      placeholder.className = 'color-box placeholder';
+      placeholder.className = 'color-cube placeholder';
+      placeholder.style.width = `${draggingElement.offsetWidth}px`;
       placeholder.style.height = `${draggingElement.offsetHeight}px`;
     };
 
@@ -174,11 +280,8 @@ export default class ColorsetPanel extends Panel {
     let startY = 0;
 
     const handlePointerDown = (e) => {
-      const target = e.target.closest('.color-box');
-      if (!target) return;
-
-      const isDeleteButton = e.target.classList.contains('delete-color');
-      if (isDeleteButton) return;
+      const target = e.target.closest('.color-cube');
+      if (!target || target.classList.contains('empty')) return;
 
       draggingElement = target;
       dragStartIndex = parseInt(target.dataset.index, 10);
@@ -203,7 +306,7 @@ export default class ColorsetPanel extends Panel {
         draggingElement.style.pointerEvents = 'none';
 
         createPlaceholder();
-        updatePlaceholder(draggingElement.nextSibling);
+        colorsetElement.insertBefore(placeholder, draggingElement.nextSibling);
 
         document.addEventListener('pointermove', handlePointerMove);
         document.addEventListener('pointerup', handlePointerUp);
@@ -228,34 +331,16 @@ export default class ColorsetPanel extends Panel {
       draggingElement.style.left = `${e.clientX - rect.left}px`;
       draggingElement.style.top = `${e.clientY - rect.top}px`;
 
-      const children = Array.from(colorsetElement.children);
-      const addColorContainer = children.find(child => child.classList.contains('empty'));
-
-      // Ensure we do not allow the placeholder to interact with the "add color" slot
-      const target = document.elementFromPoint(e.clientX, e.clientY + 30)?.closest('.color-box:not(.dragging):not(.empty)');
-
-      if (!target) {
-        const lastChild = addColorContainer
-          ? children[children.indexOf(addColorContainer) - 1] // Get the last actual color slot
-          : children[children.length - 1];
-        const rect = lastChild.getBoundingClientRect();
-        const midPoint = rect.top + (rect.height / 2);
-        if (lastChild && e.clientY > midPoint) {
-          colorsetElement.insertBefore(placeholder, addColorContainer || null); // Place before "add color" if it exists
-          return;
-        }
-      }
-      if (target) {
-        updatePlaceholder(target);
-      }
+      const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.color-cube:not(.dragging):not(.empty)');
+      updatePlaceholder(target);
     };
 
     const handlePointerUp = () => {
       if (!draggingElement || !isDragging) return;
 
-      let dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
+      const dropIndex = Array.from(colorsetElement.children).indexOf(placeholder);
 
-      if (dragStartIndex !== dropIndex) {
+      if (dragStartIndex !== dropIndex && dropIndex >= 0) {
         const set = cur.getColorset(this.targetLed);
         if (dropIndex > dragStartIndex) dropIndex -= 1;
 
@@ -283,69 +368,43 @@ export default class ColorsetPanel extends Panel {
       this.refreshColorset();
     };
 
-    for (let i = 0; i < numColors; i++) {
+    for (let i = 0; i < 8; i++) {
       const container = document.createElement('div');
-      container.className = 'color-box';
+      container.className = 'color-cube';
       container.dataset.index = i;
 
-      const col = set.get(i);
-      const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+      if (i < numColors) {
+        const col = set.get(i);
+        const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
 
-      const colorEntry = document.createElement('div');
-      colorEntry.style.backgroundColor = hexColor;
-      colorEntry.className = 'color-entry';
-      colorEntry.dataset.index = i;
+        container.style.backgroundColor = hexColor;
+        container.style.boxShadow = `0 0 10px ${hexColor}`;
 
-      // Ensure single-click opens color picker
-      colorEntry.addEventListener('click', (e) => {
-        if (!isDragging) {
-          this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
-        }
-      });
+        // Left-click to open color picker
+        container.addEventListener('click', () => {
+          if (!isDragging) {
+            this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+          }
+        });
 
-      const hexLabel = document.createElement('label');
-      hexLabel.textContent = hexColor;
+        // Right-click to delete
+        container.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          this.delColor(i);
+        });
 
-      const deleteButton = document.createElement('span');
-      deleteButton.className = 'delete-color';
-      deleteButton.dataset.index = i;
-      deleteButton.textContent = '×';
-      deleteButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.delColor(Number(deleteButton.dataset.index));
-        document.dispatchEvent(new CustomEvent('patternChange'));
-      });
-
-      container.addEventListener('pointerdown', handlePointerDown);
-
-      container.appendChild(colorEntry);
-      container.appendChild(hexLabel);
-      container.appendChild(deleteButton);
-
+        container.addEventListener('pointerdown', handlePointerDown);
+      } else if (i === numColors) {
+        container.classList.add('add-color');
+        container.textContent = '+';
+        container.addEventListener('click', () => {
+          this.addColor();
+        });
+      } else {
+        container.classList.add('empty');
+      }
       colorsetElement.appendChild(container);
     }
-
-    if (numColors < 8) {
-      const addColorContainer = document.createElement('div');
-      addColorContainer.className = 'color-box empty';
-      addColorContainer.textContent = '+';
-      addColorContainer.addEventListener('click', () => {
-        this.addColor();
-        document.dispatchEvent(new CustomEvent('patternChange'));
-      });
-      colorsetElement.appendChild(addColorContainer);
-    }
-  }
-
-
-  // Helper: Update Color from Hex Input
-  updateColorHex(index, hexValue) {
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    const set = cur.getColorset(this.targetLed);
-    const color = this.hexToRGB(hexValue);
-    set.set(index, new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
-    cur.init();
-    this.refreshColorset();
   }
 
   // Helper: Convert Hex to RGB
