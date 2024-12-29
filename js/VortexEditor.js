@@ -132,15 +132,17 @@ export default class VortexEditor {
     this.importModeDataFromUrl();
 
     // Keydown event to show updatePanel
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', async (event) => {
       if (event.key === 'Insert') {
-        if (this.vortexPort.name.length > 0 && this.vortexPort.version.length > 0) {
-          this.checkVersion(this.vortexPort.name, this.vortexPort.version);
-        } else {
-          this.updatePanel.displayFirmwareUpdateInfo(this.devicePanel.selectedDevice,
-            '1.0.0', '1.0.1', 'https://vortex.community/downloads');
-          Notification.error("Need a device connection to use update panel");
+        const device = this.devicePanel.selectedDevice;
+        if (!device || device === 'None') {
+          Notification.failure("Select a device first");
+          return;
         }
+        const deviceVersions = await this.getLatestFirmwareVersions(device);
+        const latestVersion = deviceVersions.firmware.version;
+        this.updatePanel.displayFirmwareUpdateInfo(device, 'N/A',
+          latestVersion, 'https://vortex.community/downloads');
         this.updatePanel.show();
       }
     });
@@ -346,6 +348,24 @@ export default class VortexEditor {
     }
   }
 
+  async getLatestFirmwareVersions(device) {
+    let latestFirmwareVersions;
+    // detect local server and return fake data
+    if (!window.location.hostname.startsWith('lightshow.lol')) {
+      console.log("Detected local server! Using fake version data response for comparison...");
+      // example result that can be used for debugging:
+      latestFirmwareVersions = JSON.parse('{"gloves":{"firmware":{"_id":"6746b9c217de589dbc81c805", "device":"gloves", "version":"1.4.29", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-gloves-1.4.29.uf2", "fileSize":178688, "downloadCount":0, "releaseDate":"2024-11-27T06:18:42.708Z", "__v":0}}, "orbit":{"firmware":{"_id":"6746b9d417de589dbc81c807", "device":"orbit", "version":"1.4.31", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-orbit-1.4.31.uf2", "fileSize":189440, "downloadCount":0, "releaseDate":"2024-11-27T06:19:00.806Z", "__v":0}}, "handle":{"firmware":{"_id":"6746b9ec17de589dbc81c809", "device":"handle", "version":"1.4.31", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-handle-1.4.31.uf2", "fileSize":160768, "downloadCount":0, "releaseDate":"2024-11-27T06:19:24.621Z", "__v":0}}, "duo":{"firmware":{"_id":"674ebd4c17de589dbc81d6d6", "device":"duo", "version":"1.4.32", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-duo-1.4.32.bin", "fileSize":31612, "downloadCount":0, "releaseDate":"2024-12-03T08:11:56.380Z", "__v":0}}, "chromadeck":{"firmware":{"_id":"6758db20bc1e490fcc46cffd", "device":"chromadeck", "version":"1.4.34", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-chromadeck-1.4.34.zip", "fileSize":233557, "downloadCount":0, "releaseDate":"2024-12-11T00:21:52.767Z", "__v":0}}, "spark":{"firmware":{"_id":"6757fc1cbc1e490fcc46ceaf", "device":"spark", "version":"1.4.36", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-spark-1.4.36.zip", "fileSize":229031, "downloadCount":0, "releaseDate":"2024-12-10T08:30:20.822Z", "__v":0}}, "desktop":{"editor":{"_id":"66c3f4b5ec075d0abbdf3bb3", "device":"desktop", "version":"1.0.1.2", "category":"editor", "fileUrl":"https://vortex.community/firmwares/VortexEditor-desktop-1.0.1.2.exe", "fileSize":978432, "downloadCount":0, "releaseDate":"2024-08-20T01:43:17.125Z", "__v":0}, "library":{"_id":"6746b96817de589dbc81c7ff", "device":"desktop", "version":"1.4.34", "category":"library", "fileUrl":"https://vortex.community/firmwares/VortexDesktopLibrary-desktop-1.4.34.zip", "fileSize":9103976, "downloadCount":0, "releaseDate":"2024-11-27T06:17:12.475Z", "__v":0}}}');
+    } else {
+      // fetch the firmware versions from vortex community
+      const response = await fetch('https://vortex.community/downloads/json');
+      latestFirmwareVersions = await response.json();
+    }
+    if (!device) {
+      return latestFirmwareVersions;
+    }
+    return latestFirmwareVersions[device.toLowerCase()];
+  }
+
   async checkVersion(device, version) {
     // the results are lowercased
     if (!device.length) {
@@ -357,8 +377,6 @@ export default class VortexEditor {
         return;
       }
     }
-    let lowerDevice = device.toLowerCase();
-
     // this can happen if the update panel is forced open with Insert
     if (!version) {
       console.log("Missing version for comparison, using 1.0.0...");
@@ -366,27 +384,13 @@ export default class VortexEditor {
     }
 
     // Fetch the latest firmware versions from vortex.community
-    let latestFirmwareVersions;
-    if (window.location.hostname.startsWith('lightshow.lol')) {
-      const response = await fetch('https://vortex.community/downloads/json');
-      latestFirmwareVersions = await response.json();
-    } else {
-      console.log("Detected local server! Using fake version data response for comparison...");
-      // example result that can be used for debugging:
-      latestFirmwareVersions = JSON.parse('{"gloves":{"firmware":{"_id":"6746b9c217de589dbc81c805", "device":"gloves", "version":"1.4.29", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-gloves-1.4.29.uf2", "fileSize":178688, "downloadCount":0, "releaseDate":"2024-11-27T06:18:42.708Z", "__v":0}}, "orbit":{"firmware":{"_id":"6746b9d417de589dbc81c807", "device":"orbit", "version":"1.4.31", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-orbit-1.4.31.uf2", "fileSize":189440, "downloadCount":0, "releaseDate":"2024-11-27T06:19:00.806Z", "__v":0}}, "handle":{"firmware":{"_id":"6746b9ec17de589dbc81c809", "device":"handle", "version":"1.4.31", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-handle-1.4.31.uf2", "fileSize":160768, "downloadCount":0, "releaseDate":"2024-11-27T06:19:24.621Z", "__v":0}}, "duo":{"firmware":{"_id":"674ebd4c17de589dbc81d6d6", "device":"duo", "version":"1.4.32", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-duo-1.4.32.bin", "fileSize":31612, "downloadCount":0, "releaseDate":"2024-12-03T08:11:56.380Z", "__v":0}}, "chromadeck":{"firmware":{"_id":"6758db20bc1e490fcc46cffd", "device":"chromadeck", "version":"1.4.34", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-chromadeck-1.4.34.zip", "fileSize":233557, "downloadCount":0, "releaseDate":"2024-12-11T00:21:52.767Z", "__v":0}}, "spark":{"firmware":{"_id":"6757fc1cbc1e490fcc46ceaf", "device":"spark", "version":"1.4.36", "category":"firmware", "fileUrl":"https://vortex.community/firmwares/VortexEngine-spark-1.4.36.zip", "fileSize":229031, "downloadCount":0, "releaseDate":"2024-12-10T08:30:20.822Z", "__v":0}}, "desktop":{"editor":{"_id":"66c3f4b5ec075d0abbdf3bb3", "device":"desktop", "version":"1.0.1.2", "category":"editor", "fileUrl":"https://vortex.community/firmwares/VortexEditor-desktop-1.0.1.2.exe", "fileSize":978432, "downloadCount":0, "releaseDate":"2024-08-20T01:43:17.125Z", "__v":0}, "library":{"_id":"6746b96817de589dbc81c7ff", "device":"desktop", "version":"1.4.34", "category":"library", "fileUrl":"https://vortex.community/firmwares/VortexDesktopLibrary-desktop-1.4.34.zip", "fileSize":9103976, "downloadCount":0, "releaseDate":"2024-11-27T06:17:12.475Z", "__v":0}}}');
-    }
-
-    // Compare versions
-    if (!latestFirmwareVersions) {
+    const deviceVersions = await this.getLatestFirmwareVersions(device);
+    if (!deviceVersions) {
       console.log("Missing latest firmware version info");
       return;
     }
-    if (!latestFirmwareVersions[lowerDevice]) {
-      console.log(`Missing device info for device '${lowerDevice}'`);
-      return;
-    }
-    const latestVersion = latestFirmwareVersions[lowerDevice].firmware.version;
-    const downloadUrl = latestFirmwareVersions[lowerDevice].firmware.fileUrl;
+    const latestVersion = deviceVersions.firmware.version;
+    const downloadUrl = deviceVersions.firmware.fileUrl;
     console.log(`Comparing ${latestVersion} with ${downloadUrl} for ${device}...`);
     this.updatePanel.displayFirmwareUpdateInfo(device, version, latestVersion, downloadUrl);
   }

@@ -19,6 +19,7 @@ export default class UpdatePanel extends Panel {
     super('updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
+    this.serialPort = this.vortexPort.serialPort;
     this.espStub = null;
   }
 
@@ -26,44 +27,18 @@ export default class UpdatePanel extends Panel {
     const flashButton = document.getElementById('updateFlash');
     const updateProgress = document.getElementById('updateProgress');
 
-    flashButton.addEventListener('click', async () => {
-      if (!this.vortexPort.serialPort) {
-        Notification.failure('No device connected.');
-        return;
-      }
-
-      try {
-        Notification.success('Starting ESP32 firmware flash...');
-        updateProgress.textContent = 'Initializing ESP32 connection...';
-
-        await this.initializeESPFlasher();
-        await this.fetchAndFlashFirmware();
-
-        updateProgress.textContent = 'Firmware flashing completed!';
-        Notification.success(this.vortexPort.name + ' firmware updated successfully.');
-      } catch (error) {
-        updateProgress.textContent = 'Firmware flash failed.';
-        Notification.failure('Firmware flash failed: ' + error.message);
-        console.error(error);
-      }
-    });
-
-    //document.addEventListener('deviceChange', () => { 
-    // do anything if the device changes...?
-    //});
-
     this.toggleCollapse(false);
     this.hide();
   }
 
   async initializeESPFlasher() {
     try {
-      if (!this.vortexPort.serialPort) {
+      if (!this.serialPort) {
         throw new Error('No serial port available.');
       }
 
       const esptool = await window.esptoolPackage;
-      this.espLoader = new esptool.ESPLoader(this.vortexPort.serialPort, console);
+      this.espLoader = new esptool.ESPLoader(this.serialPort, console);
       await this.espLoader.initialize();
       this.espStub = await this.espLoader.runStub();
     } catch (error) {
@@ -132,11 +107,6 @@ export default class UpdatePanel extends Panel {
     } catch (error) {
       console.error('Error during firmware fetching:', error.message);
       throw error;
-    }
-
-    // Cancel listening for the greeting just in case
-    if (!this.vortexPort.portActive) {
-      this.vortexPort.cancelListening();
     }
 
     // Flash the firmware
@@ -266,8 +236,8 @@ export default class UpdatePanel extends Panel {
       return;
     }
 
-    // Show download links for orbit, handles, and gloves
-    if (['orbit', 'handles', 'gloves'].includes(lowerDevice)) {
+    // Show download links for orbit, handle, and gloves
+    if (['orbit', 'handle', 'gloves', 'duo'].includes(lowerDevice)) {
       content += `
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
@@ -309,6 +279,15 @@ export default class UpdatePanel extends Panel {
         try {
           Notification.success('Starting firmware update...');
           updateProgress.textContent = 'Initializing firmware update...';
+          if (!this.serialPort) {
+            this.serialPort = await navigator.serial.requestPort();
+            if (!this.serialPort) {
+              throw new Error('Failed to open serial port');
+            }
+            await this.serialPort.open({ baudRate: 115200 });
+            // is this necessary...? I don't remember why it's here
+            await this.serialPort.setSignals({ dataTerminalReady: true });
+          }
           await this.initializeESPFlasher();
           await this.fetchAndFlashFirmware();
           updateProgress.textContent = 'Firmware update completed successfully!';

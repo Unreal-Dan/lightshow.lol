@@ -54,6 +54,11 @@ export default class VortexPort {
   cancelListening() {
     console.log("Cancel listening");
     this.cancelListeningForGreeting = true;
+    if (this.reader) {
+      this.reader.cancel().catch(err => {
+        console.warn('Error canceling reader:', err);
+      });
+    }
   }
 
   resetState() {

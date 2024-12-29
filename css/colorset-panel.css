@@ -95,42 +95,27 @@
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
-/* Rainbow Button */
 #colorset-preset-rainbow {
   background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
 }
-
-/* Grayscale Button */
 #colorset-preset-grayscale {
   background: linear-gradient(135deg, #000, #333, #666, #999, #ccc, #eee, #fff);
 }
-
-/* Pastel Button */
 #colorset-preset-pastel {
   background: linear-gradient(135deg, #FFB3BA, #FFDFBA, #FFFFBA, #BAFFC9, #BAE1FF);
 }
-
-/* Dark Colors */
 #colorset-preset-dark {
   background: linear-gradient(135deg, #200, #444, #006);
 }
-
-/* One Color */
 #colorset-preset-one {
   background: red;
 }
-
-/* Two Colors */
 #colorset-preset-two {
   background: linear-gradient(90deg, red 50%, #00a2e8 50%);
 }
-
-/* Three-Color Button */
 #colorset-preset-three {
   background: linear-gradient(90deg, red 0%, red 33.33%, green 33.33%, green 66.66%, #00a2e8 66.66%, #00a2e8 100%);
 }
-
-/* Four-Color Button */
 #colorset-preset-four {
   background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, #00a2e8 50%, #00a2e8 75%, orange 75%, orange 100%);
 }
