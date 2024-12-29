@@ -325,6 +325,9 @@ export default class ColorsetPanel extends Panel {
         draggingElement.style.position = 'absolute';
         draggingElement.style.zIndex = 1000;
         draggingElement.style.pointerEvents = 'none';
+        const rect = colorsetElement.getBoundingClientRect();
+        draggingElement.style.left = `${e.clientX - rect.left}px`;
+        draggingElement.style.top = `${e.clientY - rect.top + 70}px`;
 
         createPlaceholder();
         colorsetElement.insertBefore(placeholder, draggingElement.nextSibling);
@@ -350,7 +353,7 @@ export default class ColorsetPanel extends Panel {
 
       const rect = colorsetElement.getBoundingClientRect();
       draggingElement.style.left = `${e.clientX - rect.left}px`;
-      draggingElement.style.top = `${e.clientY - rect.top}px`;
+      draggingElement.style.top = `${e.clientY - rect.top + 70}px`;
 
       const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.color-cube:not(.dragging):not(.empty)');
       updatePlaceholder(target);
