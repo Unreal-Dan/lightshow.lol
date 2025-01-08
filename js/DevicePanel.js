@@ -66,7 +66,7 @@ export default class DevicePanel extends Panel {
     } else if (deviceEvent === 'disconnect') {
       this.onDeviceDisconnect();
     } else if (deviceEvent === 'waiting') {
-      Notification.success("Waiting for device...");
+      console.log("Waiting for device...");
     } else if (deviceEvent === 'select') {
       Notification.success(`Selected '${deviceName}`);
     }
@@ -78,8 +78,6 @@ export default class DevicePanel extends Panel {
   }
 
   onDeviceConnect() {
-    Notification.success("Device Connected!");
-
     const connectDeviceButton = document.getElementById('connectDeviceButton');
 
     // Change button to "Disconnect Device"

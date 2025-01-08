@@ -321,8 +321,6 @@ export default class UpdatePanel extends Panel {
         }
       });
     }
-
-    Notification.success(`Firmware update available for ${device}.`);
     this.show();
   }
 }

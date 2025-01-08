@@ -61,6 +61,24 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
   }
 
+  handleDeviceEvent(deviceChangeEvent) {
+    // Access the custom data from `event.detail`
+    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
+    if (deviceEvent === 'waiting') {
+      this.onDeviceWaiting(deviceName);
+    } else if (deviceEvent === 'connect') {
+      this.onDeviceConnect(deviceName);
+    } else if (deviceEvent === 'disconnect') {
+      this.onDeviceDisconnect(deviceName);
+    } else if (deviceEvent === 'select') {
+      this.onDeviceSelected(deviceName);
+    }
+  }
+
+  onDeviceWaiting(deviceName) {
+    // nothing really to do at this step
+  }
+
   onDeviceConnect(deviceName) {
     console.log("Device connected: " + this.vortexPort.name);
     const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
@@ -87,7 +105,7 @@ export default class ModesPanel extends Panel {
     //if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
     //  this.editor.updatePanel.show();
     //}
-    
+
     console.log("Checking version...");
 
     // check version numbers
@@ -95,24 +113,6 @@ export default class ModesPanel extends Panel {
 
     // display the spread slider
     document.getElementById('spread_div').style.display = 'block';
-  }
-
-  handleDeviceEvent(deviceChangeEvent) {
-    // Access the custom data from `event.detail`
-    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
-    if (deviceEvent === 'waiting') {
-      this.onDeviceWaiting(deviceName);
-    } else if (deviceEvent === 'connect') {
-      this.onDeviceConnect(deviceName);
-    } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect(deviceName);
-    } else if (deviceEvent === 'select') {
-      this.onDeviceSelected(deviceName);
-    }
-  }
-
-  onDeviceWaiting(deviceName) {
-    Notification.success("Waiting for device...");
   }
 
   onDeviceDisconnect(deviceName) {
@@ -127,7 +127,7 @@ export default class ModesPanel extends Panel {
   }
 
   onDeviceSelected(devicename) {
-    // 
+    // nothing really to do at this step
   }
 
   refresh(fromEvent = false) {

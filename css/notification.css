@@ -1,51 +1,40 @@
-/* Notifications */
+/* Notification container to stack them vertically */
+.notification-container {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Base notification styles */
 .notification {
-  visibility: hidden; /* Hidden by default */
-  min-width: 250px; /* Set a minimum width */
-  margin-left: -125px; /* Negative half of the width to center the div */
-  background-color: #333; /* Dark background color */
+  min-width: 250px;
+  background-color: #333;
   color: #ccc;
-  text-align: center; /* Centered text */
-  border-radius: 4px; /* Rounded borders */
-  padding: 16px; /* Padding */
-  position: fixed; /* Sit on top of the screen */
-  z-index: 1000; /* Add a z-index if needed */
-  left: 50%; /* Center the div */
-  top: 30px; /* 30px from the top */
+  text-align: center;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 10px; /* gap between notifications */
+  opacity: 0; /* start hidden */
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+/* When "show" is added, fade in */
 .notification.show {
-  visibility: visible; /* Show the notification */
-  animation: fadein 0.5s, fadeout 0.5s 2.5s; /* Animate in and out */
+  opacity: 1;
 }
 
+/* Example success/failure colors */
 .notification.success {
-  color: #66FF00; /* Text color */
+  color: #66FF00;
 }
 
 .notification.failure {
-  color: #FF0000; /* Text color */
-}
-
-@keyframes fadein {
-  from {
-    top: 0;
-    opacity: 0;
-  }
-  to {
-    top: 30px;
-    opacity: 1;
-  }
-}
-
-@keyframes fadeout {
-  from {
-    top: 30px;
-    opacity: 1;
-  }
-  to {
-    top: 0;
-    opacity: 0;
-  }
+  color: #FF0000;
 }
 
