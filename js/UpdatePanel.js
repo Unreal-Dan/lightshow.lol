@@ -19,7 +19,17 @@ export default class UpdatePanel extends Panel {
     super('updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
+    // this.serialPort is a local copy of the vortexport.serialport if it's
+    // open yet, but most likely it's not so this will probably just be null.
+    // But later we will use it to hold a private copy of the serial port if
+    // the 'insert' force update key is pressed for an esp device when there's
+    // no active vortexPort.serialPort then it will open this.serialPort as a
+    // new port.  Otherwise if there is a vortexport.serialPort then it will be
+    // again copied into this.serialPort and used for the ESP update process 
     this.serialPort = this.vortexPort.serialPort;
+    // this tracks whether the serialport was forced open with insert or not
+    this.forcedUpdate = false;
+    // this is used for the updating process
     this.espStub = null;
   }
 
@@ -33,10 +43,18 @@ export default class UpdatePanel extends Panel {
 
   async initializeESPFlasher() {
     try {
+      // this.serialPort will already be filled if they pressed 'insert' to
+      // force an update and there was no vortexPort already active
       if (!this.serialPort) {
-        throw new Error('No serial port available.');
+        // otherwise if they didn't press 'insert' and this is a normal update
+        // notification then there must be a vortexPort.serialPort active and
+        // that will be used for the ESP update serial port instead
+        if (!this.vortexPort.serialPort) {
+          throw new Error('No serial port available.');
+        }
+        this.serialPort = this.vortexPort.serialPort;
       }
-
+      // run the esptool update and pass this.serialPort as the active port to use
       const esptool = await window.esptoolPackage;
       this.espLoader = new esptool.ESPLoader(this.serialPort, console);
       await this.espLoader.initialize();
@@ -279,7 +297,11 @@ export default class UpdatePanel extends Panel {
         try {
           Notification.success('Starting firmware update...');
           updateProgress.textContent = 'Initializing firmware update...';
-          if (!this.serialPort) {
+          // if there is no vortexPort.serialPort that means this update
+          // windows was forced open with 'insert' and there is no active
+          // device connection yet. So simply request a new device connection
+          // that will be used exclusively for the update
+          if (!this.vortexPort.serialPort) {
             this.serialPort = await navigator.serial.requestPort();
             if (!this.serialPort) {
               throw new Error('Failed to open serial port');
@@ -303,6 +325,4 @@ export default class UpdatePanel extends Panel {
     Notification.success(`Firmware update available for ${device}.`);
     this.show();
   }
-
 }
-
