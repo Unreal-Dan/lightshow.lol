@@ -189,15 +189,17 @@ export default class UpdatePanel extends Panel {
         };
 
         const contents = await readUploadedFileAsArrayBuffer(fileObject);
+        await this.espStub.eraseFlash();
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalThisFile) => {
             totalBytesFlashed += bytesWritten;
-            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
+            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 90) + '%';
           },
           file.address
         );
         await this.sleep(100);
+        progressBar.style.width = '100%';
         console.log(`${file.path} flashed successfully.`);
         document.getElementById('updateProgress').classList.add('hidden');
       } catch (error) {
