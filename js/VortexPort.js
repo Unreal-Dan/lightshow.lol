@@ -675,9 +675,38 @@ export default class VortexPort {
         // Send command to pull modes from the Duo
         await this.sendCommand(this.EDITOR_VERB_PULL_CHROMA_MODE);
         await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
-        const sizeBuffer = new Uint8Array([i]);
-        await this.sendRaw(sizeBuffer);
+        // say which mode index to pull
+        const indexBuffer = new Uint8Array([i]);
+        await this.sendRaw(indexBuffer);
+        // then pull the mode
         const mode = await this.readByteStream(vortexLib);
+        const keys = Object.keys(mode).map(Number).sort((a, b) => a - b);
+        const hexValues = keys.map(k => {
+          const val = mode[k];
+          return '0x' + val.toString(16).toUpperCase().padStart(2, '0');
+        });
+        // Build the C array string
+//let output = 'const uint8_t mode[] = {\n    ';
+//
+//// We’ll insert a line break after every 8 values for readability
+//hexValues.forEach((hexVal, index) => {
+//  output += hexVal;
+//  // If it's not the last value, add a comma
+//  if (index < hexValues.length - 1) {
+//    output += ',';
+//  }
+//  // If we’ve printed 8 values or reached the end of the line, add a newline
+//  if ((index + 1) % 8 === 0 && index < hexValues.length - 1) {
+//    output += '\n    ';
+//  } else if (index < hexValues.length - 1) {
+//    output += ' ';
+//  }
+//});
+//
+//output += '\n};';
+//
+//// Finally, print it
+//console.log(output);
         // Call the Wasm function
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromRawData(mode, modeStream);
@@ -722,18 +751,15 @@ export default class VortexPort {
       for (let i = 0; i < vortex.numModes(); ++i) {
         // Send the push command
         await this.sendCommand(this.EDITOR_VERB_PUSH_CHROMA_MODE);
-
         await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
-        const sizeBuffer = new Uint8Array([i]);
-        await this.sendRaw(sizeBuffer);
-
+        // say which mode to push
+        const indexBuffer = new Uint8Array([i]);
+        await this.sendRaw(indexBuffer);
         await this.expectData(this.EDITOR_VERB_READY);  // Wait for ACK
-
+        // send the mode
         const modeBuf = new vortexLib.ByteStream();
-
         vortex.getCurModeRaw(modeBuf);
         await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
-
         await this.expectData(this.EDITOR_VERB_PUSH_CHROMA_MODE_ACK);
         vortex.nextMode(false);
       }

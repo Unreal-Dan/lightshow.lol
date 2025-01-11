@@ -30,6 +30,8 @@ export default class ChromalinkPanel extends Panel {
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;
+    this.chromadeckModes = null;
+    this.oldModes = null;
   }
 
   initialize() {
@@ -38,6 +40,16 @@ export default class ChromalinkPanel extends Panel {
     const flashButton = document.getElementById('chromalinkFlash');
     const updateButton = document.getElementById('chromalinkUpdate');
     const chromalinkDetails = document.getElementById('chromalinkDetails');
+    const progressContainer = document.querySelector('.chromalink-update-progress-container');
+
+    // Add erase modes checkbox
+    const eraseModesContainer = document.createElement('div');
+    eraseModesContainer.className = 'chromalink-checkbox-container';
+    eraseModesContainer.innerHTML = `
+        <input type="checkbox" id="eraseModesCheckbox" />
+        <label for="eraseModesCheckbox">Erase Modes</label>
+    `;
+    progressContainer.parentElement.insertBefore(eraseModesContainer, progressContainer);
 
     connectButton.addEventListener('click', async () => {
       if (this.isConnected) {
@@ -62,6 +74,7 @@ export default class ChromalinkPanel extends Panel {
       reader.onload = async (e) => {
         const firmwareData = new Uint8Array(e.target.result);
         try {
+          progressContainer.style.display = 'block';
           await this.vortexPort.flashFirmware(
             this.editor.vortexLib,
             firmwareData,
@@ -73,16 +86,102 @@ export default class ChromalinkPanel extends Panel {
           Notification.success('Firmware flashed successfully.');
         } catch (error) {
           Notification.failure('Firmware flash failed: ' + error.message);
+        } finally {
+          setTimeout(() => {
+            progressContainer.style.display = 'none';
+            document.getElementById('firmwareProgressBar').style.width = '0';
+          }, 1000);
         }
       };
       reader.readAsArrayBuffer(file);
     });
 
     updateButton.addEventListener('click', async () => {
-      await this.updateFirmware();
+      const backupModes = this.isConnected && !document.getElementById('eraseModesCheckbox').checked;
+      if (backupModes && !this.isModernVersion()) {
+        Notification.failure('Cannot backup modes on versions below 1.4.x.');
+        return;
+      }
+      progressContainer.style.display = 'block';
+      try {
+        await this.updateFirmware();
+      } catch (error) {
+        Notification.failure('Update failed: ' + error.message);
+      } finally {
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          document.getElementById('firmwareProgressBar').style.width = '0';
+        }, 1000);
+      }
     });
 
     this.hide();
+  }
+
+  // Add backup and restore modes functions
+  async backupModes() {
+    console.log("Backing up modes...");
+    await this.pullModes(this.editor.vortexLib, this.editor.lightshow.vortex);
+    this.oldModes = new this.editor.vortexLib.ByteStream();
+    if (!this.editor.lightshow.vortex.getModes(this.oldModes)) {
+      throw new Error('Failed to backup modes.');
+    }
+  }
+
+  async restoreModes() {
+    console.log("Restoring modes...");
+    if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
+      throw new Error('Failed to restore modes.');
+    }
+    await this.pushModes(this.editor.vortexLib, this.editor.lightshow.vortex);
+    this.oldModes = null;
+  }
+
+  async writeDefaultModes() {
+    console.log("Writing default modes...");
+    // default modes on the duo as an array of bytes, can get this by using
+    // the function vortexLib.getDataArray to get the array of bytes in a bytestream
+    // after using lightshow.vortex.getModes() to get the modes into a bytestream
+    // similar to backupModes() above
+    let defaultModesData = [0xBB, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+      0x0E, 0x89, 0x0F, 0x74, 0xD2, 0x01, 0x04, 0x04, 0xB9, 0x09, 0x02, 0x06,
+      0x06, 0x03, 0xFF, 0x00, 0x00, 0x00, 0x04, 0x00, 0x37, 0x02, 0x02, 0x1C,
+      0x0E, 0x00, 0x17, 0x19, 0x0C, 0x00, 0xF0, 0x1A, 0x02, 0x02, 0x00, 0x01,
+      0x97, 0x70, 0x9F, 0x00, 0x07, 0x01, 0x4D, 0x00, 0xB2, 0x00, 0x02, 0x02,
+      0x00, 0x06, 0xC4, 0x70, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00, 0x00, 0x17,
+      0x00, 0x00, 0x3B, 0x00, 0x00, 0xE9, 0x4E, 0x00, 0x00, 0x03, 0x03, 0xC4,
+      0x4D, 0x11, 0x00, 0xF0, 0x04, 0x3B, 0xB2, 0xE9, 0x00, 0x02, 0x06, 0x0E,
+      0x07, 0xFF, 0x23, 0x00, 0x00, 0x06, 0x48, 0xFF, 0xC6, 0x55, 0xFF, 0x43,
+      0x29, 0x00, 0xF0, 0x04, 0x00, 0x66, 0x55, 0xFF, 0x55, 0x57, 0x00, 0x02,
+      0x06, 0x0D, 0x05, 0x9F, 0x00, 0x00, 0x5A, 0xFF, 0xFF, 0xFF, 0x9F, 0x15,
+      0x00, 0x00, 0x07, 0x00, 0xFF, 0x1A, 0x02, 0x06, 0x05, 0x05, 0x00, 0x00,
+      0x30, 0xFF, 0x54, 0xAA, 0xB1, 0x00, 0x00, 0x1B, 0x90, 0xFF, 0x55, 0x2D,
+      0x00, 0x00, 0x02, 0x02, 0x08, 0x05, 0x00, 0x40, 0x54, 0x52, 0x26, 0x00,
+      0x00, 0x00, 0x54, 0xAA, 0xFF, 0x55, 0x0B, 0x00, 0x00, 0x00, 0x08, 0x54,
+      0x00, 0x05, 0xF0, 0x04, 0x02, 0x04, 0x02, 0xFF, 0x00, 0xF6, 0x08, 0x00,
+      0x80, 0x00, 0x01, 0x02, 0xFF, 0x00, 0xF6, 0x08, 0x00, 0x80, 0x00 ];
+    // turn the above array of bytes into a bytestream
+    const defaultModes = new this.editor.vortexLib.ByteStream();
+    if (!this.editor.vortexLib.createByteStreamFromRawData(defaultModesData, defaultModes)) {
+      throw new Error('Failed to create bytestream from default mode data.');
+    }
+    // then set the modes with that array of bytes
+    if (!this.editor.lightshow.vortex.setModes(defaultModes, false)) {
+      throw new Error('Failed to write default modes.');
+    }
+    // refresh the mode list so they are visible
+    this.editor.modesPanel.refreshModeList();
+    // connect if necessary
+    if (!this.isConnected) {
+      await this.connect(false);
+    }
+    // then push the default modes
+    await this.pushModes(this.editor.vortexLib, this.editor.lightshow.vortex);
+  }
+
+  // Check for valid version
+  isModernVersion() {
+    return this.isConnected && this.duoHeader && this.duoHeader.version >= '1.4.0';
   }
 
   async reconnect(notify = false) {
@@ -102,8 +201,8 @@ export default class ChromalinkPanel extends Panel {
       const connectButton = document.getElementById('chromalinkConnect');
       connectButton.innerHTML = 'Disconnect Duo'
       if (this.editor.lightshow.vortex.numModes() > 0) {
-        this.oldModes = new this.editor.vortexLib.ByteStream();
-        if (!this.editor.lightshow.vortex.getModes(this.oldModes)) {
+        this.chromadeckModes = new this.editor.vortexLib.ByteStream();
+        if (!this.editor.lightshow.vortex.getModes(this.chromadeckModes)) {
           throw new Error('Failed to backup old modes');
         }
       }
@@ -126,7 +225,7 @@ export default class ChromalinkPanel extends Panel {
       Notification.failure('Failed to connect: ' + error.message);
     }
   }
-  
+
   async disconnect(notify = true) {
     try {
       // Use the connect function from VortexPort
@@ -135,13 +234,13 @@ export default class ChromalinkPanel extends Panel {
       this.isConnected = false;
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(20);
-      if (this.oldModes) {
-        if (!this.editor.lightshow.vortex.setModes(this.oldModes, false)) {
-          throw new Error('Failed to restore old modes: ' + JSON.stringify(this.oldModes));
+      if (this.chromadeckModes) {
+        if (!this.editor.lightshow.vortex.setModes(this.chromadeckModes, false)) {
+          throw new Error('Failed to restore old modes: ' + JSON.stringify(this.chromadeckModes));
         }
       }
       this.editor.modesPanel.refreshModeList();
-      this.oldModes = null;
+      this.chromadeckModes = null;
       this.editor.devicePanel.updateSelectedDevice('Chromadeck', true);
       const chromalinkDetails = document.getElementById('chromalinkDetails');
       chromalinkDetails.style.display = 'none';
@@ -214,7 +313,6 @@ export default class ChromalinkPanel extends Panel {
       Notification.failure('Please connect first.');
       return;
     }
-
     try {
       Notification.success('Pushing Duo modes via Chromalink...');
       // update the number of modes

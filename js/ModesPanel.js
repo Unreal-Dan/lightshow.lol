@@ -165,7 +165,7 @@ export default class ModesPanel extends Panel {
         modeDiv.classList.add('selected');
       }
       modeDiv.innerHTML = `
-        <span class="mode-name">Mode ${i} - ${this.lightshow.vortex.getModeName()}</span>
+        <span class="mode-name">Mode ${i + 1} - ${this.lightshow.vortex.getModeName()}</span>
         <div style="display:flex">
         <div class="mode-btn-container" style="display: ${isSelected ? 'flex' : 'none'};">
           <button class="share-mode-btn mode-btn" title="Share Mode"><i class="fas fa-share-alt"></i></button>

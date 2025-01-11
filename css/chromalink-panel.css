@@ -45,6 +45,7 @@
   background-color: #e0e0e0;
   border-radius: 10px;
   overflow: hidden;
+  display: none;
 }
 
 .chromalink-update-progress-bar {
@@ -80,4 +81,31 @@
   transition: width 0.3s ease;
 }
 
+
+
+/* Styling for the erase modes checkbox */
+#eraseModesCheckbox {
+    margin: 5px;
+}
+
+.chromalink-checkbox-container {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    margin-top: 10px;
+    font-size: 14px; /* Match font size with buttons */
+    color: #d8d4cf; /* Consistent text color */
+    padding-left: 25px;
+}
+
+.chromalink-checkbox-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #007bff; /* Matches the theme color */
+}
+
+.chromalink-checkbox-container label {
+    cursor: pointer;
+}
 
