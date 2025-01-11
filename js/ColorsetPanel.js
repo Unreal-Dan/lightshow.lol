@@ -139,7 +139,9 @@ export default class ColorsetPanel extends Panel {
     default:
       break;
     }
-    cur.setColorset(set, this.targetLed);
+    for (let i = 0; i < this.targetLeds.length; ++i) {
+      cur.setColorset(set, this.targetLeds[i]);
+    }
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
     this.refreshColorset();
