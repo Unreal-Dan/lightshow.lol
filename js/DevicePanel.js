@@ -173,7 +173,7 @@ export default class DevicePanel extends Panel {
     this.selectedDevice = device;
 
     // update the lightshow led count
-    const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
+    const ledCount = this.editor.devices[this.selectedDevice].ledCount;
     if (ledCount !== undefined) {
       this.editor.lightshow.setLedCount(ledCount);
       console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
