@@ -85,6 +85,21 @@ export default class ChromalinkPanel extends Panel {
     this.hide();
   }
 
+  async onDeviceConnect(deviceName) {
+    // if the device has UPDI support open a chromalink window
+    if (deviceName === 'Chromadeck') {
+      this.show();
+    }
+  }
+
+  async onDeviceDisconnect(deviceName) {
+    this.hide();
+  }
+
+  async onDeviceSelected(devicename) {
+    // maybe do something here
+  }
+
   async reconnect(notify = false) {
     await this.disconnect(notify);
     await this.connect(notify);

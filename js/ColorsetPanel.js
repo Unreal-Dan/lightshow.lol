@@ -196,33 +196,15 @@ export default class ColorsetPanel extends Panel {
     };
   }
 
-  handleDeviceEvent(deviceChangeEvent) {
-    // Access the custom data from `event.detail`
-    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
-    if (deviceEvent === 'waiting') {
-      this.onDeviceWaiting(deviceName);
-    } else if (deviceEvent === 'connect') {
-      this.onDeviceConnect(deviceName);
-    } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect(deviceName);
-    } else if (deviceEvent === 'select') {
-      this.onDeviceSelected(deviceName);
-    }
-  }
-
-  onDeviceSelected(deviceName) {
+  async onDeviceSelected(deviceName) {
     // nothing yet
   }
 
-  onDeviceWaiting(deviceName) {
+  async onDeviceConnect(deviceName) {
     // nothing yet
   }
 
-  onDeviceConnect(deviceName) {
-    // nothing yet
-  }
-
-  onDeviceDisconnect(deviceName) {
+  async onDeviceDisconnect(deviceName) {
     // nothing yet
   }
 

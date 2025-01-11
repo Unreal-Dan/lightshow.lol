@@ -41,6 +41,20 @@ export default class UpdatePanel extends Panel {
     this.hide();
   }
 
+  async onDeviceConnect(deviceName, deviceVersion) {
+    console.log("Checking version...");
+    // check version which
+    this.editor.checkVersion(deviceName, deviceVersion);
+  }
+
+  async onDeviceDisconnect(deviceName) {
+    this.hide();
+  }
+
+  async onDeviceSelected(devicename) {
+    // maybe do something here
+  }
+
   async initializeESPFlasher() {
     try {
       // this.serialPort will already be filled if they pressed 'insert' to

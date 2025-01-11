@@ -56,77 +56,42 @@ export default class ModesPanel extends Panel {
     transmitButton.addEventListener('click', () => this.editor.transmitVL());
 
     document.addEventListener('patternChange', () => this.refresh(true));
-    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
 
     this.refreshModeList();
   }
 
-  handleDeviceEvent(deviceChangeEvent) {
-    // Access the custom data from `event.detail`
-    const { deviceEvent, deviceName } = deviceChangeEvent.detail;
-    if (deviceEvent === 'waiting') {
-      this.onDeviceWaiting(deviceName);
-    } else if (deviceEvent === 'connect') {
-      this.onDeviceConnect(deviceName);
-    } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect(deviceName);
-    } else if (deviceEvent === 'select') {
-      this.onDeviceSelected(deviceName);
-    }
-  }
-
-  onDeviceWaiting(deviceName) {
-    // nothing really to do at this step
-  }
-
   onDeviceConnect(deviceName) {
-    console.log("Device connected: " + this.vortexPort.name);
-    const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
-    if (ledCount !== undefined) {
-      this.lightshow.setLedCount(ledCount);
-      console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
-    } else {
-      console.log(`Device name ${this.vortexPort.name} not recognized`);
+    // if the device has UPDI support open a chromalink window
+    if (deviceName === 'Chromadeck') {
+      this.show();
     }
-    this.refresh(true);
-    Notification.success("Successfully Connected " + this.vortexPort.name);
+  }
 
+  async onDeviceDisconnect(deviceName) {
+    this.hide();
+  }
+
+  async onDeviceSelected(devicename) {
+    // maybe do something here
+  }
+
+  async onDeviceConnect(deviceName) {
     // Enable the 3 buttons when a device is connected
     document.getElementById('pushToDeviceButton').disabled = false;
     document.getElementById('pullFromDeviceButton').disabled = false;
     document.getElementById('transmitVLButton').disabled = false;
     document.getElementById('connectDeviceButton').disabled = true;
-
-    // if the device has UPDI support open a chromalink window
-    if (!this.editor.chromalinkPanel.isVisible && this.vortexPort.name === 'Chromadeck') {
-      this.editor.chromalinkPanel.show();
-      //this.editor.updatePanel.show();
-    }
-    //if (!this.editor.updatePanel.isVisible && this.vortexPort.name === 'Spark') {
-    //  this.editor.updatePanel.show();
-    //}
-
-    console.log("Checking version...");
-
-    // check version numbers
-    this.editor.checkVersion(this.vortexPort.name, this.vortexPort.version);
-
-    // display the spread slider
-    document.getElementById('spread_div').style.display = 'block';
   }
 
-  onDeviceDisconnect(deviceName) {
-    console.log("Device disconnected");
-    Notification.success(this.vortexPort.name + ' Disconnected!');
-
-    // Enable the 3 buttons when a device is connected
+  async onDeviceDisconnect(deviceName) {
+    // Disable the 3 buttons when a device is disconnected
     document.getElementById('pushToDeviceButton').disabled = true;
     document.getElementById('pullFromDeviceButton').disabled = true;
     document.getElementById('transmitVLButton').disabled = true;
     document.getElementById('connectDeviceButton').disabled = false;
   }
 
-  onDeviceSelected(devicename) {
+  async onDeviceSelected(devicename) {
     // nothing really to do at this step
   }
 

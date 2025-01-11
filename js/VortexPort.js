@@ -77,6 +77,10 @@ export default class VortexPort {
     this.buildDate = '';
     this.isTransmitting = false; // Reset the transmission state on reset
     this.hasUPDI = false;
+    if (this.serialPort) {
+      this.serialPort.close();
+      this.serialPort = null;
+    }
     // Further state reset logic if necessary
   }
 
@@ -106,6 +110,9 @@ export default class VortexPort {
   }
 
   async beginConnection(){
+    if (!this.serialPort) {
+      return;
+    }
     console.log("Beginning connection...");
     this.portActive = false;
     this.listenForGreeting();
@@ -142,7 +149,8 @@ export default class VortexPort {
   }
 
   listenForGreeting = async () => {
-    while (!this.portActive && !this.cancelListeningForGreeting) {
+    let tries = 0;
+    while (!this.portActive && !this.cancelListeningForGreeting && tries++ < 30) {
       if (this.serialPort) {
         try {
           console.log("Listening for greeting...");
@@ -151,6 +159,7 @@ export default class VortexPort {
           if (!response) {
             console.log("Error: Connection broken");
             // broken connection
+            await this.sleep(500);
             continue;
           }
 
@@ -209,6 +218,9 @@ export default class VortexPort {
         }
       }
       await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    if (tries >= 30) {
+      throw new Error('Failed to listen for greeting, tried 30 times');
     }
     this.cancelListeningForGreeting = false;
   }

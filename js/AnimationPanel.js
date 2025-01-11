@@ -179,5 +179,18 @@ export default class AnimationPanel extends Panel {
       });
     });
   }
+
+  async onDeviceConnect(deviceName) {
+    // display the spread slider
+    this.showSpreadSlider();
+  }
+
+  async onDeviceDisconnect(deviceName) {
+    // nothing yet
+  }
+
+  async onDeviceSelected(deviceName) {
+    // nothing yet
+  }
 }
 

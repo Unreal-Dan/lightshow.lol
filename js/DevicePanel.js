@@ -46,13 +46,17 @@ export default class DevicePanel extends Panel {
     });
   }
 
-  async disconnectDevice() {
-    await this.vortexPort.disconnect(); 
-    this.onDeviceDisconnect();
-  }
+  // call to disconnect the device
+  //async disconnectDevice() {
+  //  await this.vortexPort.disconnect(); 
+  //}
 
   async connectDevice() {
     try {
+      if (this.vortexPort.serialPort) {
+        Notification.failure("Already connected");
+        return;
+      }
       await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
     } catch (error) {
       console.log("Error: " + error);
@@ -61,23 +65,20 @@ export default class DevicePanel extends Panel {
   }
 
   deviceChange(deviceEvent) {
-    if (deviceEvent === 'connect') {
-      this.onDeviceConnect();
-    } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect();
-    } else if (deviceEvent === 'waiting') {
-      console.log("Waiting for device...");
-    } else if (deviceEvent === 'select') {
-      Notification.success(`Selected '${deviceName}`);
-    }
-
-    // dispatch the device change event with the new device name
+    // name is either the selected device or on connect the vortexport name
+    let deviceName = this.selectedDevice;
+    if (deviceEvent === 'connect' && this.vortexPort) {
+      deviceName = this.vortexPort.name;
+    } 
+    // version is only available on conect
+    const deviceVersion = this.vortexPort ? this.vortexPort.version : 0;
+    // dispatch the device change event with the new device name and version
     document.dispatchEvent(new CustomEvent('deviceChange', { 
-      detail: { deviceEvent, deviceName: this.selectedDevice }
+      detail: { deviceEvent, deviceName, deviceVersion }
     }));
   }
 
-  onDeviceConnect() {
+  async onDeviceConnect(deviceName, deviceVersion) {
     const connectDeviceButton = document.getElementById('connectDeviceButton');
 
     // Change button to "Disconnect Device"
@@ -87,28 +88,36 @@ export default class DevicePanel extends Panel {
 
     //// Update event listener for disconnect
     //connectDeviceButton.onclick = () => {
-    //  this.vortexPort.disconnectDevice();
-    //  this.onDeviceDisconnect();
+    //  this.disconnectDevice();
     //};
 
     // Lock the dropdown to prevent further changes
     document.getElementById('deviceTypeSelected').classList.add('locked');
 
     // Update selected device
-    const deviceName = this.vortexPort.name;
     this.updateSelectedDevice(deviceName, true);
     this.lockDeviceSelection(true);
+
+    // start reading and demo on device
+    // not sure if this is actually necessary
+    this.vortexPort.startReading();
+    this.editor.demoModeOnDevice();
+
+    console.log("Device connected: " + deviceName);
+    Notification.success("Successfully Connected " + deviceName);
   }
 
-  onDeviceDisconnect() {
+  async onDeviceDisconnect() {
     Notification.success("Device Disconnected!");
 
     const connectDeviceButton = document.getElementById('connectDeviceButton');
 
     // Change button back to "Connect Device"
-    connectDeviceButton.innerHTML = `<i class="fa-brands fa-usb"></i>`;
+    //connectDeviceButton.innerHTML = `<i class="fa-brands fa-usb"></i>`;
     connectDeviceButton.title = "Connect Device";
-    connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
+    //connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
+
+    this.vortexPort.resetState();
 
     // Restore event listener for connect
     connectDeviceButton.onclick = async () => {
@@ -118,10 +127,16 @@ export default class DevicePanel extends Panel {
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
 
-    document.dispatchEvent(new CustomEvent('deviceDisconnected'));
-
     // unlock device selection
     this.lockDeviceSelection(false);
+  }
+
+  async onDeviceWaiting(deviceName) {
+    console.log("Waiting for ${deviceName}...");
+  }
+
+  async onDeviceSelected(deviceName) {
+    Notification.success(`Selected '${deviceName}`);
   }
 
   addIconsToDropdown() {
@@ -157,8 +172,14 @@ export default class DevicePanel extends Panel {
     // store the selected device
     this.selectedDevice = device;
 
-    // Set LED count based on the device
-    this.editor.lightshow.setLedCount(this.editor.devices[device].ledCount);
+    // update the lightshow led count
+    const ledCount = this.editor.devices[this.vortexPort.name].ledCount;
+    if (ledCount !== undefined) {
+      this.editor.lightshow.setLedCount(ledCount);
+      console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
+    } else {
+      console.log(`Device name ${this.vortexPort.name} not recognized`);
+    }
 
     // Update and show the LED Select Panel
     this.editor.ledSelectPanel.updateSelectedDevice(device);

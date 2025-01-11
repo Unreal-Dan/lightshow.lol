@@ -365,6 +365,7 @@ export default class VortexEditor {
     return latestFirmwareVersions[device.toLowerCase()];
   }
 
+  // TODO: maybe move this function to UpdatePanel.js not sure
   async checkVersion(device, version) {
     // the results are lowercased
     if (!device.length) {

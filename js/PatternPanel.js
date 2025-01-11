@@ -110,38 +110,17 @@ export default class PatternPanel extends Panel {
     this.refresh(true);
   }
 
-  handleDeviceEvent(deviceChangeEvent) {
-    // Access the custom data from `event.detail`
-    const { deviceEvent, deviceName } = deviceChangeEvent;
-    if (deviceEvent === 'waiting') {
-      this.onDeviceWaiting(deviceName);
-    } else if (deviceEvent === 'connect') {
-      this.onDeviceConnect(deviceName);
-    } else if (deviceEvent === 'disconnect') {
-      this.onDeviceDisconnect(deviceName);
-    } else if (deviceEvent === 'select') {
-      this.onDeviceSelected(deviceName);
-    }
-  }
-
-  onDeviceWaiting(deviceName) {
-    // nothing yet
-  }
-
-  onDeviceConnect(deviceName) {
+  async onDeviceConnect(deviceName) {
     this.multiEnabled = true;
     this.populatePatternDropdown();
     this.refresh(true);
-    // uh is this supposed to be here?
-    this.vortexPort.startReading();
-    this.editor.demoModeOnDevice();
   }
 
-  onDeviceDisconnect(deviceName) {
+  async onDeviceDisconnect(deviceName) {
     // nothing yet
   }
 
-  onDeviceSelected(deviceName) {
+  async onDeviceSelected(deviceName) {
     // nothing yet
   }
 

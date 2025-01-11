@@ -47,8 +47,42 @@ export default class Panel {
 
     this.initDraggable();
 
+    document.addEventListener('deviceChange', async (deviceChangeEvent) => {
+      await this.handleDeviceEvent(deviceChangeEvent);
+    });
+
     // Add this panel to the global list
     Panel.panels.push(this);
+  }
+
+  async handleDeviceEvent(deviceChangeEvent) {
+    // Access the custom data from `event.detail`
+    const { deviceEvent, deviceName, deviceVersion } = deviceChangeEvent.detail;
+    if (deviceEvent === 'waiting') {
+      await this.onDeviceWaiting(deviceName);
+    } else if (deviceEvent === 'connect') {
+      await this.onDeviceConnect(deviceName, deviceVersion);
+    } else if (deviceEvent === 'disconnect') {
+      await this.onDeviceDisconnect(deviceName);
+    } else if (deviceEvent === 'select') {
+      await this.onDeviceSelected(deviceName);
+    }
+  }
+
+  async onDeviceWaiting(deviceName) {
+    // override this
+  }
+
+  async onDeviceConnect(deviceName) {
+    // override this
+  }
+
+  async onDeviceDisconnect(deviceName) {
+    // override this
+  }
+
+  async onDeviceSelected(devicename) {
+    // override this
   }
 
   appendTo(parent) {
