@@ -173,13 +173,19 @@ export default class UpdatePanel extends Panel {
     const progressBar = document.getElementById('overallProgressBar');
     const progressMessage = document.getElementById('updateProgress');
 
+    // erase flash first
+    await this.espStub.eraseFlash();
+
     let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
     let totalBytesFlashed = 0;
 
+    // Display the flashing message just once
+    progressMessage.textContent = 'Flashing firmware...';
+
+    // Start flashing each file
     for (const file of files) {
       try {
         console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
-        progressMessage.textContent = 'Flashing firmware...';
 
         // Create a File object from the Uint8Array
         const blob = new Blob([file.data], { type: 'application/octet-stream' });
@@ -203,25 +209,27 @@ export default class UpdatePanel extends Panel {
         };
 
         const contents = await readUploadedFileAsArrayBuffer(fileObject);
-        await this.espStub.eraseFlash();
+
+        // Flash this file and update the bar based on total bytes
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalThisFile) => {
             totalBytesFlashed += bytesWritten;
-            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 90) + '%';
+            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
           },
           file.address
         );
+
         await this.sleep(100);
-        progressBar.style.width = '100%';
         console.log(`${file.path} flashed successfully.`);
-        document.getElementById('updateProgress').classList.add('hidden');
       } catch (error) {
         console.error(`Error flashing ${file.path}:`, error);
         throw error;
       }
     }
 
+    // You can optionally set the bar to 100% and/or hide the progress UI at the end
+    progressBar.style.width = '100%';
     console.log('All files flashed successfully.');
     try {
       console.log('ESP32 reset complete.');
