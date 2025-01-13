@@ -2,11 +2,11 @@
 
 # If an argument is provided, use it as the cache-buster.
 # Otherwise, default to ?v=<epoch_timestamp>
-CACHE_STR=$(date +%s)
-if [ -n "$1" ]; then
+CACHE_STR="$(date +%s)"
+if [ -z "$1" ]; then
   CACHE_BUSTER="$1"
 else
-  CACHE_BUSTER="?v=$(CACHE_STR)"
+  CACHE_BUSTER="?v=$CACHE_STR"
 fi
 
 echo "Using cache-buster: $CACHE_BUSTER"
