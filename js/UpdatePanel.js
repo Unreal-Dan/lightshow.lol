@@ -181,7 +181,7 @@ export default class UpdatePanel extends Panel {
     let currentWidth = 0;
     const targetWidth = 15;
     const incrementSteps = 50; // number of increments
-    const intervalDelay = 300; // ms
+    const intervalDelay = 800; // ms
     const incrementValue = (targetWidth - currentWidth) / incrementSteps;
 
     const intervalId = setInterval(() => {
