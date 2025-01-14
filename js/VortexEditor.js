@@ -453,11 +453,13 @@ export default class VortexEditor {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Main initialization of VortexLib and Vortex Editor
-  VortexLib().then(async (vortexLib) => {
-    // Instantiate and initialize VortexEditor
+window.addEventListener('load', async () => {
+  try {
+    // Wait until everything (including external scripts) is fully loaded
+    const vortexLib = await VortexLib();
     const vortexEditor = new VortexEditor(vortexLib);
     await vortexEditor.initialize();
-  });
+  } catch (error) {
+    console.error('Error initializing Vortex:', error);
+  }
 });
