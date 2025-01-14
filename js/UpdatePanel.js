@@ -173,21 +173,39 @@ export default class UpdatePanel extends Panel {
     const progressBar = document.getElementById('overallProgressBar');
     const progressMessage = document.getElementById('updateProgress');
 
-    // erase flash first
+    // Set initial progress to 0%
+    progressBar.style.width = '0%';
+    progressMessage.textContent = 'Erasing flash...';
+
+    // Slowly fill progress bar from 0% to 15% while eraseFlash is in progress
+    let currentWidth = 0;
+    const targetWidth = 15;
+    const incrementSteps = 50; // number of increments
+    const intervalDelay = 100; // ms
+    const incrementValue = (targetWidth - currentWidth) / incrementSteps;
+
+    const intervalId = setInterval(() => {
+      currentWidth += incrementValue;
+      if (currentWidth >= targetWidth) {
+        currentWidth = targetWidth;
+      }
+      progressBar.style.width = Math.floor(currentWidth) + '%';
+    }, intervalDelay);
+
     await this.espStub.eraseFlash();
 
+    clearInterval(intervalId);
+    progressBar.style.width = targetWidth + '%';
+
+    // Now proceed with flashing firmware
+    progressMessage.textContent = 'Flashing firmware...';
     let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
     let totalBytesFlashed = 0;
 
-    // Display the flashing message just once
-    progressMessage.textContent = 'Flashing firmware...';
-
-    // Start flashing each file
     for (const file of files) {
       try {
         console.log(`Preparing to flash: ${file.path}, Size: ${file.data.length} bytes`);
 
-        // Create a File object from the Uint8Array
         const blob = new Blob([file.data], { type: 'application/octet-stream' });
         const fileObject = new File([blob], file.path.split('/').pop(), {
           type: 'application/octet-stream',
@@ -210,12 +228,13 @@ export default class UpdatePanel extends Panel {
 
         const contents = await readUploadedFileAsArrayBuffer(fileObject);
 
-        // Flash this file and update the bar based on total bytes
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalThisFile) => {
             totalBytesFlashed += bytesWritten;
-            progressBar.style.width = Math.floor((totalBytesFlashed / totalBytes) * 100) + '%';
+            const progress = Math.floor((totalBytesFlashed / totalBytes) * 85) + 15; 
+            // 85% range left after 15% used for erase
+            progressBar.style.width = progress + '%';
           },
           file.address
         );
@@ -228,13 +247,13 @@ export default class UpdatePanel extends Panel {
       }
     }
 
-    // You can optionally set the bar to 100% and/or hide the progress UI at the end
+    // Finish progress at 100% when done
     progressBar.style.width = '100%';
     console.log('All files flashed successfully.');
+
     try {
       console.log('ESP32 reset complete.');
       if (this.espLoader) {
-        //await this.espLoader.disconnect();
         await this.espLoader._reader.releaseLock();
         console.log('Disconnected ESP Loader.');
       }
@@ -245,6 +264,7 @@ export default class UpdatePanel extends Panel {
       console.error('Failed to reset ESP32:', resetError);
     }
   }
+
 
   displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
     const lowerDevice = device.toLowerCase();
