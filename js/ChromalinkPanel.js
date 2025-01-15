@@ -176,7 +176,6 @@ export default class ChromalinkPanel extends Panel {
       return 'public/data/VortexEngine-duo-1.4.34.bin';
     }
     // fetch the firmware url from vortex community downloads json api
-    console.log('Fetching latest firmware...');
     const apiResponse = await fetch('https://vortex.community/downloads/json/duo');
     if (!apiResponse.ok) throw new Error('Failed to fetch firmware metadata');
     const responseData = await apiResponse.json();
@@ -186,6 +185,7 @@ export default class ChromalinkPanel extends Panel {
   async updateFirmware() {
     const progressBar = document.getElementById('firmwareProgressBar');
     try {
+      console.log('Fetching latest firmware...');
       const firmwareResponse = await fetch(await this.getFirmwareUrl());
       if (!firmwareResponse.ok) {
         throw new Error('Failed to fetch firmware file.');

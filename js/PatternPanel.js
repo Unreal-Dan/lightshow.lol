@@ -23,7 +23,6 @@ export default class PatternPanel extends Panel {
     this.vortexPort = editor.vortexPort;
     this.targetLed = 0;
     this.targetLeds = [this.targetLed];
-    this.multiEnabled = false;
     this.isMulti = false;
   }
 
@@ -111,9 +110,7 @@ export default class PatternPanel extends Panel {
   }
 
   async onDeviceConnect(deviceName) {
-    this.multiEnabled = true;
-    this.populatePatternDropdown();
-    this.refresh(true);
+    // nothing yet
   }
 
   async onDeviceDisconnect(deviceName) {
@@ -193,7 +190,8 @@ export default class PatternPanel extends Panel {
     dropdown.appendChild(blendGroup);
     dropdown.appendChild(solidGroup);
 
-    if (this.editor.devicePanel.selectedDevice !== 'None') {
+    const device = this.editor.devicePanel.selectedDevice;
+    if (device !== 'None' && device !== 'Duo') {
       dropdown.appendChild(multiGroup);
     }
   }

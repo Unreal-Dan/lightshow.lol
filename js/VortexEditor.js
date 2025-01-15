@@ -62,6 +62,16 @@ export default class VortexEditor {
       this.updatePanel,
       this.chromalinkPanel
     ];
+    let allGood = true;
+    this.panels.forEach((panel, index) => {
+      if (!panel) {
+        console.log("Failed to instantiated #" + index);
+        allGood = false;
+      }
+    });
+    if (allGood) {
+      console.log("All panels instantiated successfully.");
+    }
     this.mobileTabs = [
       // IDs of panels to include as tabs on mobile
       'welcomePanel',

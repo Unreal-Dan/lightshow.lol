@@ -42,7 +42,7 @@ export default class VortexPort {
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
-  isTransmitting = false; // Flag to track if a transmission is active
+  isTransmitting = null; // Flag to track if a transmission is active
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   constructor() {
@@ -75,7 +75,7 @@ export default class VortexPort {
     this.name = '';
     this.version = 0;
     this.buildDate = '';
-    this.isTransmitting = false; // Reset the transmission state on reset
+    this.isTransmitting = null; // Reset the transmission state on reset
     this.hasUPDI = false;
     if (this.serialPort) {
       this.serialPort.close();
@@ -343,13 +343,13 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     if (!vortex.engine().modes().curMode()) {
       throw new Error('No current mode');
     }
     //console.log("transmitVL Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'transmitVL'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
@@ -363,7 +363,7 @@ export default class VortexPort {
       console.error('Error during transmitVL:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("transmitVL End");
     }
   }
@@ -373,10 +373,10 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     //console.log("demoColor Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'demoColor'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
@@ -397,7 +397,7 @@ export default class VortexPort {
       console.error('Error during demoColor:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("demoColor End");
     }
   }
@@ -407,13 +407,13 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     if (!vortex.engine().modes().curMode()) {
       throw new Error('No current mode');
     }
     //console.log("demoCurMode Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'demoCurMode'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const curMode = new vortexLib.ByteStream();
@@ -429,7 +429,7 @@ export default class VortexPort {
       console.error('Error during demoCurMode:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("demoCurMode End");
     }
   }
@@ -439,10 +439,10 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     //console.log("pushEachToDevice Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pushEachToDevice'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
@@ -472,7 +472,7 @@ export default class VortexPort {
       console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pushEachToDevice End");
     }
   }
@@ -482,14 +482,14 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
       return await this.pushEachToDevice(vortexLib, vortex);
     }
     //console.log("pushToDevice Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pushToDevice'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
@@ -505,7 +505,7 @@ export default class VortexPort {
       console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pushToDevice End");
     }
   }
@@ -515,10 +515,10 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     //console.log("pullEachFromDevice Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pullEachFromDevice'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       await this.cancelReading();
@@ -543,7 +543,7 @@ export default class VortexPort {
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pullEachFromDevice End");
     }
   }
@@ -553,14 +553,14 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
       return await this.pullEachFromDevice(vortexLib, vortex);
     }
     //console.log("pullFromDevice Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pullFromDevice'; // Set the transmitting flag
     try {
       // Unserialize the stream of data
       await this.cancelReading();
@@ -577,7 +577,7 @@ export default class VortexPort {
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pullFromDevice End");
     }
   }
@@ -588,11 +588,11 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     let duoHeader = {};
     //console.log("connectChromaLink Start");
-    this.isTransmitting = true; // Reset the transmitting flag
+    this.isTransmitting = 'connectChromalink'; // Reset the transmitting flag
     try {
       await this.cancelReading();
       // Start the connection process
@@ -627,7 +627,7 @@ export default class VortexPort {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("connectChromaLink End");
     }
     return duoHeader;
@@ -638,10 +638,10 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     //console.log("connectChromaLink Start");
-    this.isTransmitting = true; // Reset the transmitting flag
+    this.isTransmitting = 'writeDuoHeader'; // Reset the transmitting flag
     try {
       await this.cancelReading();
       // Start the connection process
@@ -665,7 +665,7 @@ export default class VortexPort {
       console.error('Error connecting to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("connectChromaLink End");
     }
   }
@@ -676,11 +676,11 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     vortex.clearModes();
     //console.log("pullDuoModes Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pullDuoModes'; // Set the transmitting flag
     try {
       await this.cancelReading();
       for (let i = 0; i < numModes; ++i) {
@@ -712,7 +712,7 @@ export default class VortexPort {
       console.error('Error pulling modes from Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pullDuoModes End");
     }
     return true;
@@ -724,10 +724,10 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting');
+      throw new Error('Already transmitting:' + this.isTransmitting);
     }
     //console.log("pushDuoModes Start");
-    this.isTransmitting = true; // Set the transmitting flag
+    this.isTransmitting = 'pushDuoModes'; // Set the transmitting flag
     try {
       vortex.setCurMode(0, false);
       // TODO: detect total modes?
@@ -753,7 +753,7 @@ export default class VortexPort {
       console.error('Error pushing modes to Duo via Chromalink:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = false; // Reset the transmitting flag
+      this.isTransmitting = null; // Reset the transmitting flag
       //console.log("pushDuoModes End");
     }
   }

@@ -68,11 +68,13 @@ class Notification {
   static success(message, duration = 2000) {
     Notification.initializeContainer();
     Notification.createNotification(message, "success", duration);
+    console.log("[Notif] Success: " + message);
   }
 
   static failure(message, duration = 2000) {
     Notification.initializeContainer();
     Notification.createNotification(message, "failure", duration);
+    console.log("[Notif] Failure: " + message);
   }
 }
 

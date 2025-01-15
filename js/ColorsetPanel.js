@@ -27,7 +27,6 @@ export default class ColorsetPanel extends Panel {
     this.targetLed = 0;
     this.targetLeds = [ this.targetLed ];
     this.isMulti = false;
-    this.multiEnabled = false;
   }
 
   initialize() {
