@@ -144,6 +144,7 @@ export default class ColorsetPanel extends Panel {
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
     this.refreshColorset();
+    this.editor.demoModeOnDevice();
   }
 
   hslToRgb(h, s, l) {
