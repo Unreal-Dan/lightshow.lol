@@ -8,14 +8,14 @@ export default class ColorsetPanel extends Panel {
     //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
       <div id="colorset-status">
-        <button id="colorset-preset-one" class="preset-button"></button>
-        <button id="colorset-preset-two" class="preset-button"></button>
-        <button id="colorset-preset-three" class="preset-button"></button>
-        <button id="colorset-preset-four" class="preset-button"></button>
-        <button id="colorset-preset-rainbow" class="preset-button"></button>
-        <button id="colorset-preset-grayscale" class="preset-button"></button>
-        <button id="colorset-preset-pastel" class="preset-button"></button>
-        <button id="colorset-preset-dark" class="preset-button"></button>
+        <button id="colorset-preset-one" class="preset-button" title="Randomize One Color"></button>
+        <button id="colorset-preset-two" class="preset-button" title="Randomize Two Colors"></button>
+        <button id="colorset-preset-three" class="preset-button" title="Randomize Three Colors"></button>
+        <button id="colorset-preset-four" class="preset-button" title="Randomize Four Colors"></button>
+        <button id="colorset-preset-rainbow" class="preset-button" title="Randomize Rainbow"></button>
+        <button id="colorset-preset-grayscale" class="preset-button" title="Randomize Grayscale"></button>
+        <button id="colorset-preset-pastel" class="preset-button" title="Randomize Pastels"></button>
+        <button id="colorset-preset-dark" class="preset-button" title="Randomize Dark Colors"></button>
       </div>
       <hr id="patternDivider">
       <div id="colorset" class="color-row"></div>

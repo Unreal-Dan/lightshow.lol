@@ -39,6 +39,7 @@ export default class VortexPort {
   EDITOR_VERB_FLASH_FIRMWARE        = "I";
   EDITOR_VERB_FLASH_FIRMWARE_ACK    = "J";
   EDITOR_VERB_FLASH_FIRMWARE_DONE   = "K";
+  EDITOR_VERB_SET_GLOBAL_BRIGHTNESS = "L";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -654,6 +655,7 @@ export default class VortexPort {
         duoHeader.flags,
         duoHeader.brightness,
         duoHeader.numModes,
+        duoHeader.vBuild,
       ];
       let headerStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromData(headerData, headerStream);
@@ -805,6 +807,8 @@ export default class VortexPort {
           progressCallback(chunk, totalChunks);
         }
       }
+      // wait for a final done
+      await this.expectData(this.EDITOR_VERB_FLASH_FIRMWARE_DONE);
     } catch (error) {
       console.log("Firmware flash failed: " + error);
       Notification.failure('Firmware flash failed: ' + error.message);

@@ -132,7 +132,7 @@ export default class DevicePanel extends Panel {
   }
 
   async onDeviceWaiting(deviceName) {
-    console.log("Waiting for ${deviceName}...");
+    console.log(`Waiting for ${deviceName}...`);
   }
 
   async onDeviceSelected(deviceName) {

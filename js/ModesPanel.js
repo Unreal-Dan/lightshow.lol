@@ -14,10 +14,10 @@ export default class ModesPanel extends Panel {
         <button id="importModeButton" class="mode-list-btn" title="Paste JSON mode">
           <i class="fa-solid fa-paste"></i>
         </button>
-        <button id="pullFromDeviceButton" class="mode-list-btn" title="Pull Modes from Device" disabled>
+        <button id="pullFromDeviceButton" class="mode-list-btn" title="Load Modes from Device" disabled>
           <i class="fa-solid fa-upload fa-flip-vertical"></i>
         </button>
-        <button id="pushToDeviceButton" class="mode-list-btn" title="Push Modes to Device" disabled>
+        <button id="pushToDeviceButton" class="mode-list-btn" title="Save Modes to Device" disabled>
           <i class="fa-solid fa-download fa-flip-vertical"></i>
         </button>
         <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>

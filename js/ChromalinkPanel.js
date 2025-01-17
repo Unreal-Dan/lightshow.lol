@@ -201,20 +201,22 @@ export default class ChromalinkPanel extends Panel {
         }
       );
       Notification.success('Duo Firmware Successfully Updated');
-      await this.reconnect();
+      if (this.isConnected) {
+        await this.disconnect();
+      }
     } catch (error) {
       Notification.failure('Firmware update failed: ' + error.message);
     }
   }
 
-  // Pull modes from Duo via Chromalink
+  // Load modes from Duo via Chromalink
   async pullModes(vortexLib, vortex) {
     if (!this.isConnected) {
       Notification.failure('Please connect first.');
       return;
     }
     try {
-      Notification.success('Pulling Duo modes via Chromalink...');
+      Notification.success('Loading Duo modes via Chromalink...');
       await this.vortexPort.pullDuoModes(vortexLib, vortex, this.duoHeader.numModes);
       Notification.success('Successfully pulled Duo modes via Chromalink');
     } catch (error) {
@@ -231,7 +233,7 @@ export default class ChromalinkPanel extends Panel {
     }
 
     try {
-      Notification.success('Pushing Duo modes via Chromalink...');
+      Notification.success('Saving Duo modes via Chromalink...');
       // update the number of modes
       this.duoHeader.numModes = vortex.numModes();
       // then push the header (which will reset the device after)
