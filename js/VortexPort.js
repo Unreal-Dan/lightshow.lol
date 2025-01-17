@@ -435,6 +435,36 @@ export default class VortexPort {
     }
   }
 
+  async setBrightness(vortexLib, vortex, brightness) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      throw new Error('Already transmitting:' + this.isTransmitting);
+    }
+    //console.log("connectChromaLink Start");
+    this.isTransmitting = 'setBrightness'; // Reset the transmitting flag
+      console.log("Start " + brightness);
+    try {
+      await this.cancelReading();
+      // Start the connection process
+      await this.sendCommand(this.EDITOR_VERB_SET_GLOBAL_BRIGHTNESS);
+      console.log("Waiting " + brightness);
+      await this.expectData(this.EDITOR_VERB_READY, 1000);
+      console.log("Got it " + brightness);
+      // build the brightness packet
+      let brightnessStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData([ brightness ], brightnessStream);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, brightnessStream));
+    } catch (error) {
+      console.error('Error connecting to Duo via Chromalink:', error);
+    } finally {
+      this.startReading();
+      this.isTransmitting = null; // Reset the transmitting flag
+      console.log("Done " + brightness);
+    }
+  }
+
   async pushEachToDevice(vortexLib, vortex) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -787,7 +817,8 @@ export default class VortexPort {
       const chunkSize = 128;  // Firmware chunk size
       let offset = 0;
       let chunk = 0;
-      const totalChunks = Math.ceil(firmwareSize / chunkSize);
+      // add 30 fake chunks so progress bar has some space left for the restore modes
+      const totalChunks = Math.ceil(firmwareSize / chunkSize) + 30;
 
       while (offset < firmwareSize) {
         const bytesToSend = Math.min(chunkSize, firmwareSize - offset);
@@ -809,6 +840,8 @@ export default class VortexPort {
       }
       // wait for a final done
       await this.expectData(this.EDITOR_VERB_FLASH_FIRMWARE_DONE);
+      // deliver the last 30 fake chunks to progress so the progress bar fills
+      progressCallback(chunk + 30, totalChunks);
     } catch (error) {
       console.log("Firmware flash failed: " + error);
       Notification.failure('Firmware flash failed: ' + error.message);

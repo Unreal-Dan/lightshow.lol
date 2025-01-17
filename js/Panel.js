@@ -1,6 +1,7 @@
 /* Panel.js */
 export default class Panel {
   static panels = []; // Static list to track all panels
+  static topZIndex = 3; // Initialize the top Z-Index to the default panel Z-Index
 
   constructor(id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
@@ -53,6 +54,13 @@ export default class Panel {
 
     // Add this panel to the global list
     Panel.panels.push(this);
+  }
+
+  bringToFront() {
+    // Increment the static top Z-Index
+    Panel.topZIndex += 1;
+    // Set this panel's z-index to the new top Z-Index
+    this.panel.style.zIndex = Panel.topZIndex;
   }
 
   async handleDeviceEvent(deviceChangeEvent) {
@@ -217,13 +225,11 @@ export default class Panel {
       if (this.panel.classList.contains('mobile-panel')) {
         return;
       }
+      this.bringToFront();
       if (e.target === this.panel || e.target.closest('.panel-header')) {
         isDragging = true;
         offsetX = e.clientX - this.panel.offsetLeft;
         offsetY = e.clientY - this.panel.offsetTop;
-
-        this.panel.style.zIndex = 1000; // Bring the panel to the top
-        this.panel.style.position = 'absolute';
       }
     };
 

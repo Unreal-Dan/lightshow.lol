@@ -15,10 +15,13 @@ export default class DevicePanel extends Panel {
           <i class="fa-brands fa-usb"></i>
         </button>
       </div>
+      <div id="brightnessControl">
+        <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
+        <i class="fa-solid fa-sun" id="brightnessIcon"></i>
+      </div>
     `;
     super('devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
-    this.vortexPort = editor.vortexPort;
     this.selectedDevice = 'None';
   }
 
@@ -44,6 +47,19 @@ export default class DevicePanel extends Panel {
 
       document.getElementById('deviceTypeOptions').classList.toggle('show');
     });
+
+    // Brightness slider listener
+    //const brightnessSlider = document.getElementById('brightnessSlider');
+    //brightnessSlider.addEventListener('input', async (event) => {
+    //  const brightnessValue = event.target.value;
+    //  if (this.editor.vortexPort && this.editor.vortexPort.setBrightness) {
+    //    if (this.editor.vortexPort.isTransmitting === null) {
+    //      await this.editor.vortexPort.setBrightness(this.editor.vortexLib,
+    //        this.editor.lightshow.vortex, brightnessValue);
+    //      console.log(`Brightness set to ${brightnessValue}`);
+    //    }
+    //  }
+    //});
   }
 
   // call to disconnect the device
@@ -53,11 +69,11 @@ export default class DevicePanel extends Panel {
 
   async connectDevice() {
     try {
-      if (this.vortexPort.serialPort) {
+      if (this.editor.vortexPort.serialPort) {
         Notification.failure("Already connected");
         return;
       }
-      await this.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
+      await this.editor.vortexPort.requestDevice(deviceEvent => this.deviceChange(deviceEvent));
     } catch (error) {
       console.log("Error: " + error);
       Notification.failure('Failed to connect: ' + error.message);
@@ -67,11 +83,11 @@ export default class DevicePanel extends Panel {
   deviceChange(deviceEvent) {
     // name is either the selected device or on connect the vortexport name
     let deviceName = this.selectedDevice;
-    if (deviceEvent === 'connect' && this.vortexPort) {
-      deviceName = this.vortexPort.name;
+    if (deviceEvent === 'connect' && this.editor.vortexPort) {
+      deviceName = this.editor.vortexPort.name;
     } 
     // version is only available on conect
-    const deviceVersion = this.vortexPort ? this.vortexPort.version : 0;
+    const deviceVersion = this.editor.vortexPort ? this.editor.vortexPort.version : 0;
     // dispatch the device change event with the new device name and version
     document.dispatchEvent(new CustomEvent('deviceChange', { 
       detail: { deviceEvent, deviceName, deviceVersion }
@@ -98,13 +114,47 @@ export default class DevicePanel extends Panel {
     this.updateSelectedDevice(deviceName, true);
     this.lockDeviceSelection(true);
 
+    // Unlock and show brightness control
+    //this.toggleBrightnessSlider();
+
     // start reading and demo on device
     // not sure if this is actually necessary
-    this.vortexPort.startReading();
+    this.editor.vortexPort.startReading();
     this.editor.demoModeOnDevice();
 
     console.log("Device connected: " + deviceName);
     Notification.success("Successfully Connected " + deviceName);
+  }
+
+  toggleBrightnessSlider() {
+    const devicePanel = document.getElementById('devicePanel');
+    const patternParams = document.getElementById('patternParams');
+    const toggleButton = document.getElementById('togglePatternParams');
+
+    // Step 1: Capture the previous height and identify snapped panels
+    const previousHeight = devicePanel.offsetHeight;
+    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
+
+    const brightnessControl = document.getElementById('brightnessControl');
+    brightnessControl.style.display = 'flex';
+
+    // Step 2: Toggle the visibility
+    const isHidden = (brightnessControl.style.display === 'none');
+    if (isHidden) {
+      brightnessControl.style.display === 'flex';
+    } else {
+      brightnessControl.style.display === 'none';
+    }
+
+    // Step 3: Calculate the new height
+    const heightChange = devicePanel.offsetHeight - previousHeight;
+
+    // Step 4: Move snapped panels after the height change
+    snappedPanels.forEach((otherPanel) => {
+      otherPanel.moveSnappedPanels(heightChange);
+      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+    });
   }
 
   async onDeviceDisconnect() {
@@ -117,12 +167,15 @@ export default class DevicePanel extends Panel {
     connectDeviceButton.title = "Connect Device";
     //connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
 
-    this.vortexPort.resetState();
+    this.editor.vortexPort.resetState();
 
     // Restore event listener for connect
     connectDeviceButton.onclick = async () => {
       await this.connectDevice();
     };
+
+    // lock and hide brightness control
+    //this.toggleBrightnessSlider();
 
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
@@ -176,9 +229,9 @@ export default class DevicePanel extends Panel {
     const ledCount = this.editor.devices[this.selectedDevice].ledCount;
     if (ledCount !== undefined) {
       this.editor.lightshow.setLedCount(ledCount);
-      console.log(`Set LED count to ${ledCount} for ${this.vortexPort.name}`);
+      console.log(`Set LED count to ${ledCount} for ${this.editor.vortexPort.name}`);
     } else {
-      console.log(`Device name ${this.vortexPort.name} not recognized`);
+      console.log(`Device name ${this.editor.vortexPort.name} not recognized`);
     }
 
     // Update and show the LED Select Panel

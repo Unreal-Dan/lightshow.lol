@@ -184,7 +184,12 @@ export default class ChromalinkPanel extends Panel {
 
   async updateFirmware() {
     const progressBar = document.getElementById('firmwareProgressBar');
+    const progressContainer = document.querySelector('.chromalink-update-progress-container');
     try {
+      // Show the progress bar container and reset width
+      progressContainer.style.display = 'block';
+      progressBar.style.width = '0%';
+      // fetch latest firmware to flash
       console.log('Fetching latest firmware...');
       const firmwareResponse = await fetch(await this.getFirmwareUrl());
       if (!firmwareResponse.ok) {
@@ -204,6 +209,10 @@ export default class ChromalinkPanel extends Panel {
       if (this.isConnected) {
         await this.disconnect();
       }
+      // Hide the progress bar container after a short delay
+      setTimeout(() => {
+        progressContainer.style.display = 'none';
+      }, 1000);
     } catch (error) {
       Notification.failure('Firmware update failed: ' + error.message);
     }

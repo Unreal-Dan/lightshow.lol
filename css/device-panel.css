@@ -95,4 +95,19 @@
   opacity: 0.6;
 }
 
+#brightnessControl {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  width: 100%; /* Ensure it spans the full width of the parent */
+}
 
+#brightnessSlider {
+  flex: 1; /* Stretch the slider to take available space */
+}
+
+#brightnessIcon {
+  flex-shrink: 0; /* Prevent the icon from shrinking */
+  margin-left: 10px;
+}
