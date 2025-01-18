@@ -26,8 +26,8 @@ export default class VortexEditor {
     // Create and append canvas dynamically
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'lightshowCanvas';
-    this.canvas.width = 800;
-    this.canvas.height = 600;
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
     document.body.appendChild(this.canvas);
 
     // Initialize VortexPort
