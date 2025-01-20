@@ -12,6 +12,7 @@ import Modal from './Modal.js';
 import VortexPort from './VortexPort.js';
 import WelcomePanel from './WelcomePanel.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
+import CommunityBrowserPanel from './CommunityBrowserPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
@@ -48,6 +49,7 @@ export default class VortexEditor {
     this.colorPickerPanel = new ColorPickerPanel(this);
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
+    //this.communityBrowserPanel = new CommunityBrowserPanel(this);
 
     this.panels = [
       this.welcomePanel,
@@ -60,7 +62,8 @@ export default class VortexEditor {
       this.ledSelectPanel,
       this.colorPickerPanel,
       this.updatePanel,
-      this.chromalinkPanel
+      this.chromalinkPanel,
+      //this.communityBrowserPanel
     ];
     let allGood = true;
     this.panels.forEach((panel, index) => {

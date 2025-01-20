@@ -1,0 +1,105 @@
+/* vortex-community-browser-panel.css */
+
+#communityBrowserPanel {
+  /* Positioning is optional; adjust as needed */
+  top: 110px;
+  right: 10px;
+  position: absolute;
+}
+
+/* Container that holds the list of modes */
+#vcb-modes-container {
+  height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding-left: 5px;
+  margin-bottom: 10px;
+  background-color: #202020; /* Slightly darker background */
+}
+
+/* Each mode entry row */
+.community-mode-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid #454545;
+  margin: 5px 0;
+  width: 100%;
+  border-radius: 4px;
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+  background-color: #2a2a2a;
+}
+
+/* Change background on hover */
+.community-mode-entry:hover {
+  background-color: #333;
+}
+
+/* Optional "pressed" or "selected" states */
+.community-mode-entry.pressed {
+  background-color: #444;
+}
+.community-mode-entry.selected {
+  background-color: #3d3d3d;
+}
+
+/* The part that displays the mode’s name/title */
+.community-mode-name {
+  margin-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  user-select: none;
+  color: #d8d4cf;
+  font-size: 14px;
+}
+
+/* Container for action buttons on the right side of each mode entry */
+.community-mode-actions {
+  display: flex;
+  gap: 5px; /* small spacing between buttons */
+}
+
+/* Buttons in each mode entry */
+.community-mode-btn {
+  background-color: transparent;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #aaa;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.community-mode-btn:hover {
+  background-color: #444;
+  color: #eee;
+}
+
+/* Pagination or navigation buttons (Prev/Next) */
+#vcb-prev-btn,
+#vcb-next-btn {
+  background-color: #202020;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #d8d4cf;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+#vcb-prev-btn:hover,
+#vcb-next-btn:hover {
+  background-color: #333;
+}
+
+#vcb-page-label {
+  color: #d8d4cf;
+  line-height: 28px;
+  margin: 0 5px;
+}
+

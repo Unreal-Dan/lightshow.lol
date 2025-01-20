@@ -60,20 +60,7 @@ export default class ChromalinkPanel extends Panel {
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const firmwareData = new Uint8Array(e.target.result);
-        try {
-          await this.vortexPort.flashFirmware(
-            this.editor.vortexLib,
-            firmwareData,
-            (chunk, totalChunks) => {
-              const progress = Math.round((chunk / totalChunks) * 100);
-              document.getElementById('firmwareProgressBar').style.width = `${progress}%`;
-            }
-          );
-          Notification.success('Firmware flashed successfully.');
-        } catch (error) {
-          Notification.failure('Firmware flash failed: ' + error.message);
-        }
+        await this.flashFirmware(new Uint8Array(e.target.result));
       };
       reader.readAsArrayBuffer(file);
     });
@@ -182,21 +169,11 @@ export default class ChromalinkPanel extends Panel {
     return responseData.firmware?.fileUrl;
   }
 
-  async updateFirmware() {
-    const progressBar = document.getElementById('firmwareProgressBar');
-    const progressContainer = document.querySelector('.chromalink-update-progress-container');
+  async flashFirmware(firmwareData) {
+    // Show the progress bar container and reset width
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
     try {
-      // Show the progress bar container and reset width
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '0%';
-      // fetch latest firmware to flash
-      console.log('Fetching latest firmware...');
-      const firmwareResponse = await fetch(await this.getFirmwareUrl());
-      if (!firmwareResponse.ok) {
-        throw new Error('Failed to fetch firmware file.');
-      }
-      const firmwareData = new Uint8Array(await firmwareResponse.arrayBuffer());
-      Notification.success('Flashing Latest Duo Firmware...');
       await this.vortexPort.flashFirmware(
         this.editor.vortexLib,
         firmwareData,
@@ -205,14 +182,32 @@ export default class ChromalinkPanel extends Panel {
           progressBar.style.width = `${progress}%`;
         }
       );
-      Notification.success('Duo Firmware Successfully Updated');
-      if (this.isConnected) {
-        await this.disconnect();
+      Notification.success('Firmware flashed successfully.');
+    } catch (error) {
+      Notification.failure('Firmware flash failed: ' + error.message);
+    }
+    Notification.success('Duo Firmware Successfully Updated');
+    if (this.isConnected) {
+      await this.disconnect();
+    }
+    // Hide the progress bar container after a short delay
+    setTimeout(() => {
+      progressContainer.style.display = 'none';
+    }, 1000);
+  }
+
+  async updateFirmware() {
+    const progressBar = document.getElementById('firmwareProgressBar');
+    const progressContainer = document.querySelector('.chromalink-update-progress-container');
+    try {
+      // fetch latest firmware to flash
+      console.log('Fetching latest firmware...');
+      const firmwareResponse = await fetch(await this.getFirmwareUrl());
+      if (!firmwareResponse.ok) {
+        throw new Error('Failed to fetch firmware file.');
       }
-      // Hide the progress bar container after a short delay
-      setTimeout(() => {
-        progressContainer.style.display = 'none';
-      }, 1000);
+      Notification.success('Flashing Latest Duo Firmware...');
+      await this.flashFirmware(new Uint8Array(await firmwareResponse.arrayBuffer()));
     } catch (error) {
       Notification.failure('Firmware update failed: ' + error.message);
     }

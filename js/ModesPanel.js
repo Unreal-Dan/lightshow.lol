@@ -24,7 +24,7 @@ export default class ModesPanel extends Panel {
           <i class="fa-solid fa-satellite-dish"></i>
         </button>
       </div>
-      <div id="modesListScrollContainer" style="height:200px;">
+      <div id="modesListScrollContainer">
         <div id="modesListContainer">
           <!-- Dynamic list of modes will be populated here -->
         </div>

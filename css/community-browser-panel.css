@@ -1,0 +1,141 @@
+/* vortex-community-browser-panel.css */
+
+#communityBrowserPanel {
+  /* Positioning is optional; adjust as needed */
+  top: 683px;
+  left: 5px;
+  position: absolute;
+}
+
+/* Container that holds the list of modes */
+#vcb-modes-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding-left: 5px;
+  margin-bottom: 10px;
+  background-color: #202020; /* Slightly darker background */
+  width: 350px;
+  height: 150px;
+  overflow: auto;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+
+/* Each mode entry row */
+.community-mode-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  border: 1px solid #454545;
+  margin: 5px 0;
+  width: 95%;
+  border-radius: 4px;
+  transition: background-color 0.1s ease;
+  cursor: pointer;
+  background-color: #2a2a2a;
+}
+
+/* Change background on hover */
+.community-mode-entry:hover {
+  background-color: #333;
+}
+
+/* Optional "pressed" or "selected" states */
+.community-mode-entry.pressed {
+  background-color: #444;
+}
+.community-mode-entry.selected {
+  background-color: #3d3d3d;
+}
+
+/* The part that displays the mode’s name/title */
+.community-mode-name {
+  margin-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  user-select: none;
+  color: #d8d4cf;
+  font-size: 14px;
+}
+
+/* Container for action buttons on the right side of each mode entry */
+.community-mode-actions {
+  display: flex;
+  gap: 5px; /* small spacing between buttons */
+}
+
+/* Buttons in each mode entry */
+.community-mode-btn {
+  background-color: transparent;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #aaa;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  width: auto;
+}
+
+.community-mode-btn:hover {
+  background-color: #444;
+  color: #eee;
+}
+
+/* Pagination or navigation buttons (Prev/Next) */
+#vcb-prev-btn,
+#vcb-next-btn {
+  background-color: #202020;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  color: #d8d4cf;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  width: auto;
+}
+
+#vcb-prev-btn:hover,
+#vcb-next-btn:hover {
+  background-color: #333;
+}
+
+#vcb-page-label {
+  color: #d8d4cf;
+  line-height: 28px;
+  margin: 0 5px;
+}
+
+.vcb-filter-btn {
+  background: #0e0e0e;
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.vcb-filter-btn .filter-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.vcb-filter-btn:hover {
+  background-color: #5067ff;
+  transform: scale(1.05);
+}
+
+.vcb-filter-btn.active {
+  background-color: #007bff;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
