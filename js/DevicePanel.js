@@ -49,17 +49,30 @@ export default class DevicePanel extends Panel {
     });
 
     // Brightness slider listener
-    //const brightnessSlider = document.getElementById('brightnessSlider');
-    //brightnessSlider.addEventListener('input', async (event) => {
-    //  const brightnessValue = event.target.value;
-    //  if (this.editor.vortexPort && this.editor.vortexPort.setBrightness) {
-    //    if (this.editor.vortexPort.isTransmitting === null) {
-    //      await this.editor.vortexPort.setBrightness(this.editor.vortexLib,
-    //        this.editor.lightshow.vortex, brightnessValue);
-    //      console.log(`Brightness set to ${brightnessValue}`);
-    //    }
-    //  }
-    //});
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    brightnessSlider.addEventListener('input', async (event) => {
+      const brightness = event.target.value;
+      const vortexPort = this.editor.vortexPort;
+      if (vortexPort && vortexPort.setBrightness) {
+        if (vortexPort.isTransmitting === null) {
+          const vortexLib = this.editor.vortexLib;
+          const vortex = this.editor.lightshow.vortex;
+          // set the brightness of the device
+          await vortexPort.setBrightness(vortexLib, vortex, brightness);
+          // set the demo color
+          const rgbcol = new vortexLib.RGBColor(brightness, brightness, 0);
+          await vortexPort.demoColor(vortexLib, vortex, rgbcol);
+          // log the new brightness
+          console.log(`Brightness set to ${brightness}`);
+        }
+      }
+    });
+    // Extra action when the slider is released
+    brightnessSlider.addEventListener('change', async (event) => {
+      console.log("Slider interaction finished. Performing extra action...");
+      this.editor.demoModeOnDevice();
+      // Add any additional code you want here
+    });
   }
 
   // call to disconnect the device
@@ -115,7 +128,7 @@ export default class DevicePanel extends Panel {
     this.lockDeviceSelection(true);
 
     // Unlock and show brightness control
-    //this.toggleBrightnessSlider();
+    this.toggleBrightnessSlider();
 
     // start reading and demo on device
     // not sure if this is actually necessary
@@ -175,7 +188,7 @@ export default class DevicePanel extends Panel {
     };
 
     // lock and hide brightness control
-    //this.toggleBrightnessSlider();
+    this.toggleBrightnessSlider();
 
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
