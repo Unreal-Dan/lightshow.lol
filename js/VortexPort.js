@@ -40,17 +40,19 @@ export default class VortexPort {
   EDITOR_VERB_FLASH_FIRMWARE_ACK    = "J";
   EDITOR_VERB_FLASH_FIRMWARE_DONE   = "K";
   EDITOR_VERB_SET_GLOBAL_BRIGHTNESS = "L";
+  EDITOR_VERB_GET_GLOBAL_BRIGHTNESS = "M";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
   isTransmitting = null; // Flag to track if a transmission is active
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-  constructor() {
+  constructor(editor) {
     this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
     this.debugLogging = false;
+    this.editor = editor;
   }
 
   cancelListening() {
@@ -138,18 +140,6 @@ export default class VortexPort {
     }
   }
 
-  // helper for 1.3.0 compatibility version check
-  isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
-    const currentParts = currentVersion.split('.').map(Number);
-    const targetParts = targetVersion.split('.').map(Number);
-
-    for (let i = 0; i < targetParts.length; i++) {
-      if (currentParts[i] > targetParts[i]) return true;
-      if (currentParts[i] < targetParts[i]) return false;
-    }
-    return true;
-  }
-
   listenForGreeting = async () => {
     let tries = 0;
     while (!this.portActive && !this.cancelListeningForGreeting && tries++ < 30) {
@@ -197,7 +187,7 @@ export default class VortexPort {
             //}
 
             // 1.3.0 compatibility layer
-            this.useNewPushPull = this.isVersionGreaterOrEqual(this.version, '1.3.0');
+            this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -443,7 +433,7 @@ export default class VortexPort {
     if (this.isTransmitting) {
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
-    if (this.debugLogging) console.log("connectChromaLink Start");
+    if (this.debugLogging) console.log("setBrightness Start");
     this.isTransmitting = 'setBrightness'; // Reset the transmitting flag
     try {
       await this.cancelReading();
@@ -460,6 +450,36 @@ export default class VortexPort {
       this.startReading();
       this.isTransmitting = null; // Reset the transmitting flag
     }
+  }
+
+  async getBrightness(vortexLib, vortex) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      throw new Error('Already transmitting:' + this.isTransmitting);
+    }
+    if (this.debugLogging) console.log("getBrightness Start");
+    this.isTransmitting = 'getBrightness'; // Reset the transmitting flag
+    console.log("Getting brightness...");
+    let brightness = 255;
+    try {
+      await this.cancelReading();
+      // Start the connection process
+      await this.sendCommand(this.EDITOR_VERB_GET_GLOBAL_BRIGHTNESS);
+      const brightnessBuf = await this.readByteStream(vortexLib);
+      let brightnessStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromRawData(brightnessBuf, brightnessStream);
+      // this is quite dumb, idk I guess header is 12 bytes so 13th byte is the one data byte
+      brightness = brightnessBuf['12'];
+    } catch (error) {
+      console.error('Error setting brightness:', error);
+    } finally {
+      this.startReading();
+      this.isTransmitting = null; // Reset the transmitting flag
+    }
+    console.log("Got brightness: " + brightness);
+    return brightness;
   }
 
   async pushEachToDevice(vortexLib, vortex) {

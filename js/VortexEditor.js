@@ -32,7 +32,7 @@ export default class VortexEditor {
     document.body.appendChild(this.canvas);
 
     // Initialize VortexPort
-    this.vortexPort = new VortexPort();
+    this.vortexPort = new VortexPort(this);
 
     // Instantiate Lightshow
     this.lightshow = new Lightshow(vortexLib, this.canvas);
@@ -232,6 +232,18 @@ export default class VortexEditor {
       // apply the mobile layout
       this.applyLayout();
     }
+  }
+
+  // helper for 1.3.0 compatibility version check
+  isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
+    const currentParts = currentVersion.split('.').map(Number);
+    const targetParts = targetVersion.split('.').map(Number);
+
+    for (let i = 0; i < targetParts.length; i++) {
+      if (currentParts[i] > targetParts[i]) return true;
+      if (currentParts[i] < targetParts[i]) return false;
+    }
+    return true;
   }
 
   setActiveTab(panelId) {
