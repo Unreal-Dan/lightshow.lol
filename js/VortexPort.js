@@ -755,7 +755,7 @@ export default class VortexPort {
         // seems to be an issue where it gets stuck on mode 3 (the first flash mode),
         // something to do with the underlying updi connection getting hung up and idk
         // why but the sleep fixes it lol
-        await this.sleep(10);
+        //await this.sleep(10);
       }
     } catch (error) {
       console.error('Error pulling modes from Duo via Chromalink:', error);
@@ -831,7 +831,8 @@ export default class VortexPort {
       await this.expectData(this.EDITOR_VERB_READY);
 
       // Step 4: Send firmware data in chunks
-      const chunkSize = 128;  // Firmware chunk size
+      // NOTE: don't increase the chunkSize
+      const chunkSize = 128;
       let offset = 0;
       let chunk = 0;
       // add 30 fake chunks so progress bar has some space left for the restore modes

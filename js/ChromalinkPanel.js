@@ -171,6 +171,8 @@ export default class ChromalinkPanel extends Panel {
 
   async flashFirmware(firmwareData) {
     // Show the progress bar container and reset width
+    const progressContainer = document.querySelector('.chromalink-update-progress-container');
+    const progressBar = document.getElementById('firmwareProgressBar');
     progressContainer.style.display = 'block';
     progressBar.style.width = '0%';
     try {
@@ -197,8 +199,6 @@ export default class ChromalinkPanel extends Panel {
   }
 
   async updateFirmware() {
-    const progressBar = document.getElementById('firmwareProgressBar');
-    const progressContainer = document.querySelector('.chromalink-update-progress-container');
     try {
       // fetch latest firmware to flash
       console.log('Fetching latest firmware...');

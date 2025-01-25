@@ -67,9 +67,7 @@ export default class DevicePanel extends Panel {
     });
     // Extra action when the slider is released
     brightnessSlider.addEventListener('change', async (event) => {
-      console.log("Slider interaction finished. Performing extra action...");
       this.editor.demoModeOnDevice();
-      // Add any additional code you want here
     });
   }
 
