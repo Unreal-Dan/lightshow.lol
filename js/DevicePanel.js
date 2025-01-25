@@ -5,13 +5,13 @@ export default class DevicePanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="deviceConnectionSection">
-        <div id="deviceTypeContainer" class="custom-dropdown">
+        <div id="deviceTypeContainer" class="custom-dropdown" title="Pick which device is simulated">
           <div id="deviceTypeSelected" class="custom-dropdown-select">Select Device</div>
           <div id="deviceTypeOptions" class="custom-dropdown-options">
             <!-- Device options populated dynamically -->
           </div>
         </div>
-        <button id="connectDeviceButton" class="device-control-btn" title="Connect Device">
+        <button id="connectDeviceButton" class="device-control-btn" title="Connect a device over USB">
           <i class="fa-brands fa-usb"></i>
         </button>
       </div>
