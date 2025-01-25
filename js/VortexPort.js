@@ -437,18 +437,14 @@ export default class VortexPort {
   }
 
   async setBrightness(vortexLib, vortex, brightness) {
-    console.log("Trying " + brightness);
     if (!this.isActive()) {
-      console.log(" Not active " + brightness);
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      console.log(" already transmitting " + brightness);
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
     if (this.debugLogging) console.log("connectChromaLink Start");
     this.isTransmitting = 'setBrightness'; // Reset the transmitting flag
-      console.log("Start " + brightness);
     try {
       await this.cancelReading();
       // Start the connection process
@@ -463,7 +459,6 @@ export default class VortexPort {
     } finally {
       this.startReading();
       this.isTransmitting = null; // Reset the transmitting flag
-      console.log("Done " + brightness);
     }
   }
 
@@ -845,7 +840,7 @@ export default class VortexPort {
       // deliver the last 30 fake chunks to progress so the progress bar fills
       progressCallback(chunk + 30, totalChunks);
     } catch (error) {
-      console.log("Firmware flash failed: " + error);
+      console.error("Firmware flash failed: " + error);
       Notification.failure('Firmware flash failed: ' + error.message);
     }
   }
@@ -865,7 +860,7 @@ export default class VortexPort {
       if (this.debugLogging) console.log("RECEIVED BYTE:" + JSON.stringify(result));
     } catch (error) {
       // do nothing?
-      console.log("Failed to read: " + error);
+      console.error("Failed to read: " + error);
     }
     this.reader.releaseLock();
     this.reader = null;
