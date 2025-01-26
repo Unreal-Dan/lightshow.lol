@@ -120,7 +120,7 @@ export default class AnimationPanel extends Panel {
     this.attachShapeButtonListeners();
 
     // hide the spread slider
-    this.spreadDiv = document.getElementById('spread_div');
+    this.toggleSpreadSlider();
   }
 
   applyMobileLayout() {
@@ -155,11 +155,46 @@ export default class AnimationPanel extends Panel {
   }
 
   showSpreadSlider() {
-    this.spreadDiv.style.display = 'block';
+    const spreadDiv = document.getElementById('spread_div');
+    if (spreadDiv.style.display === 'none') {
+      this.toggleSpreadSlider();
+    }
   }
 
   hideSpreadSlider() {
-    this.spreadDiv.style.display = 'none';
+    const spreadDiv = document.getElementById('spread_div');
+    if (spreadDiv.style.display === 'flex') {
+      this.toggleSpreadSlider();
+    }
+  }
+
+  toggleSpreadSlider() {
+    const animationPanel = document.getElementById('animationPanel');
+    const spreadDiv = document.getElementById('spread_div');
+
+    // Step 1: Capture the previous height and identify snapped panels
+    const previousHeight = animationPanel.offsetHeight;
+    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
+
+    // Step 2: Toggle the visibility
+    const isHidden = (spreadDiv.style.display === 'none');
+
+    // Update the toggle button icon
+    if (isHidden) {
+      spreadDiv.style.display = 'flex';
+    } else {
+      spreadDiv.style.display = 'none';
+    }
+
+    // Step 3: Calculate the new height
+    const heightChange = animationPanel.offsetHeight - previousHeight;
+
+    // Step 4: Move snapped panels after the height change
+    snappedPanels.forEach((otherPanel) => {
+      otherPanel.moveSnappedPanels(heightChange);
+      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+    });
   }
 
   attachShapeButtonListeners() {
@@ -191,6 +226,11 @@ export default class AnimationPanel extends Panel {
 
   async onDeviceSelected(deviceName) {
     // nothing yet
+    if (deviceName === 'None') {
+      this.hideSpreadSlider();
+    } else {
+      this.showSpreadSlider();
+    }
   }
 }
 

@@ -5,13 +5,13 @@ export default class DevicePanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="deviceConnectionSection">
-        <div id="deviceTypeContainer" class="custom-dropdown">
+        <div id="deviceTypeContainer" class="custom-dropdown" title="Pick which device is simulated">
           <div id="deviceTypeSelected" class="custom-dropdown-select">Select Device</div>
           <div id="deviceTypeOptions" class="custom-dropdown-options">
             <!-- Device options populated dynamically -->
           </div>
         </div>
-        <button id="connectDeviceButton" class="device-control-btn" title="Connect Device">
+        <button id="connectDeviceButton" class="device-control-btn" title="Connect a device over USB">
           <i class="fa-brands fa-usb"></i>
         </button>
       </div>
@@ -49,17 +49,26 @@ export default class DevicePanel extends Panel {
     });
 
     // Brightness slider listener
-    //const brightnessSlider = document.getElementById('brightnessSlider');
-    //brightnessSlider.addEventListener('input', async (event) => {
-    //  const brightnessValue = event.target.value;
-    //  if (this.editor.vortexPort && this.editor.vortexPort.setBrightness) {
-    //    if (this.editor.vortexPort.isTransmitting === null) {
-    //      await this.editor.vortexPort.setBrightness(this.editor.vortexLib,
-    //        this.editor.lightshow.vortex, brightnessValue);
-    //      console.log(`Brightness set to ${brightnessValue}`);
-    //    }
-    //  }
-    //});
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    brightnessSlider.addEventListener('input', async (event) => {
+      const brightness = event.target.value;
+      const vortexPort = this.editor.vortexPort;
+      if (vortexPort && vortexPort.setBrightness) {
+        if (vortexPort.isTransmitting === null) {
+          const vortexLib = this.editor.vortexLib;
+          const vortex = this.editor.lightshow.vortex;
+          // set the brightness of the device
+          await vortexPort.setBrightness(vortexLib, vortex, brightness);
+          // set the demo color
+          const rgbcol = new vortexLib.RGBColor(brightness, brightness, 0);
+          await vortexPort.demoColor(vortexLib, vortex, rgbcol);
+        }
+      }
+    });
+    // Extra action when the slider is released
+    brightnessSlider.addEventListener('change', async (event) => {
+      this.editor.demoModeOnDevice();
+    });
   }
 
   // call to disconnect the device
@@ -114,8 +123,15 @@ export default class DevicePanel extends Panel {
     this.updateSelectedDevice(deviceName, true);
     this.lockDeviceSelection(true);
 
-    // Unlock and show brightness control
-    //this.toggleBrightnessSlider();
+    // brightness added and versions rolled to 1.5.x at same time
+    // TODO: removeme this 1.3.0 check is for dev testing
+    if (this.editor.isVersionGreaterOrEqual(deviceVersion, '1.5.0') || deviceVersion === '1.3.0') {
+      const vortexLib = this.editor.vortexLib;
+      const vortex = this.editor.lightshow.vortex;
+      const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
+      // Unlock and show brightness control
+      this.toggleBrightnessSlider(deviceBrightness);
+    }
 
     // start reading and demo on device
     // not sure if this is actually necessary
@@ -126,10 +142,16 @@ export default class DevicePanel extends Panel {
     Notification.success("Successfully Connected " + deviceName);
   }
 
-  toggleBrightnessSlider() {
+  isBrightnessHidden() {
+    const brightnessControl = document.getElementById('brightnessControl');
+    return (brightnessControl.style.display === 'none');
+  }
+
+  toggleBrightnessSlider(brightness = 255) {
     const devicePanel = document.getElementById('devicePanel');
     const patternParams = document.getElementById('patternParams');
     const toggleButton = document.getElementById('togglePatternParams');
+    const brightnessSlider = document.getElementById('brightnessSlider');
 
     // Step 1: Capture the previous height and identify snapped panels
     const previousHeight = devicePanel.offsetHeight;
@@ -155,6 +177,8 @@ export default class DevicePanel extends Panel {
       const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
       otherPanel.panel.style.top = `${currentTop + heightChange}px`;
     });
+
+    brightnessSlider.value = brightness;
   }
 
   async onDeviceDisconnect() {
@@ -174,8 +198,10 @@ export default class DevicePanel extends Panel {
       await this.connectDevice();
     };
 
-    // lock and hide brightness control
-    //this.toggleBrightnessSlider();
+    // lock and hide brightness control only if it's showing
+    if (!this.isBrightnessHidden()) {
+      this.toggleBrightnessSlider();
+    }
 
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
