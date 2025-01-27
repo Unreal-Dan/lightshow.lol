@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
+import Modal from './Modal.js';
 
 export default class ChromalinkPanel extends Panel {
   constructor(editor) {
@@ -30,6 +31,7 @@ export default class ChromalinkPanel extends Panel {
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;
+    this.confirmationModal = new Modal('flash-confirmation');
   }
 
   initialize() {
@@ -66,7 +68,25 @@ export default class ChromalinkPanel extends Panel {
     });
 
     updateButton.addEventListener('click', async () => {
-      await this.updateFirmware();
+      this.confirmationModal.show({
+        title: 'Confirm Firmware Flash',
+        blurb: 'Are you sure you want to update the Duo firmware?',
+        buttons: [
+          {
+            label: '',
+            onClick: () => this.confirmationModal.hide(),
+            customHtml: '<button class="modal-button cancel-button">No</button>',
+          },
+          {
+            label: '',
+            onClick: () => {
+              this.confirmationModal.hide();
+              this.updateFirmware();
+            },
+            customHtml: '<button class="modal-button proceed-button">Yes</button>',
+          },
+        ],
+      });
     });
 
     this.hide();

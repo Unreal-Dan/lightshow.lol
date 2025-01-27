@@ -113,9 +113,13 @@ export default class Modal {
   }
 
   createButton(buttonConfig) {
-    const button = document.createElement('button');
-    button.textContent = buttonConfig.label;
-    button.addEventListener('click', buttonConfig.onClick);
+    const button = document.createElement('div');
+    if (buttonConfig.customHtml) {
+      button.innerHTML = buttonConfig.customHtml; // Use custom HTML if provided
+    } else {
+      button.textContent = buttonConfig.label;
+    }
+    button.firstChild.addEventListener('click', buttonConfig.onClick); // Attach the event to the first child
     return button;
   }
 
