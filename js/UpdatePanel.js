@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
+import Modal from './Modal.js';
 
 export default class UpdatePanel extends Panel {
   constructor(editor) {
@@ -31,6 +32,8 @@ export default class UpdatePanel extends Panel {
     this.forcedUpdate = false;
     // this is used for the updating process
     this.espStub = null;
+    // update confirmation modal
+    this.confirmationModal = new Modal('flash-confirmation');
   }
 
   initialize() {
@@ -341,35 +344,56 @@ export default class UpdatePanel extends Panel {
     if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
       // Attach the flash button event listener
       const flashButton = document.getElementById('updateFlash');
-      flashButton.addEventListener('click', async () => {
-        const updateProgress = document.getElementById('updateProgress');
-        try {
-          Notification.success('Starting firmware update...');
-          updateProgress.textContent = 'Initializing firmware update...';
-          // if there is no vortexPort.serialPort that means this update
-          // windows was forced open with 'insert' and there is no active
-          // device connection yet. So simply request a new device connection
-          // that will be used exclusively for the update
-          if (!this.vortexPort.serialPort) {
-            this.serialPort = await navigator.serial.requestPort();
-            if (!this.serialPort) {
-              throw new Error('Failed to open serial port');
-            }
-            await this.serialPort.open({ baudRate: 115200 });
-            // is this necessary...? I don't remember why it's here
-            await this.serialPort.setSignals({ dataTerminalReady: true });
-          }
-          await this.initializeESPFlasher();
-          await this.fetchAndFlashFirmware();
-          updateProgress.textContent = 'Firmware update completed successfully!';
-          Notification.success('Firmware updated successfully.');
-        } catch (error) {
-          updateProgress.textContent = 'Firmware update failed.';
-          Notification.failure('Firmware update failed: ' + error.message);
-          console.error(error);
-        }
+
+      flashButton.addEventListener('click', () => {
+        this.confirmationModal.show({
+          title: 'Confirm Firmware Flash',
+          blurb: 'Are you sure you want to update the Duo firmware?',
+          buttons: [
+            {
+              label: '',
+              onClick: () => this.confirmationModal.hide(),
+              customHtml: '<button class="modal-button cancel-button">No</button>',
+            },
+            {
+              label: '',
+              onClick: () => {
+                this.confirmationModal.hide();
+                this.handleFirmwareUpdate(); // Call the organized method here
+              },
+              customHtml: '<button class="modal-button proceed-button">Yes</button>',
+            },
+          ],
+        });
       });
     }
     this.show();
+  }
+
+  async handleFirmwareUpdate() {
+    const updateProgress = document.getElementById('updateProgress');
+    try {
+      Notification.success('Starting firmware update...');
+      updateProgress.textContent = 'Initializing firmware update...';
+
+      // Check for active device connection or request a new one
+      if (!this.vortexPort.serialPort) {
+        this.serialPort = await navigator.serial.requestPort();
+        if (!this.serialPort) {
+          throw new Error('Failed to open serial port');
+        }
+        await this.serialPort.open({ baudRate: 115200 });
+        await this.serialPort.setSignals({ dataTerminalReady: true });
+      }
+
+      await this.initializeESPFlasher();
+      await this.fetchAndFlashFirmware();
+      updateProgress.textContent = 'Firmware update completed successfully!';
+      Notification.success('Firmware updated successfully.');
+    } catch (error) {
+      updateProgress.textContent = 'Firmware update failed.';
+      Notification.failure('Firmware update failed: ' + error.message);
+      console.error(error);
+    }
   }
 }
