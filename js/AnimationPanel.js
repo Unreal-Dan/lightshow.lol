@@ -163,7 +163,7 @@ export default class AnimationPanel extends Panel {
 
   hideSpreadSlider() {
     const spreadDiv = document.getElementById('spread_div');
-    if (spreadDiv.style.display === 'flex') {
+    if (spreadDiv.style.display !== 'none') {
       this.toggleSpreadSlider();
     }
   }
@@ -181,7 +181,7 @@ export default class AnimationPanel extends Panel {
 
     // Update the toggle button icon
     if (isHidden) {
-      spreadDiv.style.display = 'flex';
+      spreadDiv.style.display = 'block';
     } else {
       spreadDiv.style.display = 'none';
     }

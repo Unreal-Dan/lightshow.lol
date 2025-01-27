@@ -192,6 +192,9 @@ export default class ChromalinkPanel extends Panel {
     if (this.isConnected) {
       await this.disconnect();
     }
+    if (this.editor.updatePanel.isVisible) {
+      this.editor.updatePanel.hide();
+    }
     // Hide the progress bar container after a short delay
     setTimeout(() => {
       progressContainer.style.display = 'none';
