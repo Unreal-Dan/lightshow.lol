@@ -233,6 +233,7 @@ export default class VortexPort {
 
   startReading() {
     // todo: implement async read waiting for quit that can be canceled
+    // lol this function is called all over the place and does nothing
   }
 
   cancelReading() {

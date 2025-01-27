@@ -35,7 +35,8 @@ export default class DevicePanel extends Panel {
     document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
       if (event.target.classList.contains('custom-dropdown-option')) {
         const selectedValue = event.target.getAttribute('data-value');
-        this.updateSelectedDevice(selectedValue);
+        this.updateSelectedDevice(selectedValue, true);
+        Notification.success(`Selected Device: '${selectedValue}'`);
       }
     });
 
@@ -50,25 +51,36 @@ export default class DevicePanel extends Panel {
 
     // Brightness slider listener
     const brightnessSlider = document.getElementById('brightnessSlider');
-    brightnessSlider.addEventListener('input', async (event) => {
-      const brightness = event.target.value;
-      const vortexPort = this.editor.vortexPort;
-      if (vortexPort && vortexPort.setBrightness) {
-        if (vortexPort.isTransmitting === null) {
-          const vortexLib = this.editor.vortexLib;
-          const vortex = this.editor.lightshow.vortex;
-          // set the brightness of the device
-          await vortexPort.setBrightness(vortexLib, vortex, brightness);
-          // set the demo color
-          const rgbcol = new vortexLib.RGBColor(brightness, brightness, 0);
-          await vortexPort.demoColor(vortexLib, vortex, rgbcol);
-        }
+    brightnessSlider.addEventListener('input', this.onBrightnessSliderInput.bind(this));
+    brightnessSlider.addEventListener('change', this.onBrightnessSliderChange.bind(this));
+  }
+
+  // when the slider is slid around
+  async onBrightnessSliderInput(event) {
+    const brightness = event.target.value;
+    const vortexPort = this.editor.vortexPort;
+    if (vortexPort && vortexPort.setBrightness) {
+      if (vortexPort.isTransmitting === null) {
+        const vortexLib = this.editor.vortexLib;
+        const vortex = this.editor.lightshow.vortex;
+        // demo the color on the device
+        const rgbcol = new vortexLib.RGBColor(brightness, brightness, 0);
+        await vortexPort.demoColor(vortexLib, vortex, rgbcol);
       }
-    });
-    // Extra action when the slider is released
-    brightnessSlider.addEventListener('change', async (event) => {
-      this.editor.demoModeOnDevice();
-    });
+    }
+  }
+
+  // when the slider is finally released
+  async onBrightnessSliderChange(event) {
+    // if it's a duo we don't update the brightness till the final 'change'
+    if (this.selectedDevice === 'Duo') {
+      // do nothing
+    } else {
+      // otherwise set the brightness of the device
+      await vortexPort.setBrightness(vortexLib, vortex, brightness);
+    }
+    // then go back to demoing the mode
+    await this.editor.demoModeOnDevice();
   }
 
   // call to disconnect the device
@@ -98,6 +110,11 @@ export default class DevicePanel extends Panel {
     // version is only available on conect
     const deviceVersion = this.editor.vortexPort ? this.editor.vortexPort.version : 0;
     // dispatch the device change event with the new device name and version
+    this.deviceChangeNotification(deviceEvent, deviceName, deviceVersion);
+  }
+
+  deviceChangeNotification(deviceEvent, deviceName, deviceVersion) {
+    // dispatch the device change event with the new device name and version
     document.dispatchEvent(new CustomEvent('deviceChange', { 
       detail: { deviceEvent, deviceName, deviceVersion }
     }));
@@ -120,7 +137,7 @@ export default class DevicePanel extends Panel {
     document.getElementById('deviceTypeSelected').classList.add('locked');
 
     // Update selected device
-    this.updateSelectedDevice(deviceName, true);
+    this.updateSelectedDevice(deviceName);
     this.lockDeviceSelection(true);
 
     // brightness added and versions rolled to 1.5.x at same time
@@ -136,7 +153,7 @@ export default class DevicePanel extends Panel {
     // start reading and demo on device
     // not sure if this is actually necessary
     this.editor.vortexPort.startReading();
-    this.editor.demoModeOnDevice();
+    await this.editor.demoModeOnDevice();
 
     console.log("Device connected: " + deviceName);
     Notification.success("Successfully Connected " + deviceName);
@@ -144,7 +161,7 @@ export default class DevicePanel extends Panel {
 
   isBrightnessHidden() {
     const brightnessControl = document.getElementById('brightnessControl');
-    return (brightnessControl.style.display === 'none');
+    return (brightnessControl.style.display === '');
   }
 
   toggleBrightnessSlider(brightness = 255) {
@@ -158,14 +175,12 @@ export default class DevicePanel extends Panel {
     const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
 
     const brightnessControl = document.getElementById('brightnessControl');
-    brightnessControl.style.display = 'flex';
 
     // Step 2: Toggle the visibility
-    const isHidden = (brightnessControl.style.display === 'none');
-    if (isHidden) {
-      brightnessControl.style.display === 'flex';
+    if (brightnessControl.style.display === '') {
+      brightnessControl.style.display = 'flex';
     } else {
-      brightnessControl.style.display === 'none';
+      brightnessControl.style.display = '';
     }
 
     // Step 3: Calculate the new height
@@ -215,7 +230,15 @@ export default class DevicePanel extends Panel {
   }
 
   async onDeviceSelected(deviceName) {
-    Notification.success(`Selected '${deviceName}`);
+    if (deviceName === 'Duo') {
+      if (!this.isBrightnessHidden()) {
+        this.toggleBrightnessSlider();
+      }
+    } else {
+      if (this.isBrightnessHidden()) {
+        this.toggleBrightnessSlider();
+      }
+    }
   }
 
   addIconsToDropdown() {
@@ -229,7 +252,7 @@ export default class DevicePanel extends Panel {
     }).join('');
   }
 
-  updateSelectedDevice(device) {
+  updateSelectedDevice(device, notify = false) {
     const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const deviceIcon = this.editor.devices[device].icon;
 
@@ -262,6 +285,11 @@ export default class DevicePanel extends Panel {
 
     // Update and show the LED Select Panel
     this.editor.ledSelectPanel.updateSelectedDevice(device);
+
+    // dispatch the device change event with the device name and version
+    if (notify) {
+      this.deviceChangeNotification('select', this.selectedDevice, this.editor.vortexPort.version);
+    }
   }
 
   lockDeviceSelection(locked) {

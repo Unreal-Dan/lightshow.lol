@@ -5,7 +5,7 @@ export default class ChromalinkPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="chromalinkOptions">
-        <button id="chromalinkConnect" class="chromalink-button">Connect Duo</button>
+        <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo">Connect Duo</button>
         <div id="chromalinkDetails" style="display: none;">
           <div class="device-info">
             <img src="./public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
@@ -16,8 +16,8 @@ export default class ChromalinkPanel extends Panel {
             </div>
           </div>
         </div>
-        <button id="chromalinkFlash" class="chromalink-button">Flash Custom Firmware</button>
-        <button id="chromalinkUpdate" class="chromalink-button">Update Firmware</button>
+        <button id="chromalinkFlash" class="chromalink-button" title="Flash a custom Duo firmware">Flash Custom Firmware</button>
+        <button id="chromalinkUpdate" class="chromalink-button" title="Flash latest Duo firmware">Update Firmware</button>
         <div class="chromalink-update-progress-container">
           <div id="firmwareProgress" class="chromalink-update-progress-bar">
             <div id="firmwareProgressBar"></div>
@@ -122,7 +122,7 @@ export default class ChromalinkPanel extends Panel {
       chromalinkDetails.style.display = 'block';
       // give a notification
       if (notify) {
-        Notification.success('Successfully Chromalinked Duo v' + this.duoHeader.version);
+        Notification.success('Successfully Chromalinked Duo');
       }
     } catch (error) {
       Notification.failure('Failed to connect: ' + error.message);
