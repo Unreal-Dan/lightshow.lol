@@ -407,6 +407,7 @@ export default class ColorsetPanel extends Panel {
         container.textContent = '+';
         container.addEventListener('click', () => {
           this.addColor();
+          this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
         });
       } else {
         container.classList.add('empty');
