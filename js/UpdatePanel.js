@@ -298,18 +298,23 @@ export default class UpdatePanel extends Panel {
       return;
     }
 
-    // Show download links for orbit, handle, and gloves
-    if (['orbit', 'handle', 'gloves', 'duo'].includes(lowerDevice)) {
+    if (lowerDevice === 'duo') {
+      // Show download links for duo
+      content += `
+        <div class="firmware-buttons">
+          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+        </div>
+      `;
+    } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
+      // Show download links for orbit, handle, and gloves
       content += `
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
           <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
-    }
-
-    // Show update button and progress bar for chromadeck and spark
-    if (['chromadeck', 'spark'].includes(lowerDevice)) {
+    } else if (['chromadeck', 'spark'].includes(lowerDevice)) {
+      // Show update button and progress bar for chromadeck and spark
       content += `
         <button id="updateFlash" class="update-button">Update Firmware Now</button>
         <div class="update-progress-container">
