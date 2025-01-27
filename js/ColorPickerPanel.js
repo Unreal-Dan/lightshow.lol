@@ -6,7 +6,7 @@ export default class ColorPickerPanel extends Panel {
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.selectedIndex = 0;
-    this.colorState = { r: 0, g: 0, b: 0, h: 0, s: 0, v: 0 };
+    this.colorState = { r: 255, g: 0, b: 0, h: 0, s: 255, v: 255 };
     this.preventPropagation = false; // Prevent infinite update loops
   }
 

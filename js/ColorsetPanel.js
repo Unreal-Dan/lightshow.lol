@@ -407,7 +407,7 @@ export default class ColorsetPanel extends Panel {
         container.textContent = '+';
         container.addEventListener('click', () => {
           this.addColor();
-          this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+          this.editor.colorPickerPanel.open(i, cur.getColorset(this.targetLed), this.updateColor.bind(this));
         });
       } else {
         container.classList.add('empty');
@@ -453,7 +453,7 @@ export default class ColorsetPanel extends Panel {
   }
 
   addColor() {
-    this.lightshow.addColor(255, 255, 255, this.targetLeds);
+    this.lightshow.addColor(255, 0, 0, this.targetLeds);
     this.refreshColorset();
     // demo on device
     this.editor.demoModeOnDevice();
