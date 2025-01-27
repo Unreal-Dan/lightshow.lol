@@ -402,7 +402,8 @@ export default class VortexPort {
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
     if (!vortex.engine().modes().curMode()) {
-      throw new Error('No current mode');
+      // no error just return, no mode to demo
+      return;
     }
     if (this.debugLogging) console.log("demoCurMode Start");
     this.isTransmitting = 'demoCurMode'; // Set the transmitting flag
