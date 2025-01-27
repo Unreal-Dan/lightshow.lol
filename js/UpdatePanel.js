@@ -348,7 +348,7 @@ export default class UpdatePanel extends Panel {
       flashButton.addEventListener('click', () => {
         this.confirmationModal.show({
           title: 'Confirm Firmware Flash',
-          blurb: 'Are you sure you want to update the Duo firmware?',
+          blurb: `Are you sure you want to update the ${device} firmware?`,
           buttons: [
             {
               label: '',

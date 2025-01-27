@@ -31,7 +31,7 @@ export default class ChromalinkPanel extends Panel {
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;
-    this.confirmationModal = new Modal('flash-confirmation');
+    this.confirmationModal = new Modal('duo-flash-confirmation');
   }
 
   initialize() {

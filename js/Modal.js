@@ -38,8 +38,8 @@ export default class Modal {
     this.lightshowCanvas = document.getElementById("lightshowCanvas");
     this.modal = document.getElementById("modal_" + id);
     this.modalInput = document.getElementById("modalInput_" + id);
-    this.modalTitle = this.modal.querySelector('.modal-title');
-    this.modalButtons = this.modal.querySelector('.modal-buttons');
+    this.modalTitle = this.modal ? this.modal.querySelector('.modal-title') : null;
+    this.modalButtons = this.modal ? this.modal.querySelector('.modal-buttons') : null;
   }
 
   setupEventListeners() {
@@ -56,6 +56,9 @@ export default class Modal {
   show(config) {
     if (!this.modal || !this.modalInput) {
       this.cacheElements(this.modalId);
+      if (!this.modal || !this.modalInput) {
+        return;
+      }
     }
 
     if (this.currentInputListener) {
