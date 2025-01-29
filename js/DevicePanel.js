@@ -77,7 +77,7 @@ export default class DevicePanel extends Panel {
       // do nothing
     } else {
       // otherwise set the brightness of the device
-      await vortexPort.setBrightness(vortexLib, vortex, brightness);
+      await this.vortexPort.setBrightness(vortexLib, vortex, brightness);
     }
     // then go back to demoing the mode
     await this.editor.demoModeOnDevice();
