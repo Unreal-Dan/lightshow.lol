@@ -56,7 +56,12 @@ export default class LedSelectPanel extends Panel {
     this.hide();
   }
 
-  updateSelectedDevice(device) {
+  toggleAltImage() {
+    this.isAlt = !this.isAlt;
+    this.renderLedIndicators(this.selectedDevice);
+  }
+
+  async updateSelectedDevice(device) {
     const ledsFieldset = document.getElementById('ledsFieldset');
 
     if (device === 'None') {
@@ -66,7 +71,8 @@ export default class LedSelectPanel extends Panel {
     }
 
     ledsFieldset.style.display = 'block';
-    this.renderLedIndicators(device);
+    this.selectedDevice = device;
+    await this.renderLedIndicators(device);
     this.selectAllLeds();
     this.refreshLedList();
     this.show();
@@ -97,7 +103,6 @@ export default class LedSelectPanel extends Panel {
     }
 
     ledsFieldset.style.display = 'block';
-    deviceImageContainer.innerHTML = '';
     ledList.style.display = 'block';
     ledControls.style.display = 'flex';
     deviceImageContainer.innerHTML = '';
@@ -106,8 +111,17 @@ export default class LedSelectPanel extends Panel {
     overlay.classList.add('led-overlay');
     deviceImageContainer.appendChild(overlay);
 
+    const swapDeviceButton = document.createElement('button');
+    swapDeviceButton.id = 'swapDeviceImage';
+    swapDeviceButton.title = 'Swap Device';
+    swapDeviceButton.style.display = (device === 'Spark') ? 'block' : 'none';
+    swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>'
+    swapDeviceButton.addEventListener('click', () => this.toggleAltImage());
+    deviceImageContainer.appendChild(swapDeviceButton);
+
     const deviceData = await this.getLedPositions(deviceName);
-    const deviceImageSrc = this.editor.devices[deviceName].image;
+    const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage :
+      this.editor.devices[deviceName].image;
 
     if (deviceImageSrc) {
       const deviceImage = document.createElement('img');
@@ -116,6 +130,7 @@ export default class LedSelectPanel extends Panel {
       deviceImage.style.width = '100%';
       deviceImage.style.height = 'auto';
 
+      // load the device image
       deviceImage.onload = () => {
         const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
         const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
@@ -136,6 +151,7 @@ export default class LedSelectPanel extends Panel {
         });
       };
 
+      // done loading deviceImage, append id
       deviceImageContainer.appendChild(deviceImage);
     }
   }

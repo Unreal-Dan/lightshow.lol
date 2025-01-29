@@ -22,11 +22,20 @@ export default class VortexEditor {
   constructor(vortexLib) {
     this.vortexLib = vortexLib;
 
+    // initialize the vortex container inside vortexlib
+    this.vortex = new vortexLib.Vortex();
+    this.vortex.init();
+    this.vortex.setLedCount(1);
+
+    // run a tick with the vortex container
+    this.vortexLib.RunTick(this.vortex);
+
     // local server if the hostname is not lightshow.lol
     this.isLocalServer = !window.location.hostname.startsWith('lightshow.lol');
 
     // create a version overlay text in the bottom left
-    this.createVersionOverlay(`${VERSION}`);
+    const vlibVersion = this.vortex.getVersion();
+    this.createVersionOverlay(`v${VERSION} (VortexLib v${vlibVersion})`);
 
     // Create and append canvas dynamically
     this.canvas = document.createElement('canvas');
@@ -39,7 +48,7 @@ export default class VortexEditor {
     this.vortexPort = new VortexPort(this);
 
     // Instantiate Lightshow
-    this.lightshow = new Lightshow(vortexLib, this.canvas);
+    this.lightshow = new Lightshow(vortexLib, this.vortex, this.canvas);
 
     // Instantiate Panels
     this.welcomePanel = new WelcomePanel(this);
@@ -122,8 +131,11 @@ export default class VortexEditor {
       },
       'Spark': {
         image: 'public/images/spark.png',
+        altImage: 'public/images/spark-handle.png',
         icon: 'public/images/spark-logo-square-64.png',
+        altIcon: 'public/images/spark-handle-logo-square-64.png',
         label: 'Spark',
+        altLabel: 'Spark Handle',
         ledCount: 6
       },
       'Duo': {
@@ -145,6 +157,11 @@ export default class VortexEditor {
     // fml I don't know why I need this pause here but if I don't have it then
     // sometimes the panels end up below the screen and I can't fix it aaaaaaah
     await this.sleep(300);
+    // guy on webdev discord #[derive(kwoka)] said to use this instead idk
+    // didn't work for the ngrok reproduction attempt so not going to bother
+    // wait till next tick
+    //nextTick = () => new Promise(res => queueMicrotask(() => setTimeout(res)));
+    //await this.nextTick();
 
     // Append panels to the DOM
     this.panels.forEach((panel) => panel.appendTo(document.body));
@@ -260,7 +277,7 @@ export default class VortexEditor {
   }
 
   // Function to create the version overlay
-  createVersionOverlay(versionText = "1.0.0") {
+  createVersionOverlay(versionText = "v1.0.0") {
     // Check if overlay already exists
     let overlay = document.getElementById('versionOverlay');
     if (!overlay) {
@@ -286,7 +303,7 @@ export default class VortexEditor {
     });
 
     // Set version text
-    overlay.innerText = `v${versionText}`;
+    overlay.innerText = `${versionText}`;
   }
 
   // sleep function

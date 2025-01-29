@@ -3,11 +3,11 @@ export default class Lightshow {
   static instanceCount = 0;
 
   // constructor for draw6
-  constructor(vortexLib, canvas, modeData = null, configurableSectionCount = 100) {
+  constructor(vortexLib, vortex, canvas, modeData = null, configurableSectionCount = 100) {
     this.id = Lightshow.instanceCount++;
     this.canvas = canvas;
     if (!this.canvas) {
-      throw new Error(`Canvas with ID ${canvasId} not found`);
+      throw new Error(`Canvas not found`);
     }
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
@@ -22,10 +22,7 @@ export default class Lightshow {
     this.currentShape = 'circle'; // Default shape
     this.direction = 1;
     this.vortexLib = vortexLib;
-    this.vortex = new vortexLib.Vortex();
-    this.vortex.init();
-    this.vortex.setLedCount(1);
-    this.vortexLib.RunTick(this.vortex);
+    this.vortex = vortex;
     this.animationFrameId = null;
     this.configurableSectionCount = configurableSectionCount;
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;

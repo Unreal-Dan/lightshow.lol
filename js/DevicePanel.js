@@ -32,10 +32,10 @@ export default class DevicePanel extends Panel {
 
     this.addIconsToDropdown();
 
-    document.getElementById('deviceTypeOptions').addEventListener('click', (event) => {
+    document.getElementById('deviceTypeOptions').addEventListener('click', async (event) => {
       if (event.target.classList.contains('custom-dropdown-option')) {
         const selectedValue = event.target.getAttribute('data-value');
-        this.updateSelectedDevice(selectedValue, true);
+        await this.updateSelectedDevice(selectedValue, true);
         Notification.success(`Selected Device: '${selectedValue}'`);
       }
     });
@@ -140,7 +140,7 @@ export default class DevicePanel extends Panel {
     document.getElementById('deviceTypeSelected').classList.add('locked');
 
     // Update selected device
-    this.updateSelectedDevice(deviceName);
+    await this.updateSelectedDevice(deviceName);
     this.lockDeviceSelection(true);
 
     // brightness added and versions rolled to 1.5.x at same time
@@ -257,7 +257,7 @@ export default class DevicePanel extends Panel {
     }).join('');
   }
 
-  updateSelectedDevice(device, notify = false) {
+  async updateSelectedDevice(device, notify = false) {
     const deviceTypeSelected = document.getElementById('deviceTypeSelected');
     const deviceIcon = this.editor.devices[device].icon;
 
@@ -289,7 +289,7 @@ export default class DevicePanel extends Panel {
     }
 
     // Update and show the LED Select Panel
-    this.editor.ledSelectPanel.updateSelectedDevice(device);
+    await this.editor.ledSelectPanel.updateSelectedDevice(device);
 
     // dispatch the device change event with the device name and version
     if (notify) {
