@@ -77,6 +77,7 @@ export default class DevicePanel extends Panel {
       // do nothing
     } else {
       // otherwise set the brightness of the device
+      const brightness = event.target.value;
       const vortexLib = this.editor.vortexLib;
       const vortex = this.editor.lightshow.vortex;
       await this.editor.vortexPort.setBrightness(vortexLib, vortex, brightness);
