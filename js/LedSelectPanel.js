@@ -114,12 +114,12 @@ export default class LedSelectPanel extends Panel {
     const swapDeviceButton = document.createElement('button');
     swapDeviceButton.id = 'swapDeviceImage';
     swapDeviceButton.title = 'Swap Device';
-    swapDeviceButton.style.display = (device === 'Spark') ? 'block' : 'none';
+    swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
     swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>'
     swapDeviceButton.addEventListener('click', () => this.toggleAltImage());
     deviceImageContainer.appendChild(swapDeviceButton);
 
-    const deviceData = await this.getLedPositions(deviceName);
+    const deviceData = await this.getLedPositions(this.isAlt ? this.editor.devices[deviceName].altLabel : deviceName);
     const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage :
       this.editor.devices[deviceName].image;
 

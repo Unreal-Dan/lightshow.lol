@@ -131,12 +131,13 @@ export default class VortexEditor {
       },
       'Spark': {
         image: 'public/images/spark.png',
-        altImage: 'public/images/spark-handle.png',
         icon: 'public/images/spark-logo-square-64.png',
-        altIcon: 'public/images/spark-handle-logo-square-64.png',
         label: 'Spark',
-        altLabel: 'Spark Handle',
-        ledCount: 6
+        ledCount: 6,
+        // alternate spark image/icon/label for handle
+        altImage: 'public/images/orbit.png',
+        altIcon: 'public/images/spark-handle-logo-square-64.png',
+        altLabel: 'SparkHandle',
       },
       'Duo': {
         image: 'public/images/duo.png',
