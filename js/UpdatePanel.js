@@ -234,10 +234,12 @@ export default class UpdatePanel extends Panel {
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalThisFile) => {
-            totalBytesFlashed += bytesWritten;
-            const progress = Math.floor((totalBytesFlashed / totalBytes) * 85) + 15; 
             // 85% range left after 15% used for erase
+            const progress = Math.floor((bytesWritten / totalBytes) * 85) + 15;
             progressBar.style.width = progress + '%';
+            const msg = `Flashing ${bytesWritten} / ${totalBytes} (${progress}%)...`;
+            progressMessage.textContent = msg;
+            console.log(msg);
           },
           file.address
         );
