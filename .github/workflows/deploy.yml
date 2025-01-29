@@ -56,10 +56,17 @@ jobs:
           VortexEngine/VortexEngine/VortexLib/VortexLib.wasm
         key: VortexLib-${{ github.sha }}
 
+    # checkout actual repo for sake of version generation
+    - name: Checkout Main Repository
+      uses: actions/checkout@v3
+      with:
+        path: 'lightshow.lol'
+        fetch-depth: 0  # Fetch all history for tags and commits
+
     # Determine version from Git tags and generate version.js
     - name: Generate Version
       run: |
-        cd VortexEngine  # Move into the repository directory
+        cd lightshow.lol  # Move into the repository directory
         # Get the latest tag (ensures it's a proper version number)
         TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
         # Count commits since the tag
