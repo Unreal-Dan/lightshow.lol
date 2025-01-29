@@ -16,6 +16,7 @@ import CommunityBrowserPanel from './CommunityBrowserPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
+import { VERSION } from './version.js';  // Adjust path if needed
 
 export default class VortexEditor {
   constructor(vortexLib) {
@@ -23,6 +24,9 @@ export default class VortexEditor {
 
     // local server if the hostname is not lightshow.lol
     this.isLocalServer = !window.location.hostname.startsWith('lightshow.lol');
+
+    // create a version overlay text in the bottom left
+    this.createVersionOverlay(`${VERSION}`);
 
     // Create and append canvas dynamically
     this.canvas = document.createElement('canvas');
@@ -253,6 +257,36 @@ export default class VortexEditor {
       // apply the mobile layout
       this.applyLayout();
     }
+  }
+
+  // Function to create the version overlay
+  createVersionOverlay(versionText = "1.0.0") {
+    // Check if overlay already exists
+    let overlay = document.getElementById('versionOverlay');
+    if (!overlay) {
+      // Create overlay element
+      overlay = document.createElement('div');
+      overlay.id = 'versionOverlay';
+      document.body.appendChild(overlay);
+    }
+
+    // Style the overlay
+    Object.assign(overlay.style, {
+      position: 'absolute',
+      bottom: '10px',
+      left: '10px',
+      background: 'rgba(0, 0, 0, 0.1)', // Semi-transparent background
+      color: 'rgba(255, 255, 255, 0.2)', // semi transparent text
+      padding: '5px 10px',
+      borderRadius: '5px',
+      fontSize: '14px',
+      fontFamily: 'Arial, sans-serif',
+      pointerEvents: 'none', // Prevent interactions
+      zIndex: '9999',
+    });
+
+    // Set version text
+    overlay.innerText = `v${versionText}`;
   }
 
   // sleep function
