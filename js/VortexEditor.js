@@ -175,22 +175,39 @@ export default class VortexEditor {
         return;
       }
       const { type, data } = event.data;
-      const parsedData = JSON.parse(atob(data));
-      if (type === 'mode') {
-        try {
-          this.modesPanel.importModeFromData(parsedData, true);
-          console.log('Mode loaded successfully via postMessage');
-        } catch (error) {
-          console.error('Error loading mode via postMessage:', error);
+      try {
+        // Decode Base64
+        const binaryString = atob(data);
+        const byteArray = new Uint8Array(binaryString.length);
+
+        for (let i = 0; i < binaryString.length; i++) {
+          byteArray[i] = binaryString.charCodeAt(i);
         }
-      }
-      if (type === 'pattern') {
-        try {
-          this.modesPanel.importPatternFromData(parsedData, true);
-          console.log('Mode loaded successfully via postMessage');
-        } catch (error) {
-          console.error('Error loading pattern via postMessage:', error);
+
+        // Decompress using Pako
+        const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+
+        // Parse JSON
+        const parsedData = JSON.parse(decompressedJson);
+        if (type === 'mode') {
+          try {
+            this.modesPanel.importModeFromData(parsedData, true);
+            console.log('Mode loaded successfully via postMessage');
+          } catch (error) {
+            console.error('Error loading mode via postMessage:', error);
+          }
         }
+        if (type === 'pattern') {
+          try {
+            this.modesPanel.importPatternFromData(parsedData, true);
+            console.log('Mode loaded successfully via postMessage');
+          } catch (error) {
+            console.error('Error loading pattern via postMessage:', error);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error decoding or decompressing mode data:', error);
       }
     });
 
@@ -279,6 +296,7 @@ export default class VortexEditor {
     this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
     await this.loadScript("pako", "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js");
     await this.loadScript("jszip", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
+    await this.loadScript("lzstring", "https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js");
 
     // Dynamically load ESPTool
     window.esptoolPackage = await import("https://cdn.jsdelivr.net/gh/adafruit/Adafruit_WebSerial_ESPTool@latest/dist/web/index.js");
@@ -324,9 +342,8 @@ export default class VortexEditor {
 
     // update the stylesheet
     const currentStylesheet = document.getElementById('mainStyles');
-    if (currentStylesheet) {
-      const styleSheet = this.isMobile ? 'css/mobile-styles.css' : 'css/styles.css';
-      currentStylesheet.href = styleSheet + "?v=__CACHE_BUSTER__";
+    if (this.isMobile && currentStylesheet) {
+      currentStylesheet.href = "css/mobile-styles.css?v=__CACHE_BUSTER__";
     }
 
     // Update layout for all panels
@@ -371,11 +388,7 @@ export default class VortexEditor {
     const encodedData = urlParams.get('data');
 
     if (encodedData) {
-      try {
-        this.modesPanel.importPatternFromData(JSON.parse(atob(encodedData)), false);
-      } catch (error) {
-        console.error('Error parsing mode data:', error);
-      }
+      this.modesPanel.importModeFromLink(encodedData);
     }
   }
 

@@ -292,18 +292,63 @@ export default class ModesPanel extends Panel {
       Notification.failure("Must select a mode to share");
       return;
     }
+
     const modeJson = this.lightshow.vortex.printModeJson(false);
-    const modeData = JSON.parse(modeJson);
-    const pat = modeData.single_pats[0] ? modeData.single_pats[0] : modeData.multi_pat;
-    const base64EncodedData = btoa(JSON.stringify(pat));
-    const lightshowUrl = `https://lightshow.lol/importMode?data=${base64EncodedData}`;
-    this.shareModal.show({
-      defaultValue: lightshowUrl,
-      placeholder: 'Link URL',
-      title: 'Link Mode',
-    });
+
+    // Compress with Pako (Gzip)
+    const compressed = pako.deflate(modeJson, { level: 9 });
+
+    // Convert to Base64 (URL-safe)
+    let compressedBase64 = btoa(String.fromCharCode(...compressed))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+        .replace(/=+$/, ''); // Remove padding
+
+        // Generate the link
+        const lightshowUrl = `https://lightshow.lol/importMode?data=${compressedBase64}`;
+
+        // Show the modal
+        this.shareModal.show({
+          defaultValue: lightshowUrl,
+          placeholder: 'Link URL',
+          title: 'Link Mode',
+        });
+
     this.shareModal.selectAndCopyText();
     Notification.success("Copied mode URL to clipboard");
+  }
+
+  importModeFromLink(data) {
+    try {
+      if (!data) {
+        Notification.failure("No mode data provided in the link.");
+        return;
+      }
+
+      // Decode Base64 URL-safe format
+      data = data.replace(/-/g, '+').replace(/_/g, '/');
+      while (data.length % 4 !== 0) {
+        data += '=';
+      }
+
+      // Decode Base64
+      const binaryString = atob(data);
+      const byteArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        byteArray[i] = binaryString.charCodeAt(i);
+      }
+
+      // Decompress using Pako
+      const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+
+      // Parse and import mode
+      this.importModeFromData(JSON.parse(decompressedJson));
+
+      Notification.success("Successfully imported mode from link");
+    } catch (error) {
+      Notification.failure("Failed to import mode from link.");
+      console.error("Error decoding and importing mode:", error);
+    }
   }
 
   exportMode() {
@@ -312,9 +357,13 @@ export default class ModesPanel extends Panel {
       return;
     }
     const modeJson = this.lightshow.vortex.printModeJson(false);
+    // Compress with pako (Gzip)
+    const compressed = pako.deflate(modeJson, { level: 9 });
+    // Convert to Base64 (for clipboard/export safety)
+    const compressedBase64 = btoa(String.fromCharCode(...compressed));
     this.exportModal.show({
       buttons: [],
-      defaultValue: modeJson,
+      defaultValue: compressedBase64,
       title: 'Export/Copy a Mode',
     });
     this.exportModal.selectAndCopyText();
@@ -323,12 +372,25 @@ export default class ModesPanel extends Panel {
 
   importMode() {
     this.importModal.show({
-      placeholder: 'Paste a JSON mode',
+      placeholder: 'Paste a compressed JSON mode',
       title: 'Import/Paste a Mode',
       onInput: (event) => {
-        this.importModeFromData(JSON.parse(event.target.value));
+        try {
+          const data = event.target.value;
+          const binaryString = atob(data);
+          const byteArray = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            byteArray[i] = binaryString.charCodeAt(i);
+          }
+          const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+          this.importModeFromData(JSON.parse(decompressedJson));
+        } catch (error) {
+          Notification.failure("Invalid compressed mode data");
+          console.error("Failed to decompress/import mode:", error);
+        }
       }
     });
+
     this.importModal.selectText();
   }
 
