@@ -120,7 +120,7 @@ export default class AnimationPanel extends Panel {
     this.attachShapeButtonListeners();
 
     // hide the spread slider
-    this.toggleSpreadSlider();
+    this.toggleSpreadSlider(false);
   }
 
   applyMobileLayout() {
@@ -168,7 +168,7 @@ export default class AnimationPanel extends Panel {
     }
   }
 
-  toggleSpreadSlider() {
+  toggleSpreadSlider(propagate = true) {
     const animationPanel = document.getElementById('animationPanel');
     const spreadDiv = document.getElementById('spread_div');
 
@@ -186,15 +186,16 @@ export default class AnimationPanel extends Panel {
       spreadDiv.style.display = 'none';
     }
 
-    // Step 3: Calculate the new height
-    const heightChange = animationPanel.offsetHeight - previousHeight;
-
-    // Step 4: Move snapped panels after the height change
-    snappedPanels.forEach((otherPanel) => {
-      otherPanel.moveSnappedPanels(heightChange);
-      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-    });
+    if (propagate) {
+      // Step 3: Calculate the new height
+      const heightChange = animationPanel.offsetHeight - previousHeight;
+      // Step 4: Move snapped panels after the height change
+      snappedPanels.forEach((otherPanel) => {
+        otherPanel.moveSnappedPanels(heightChange);
+        const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+        otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+      });
+    }
   }
 
   attachShapeButtonListeners() {

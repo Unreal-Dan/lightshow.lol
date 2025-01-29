@@ -164,7 +164,7 @@ export default class DevicePanel extends Panel {
     return (brightnessControl.style.display === '');
   }
 
-  toggleBrightnessSlider(brightness = 255) {
+  toggleBrightnessSlider(brightness = 255, propagate = true) {
     const devicePanel = document.getElementById('devicePanel');
     const patternParams = document.getElementById('patternParams');
     const toggleButton = document.getElementById('togglePatternParams');
@@ -183,16 +183,18 @@ export default class DevicePanel extends Panel {
       brightnessControl.style.display = '';
     }
 
-    // Step 3: Calculate the new height
-    const heightChange = devicePanel.offsetHeight - previousHeight;
+    if (propagate) {
+      // Step 3: Calculate the new height
+      const heightChange = devicePanel.offsetHeight - previousHeight;
+      // Step 4: Move snapped panels after the height change
+      snappedPanels.forEach((otherPanel) => {
+        otherPanel.moveSnappedPanels(heightChange);
+        const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+        otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+      });
+    }
 
-    // Step 4: Move snapped panels after the height change
-    snappedPanels.forEach((otherPanel) => {
-      otherPanel.moveSnappedPanels(heightChange);
-      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-    });
-
+    // set the initial value of the slider
     brightnessSlider.value = brightness;
   }
 
