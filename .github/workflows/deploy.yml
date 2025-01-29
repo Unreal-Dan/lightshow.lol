@@ -59,11 +59,39 @@ jobs:
     # Determine version from Git tags and generate version.js
     - name: Generate Version
       run: |
-        cd VortexEngine
+        cd VortexEngine  # Move into the repository directory
+
+        # Get the latest tag (ensures it's a proper version number)
         TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+
+        # Count commits since the tag
         COUNT=$(git rev-list $TAG..HEAD --count)
-        VERSION="${TAG%.*}.$(( ${TAG##*.} + COUNT ))"
-        echo "export const VERSION = '$VERSION';" > js/version.js
+
+        # Ensure TAG is in X.Y.Z format
+        if [[ ! $TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid TAG format: $TAG. Using default 0.0.0"
+          TAG="0.0.0"
+        fi
+
+        # Extract MAJOR, MINOR, PATCH
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$TAG"
+
+        # Ensure variables are integers
+        MAJOR=$((MAJOR + 0))
+        MINOR=$((MINOR + 0))
+        PATCH=$((PATCH + 0))
+        COUNT=$((COUNT + 0))
+
+        # Calculate new PATCH version
+        NEW_PATCH=$((PATCH + COUNT))
+
+        # Construct the final version
+        VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+        # Output version to version.js
+        echo "export const VERSION = '$VERSION';" > version.js
+        echo "Generated Version: $VERSION"
+
 
     - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.5.3
