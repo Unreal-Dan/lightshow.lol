@@ -138,6 +138,10 @@ export default class VortexEditor {
     // Start the lightshow
     this.lightshow.start();
 
+    // fml I don't know why I need this pause here but if I don't have it then
+    // sometimes the panels end up below the screen and I can't fix it aaaaaaah
+    await this.sleep(300);
+
     // Append panels to the DOM
     this.panels.forEach((panel) => panel.appendTo(document.body));
 
@@ -233,6 +237,9 @@ export default class VortexEditor {
       this.applyLayout();
     }
   }
+
+  // sleep function
+  sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   // helper for 1.3.0 compatibility version check
   isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
