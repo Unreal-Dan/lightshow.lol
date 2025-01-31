@@ -50,6 +50,8 @@ export default class ChromalinkPanel extends Panel {
     });
 
     flashButton.addEventListener('click', () => {
+      // Reset the input to ensure change fires
+      firmwareFileInput.value = '';
       firmwareFileInput.click();
     });
 
