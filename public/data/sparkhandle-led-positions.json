@@ -3,11 +3,11 @@
     "original_width": 500,
     "original_height": 250,
     "points": [
-        {"x": 300, "y": 40, "name": "1 oclock" },
-        {"x": 350, "y": 125, "name": "3 oclock" },
-        {"x": 300, "y": 212, "name": "5 oclock" },
-        {"x": 200, "y": 212, "name": "7 oclock" },
-        {"x": 150, "y": 125, "name": "9 oclock" },
-        {"x": 200, "y": 40, "name": "11 oclock" }
+        {"x": 300, "y": 222, "name": "Bottom Right" },
+        {"x": 200, "y": 222, "name": "Bottom Left" },
+        {"x": 200, "y": 130, "name": "Middle Left" },
+        {"x": 200, "y": 40, "name": "Top Left" },
+        {"x": 300, "y": 40, "name": "Top Right" },
+        {"x": 300, "y": 130, "name": "Middle Right" }
     ]
 }
