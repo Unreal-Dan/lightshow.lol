@@ -81,7 +81,7 @@ export default class LedSelectPanel extends Panel {
   async getLedPositions(deviceName) {
     try {
       const cacheBuster = '?v=' + new Date().getTime();
-      const response = await fetch(`public/data/${deviceName.toLowerCase()}-this.editor.devices[deviceName].json${cacheBuster}`);
+      const response = await fetch(`public/data/${deviceName.toLowerCase()}-led-positions.json${cacheBuster}`);
       const data = await response.json();
       return data;
     } catch (error) {
