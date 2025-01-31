@@ -114,8 +114,7 @@ export default class LedSelectPanel extends Panel {
     const swapDeviceButton = document.createElement('button');
     swapDeviceButton.id = 'swapDeviceImage';
     swapDeviceButton.title = 'Swap Device';
-    // TODO: show this button to swap between spark devices
-    swapDeviceButton.style.display = 'none'; // (this.selectedDevice === 'Spark') ? 'block' : 'none';
+    swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
     swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>'
     swapDeviceButton.addEventListener('click', () => this.toggleAltImage());
     deviceImageContainer.appendChild(swapDeviceButton);

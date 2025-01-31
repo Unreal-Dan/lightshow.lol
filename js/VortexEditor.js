@@ -135,7 +135,7 @@ export default class VortexEditor {
         label: 'Spark',
         ledCount: 6,
         // alternate spark image/icon/label for handle
-        altImage: 'public/images/orbit.png',
+        altImage: 'public/images/spark-handle.png',
         altIcon: 'public/images/spark-handle-logo-square-64.png',
         altLabel: 'SparkHandle',
       },
