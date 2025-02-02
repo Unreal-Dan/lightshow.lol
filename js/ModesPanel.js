@@ -281,7 +281,10 @@ export default class ModesPanel extends Panel {
     const base64EncodedData = btoa(JSON.stringify(modeData));
 
     // Construct the URL with the mode data
-    const shareUrl = `https://vortex.community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+    let shareUrl = `https://vortex.community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+    if (this.editor.isLocalServer) {
+      shareUrl = `https://127.0.0.1:3000/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
+    }
 
     // Open the URL in a new tab
     window.open(shareUrl, '_blank');
