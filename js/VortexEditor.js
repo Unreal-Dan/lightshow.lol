@@ -62,7 +62,7 @@ export default class VortexEditor {
     this.colorPickerPanel = new ColorPickerPanel(this);
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
-    //this.communityBrowserPanel = new CommunityBrowserPanel(this);
+    this.communityBrowserPanel = new CommunityBrowserPanel(this);
 
     this.panels = [
       this.welcomePanel,
@@ -76,7 +76,7 @@ export default class VortexEditor {
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel,
-      //this.communityBrowserPanel
+      this.communityBrowserPanel
     ];
     let allGood = true;
     this.panels.forEach((panel, index) => {
