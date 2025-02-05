@@ -476,9 +476,9 @@ export default class ModesPanel extends Panel {
       return;
     }
     patterns.forEach((pat, index) => {
-      const patData = pat.data;
+      let patData = pat.data;
       if (!patData) {
-        return;
+        patData = pat;
       }
       if (!patData.colorset) {
         Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
