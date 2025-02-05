@@ -337,17 +337,29 @@ export default class ModesPanel extends Panel {
       // Decode Base64
       const binaryString = atob(data);
       const byteArray = new Uint8Array(binaryString.length);
+
       for (let i = 0; i < binaryString.length; i++) {
         byteArray[i] = binaryString.charCodeAt(i);
       }
 
-      // Decompress using Pako
-      const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+      let modeJson;
 
-      // Parse and import mode
-      this.importModeFromData(JSON.parse(decompressedJson));
+      // Attempt direct JSON parsing first
+      try {
+        modeJson = JSON.parse(new TextDecoder().decode(byteArray));
+      } catch {
+        // If direct parsing fails, assume it's compressed and try decompressing
+        try {
+          const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+          modeJson = JSON.parse(decompressedJson);
+        } catch (error) {
+          throw new Error("Invalid mode data: unable to parse or decompress.");
+        }
+      }
 
-      Notification.success("Successfully imported mode from link");
+      // Import mode
+      this.importModeFromData(modeJson);
+      Notification.success("Successfully imported mode from link.");
     } catch (error) {
       Notification.failure("Failed to import mode from link.");
       console.error("Error decoding and importing mode:", error);

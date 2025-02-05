@@ -62,7 +62,7 @@ export default class VortexEditor {
     this.colorPickerPanel = new ColorPickerPanel(this);
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
-    this.communityBrowserPanel = new CommunityBrowserPanel(this);
+    //this.communityBrowserPanel = new CommunityBrowserPanel(this);
 
     this.panels = [
       this.welcomePanel,
@@ -76,7 +76,7 @@ export default class VortexEditor {
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel,
-      this.communityBrowserPanel
+      //this.communityBrowserPanel
     ];
     let allGood = true;
     this.panels.forEach((panel, index) => {
@@ -196,8 +196,14 @@ export default class VortexEditor {
         console.warn('Rejected message from unauthorized origin:', event.origin);
         return;
       }
-      const { type, data } = event.data;
+      let { type, data } = event.data;
       try {
+        // Decode Base64 URL-safe format
+        data = data.replace(/-/g, '+').replace(/_/g, '/');
+        while (data.length % 4 !== 0) {
+          data += '=';
+        }
+
         // Decode Base64
         const binaryString = atob(data);
         const byteArray = new Uint8Array(binaryString.length);
@@ -206,14 +212,24 @@ export default class VortexEditor {
           byteArray[i] = binaryString.charCodeAt(i);
         }
 
-        // Decompress using Pako
-        const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+        let modeJson;
 
-        // Parse JSON
-        const parsedData = JSON.parse(decompressedJson);
+        // Attempt direct JSON parsing first
+        try {
+          modeJson = JSON.parse(new TextDecoder().decode(byteArray));
+        } catch {
+          // If direct parsing fails, assume it's compressed and try decompressing
+          try {
+            const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+            modeJson = JSON.parse(decompressedJson);
+          } catch (error) {
+            throw new Error("Invalid mode data: unable to parse or decompress.");
+          }
+        }
+
         if (type === 'mode') {
           try {
-            this.modesPanel.importModeFromData(parsedData, true);
+            this.modesPanel.importModeFromData(modeJson, true);
             console.log('Mode loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading mode via postMessage:', error);
@@ -221,7 +237,7 @@ export default class VortexEditor {
         }
         if (type === 'pattern') {
           try {
-            this.modesPanel.importPatternFromData(parsedData, true);
+            this.modesPanel.importPatternFromData(modeJson, true);
             console.log('Mode loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading pattern via postMessage:', error);
