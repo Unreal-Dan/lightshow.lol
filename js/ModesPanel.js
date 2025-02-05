@@ -442,10 +442,10 @@ export default class ModesPanel extends Panel {
       modeData.num_leds = 1; // Default case
     })();
     this.lightshow.setLedCount(modeData.num_leds);
+    const modeCount = this.lightshow.vortex.numModes();
     let curSel;
     if (addNew) {
       curSel = this.lightshow.vortex.engine().modes().curModeIndex();
-      let modeCount = this.lightshow.vortex.numModes();
       // check the mode count against max
       const device = this.editor.devicePanel.selectedDevice;
       const maxModes = this.getMaxModes(device)
@@ -476,13 +476,17 @@ export default class ModesPanel extends Panel {
       return;
     }
     patterns.forEach((pat, index) => {
-      if (!pat.colorset) {
-        Notification.failure("Invalid pattern data");
+      const patData = pat.data;
+      if (!patData) {
+        return;
+      }
+      if (!patData.colorset) {
+        Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
         return;
       }
 
       const set = new this.lightshow.vortexLib.Colorset();
-      pat.colorset.forEach(hexCode => {
+      patData.colorset.forEach(hexCode => {
         const normalizedHex = hexCode.replace('0x', '#');
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
         if (result) {
@@ -494,9 +498,9 @@ export default class ModesPanel extends Panel {
         }
       });
 
-      const patID = this.lightshow.vortexLib.intToPatternID(pat.pattern_id);
+      const patID = this.lightshow.vortexLib.intToPatternID(patData.pattern_id);
       const args = new this.lightshow.vortexLib.PatternArgs();
-      pat.args.forEach(arg => args.addArgs(arg));
+      patData.args.forEach(arg => args.addArgs(arg));
       // TODO: Have to fetch cur each time some reason... Use after free I guess
       cur = this.lightshow.vortex.engine().modes().curMode();
       cur.setPattern(patID, index, args, set);
@@ -515,6 +519,7 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
     this.editor.ledSelectPanel.renderLedIndicators(initialDevice);
     this.editor.ledSelectPanel.handleLedSelectionChange();
+    this.selectMode(addNew ? modeCount : curSel);
     this.refreshPatternControlPanel();
     this.refresh();
     Notification.success("Successfully imported mode");

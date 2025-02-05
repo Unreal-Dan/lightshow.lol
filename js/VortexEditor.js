@@ -229,7 +229,7 @@ export default class VortexEditor {
 
         if (type === 'mode') {
           try {
-            this.modesPanel.importModeFromData(modeJson, true);
+            this.modesPanel.importModeFromData(modeJson, false);
             console.log('Mode loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading mode via postMessage:', error);
@@ -237,7 +237,7 @@ export default class VortexEditor {
         }
         if (type === 'pattern') {
           try {
-            this.modesPanel.importPatternFromData(modeJson, true);
+            this.modesPanel.importPatternFromData(modeJson, false);
             console.log('Mode loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading pattern via postMessage:', error);
