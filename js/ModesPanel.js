@@ -37,6 +37,7 @@ export default class ModesPanel extends Panel {
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
+    this.deviceSelectionModal = new Modal('device-selection');
   }
 
   initialize() {
@@ -429,18 +430,17 @@ export default class ModesPanel extends Panel {
       Notification.failure("No mode data");
       return;
     }
-    let initialDevice = null;
-    const deviceMap = {
-      28: 'Orbit',
-      3: 'Handle',
-      10: 'Gloves',
-      20: 'Chromadeck',
-      6: 'Spark',
-      2: 'Duo'
-    };
-    initialDevice = deviceMap[modeData.num_leds] || (() => {
-      modeData.num_leds = 1; // Default case
-    })();
+    let initialDevice = Object.entries(this.editor.devices).find(
+      ([, device]) => device.ledCount === modeData.num_leds
+    )?.[0] || 'None';
+
+    const selectedDevice = this.editor.devicePanel.selectedDevice;
+
+    // If the imported mode has a different device, ask the user to choose
+    if (initialDevice && selectedDevice !== initialDevice) {
+      this.showDeviceSelectionModal(initialDevice, selectedDevice, modeData, addNew);
+      return;
+    }
     this.lightshow.setLedCount(modeData.num_leds);
     const modeCount = this.lightshow.vortex.numModes();
     let curSel;

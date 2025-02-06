@@ -10,7 +10,7 @@ CSS_DIR="css"
 # Process each line of the input CSS file
 while IFS= read -r line; do
     # Match @import url('filename.css')
-    if [[ $line =~ @import\ url\(\'.*\.css\'\); ]]; then
+    if [[ $line =~ @import\ url\(\'.*\.css\'\) ]]; then
         # Extract the filename
         FILE=$(echo "$line" | sed -E "s/@import url\('(.+)'\);/\1/")
         
