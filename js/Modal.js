@@ -127,11 +127,15 @@ export default class Modal {
   }
 
   populateButtons(buttonConfigs) {
-    this.modalButtons.innerHTML = '';
+    this.clearButtons(); // Clear previous buttons
+
     buttonConfigs.forEach(config => {
-      const button = this.createButton(config);
+      const button = document.createElement('button'); // Use <button> element
+      button.textContent = config.label;
+      button.className = `modal-button ${config.class || ''}`; // Apply button class
+      button.addEventListener('click', config.onClick);
+
       this.modalButtons.appendChild(button);
     });
   }
 }
-

@@ -233,15 +233,8 @@ export default class ModesPanel extends Panel {
         maxModes = 14;
         break;
       case 'Duo':
-        // default duo max is 5
-        maxModes = 5;
-        if (this.editor && this.editor.chromalinkPanel) {
-          const clPanel = this.editor.chromalinkPanel;
-          if (clPanel.duoHeader && clPanel.duoHeader.vMinor >= 4) {
-            // allow 9 modes after 1.4.x duo
-            maxModes = 9;
-          }
-        }
+        // default duo max is 9
+        maxModes = 9;
         break;
       case 'Chromadeck':
       case 'Spark':
@@ -359,7 +352,7 @@ export default class ModesPanel extends Panel {
       }
 
       // Import mode
-      this.importModeFromData(modeJson);
+      this.importModeFromData(modeJson, true);
       Notification.success("Successfully imported mode from link.");
     } catch (error) {
       Notification.failure("Failed to import mode from link.");
@@ -425,6 +418,162 @@ export default class ModesPanel extends Panel {
     return this.importModeFromData(modeData, addNew);
   }
 
+  showImportModeModal(importedDevice, currentDevice, modeData, addNew) {
+    const importedDeviceData = this.editor.devices[importedDevice] || {};
+    const currentDeviceData = this.editor.devices[currentDevice] || {};
+
+    // Extract mode name
+    const modeName = modeData.name || "Unnamed Mode";
+
+    // Extract pattern set details (if available)
+    const patternSets = modeData.single_pats || (modeData.multi_pat ? [modeData.multi_pat] : []);
+    const patternDetails = patternSets.length
+      ? patternSets.map((pat, index) => `<li><strong>Pattern ${index + 1}:</strong> ${pat?.data?.colorset ? pat.data.colorset.length + " Colors" : "No Color Data"}</li>`).join("")
+      : "<li>No Patterns</li>";
+
+    // Create modal content with proper side-by-side layout
+    const modalBlurb = `
+      <div class="modal-device-container">
+        <div class="modal-device">
+          <img src="/${importedDeviceData.iconBig}" alt="${importedDevice}">
+          <div>
+            <strong>LED Count:</strong> ${modeData.num_leds}
+          </div>
+        </div>
+        <div class="modal-device">
+          <img src="/${currentDeviceData.iconBig}" alt="${currentDevice}">
+          <div>
+            <strong>LED Count:</strong> ${this.editor.devices[currentDevice]?.ledCount || 'Unknown'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Determine which buttons to show
+    const buttons = [];
+
+    if (currentDevice === 'None' || importedDevice === currentDevice) {
+      // Single "Import Mode" button when devices match
+      buttons.push({
+        label: 'Import Mode',
+        class: 'modal-button primary-button',
+        onClick: () => {
+          this.deviceSelectionModal.hide();
+          this.finalizeModeImport(modeData, addNew);
+        }
+      });
+    } else {
+      // Two options when devices don't match
+      buttons.push({
+        label: `Switch to ${importedDevice}`,
+        class: 'modal-button switch-button',
+        onClick: async () => {
+          this.deviceSelectionModal.hide();
+          this.editor.lightshow.setLedCount(modeData.num_leds);
+          await this.editor.devicePanel.updateSelectedDevice(importedDevice, true);
+          this.finalizeModeImport(modeData, addNew);
+        }
+      });
+
+      buttons.push({
+        label: `Convert to ${currentDevice}`,
+        class: 'modal-button secondary-button',
+        onClick: () => {
+          this.deviceSelectionModal.hide();
+          this.finalizeModeImport(modeData, addNew);
+        }
+      });
+    }
+
+    // Show the modal
+    this.deviceSelectionModal.show({
+      title: `Change to ${importedDevice}?`,
+      blurb: modalBlurb,
+      buttons: buttons
+    });
+  }
+
+
+  finalizeModeImport(modeData, addNew) {
+    //this.lightshow.setLedCount(modeData.num_leds);
+    const modeCount = this.lightshow.vortex.numModes();
+    let curSel;
+    if (addNew) {
+      curSel = this.lightshow.vortex.engine().modes().curModeIndex();
+      const device = this.editor.devicePanel.selectedDevice;
+      const maxModes = this.getMaxModes(device);
+      if (modeCount >= maxModes) {
+        Notification.failure(`The ${device} can only hold ${maxModes} modes`);
+        return;
+      }
+      if (!this.lightshow.vortex.addNewMode(false)) {
+        Notification.failure("Failed to add another mode");
+        return;
+      }
+      this.lightshow.vortex.setCurMode(modeCount, false);
+    }
+
+    let cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) {
+      console.log("cur empty!");
+      return;
+    }
+    cur.init();
+
+    const patterns = modeData.single_pats || [modeData.multi_pat];
+    if (!patterns) {
+      console.log("Patterns empty!");
+      return;
+    }
+
+    patterns.forEach((pat, index) => {
+      if (!pat) return;
+
+      let patData = pat.data || pat;
+      if (!patData.colorset) {
+        Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
+        return;
+      }
+
+      const set = new this.lightshow.vortexLib.Colorset();
+      patData.colorset.forEach(hexCode => {
+        const normalizedHex = hexCode.replace('0x', '#');
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
+        if (result) {
+          set.addColor(new this.lightshow.vortexLib.RGBColor(
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+          ));
+        }
+      });
+
+      const patID = this.lightshow.vortexLib.intToPatternID(patData.pattern_id);
+      const args = new this.lightshow.vortexLib.PatternArgs();
+      patData.args.forEach(arg => args.addArgs(arg));
+
+      cur = this.lightshow.vortex.engine().modes().curMode();
+      cur.setPattern(patID, index, args, set);
+      this.lightshow.vortex.setPatternArgs(index, args, true);
+    });
+
+    cur = this.lightshow.vortex.engine().modes().curMode();
+    cur.init();
+    this.lightshow.vortex.engine().modes().saveCurMode();
+
+    if (addNew) {
+      this.lightshow.vortex.setCurMode(curSel, false);
+    }
+
+    this.refreshModeList();
+    this.editor.ledSelectPanel.renderLedIndicators(this.editor.devicePanel.selectedDevice);
+    this.editor.ledSelectPanel.handleLedSelectionChange();
+    this.selectMode(addNew ? modeCount : curSel);
+    this.refreshPatternControlPanel();
+    this.refresh();
+    Notification.success("Successfully imported mode");
+  }
+
   importModeFromData(modeData, addNew = true) {
     if (!modeData) {
       Notification.failure("No mode data");
@@ -437,11 +586,12 @@ export default class ModesPanel extends Panel {
     const selectedDevice = this.editor.devicePanel.selectedDevice;
 
     // If the imported mode has a different device, ask the user to choose
-    if (initialDevice && selectedDevice !== initialDevice) {
-      this.showDeviceSelectionModal(initialDevice, selectedDevice, modeData, addNew);
+    if (initialDevice && selectedDevice !== initialDevice && selectedDevice !== 'None') {
+      this.showImportModeModal(initialDevice, selectedDevice, modeData, addNew);
       return;
     }
     this.lightshow.setLedCount(modeData.num_leds);
+    this.editor.devicePanel.updateSelectedDevice(initialDevice, true);
     const modeCount = this.lightshow.vortex.numModes();
     let curSel;
     if (addNew) {
@@ -520,8 +670,6 @@ export default class ModesPanel extends Panel {
     }
 
     this.refreshModeList();
-    this.editor.ledSelectPanel.renderLedIndicators(initialDevice);
-    this.editor.ledSelectPanel.handleLedSelectionChange();
     this.selectMode(addNew ? modeCount : curSel);
     this.refreshPatternControlPanel();
     this.refresh();
