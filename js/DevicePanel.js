@@ -235,15 +235,6 @@ export default class DevicePanel extends Panel {
   }
 
   async onDeviceSelected(deviceName) {
-    if (deviceName === 'Duo') {
-      if (!this.isBrightnessHidden()) {
-        this.toggleBrightnessSlider();
-      }
-    } else {
-      if (this.isBrightnessHidden()) {
-        this.toggleBrightnessSlider();
-      }
-    }
   }
 
   addIconsToDropdown() {

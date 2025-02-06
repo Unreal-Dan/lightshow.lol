@@ -53,26 +53,8 @@ export default class CommunityBrowserPanel extends Panel {
         }
         this.applyFilters();
       });
-
       this.activeFilters.add(deviceName);
       this.filterContainer.appendChild(button);
-    });
-
-    // Add event listeners to filter buttons
-    const filterButtons = this.contentContainer.querySelectorAll('.vcb-filter-btn');
-    filterButtons.forEach(button => {
-      this.activeFilters.add(button.dataset.device);
-      button.addEventListener('click', () => {
-        const deviceType = button.dataset.device;
-        if (this.activeFilters.has(deviceType)) {
-          this.activeFilters.delete(deviceType);
-          button.classList.remove('active');
-        } else {
-          this.activeFilters.add(deviceType);
-          button.classList.add('active');
-        }
-        this.applyFilters();
-      });
     });
 
     const prevBtn = this.contentContainer.querySelector('#vcb-prev-btn');
@@ -98,33 +80,31 @@ export default class CommunityBrowserPanel extends Panel {
 
   initialize() {
     this.loadPage(this.currentPage);
-    this.applyFilters();
   }
 
   async loadPage(pageNumber) {
-    if (this.modesCache[pageNumber]) {
-      this.renderPage(this.modesCache[pageNumber]);
-      return;
-    }
+    this.currentPage = pageNumber; // Ensure the current page updates
 
     try {
-      let response;
-      if (this.editor.isLocalServer) {
-        if (pageNumber === 1) {
-          response = await fetch(`public/data/modeData.json?v=${new Date().getTime()}`);
+      if (!this.modesCache[pageNumber]) {
+        let response;
+        if (this.editor.isLocalServer) {
+          // Keep local server behavior unchanged
+          response = await fetch(`public/data/modeData${pageNumber > 1 ? '2' : ''}.json?v=${new Date().getTime()}`);
         } else {
-          response = await fetch(`public/data/modeData2.json?v=${new Date().getTime()}`);
+          response = await fetch(`https://vortex.community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}&v=${new Date().getTime()}`, {
+            method: 'GET',
+            credentials: 'include'
+          });
         }
-      } else {
-        response = await fetch(`https://vortex.community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}&v=${new Date().getTime()}`, {
-          method: 'GET',
-          credentials: 'include'
-        });
-      }
-      const data = await response.json();
 
-      this.modesCache[pageNumber] = data;
-      this.renderPage(data);
+        const data = await response.json();
+        this.modesCache[pageNumber] = data;
+        this.totalPages = data.pages; // Use total pages from response
+      }
+
+      // Apply filters before rendering the page
+      this.applyFilters();
 
     } catch (err) {
       console.error('Error fetching modes:', err);
@@ -133,10 +113,12 @@ export default class CommunityBrowserPanel extends Panel {
   }
 
   applyFilters() {
-    const allModes = this.modesCache[this.currentPage]?.data || [];
-    const filteredModes = allModes.filter(mode => {
-      return this.activeFilters.has(mode.deviceType);
-    });
+    const pageData = this.modesCache[this.currentPage];
+    if (!pageData) return;
+
+    // Apply filters to the cached data for the current page
+    const filteredModes = pageData.data.filter(mode => this.activeFilters.has(mode.deviceType));
+
     this.renderPage({ data: filteredModes, pages: this.totalPages });
   }
 
@@ -170,7 +152,6 @@ export default class CommunityBrowserPanel extends Panel {
       this.modesContainer.innerHTML = '<p>No modes found.</p>';
       return;
     }
-      console.log("Rendering page: " + JSON.stringify(pageData));
 
     if (typeof pageData.pages === 'number') {
       this.totalPages = pageData.pages;
