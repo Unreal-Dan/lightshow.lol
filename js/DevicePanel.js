@@ -296,5 +296,14 @@ export default class DevicePanel extends Panel {
       deviceTypeSelected.classList.remove('locked');
     }
   }
+
+  isSelectionLocked() {
+    const deviceTypeSelected = document.getElementById('deviceTypeSelected');
+    if (!deviceTypeSelected) {
+      return false;
+    }
+    // Prevent dropdown from opening if it's locked
+    return deviceTypeSelected.classList.contains('locked');
+  }
 }
 

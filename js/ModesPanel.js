@@ -586,12 +586,14 @@ export default class ModesPanel extends Panel {
     const selectedDevice = this.editor.devicePanel.selectedDevice;
 
     // If the imported mode has a different device, ask the user to choose
-    if (initialDevice && selectedDevice !== initialDevice && selectedDevice !== 'None') {
+    if (initialDevice && selectedDevice !== initialDevice && selectedDevice !== 'None' && !this.editor.devicePanel.isSelectionLocked()) {
       this.showImportModeModal(initialDevice, selectedDevice, modeData, addNew);
       return;
     }
-    this.lightshow.setLedCount(modeData.num_leds);
-    this.editor.devicePanel.updateSelectedDevice(initialDevice, true);
+    if (!this.editor.devicePanel.isSelectionLocked()) {
+      this.lightshow.setLedCount(modeData.num_leds);
+      this.editor.devicePanel.updateSelectedDevice(initialDevice, true);
+    }
     const modeCount = this.lightshow.vortex.numModes();
     let curSel;
     if (addNew) {
