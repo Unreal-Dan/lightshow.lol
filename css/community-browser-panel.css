@@ -1,10 +1,13 @@
 /* vortex-community-browser-panel.css */
 
 #communityBrowserPanel {
-  /* Positioning is optional; adjust as needed */
-  top: 683px;
-  left: 5px;
   position: absolute;
+}
+
+#community-browser-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Container that holds the list of modes */
@@ -23,6 +26,11 @@
   margin-bottom: 10px;
 }
 
+#vcb-filter-container {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
 
 /* Each mode entry row */
 .community-mode-entry {

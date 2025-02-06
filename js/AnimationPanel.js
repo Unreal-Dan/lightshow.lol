@@ -121,6 +121,9 @@ export default class AnimationPanel extends Panel {
 
     // hide the spread slider
     this.toggleSpreadSlider(false);
+
+    // animation panel starts collapsed, don't move panels below when collapsing it
+    this.toggleCollapse(false);
   }
 
   applyMobileLayout() {

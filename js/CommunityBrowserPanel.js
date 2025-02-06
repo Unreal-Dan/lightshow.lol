@@ -3,26 +3,9 @@ import Panel from './Panel.js';
 export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
     const initialHTML = `
-      <div style="display: flex; flex-direction: column; align-items: center;">
-        <div id="vcb-filter-container" style="margin-bottom: 10px; display: flex; gap: 10px;">
-          <button class="vcb-filter-btn active" data-device="Orbit">
-            <img src="/public/images/orbit-logo-square-512.png" alt="Orbit" class="filter-icon" />
-          </button>
-          <button class="vcb-filter-btn active" data-device="Gloves">
-            <img src="/public/images/gloves-logo-square-512.png" alt="Gloves" class="filter-icon" />
-          </button>
-          <button class="vcb-filter-btn active" data-device="Handle">
-            <img src="/public/images/handle-logo-square-512.png" alt="Handle" class="filter-icon" />
-          </button>
-          <button class="vcb-filter-btn active" data-device="Duo">
-            <img src="/public/images/duo-logo-square-512.png" alt="Duo" class="filter-icon" />
-          </button>
-          <button class="vcb-filter-btn active" data-device="Chromadeck">
-            <img src="/public/images/chromadeck-logo-square-512.png" alt="Chromadeck" class="filter-icon" />
-          </button>
-          <button class="vcb-filter-btn active" data-device="Spark">
-            <img src="/public/images/spark-logo-square-512.png" alt="Spark" class="filter-icon" />
-          </button>
+      <div id="community-browser-container">
+        <div id="vcb-filter-container">
+          <!-- This is where filter buttons will appear -->
         </div>
         <div id="vcb-modes-container">
           <!-- This is where mode items will appear -->
@@ -40,13 +23,40 @@ export default class CommunityBrowserPanel extends Panel {
     this.vortexPort = editor.vortexPort;
 
     this.currentPage = 1;
-    this.pageSize = 15;
+    this.pageSize = 10;
     this.modesCache = {};
     this.totalPages = 1;
     this.activeFilters = new Set(); // Stores active device filters
 
     this.pageLabel = this.contentContainer.querySelector('#vcb-page-label');
     this.modesContainer = this.contentContainer.querySelector('#vcb-modes-container');
+    this.filterContainer = this.contentContainer.querySelector('#vcb-filter-container');
+
+    // Create filter button container
+    // Loop through devices and create filter buttons dynamically
+    Object.entries(this.editor.devices).forEach(([deviceName, deviceData]) => {
+      if (deviceName === 'None') return; // Skip 'None' device
+
+      const button = document.createElement('button');
+      button.className = 'vcb-filter-btn active';
+      button.dataset.device = deviceName;
+      button.innerHTML = `<img src="/${deviceData.icon}" alt="${deviceName}" class="filter-icon" />`;
+      button.title = `Filter by ${deviceData.label}`;
+
+      button.addEventListener('click', () => {
+        if (this.activeFilters.has(deviceName)) {
+          this.activeFilters.delete(deviceName);
+          button.classList.remove('active');
+        } else {
+          this.activeFilters.add(deviceName);
+          button.classList.add('active');
+        }
+        this.applyFilters();
+      });
+
+      this.activeFilters.add(deviceName);
+      this.filterContainer.appendChild(button);
+    });
 
     // Add event listeners to filter buttons
     const filterButtons = this.contentContainer.querySelectorAll('.vcb-filter-btn');
@@ -100,9 +110,13 @@ export default class CommunityBrowserPanel extends Panel {
     try {
       let response;
       if (this.editor.isLocalServer) {
-        response = await fetch('public/data/modeData.json');
+        if (pageNumber === 1) {
+          response = await fetch(`public/data/modeData.json?v=${new Date().getTime()}`);
+        } else {
+          response = await fetch(`public/data/modeData2.json?v=${new Date().getTime()}`);
+        }
       } else {
-        response = await fetch(`https://vortex.community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}`, {
+        response = await fetch(`https://vortex.community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}&v=${new Date().getTime()}`, {
           method: 'GET',
           credentials: 'include'
         });
@@ -126,11 +140,37 @@ export default class CommunityBrowserPanel extends Panel {
     this.renderPage({ data: filteredModes, pages: this.totalPages });
   }
 
+  importMode(mode) {
+    const patternSets = mode.patternSets;
+    const ledPatternOrder = mode.ledPatternOrder;
+    const patternSetMap = {};
+    patternSets.forEach(ps => {
+      patternSetMap[ps._id] = ps.data;
+    });
+    const ledCounts = {
+      'Gloves': 10,
+      'Orbit': 28,
+      'Handle': 3,
+      'Duo': 2,
+      'Chromadeck': 20,
+      'Spark': 6
+    };
+    const num_leds = ledCounts[mode.deviceType] || 1;
+    const single_pats = ledPatternOrder.map(orderIndex => patternSetMap[patternSets[orderIndex]._id]);
+    const vortexMode = {
+      flags: mode.flags,
+      num_leds: num_leds,
+      single_pats: single_pats
+    };
+    this.editor.modesPanel.importModeFromData(vortexMode, false);
+  }
+
   renderPage(pageData) {
     if (!pageData || !pageData.data) {
       this.modesContainer.innerHTML = '<p>No modes found.</p>';
       return;
     }
+      console.log("Rendering page: " + JSON.stringify(pageData));
 
     if (typeof pageData.pages === 'number') {
       this.totalPages = pageData.pages;
@@ -163,8 +203,7 @@ export default class CommunityBrowserPanel extends Panel {
       openBtn.classList.add('community-mode-btn');
       openBtn.innerHTML = '<i class="fa-solid fa-share"></i>';
       openBtn.addEventListener('click', () => {
-        console.log('Request to open mode:', mode);
-        this.editor.modesPanel.importModeFromData(mode.data, false);
+        this.importMode(mode);
       });
       actionsDiv.appendChild(openBtn);
 

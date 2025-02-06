@@ -19,6 +19,55 @@ import VortexLib from './VortexLib.js';
 import { VERSION } from './version.js';  // Adjust path if needed
 
 export default class VortexEditor {
+  devices = {
+    'None': {
+      image: 'public/images/none-logo-square-512.png',
+      icon: 'public/images/none-logo-square-64.png',
+      label: 'None',
+      ledCount: 1
+    },
+    'Orbit': {
+      image: 'public/images/orbit.png',
+      icon: 'public/images/orbit-logo-square-64.png',
+      label: 'Orbit',
+      ledCount: 28
+    },
+    'Handle': {
+      image: 'public/images/handle.png',
+      icon: 'public/images/handle-logo-square-64.png',
+      label: 'Handle',
+      ledCount: 3
+    },
+    'Gloves': {
+      image: 'public/images/gloves.png',
+      icon: 'public/images/gloves-logo-square-64.png',
+      label: 'Gloves',
+      ledCount: 10
+    },
+    'Chromadeck': {
+      image: 'public/images/chromadeck.png',
+      icon: 'public/images/chromadeck-logo-square-64.png',
+      label: 'Chromadeck',
+      ledCount: 20
+    },
+    'Spark': {
+      image: 'public/images/spark.png',
+      icon: 'public/images/spark-logo-square-64.png',
+      label: 'Spark',
+      ledCount: 6,
+      // alternate spark image/icon/label for handle
+      altImage: 'public/images/spark-handle.png',
+      altIcon: 'public/images/spark-handle-logo-square-64.png',
+      altLabel: 'SparkHandle',
+    },
+    'Duo': {
+      image: 'public/images/duo.png',
+      icon: 'public/images/duo-logo-square-64.png',
+      label: 'Duo',
+      ledCount: 2
+    }
+  };
+
   constructor(vortexLib) {
     this.vortexLib = vortexLib;
 
@@ -62,7 +111,7 @@ export default class VortexEditor {
     this.colorPickerPanel = new ColorPickerPanel(this);
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
-    //this.communityBrowserPanel = new CommunityBrowserPanel(this);
+    this.communityBrowserPanel = new CommunityBrowserPanel(this);
 
     this.panels = [
       this.welcomePanel,
@@ -76,7 +125,7 @@ export default class VortexEditor {
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel,
-      //this.communityBrowserPanel
+      this.communityBrowserPanel
     ];
     let allGood = true;
     this.panels.forEach((panel, index) => {
@@ -88,6 +137,19 @@ export default class VortexEditor {
     if (allGood) {
       console.log("All panels instantiated successfully.");
     }
+    // initial layout of left panels
+    this.leftPanels = [
+      this.aboutPanel,
+      this.animationPanel,
+      this.patternPanel,
+      this.colorsetPanel,
+      this.communityBrowserPanel
+    ];
+    this.rightPanels = [
+      this.devicePanel,
+      this.modesPanel,
+      this.ledSelectPanel,
+    ];
     this.mobileTabs = [
       // IDs of panels to include as tabs on mobile
       'welcomePanel',
@@ -97,55 +159,7 @@ export default class VortexEditor {
       'devicePanel',
       'modesPanel',
       'ledSelectPanel'
-    ]; 
-    this.devices = {
-      'None': { 
-        image: 'public/images/none-logo-square-512.png',
-        icon: 'public/images/none-logo-square-64.png',
-        label: 'None',
-        ledCount: 1
-      },
-      'Orbit': {
-        image: 'public/images/orbit.png',
-        icon: 'public/images/orbit-logo-square-64.png',
-        label: 'Orbit',
-        ledCount: 28
-      },
-      'Handle': {
-        image: 'public/images/handle.png',
-        icon: 'public/images/handle-logo-square-64.png',
-        label: 'Handle',
-        ledCount: 3
-      },
-      'Gloves': {
-        image: 'public/images/gloves.png',
-        icon: 'public/images/gloves-logo-square-64.png',
-        label: 'Gloves',
-        ledCount: 10
-      },
-      'Chromadeck': {
-        image: 'public/images/chromadeck.png',
-        icon: 'public/images/chromadeck-logo-square-64.png',
-        label: 'Chromadeck',
-        ledCount: 20
-      },
-      'Spark': {
-        image: 'public/images/spark.png',
-        icon: 'public/images/spark-logo-square-64.png',
-        label: 'Spark',
-        ledCount: 6,
-        // alternate spark image/icon/label for handle
-        altImage: 'public/images/spark-handle.png',
-        altIcon: 'public/images/spark-handle-logo-square-64.png',
-        altLabel: 'SparkHandle',
-      },
-      'Duo': {
-        image: 'public/images/duo.png',
-        icon: 'public/images/duo-logo-square-64.png',
-        label: 'Duo',
-        ledCount: 2
-      }
-    };
+    ];
   }
 
   async initialize() {
@@ -155,20 +169,34 @@ export default class VortexEditor {
     // Start the lightshow
     this.lightshow.start();
 
-    // fml I don't know why I need this pause here but if I don't have it then
-    // sometimes the panels end up below the screen and I can't fix it aaaaaaah
+    // I think the 3rd party dependencies are triggering some kind of async
+    // loading of their own and we need to let it finish before appending the
+    // panels to the page, otherwise the panels end up down below
     await this.sleep(300);
-    // guy on webdev discord #[derive(kwoka)] said to use this instead idk
-    // didn't work for the ngrok reproduction attempt so not going to bother
-    // wait till next tick
-    //nextTick = () => new Promise(res => queueMicrotask(() => setTimeout(res)));
-    //await this.nextTick();
 
     // Append panels to the DOM
     this.panels.forEach((panel) => panel.appendTo(document.body));
 
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
+
+    // position the panels
+    let leftTop = 5;
+    this.leftPanels.forEach((panel) => {
+      if (!panel || !panel.panel) return;
+      panel.panel.style.position = 'absolute';
+      panel.panel.style.left = '5px';
+      panel.panel.style.top = `${leftTop}px`;
+      leftTop += panel.panel.offsetHeight + 5;
+    });
+    let rightTop = 5;
+    this.rightPanels.forEach((panel) => {
+      if (!panel || !panel.panel) return;
+      panel.panel.style.position = 'absolute';
+      panel.panel.style.right = '5px';
+      panel.panel.style.top = `${rightTop}px`;
+      rightTop += panel.panel.offsetHeight + 5;
+    });
 
     // Handle URL-imported mode data
     this.importModeDataFromUrl();

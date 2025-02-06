@@ -476,6 +476,9 @@ export default class ModesPanel extends Panel {
       return;
     }
     patterns.forEach((pat, index) => {
+      if (!pat) {
+        return;
+      }
       let patData = pat.data;
       if (!patData) {
         patData = pat;

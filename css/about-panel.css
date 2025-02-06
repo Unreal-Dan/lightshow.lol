@@ -1,8 +1,6 @@
 /* about-panel.css */
 
 #aboutPanel {
-  left: 5px;
-  top: 5px;
   text-align: center;
   z-index: 3;
 }
