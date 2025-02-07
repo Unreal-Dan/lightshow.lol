@@ -130,10 +130,24 @@ export default class Modal {
     this.clearButtons(); // Clear previous buttons
 
     buttonConfigs.forEach(config => {
-      const button = document.createElement('button'); // Use <button> element
-      button.textContent = config.label;
-      button.className = `modal-button ${config.class || ''}`; // Apply button class
-      button.addEventListener('click', config.onClick);
+      let button;
+
+      if (config.customHtml) {
+        // Use the provided HTML if it exists
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = config.customHtml.trim();
+        button = tempContainer.firstChild;
+      } else {
+        // Otherwise, create a default <button> element
+        button = document.createElement('button');
+        button.textContent = config.label || 'Button'; // Default label fallback
+        button.className = `modal-button ${config.class || ''}`;
+      }
+
+      // Ensure onClick works
+      if (config.onClick) {
+        button.addEventListener('click', config.onClick);
+      }
 
       this.modalButtons.appendChild(button);
     });

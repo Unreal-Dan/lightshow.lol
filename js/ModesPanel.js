@@ -452,38 +452,26 @@ export default class ModesPanel extends Panel {
     // Determine which buttons to show
     const buttons = [];
 
-    if (currentDevice === 'None' || importedDevice === currentDevice) {
-      // Single "Import Mode" button when devices match
-      buttons.push({
-        label: 'Import Mode',
-        class: 'modal-button primary-button',
-        onClick: () => {
-          this.deviceSelectionModal.hide();
-          this.finalizeModeImport(modeData, addNew);
-        }
-      });
-    } else {
-      // Two options when devices don't match
-      buttons.push({
-        label: `Switch to ${importedDevice}`,
-        class: 'modal-button switch-button',
-        onClick: async () => {
-          this.deviceSelectionModal.hide();
-          this.editor.lightshow.setLedCount(modeData.num_leds);
-          await this.editor.devicePanel.updateSelectedDevice(importedDevice, true);
-          this.finalizeModeImport(modeData, addNew);
-        }
-      });
+    // Two options when devices don't match
+    buttons.push({
+      label: `Switch to ${importedDevice}`,
+      class: 'modal-button switch-button',
+      onClick: async () => {
+        this.deviceSelectionModal.hide();
+        this.editor.lightshow.setLedCount(modeData.num_leds);
+        await this.editor.devicePanel.updateSelectedDevice(importedDevice, true);
+        this.finalizeModeImport(modeData, addNew);
+      }
+    });
 
-      buttons.push({
-        label: `Convert to ${currentDevice}`,
-        class: 'modal-button secondary-button',
-        onClick: () => {
-          this.deviceSelectionModal.hide();
-          this.finalizeModeImport(modeData, addNew);
-        }
-      });
-    }
+    buttons.push({
+      label: `Convert to ${currentDevice}`,
+      class: 'modal-button convert-button',
+      onClick: () => {
+        this.deviceSelectionModal.hide();
+        this.finalizeModeImport(modeData, addNew);
+      }
+    });
 
     // Show the modal
     this.deviceSelectionModal.show({

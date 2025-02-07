@@ -64,41 +64,9 @@
   justify-content: center;
   margin-top: 20px;
   gap: 20%;
+  width: 100%;
+  max-width: 100%;
 }
-
-.modal-button {
-  width: auto;
-  height: auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 2px solid transparent;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 20px;
-  transition: all 0.3s;
-}
-
-/* Cancel button */
-.cancel-button {
-  width: auto;
-}
-
-.cancel-button:hover {
-  background-color: #b02a37; /* Darker red */
-  border-color: #b02a37;
-}
-
-/* Proceed button */
-.proceed-button {
-  width: auto;
-}
-
-.proceed-button:hover {
-  background-color: #218838; /* Darker green */
-  border-color: #218838;
-}
-
 
 .modal-device-container {
   display: flex;
@@ -138,40 +106,62 @@
   margin-bottom: 10px;
 }
 
-.modal-buttons {
+.modal-button {
+  min-width: 80px; /* Ensures they are not too small */
+  min-height: 40px; /* Prevents shrinking */
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
   display: flex;
   justify-content: center;
-  gap: 40px; /* Keep buttons balanced */
-  margin-top: 30px; /* More vertical spacing */
-  width: 100%;
-  max-width: 100%;
+  align-items: center;
+  color: white !important; /* Ensure the text is visible */
 }
 
+/* ------------------------------------ */
+/* flash firmware dialogues have yes/no */
+.modal-button.cancel-button {
+  background-color: #b02a37;
+}
 
-.primary-button {
+.modal-button.cancel-button:hover {
+  background-color: #8f1f2a;
+}
+
+.modal-button.proceed-button {
   background-color: #218838;
-  color: white;
 }
 
-.primary-button:hover {
+.modal-button.proceed-button:hover {
   background-color: #1a6d2d;
 }
 
-.switch-button {
+/* --------------------------------------- */
+/* import mode dialogue has switch/convert */
+
+.modal-button.switch-button {
   background-color: #0066cc;
   color: white;
+  height: 50px;
+  width: auto;
 }
 
-.switch-button:hover {
+.modal-button.switch-button:hover {
   background-color: #005bb5;
 }
 
-.secondary-button {
-  background-color: #b02a37;
+.modal-button.convert-button {
+  background-color: #218838;
   color: white;
+  height: 50px;
+  width: auto;
 }
 
-.secondary-button:hover {
-  background-color: #8f1f2a;
+.modal-button.convert-button:hover {
+  background-color: #1a6d2d;
 }
 
