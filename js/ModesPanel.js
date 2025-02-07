@@ -45,7 +45,7 @@ export default class ModesPanel extends Panel {
     addModeButton.addEventListener('click', () => this.addMode());
 
     const importModeButton = document.getElementById('importModeButton');
-    importModeButton.addEventListener('click', () => this.importMode());
+    importModeButton.addEventListener('click', () => this.showPasteModeModal());
 
     const pushButton = document.getElementById('pushToDeviceButton');
     pushButton.addEventListener('click', () => this.editor.pushToDevice());
@@ -183,17 +183,17 @@ export default class ModesPanel extends Panel {
       // Share Mode
       modeEntry.querySelector('.share-mode-btn').addEventListener('click', (event) => {
         event.stopPropagation();
-        this.shareMode();
+        this.shareModeToCommunity();
       });
       // Link Mode
       modeEntry.querySelector('.link-mode-btn').addEventListener('click', (event) => {
         event.stopPropagation();
-        this.linkMode();
+        this.showLinkModeModal();
       });
       // Export Mode
       modeEntry.querySelector('.export-mode-btn').addEventListener('click', (event) => {
         event.stopPropagation();
-        this.exportMode();
+        this.showExportModeModal();
       });
       // click select
       modeEntry.addEventListener('click', event => {
@@ -264,7 +264,7 @@ export default class ModesPanel extends Panel {
     Notification.success("Successfully Added Mode " + modeCount);
   }
 
-  shareMode() {
+  shareModeToCommunity() {
     if (!this.lightshow.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to share");
       return;
@@ -284,7 +284,7 @@ export default class ModesPanel extends Panel {
     window.open(shareUrl, '_blank');
   }
 
-  linkMode() {
+  showLinkModeModal() {
     if (!this.lightshow.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to share");
       return;
@@ -321,38 +321,13 @@ export default class ModesPanel extends Panel {
         Notification.failure("No mode data provided in the link.");
         return;
       }
-
       // Decode Base64 URL-safe format
       data = data.replace(/-/g, '+').replace(/_/g, '/');
       while (data.length % 4 !== 0) {
         data += '=';
       }
-
-      // Decode Base64
-      const binaryString = atob(data);
-      const byteArray = new Uint8Array(binaryString.length);
-
-      for (let i = 0; i < binaryString.length; i++) {
-        byteArray[i] = binaryString.charCodeAt(i);
-      }
-
-      let modeJson;
-
-      // Attempt direct JSON parsing first
-      try {
-        modeJson = JSON.parse(new TextDecoder().decode(byteArray));
-      } catch {
-        // If direct parsing fails, assume it's compressed and try decompressing
-        try {
-          const decompressedJson = pako.inflate(byteArray, { to: 'string' });
-          modeJson = JSON.parse(decompressedJson);
-        } catch (error) {
-          throw new Error("Invalid mode data: unable to parse or decompress.");
-        }
-      }
-
       // Import mode
-      this.importModeFromData(modeJson, true);
+      this.decodeAndImportMode(data, true);
       Notification.success("Successfully imported mode from link.");
     } catch (error) {
       Notification.failure("Failed to import mode from link.");
@@ -360,7 +335,7 @@ export default class ModesPanel extends Panel {
     }
   }
 
-  exportMode() {
+  showExportModeModal() {
     if (!this.lightshow.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to export");
       return;
@@ -379,20 +354,13 @@ export default class ModesPanel extends Panel {
     Notification.success("Copied JSON mode to clipboard");
   }
 
-  importMode() {
+  showPasteModeModal() {
     this.importModal.show({
       placeholder: 'Paste a compressed JSON mode',
       title: 'Import/Paste a Mode',
       onInput: (event) => {
         try {
-          const data = event.target.value;
-          const binaryString = atob(data);
-          const byteArray = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            byteArray[i] = binaryString.charCodeAt(i);
-          }
-          const decompressedJson = pako.inflate(byteArray, { to: 'string' });
-          this.importModeFromData(JSON.parse(decompressedJson));
+          this.decodeAndImportMode(event.target.value, true);
         } catch (error) {
           Notification.failure("Invalid compressed mode data");
           console.error("Failed to decompress/import mode:", error);
@@ -401,21 +369,6 @@ export default class ModesPanel extends Panel {
     });
 
     this.importModal.selectText();
-  }
-
-  importPatternFromData(patternData, addNew = false) {
-    if (!patternData) {
-      Notification.failure("No pattern data");
-      return;
-    }
-    const modeData = {
-      flags: 6,
-      num_leds: 1,
-      single_pats: [
-        patternData
-      ]
-    };
-    return this.importModeFromData(modeData, addNew);
   }
 
   showImportModeModal(importedDevice, currentDevice, modeData, addNew) {
@@ -480,7 +433,6 @@ export default class ModesPanel extends Panel {
       buttons: buttons
     });
   }
-
 
   finalizeModeImport(modeData, addNew) {
     //this.lightshow.setLedCount(modeData.num_leds);
@@ -562,10 +514,25 @@ export default class ModesPanel extends Panel {
     Notification.success("Successfully imported mode");
   }
 
+  importPatternFromData(patternData, addNew = false) {
+    if (!patternData) {
+      Notification.failure("No pattern data");
+      return false;
+    }
+    const modeData = {
+      flags: 6,
+      num_leds: 1,
+      single_pats: [
+        patternData
+      ]
+    };
+    return this.importModeFromData(modeData, addNew);
+  }
+
   importModeFromData(modeData, addNew = true) {
     if (!modeData) {
       Notification.failure("No mode data");
-      return;
+      return false;
     }
     let initialDevice = Object.entries(this.editor.devices).find(
       ([, device]) => device.ledCount === modeData.num_leds
@@ -576,7 +543,7 @@ export default class ModesPanel extends Panel {
     // If the imported mode has a different device, ask the user to choose
     if (initialDevice && selectedDevice !== initialDevice && selectedDevice !== 'None' && !this.editor.devicePanel.isSelectionLocked()) {
       this.showImportModeModal(initialDevice, selectedDevice, modeData, addNew);
-      return;
+      return true;
     }
     if (!this.editor.devicePanel.isSelectionLocked()) {
       this.lightshow.setLedCount(modeData.num_leds);
@@ -591,11 +558,11 @@ export default class ModesPanel extends Panel {
       const maxModes = this.getMaxModes(device)
       if (modeCount >= maxModes) {
         Notification.failure(`The ${device} can only hold ${maxModes} modes`);
-        return;
+        return false;
       }
       if (!this.lightshow.vortex.addNewMode(false)) {
         Notification.failure("Failed to add another mode");
-        return;
+        return false;
       }
       this.lightshow.vortex.setCurMode(modeCount, false);
     }
@@ -603,7 +570,7 @@ export default class ModesPanel extends Panel {
     let cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) {
       console.log("cur empty!");
-      return;
+      return false;
     }
     // TODO: investigate this, if all modes are deleted then the first mode added back
     //       seems to need initialization... If we don't init here it seems to crash
@@ -613,11 +580,11 @@ export default class ModesPanel extends Panel {
     const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
     if (!patterns) {
       console.log("Patterns empty!");
-      return;
+      return false;
     }
     patterns.forEach((pat, index) => {
       if (!pat) {
-        return;
+        return false;
       }
       let patData = pat.data;
       if (!patData) {
@@ -625,7 +592,7 @@ export default class ModesPanel extends Panel {
       }
       if (!patData.colorset) {
         Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
-        return;
+        return false;
       }
 
       const set = new this.lightshow.vortexLib.Colorset();
@@ -664,6 +631,41 @@ export default class ModesPanel extends Panel {
     this.refreshPatternControlPanel();
     this.refresh();
     Notification.success("Successfully imported mode");
+    return true;
+  }
+
+  decodeAndImportMode(data, addNew = true) {
+    try {
+      if (!data) {
+        return false;
+      }
+
+      // Decode Base64
+      const binaryString = atob(data);
+      const byteArray = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        byteArray[i] = binaryString.charCodeAt(i);
+      }
+
+      let modeJson;
+      // Attempt direct JSON parsing first
+      try {
+        modeJson = JSON.parse(new TextDecoder().decode(byteArray));
+      } catch {
+        // If direct parsing fails, assume it's compressed and try decompressing
+        try {
+          const decompressedJson = pako.inflate(byteArray, { to: 'string' });
+          modeJson = JSON.parse(decompressedJson);
+        } catch (error) {
+          throw new Error("Invalid mode data: unable to parse or decompress.");
+        }
+      }
+
+      // Import mode
+      return this.importModeFromData(modeJson, addNew);
+    } catch (error) {
+      console.error("Error decoding and importing mode:", error);
+    }
   }
 
   deleteMode(index) {
