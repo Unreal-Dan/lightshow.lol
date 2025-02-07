@@ -56,9 +56,9 @@ export default class LedSelectPanel extends Panel {
     this.hide();
   }
 
-  toggleAltImage() {
+  async toggleAltImage() {
     this.isAlt = !this.isAlt;
-    this.renderLedIndicators(this.selectedDevice);
+    await this.renderLedIndicators(this.selectedDevice);
   }
 
   async updateSelectedDevice(device) {
@@ -73,9 +73,9 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.style.display = 'block';
     this.selectedDevice = device;
     await this.renderLedIndicators(device);
-    this.selectAllLeds();
-    this.refreshLedList();
     this.show();
+    this.refreshLedList();
+    this.selectAllLeds();
   }
 
   async getLedPositions(deviceName) {
@@ -105,55 +105,63 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.style.display = 'block';
     ledList.style.display = 'block';
     ledControls.style.display = 'flex';
-    deviceImageContainer.innerHTML = '';
 
-    const overlay = document.createElement('div');
-    overlay.classList.add('led-overlay');
-    deviceImageContainer.appendChild(overlay);
+    // Check if an existing overlay already exists
+    let overlay = deviceImageContainer.querySelector('.led-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.classList.add('led-overlay');
+      deviceImageContainer.appendChild(overlay);
+    } else {
+      overlay.innerHTML = ''; // Clear previous LED indicators
+    }
 
-    const swapDeviceButton = document.createElement('button');
-    swapDeviceButton.id = 'swapDeviceImage';
-    swapDeviceButton.title = 'Swap Device';
+    // Check if the swap button already exists
+    let swapDeviceButton = document.getElementById('swapDeviceImage');
+    if (!swapDeviceButton) {
+      swapDeviceButton = document.createElement('button');
+      swapDeviceButton.id = 'swapDeviceImage';
+      swapDeviceButton.title = 'Swap Device';
+      swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>';
+      deviceImageContainer.appendChild(swapDeviceButton);
+    }
     swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
-    swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>'
-    swapDeviceButton.addEventListener('click', () => this.toggleAltImage());
-    deviceImageContainer.appendChild(swapDeviceButton);
+    swapDeviceButton.onclick = async () => this.toggleAltImage();
 
     const deviceData = await this.getLedPositions(this.isAlt ? this.editor.devices[deviceName].altLabel : deviceName);
-    const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage :
-      this.editor.devices[deviceName].image;
+    const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
 
-    if (deviceImageSrc) {
-      const deviceImage = document.createElement('img');
-      deviceImage.src = deviceImageSrc + '?v=' + new Date().getTime();
+    // Check if the existing device image needs to be replaced
+    let deviceImage = deviceImageContainer.querySelector('img');
+    if (!deviceImage) {
+      deviceImage = document.createElement('img');
       deviceImage.style.display = 'block';
       deviceImage.style.width = '100%';
       deviceImage.style.height = 'auto';
-
-      // load the device image
-      deviceImage.onload = () => {
-        const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
-        const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
-
-        const selectedLeds = this.getSelectedLeds();
-
-        deviceData.points.forEach((point, index) => {
-          const ledIndicator = document.createElement('div');
-          ledIndicator.classList.add('led-indicator');
-          if (index in selectedLeds) {
-            ledIndicator.classList.add('selected');
-          }
-          ledIndicator.style.left = `${point.x * scaleX}px`;
-          ledIndicator.style.top = `${point.y * scaleY}px`;
-          ledIndicator.dataset.ledIndex = index;
-
-          overlay.appendChild(ledIndicator);
-        });
-      };
-
-      // done loading deviceImage, append id
       deviceImageContainer.appendChild(deviceImage);
     }
+
+    deviceImage.src = deviceImageSrc + '?v=' + new Date().getTime();
+
+    deviceImage.onload = () => {
+      const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
+      const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
+
+      const selectedLeds = this.getSelectedLeds();
+
+      deviceData.points.forEach((point, index) => {
+        const ledIndicator = document.createElement('div');
+        ledIndicator.classList.add('led-indicator');
+        if (index in selectedLeds) {
+          ledIndicator.classList.add('selected');
+        }
+        ledIndicator.style.left = `${point.x * scaleX}px`;
+        ledIndicator.style.top = `${point.y * scaleY}px`;
+        ledIndicator.dataset.ledIndex = index;
+
+        overlay.appendChild(ledIndicator);
+      });
+    };
   }
 
   refreshLedList() {

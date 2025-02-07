@@ -146,10 +146,9 @@ export default class ModesPanel extends Panel {
     }
     this.lightshow.vortex.setCurMode(curSel, false);
     this.attachModeEventListeners();
-    this.editor.ledSelectPanel.refreshLedList(fromEvent);
   }
 
-  selectMode(index) {
+  selectMode(index, refresh = true) {
     this.lightshow.vortex.setCurMode(index, true);
 
     // Hide buttons for all modes first
@@ -163,8 +162,10 @@ export default class ModesPanel extends Panel {
       selectedMode.style.display = 'flex';
     }
 
-    this.editor.ledSelectPanel.refreshLedList();
-    this.refreshPatternControlPanel();
+    if (refresh) {
+      this.editor.ledSelectPanel.refreshLedList();
+      this.refreshPatternControlPanel();
+    }
   }
 
   attachModeEventListeners() {
@@ -411,18 +412,16 @@ export default class ModesPanel extends Panel {
       class: 'modal-button switch-button',
       onClick: async () => {
         this.deviceSelectionModal.hide();
-        this.editor.lightshow.setLedCount(modeData.num_leds);
-        await this.editor.devicePanel.updateSelectedDevice(importedDevice, true);
-        this.finalizeModeImport(modeData, addNew);
+        await this.finalizeModeImport(importedDevice, modeData, addNew);
       }
     });
 
     buttons.push({
       label: `Convert to ${currentDevice}`,
       class: 'modal-button convert-button',
-      onClick: () => {
+      onClick: async () => {
         this.deviceSelectionModal.hide();
-        this.finalizeModeImport(modeData, addNew);
+        await this.finalizeModeImport(currentDevice, modeData, addNew);
       }
     });
 
@@ -434,8 +433,12 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  finalizeModeImport(modeData, addNew) {
-    //this.lightshow.setLedCount(modeData.num_leds);
+  async finalizeModeImport(deviceName, modeData, addNew) {
+    if (!this.editor.devicePanel.isSelectionLocked()) {
+      this.lightshow.setLedCount(modeData.num_leds);
+      await this.editor.devicePanel.updateSelectedDevice(deviceName, true);
+    }
+
     const modeCount = this.lightshow.vortex.numModes();
     let curSel;
     if (addNew) {
@@ -505,11 +508,7 @@ export default class ModesPanel extends Panel {
       this.lightshow.vortex.setCurMode(curSel, false);
     }
 
-    this.refreshModeList();
-    this.editor.ledSelectPanel.renderLedIndicators(this.editor.devicePanel.selectedDevice);
-    this.editor.ledSelectPanel.handleLedSelectionChange();
-    this.selectMode(addNew ? modeCount : curSel);
-    this.refreshPatternControlPanel();
+    this.selectMode(addNew ? modeCount : curSel, false);
     this.refresh();
     Notification.success("Successfully imported mode");
   }
@@ -531,128 +530,35 @@ export default class ModesPanel extends Panel {
 
   importModeFromData(modeData, addNew = true) {
     if (!modeData) {
-      Notification.failure("No mode data");
+      Notification.failure("No mode data provided");
       return false;
     }
-    let initialDevice = Object.entries(this.editor.devices).find(
-      ([, device]) => device.ledCount === modeData.num_leds
-    )?.[0] || 'None';
 
+    const initialDevice = this.getDeviceForMode(modeData);
     const selectedDevice = this.editor.devicePanel.selectedDevice;
 
-    // If the imported mode has a different device, ask the user to choose
-    if (initialDevice && selectedDevice !== initialDevice && selectedDevice !== 'None' && !this.editor.devicePanel.isSelectionLocked()) {
+    if (this.requiresDeviceSelection(initialDevice, selectedDevice)) {
       this.showImportModeModal(initialDevice, selectedDevice, modeData, addNew);
       return true;
     }
-    if (!this.editor.devicePanel.isSelectionLocked()) {
-      this.lightshow.setLedCount(modeData.num_leds);
-      this.editor.devicePanel.updateSelectedDevice(initialDevice, true);
-    }
-    const modeCount = this.lightshow.vortex.numModes();
-    let curSel;
-    if (addNew) {
-      curSel = this.lightshow.vortex.engine().modes().curModeIndex();
-      // check the mode count against max
-      const device = this.editor.devicePanel.selectedDevice;
-      const maxModes = this.getMaxModes(device)
-      if (modeCount >= maxModes) {
-        Notification.failure(`The ${device} can only hold ${maxModes} modes`);
-        return false;
-      }
-      if (!this.lightshow.vortex.addNewMode(false)) {
-        Notification.failure("Failed to add another mode");
-        return false;
-      }
-      this.lightshow.vortex.setCurMode(modeCount, false);
-    }
 
-    let cur = this.lightshow.vortex.engine().modes().curMode();
-    if (!cur) {
-      console.log("cur empty!");
-      return false;
-    }
-    // TODO: investigate this, if all modes are deleted then the first mode added back
-    //       seems to need initialization... If we don't init here it seems to crash
-    //       actually might have been the fetching of cur once for all operations
-    cur.init();
-
-    const patterns = modeData.single_pats ? modeData.single_pats : [modeData.multi_pat];
-    if (!patterns) {
-      console.log("Patterns empty!");
-      return false;
-    }
-    patterns.forEach((pat, index) => {
-      if (!pat) {
-        return false;
-      }
-      let patData = pat.data;
-      if (!patData) {
-        patData = pat;
-      }
-      if (!patData.colorset) {
-        Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
-        return false;
-      }
-
-      const set = new this.lightshow.vortexLib.Colorset();
-      patData.colorset.forEach(hexCode => {
-        const normalizedHex = hexCode.replace('0x', '#');
-        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
-        if (result) {
-          set.addColor(new this.lightshow.vortexLib.RGBColor(
-            parseInt(result[1], 16),
-            parseInt(result[2], 16),
-            parseInt(result[3], 16)
-          ));
-        }
-      });
-
-      const patID = this.lightshow.vortexLib.intToPatternID(patData.pattern_id);
-      const args = new this.lightshow.vortexLib.PatternArgs();
-      patData.args.forEach(arg => args.addArgs(arg));
-      // TODO: Have to fetch cur each time some reason... Use after free I guess
-      cur = this.lightshow.vortex.engine().modes().curMode();
-      cur.setPattern(patID, index, args, set);
-      this.lightshow.vortex.setPatternArgs(index, args, true);
-    });
-
-    // TODO: Have to fetch cur each time some reason... Use after free I guess
-    cur = this.lightshow.vortex.engine().modes().curMode();
-    cur.init();
-    this.lightshow.vortex.engine().modes().saveCurMode();
-
-    if (addNew) {
-      this.lightshow.vortex.setCurMode(curSel, false);
-    }
-
-    this.refreshModeList();
-    this.selectMode(addNew ? modeCount : curSel);
-    this.refreshPatternControlPanel();
-    this.refresh();
-    Notification.success("Successfully imported mode");
-    return true;
+    return this.finalizeModeImport(initialDevice, modeData, addNew);
   }
 
   decodeAndImportMode(data, addNew = true) {
     try {
-      if (!data) {
-        return false;
-      }
+      if (!data) return false;
 
-      // Decode Base64
+      let modeJson;
       const binaryString = atob(data);
       const byteArray = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         byteArray[i] = binaryString.charCodeAt(i);
       }
 
-      let modeJson;
-      // Attempt direct JSON parsing first
       try {
         modeJson = JSON.parse(new TextDecoder().decode(byteArray));
       } catch {
-        // If direct parsing fails, assume it's compressed and try decompressing
         try {
           const decompressedJson = pako.inflate(byteArray, { to: 'string' });
           modeJson = JSON.parse(decompressedJson);
@@ -661,11 +567,23 @@ export default class ModesPanel extends Panel {
         }
       }
 
-      // Import mode
       return this.importModeFromData(modeJson, addNew);
     } catch (error) {
+      Notification.failure("Failed to import mode");
       console.error("Error decoding and importing mode:", error);
+      return false;
     }
+  }
+
+  getDeviceForMode(modeData) {
+    return Object.entries(this.editor.devices).find(
+      ([, device]) => device.ledCount === modeData.num_leds
+    )?.[0] || 'None';
+  }
+
+  requiresDeviceSelection(importedDevice, selectedDevice) {
+    return importedDevice && selectedDevice !== importedDevice && selectedDevice !== 'None' &&
+      !this.editor.devicePanel.isSelectionLocked();
   }
 
   deleteMode(index) {
