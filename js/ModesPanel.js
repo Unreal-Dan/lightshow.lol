@@ -464,13 +464,19 @@ export default class ModesPanel extends Panel {
     cur.init();
 
     const patterns = modeData.single_pats || [modeData.multi_pat];
-    if (!patterns) {
+    if (!patterns || patterns.length === 0) {
       console.log("Patterns empty!");
       return;
     }
 
-    patterns.forEach((pat, index) => {
-      if (!pat) return;
+    const totalLeds = this.lightshow.vortex.engine().leds().ledCount(); // Get target device LED count
+    const modeLeds = modeData.num_leds; // Get mode's original LED count
+
+    for (let i = 0; i < totalLeds; i++) {
+      const patternIndex = i % patterns.length; // Repeat patterns cyclically
+      const pat = patterns[patternIndex];
+
+      if (!pat) continue;
 
       let patData = pat.data || pat;
       if (!patData.colorset) {
@@ -496,9 +502,9 @@ export default class ModesPanel extends Panel {
       patData.args.forEach(arg => args.addArgs(arg));
 
       cur = this.lightshow.vortex.engine().modes().curMode();
-      cur.setPattern(patID, index, args, set);
-      this.lightshow.vortex.setPatternArgs(index, args, true);
-    });
+      cur.setPattern(patID, i, args, set);
+      this.lightshow.vortex.setPatternArgs(i, args, true);
+    }
 
     cur = this.lightshow.vortex.engine().modes().curMode();
     cur.init();
@@ -512,6 +518,8 @@ export default class ModesPanel extends Panel {
     this.refresh();
     Notification.success("Successfully imported mode");
   }
+
+
 
   importPatternFromData(patternData, addNew = false) {
     if (!patternData) {
