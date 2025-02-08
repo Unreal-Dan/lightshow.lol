@@ -23,7 +23,7 @@ export default class CommunityBrowserPanel extends Panel {
     this.vortexPort = editor.vortexPort;
 
     this.currentPage = 1;
-    this.pageSize = 10;
+    this.pageSize = 999;
     this.modesCache = {};
     this.totalPages = 1;
     this.activeFilters = new Set(); // Stores active device filters
