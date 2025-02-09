@@ -249,21 +249,30 @@ export default class Panel {
         isDragging = false;
 
         const rect = this.panel.getBoundingClientRect();
-        const snapPoints = [
-          ...this.getScreenSnapPoints(),
-          ...this.getOtherPanelSnapPoints(),
-          { x: this.originalPosition.left, y: this.originalPosition.top }, // Original position
-        ];
+        const headerHeight = this.panel.querySelector('.panel-header').offsetHeight;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
 
-        const { snappedX, snappedY } = this.findClosestSnap(rect, snapPoints);
+        let newLeft = rect.left;
+        let newTop = rect.top;
 
-        // Apply snapping if within range
-        if (snappedX !== null) {
-          this.panel.style.left = `${snappedX}px`;
+        // Ensure the panel does not go off the left or right edge
+        if (rect.right < 0) {
+          newLeft = 0;
+        } else if (rect.left > screenWidth) {
+          newLeft = screenWidth - rect.width;
         }
-        if (snappedY !== null) {
-          this.panel.style.top = `${snappedY}px`;
+
+        // Ensure the panel's header does not go above the top or beyond the bottom
+        if (rect.top < 0) {
+          newTop = 0; // Snap to top
+        } else if (rect.top + headerHeight > screenHeight) {
+          newTop = screenHeight - (headerHeight * 2); // Keep header visible
         }
+
+        // Apply the corrected position
+        this.panel.style.left = `${newLeft}px`;
+        this.panel.style.top = `${newTop}px`;
       }
     };
 
