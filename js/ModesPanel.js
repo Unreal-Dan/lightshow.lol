@@ -37,7 +37,7 @@ export default class ModesPanel extends Panel {
     this.shareModal = new Modal('share');
     this.exportModal = new Modal('export');
     this.importModal = new Modal('import');
-    this.deviceSelectionModal = new Modal('device-selection');
+    this.conversionModal = new Modal('conversion');
   }
 
   initialize() {
@@ -411,7 +411,7 @@ export default class ModesPanel extends Panel {
       label: `Switch to ${importedDevice}`,
       class: 'modal-button switch-button',
       onClick: async () => {
-        this.deviceSelectionModal.hide();
+        this.conversionModal.hide();
         await this.finalizeModeImport(importedDevice, modeData, addNew);
       }
     });
@@ -420,13 +420,13 @@ export default class ModesPanel extends Panel {
       label: `Convert to ${currentDevice}`,
       class: 'modal-button convert-button',
       onClick: async () => {
-        this.deviceSelectionModal.hide();
+        this.conversionModal.hide();
         await this.finalizeModeImport(currentDevice, modeData, addNew);
       }
     });
 
     // Show the modal
-    this.deviceSelectionModal.show({
+    this.conversionModal.show({
       title: `Change to ${importedDevice}?`,
       blurb: modalBlurb,
       buttons: buttons
