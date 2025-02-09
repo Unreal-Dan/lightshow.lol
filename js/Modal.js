@@ -1,19 +1,13 @@
 export default class Modal {
+  // Track the currently open modal
+  static activeModal = null;
+
   constructor(id) {
     if (!document.getElementById("modal_" + id)) {
-      this.createModal(id);  // Ensure modal is created only once and not multiple times
+      // Ensure modal is created only once and not multiple times
+      this.createModal(id);
     }
     this.currentInputListener = null;
-  }
-
-  static getExistingModal(id) {
-    const modalElement = document.getElementById("modal_" + id);
-    if (modalElement) {
-      const modal = new Modal(id);
-      modal.cacheElements(id);  // Make sure elements are cached for the existing modal
-      return modal;
-    }
-    return null;
   }
 
   createModal(id) {
@@ -53,6 +47,18 @@ export default class Modal {
     };
   }
 
+
+  setupEventListeners() {
+    const closeButton = this.modal.querySelector('.close');
+    closeButton.onclick = () => this.hide();
+  }
+
+  static windowClickListener(event) {
+    if (Modal.activeModal && event.target === Modal.activeModal.modal) {
+      Modal.activeModal.hide();
+    }
+  }
+
   show(config) {
     if (!this.modal || !this.modalInput) {
       this.cacheElements(this.modalId);
@@ -60,6 +66,12 @@ export default class Modal {
         return;
       }
     }
+
+    if (Modal.activeModal && Modal.activeModal !== this) {
+      Modal.activeModal.hide();
+    }
+
+    Modal.activeModal = this; // Set this as the active modal
 
     if (this.currentInputListener) {
       this.modalInput.removeEventListener('input', this.currentInputListener);
@@ -91,14 +103,23 @@ export default class Modal {
     } else {
       this.clearButtons();
     }
+
+    window.addEventListener('click', Modal.windowClickListener);
   }
 
   hide() {
-    this.modal.style.display = 'none';
-    this.clearButtons();
-    if (this.currentInputListener) {
-      this.modalInput.removeEventListener('input', this.currentInputListener);
-      this.currentInputListener = null;
+    if (this.modal) {
+      this.modal.style.display = 'none';
+      this.clearButtons();
+      if (this.currentInputListener) {
+        this.modalInput.removeEventListener('input', this.currentInputListener);
+        this.currentInputListener = null;
+      }
+    }
+
+    if (Modal.activeModal === this) {
+      Modal.activeModal = null;
+      window.removeEventListener('click', Modal.windowClickListener);
     }
   }
 
