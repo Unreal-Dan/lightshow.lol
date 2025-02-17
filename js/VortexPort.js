@@ -655,14 +655,14 @@ export default class VortexPort {
         throw new Error('Bad CRC or size: ' + headerStream.size());
       }
       // process header
-      const headerData = vortexLib.getDataArray(headerStream);
+      const headerData = vorteXLib.getDataArray(headerStream);
       duoHeader.vMajor = headerData[0];
       duoHeader.vMinor = headerData[1];
       duoHeader.vBuild = 0;
       duoHeader.flags = headerData[2];
       duoHeader.brightness = headerData[3];
       duoHeader.numModes = headerData[4];
-      if (headerStream.size() > 5) {
+      if (headerStream.size() > 5 && duoHeader.vMinor > 2) {
         duoHeader.vBuild = headerData[5];
       }
       // construct a full version string
