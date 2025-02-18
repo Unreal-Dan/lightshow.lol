@@ -168,14 +168,128 @@ export default class ModesPanel extends Panel {
     }
   }
 
+  // Override setSelected to set this panel as the active panel
+  setSelected() {
+    super.setSelected();
+    this.selectedModeIndex = this.lightshow.vortex.engine().modes().curModeIndex();
+  }
+
+  // Enable copy support
+  canCopy() {
+    return this.selectedModeIndex !== undefined;
+  }
+
+  // Enable paste support
+  canPaste() {
+    return true;
+  }
+
+  // Copy selected mode data
+  copy() {
+    if (this.selectedModeIndex === undefined) {
+      return;
+    }
+    const modeData = this.lightshow.vortex.printModeJson(false);
+    navigator.clipboard.writeText(modeData).then(() => {
+      Notification.success("Copied mode to clipboard");
+    }).catch(() => {
+      Notification.failure("Failed to copy mode");
+    });
+  }
+
+  // Paste copied mode data
+  paste() {
+    navigator.clipboard.readText().then((data) => {
+      if (/^#?[0-9A-Fa-f]{6}$/.test(data)) {
+        if (this.editor.colorsetPanel) {
+          this.editor.colorsetPanel.paste();
+          return;
+        }
+      }
+      this.importModeFromData(JSON.parse(data), true);
+    }).catch(() => {
+      Notification.failure("Failed to paste mode");
+    });
+  }
+
   attachModeEventListeners() {
     const modesListContainer = document.getElementById('modesListContainer');
+    let draggedElement = null;
+    let draggedIndex = null;
 
     modesListContainer.querySelectorAll('.mode-entry').forEach(modeEntry => {
-      modeEntry.addEventListener('mousedown', event => {
-        const modeElement = event.target.closest('.mode-entry');
-        modeElement.classList.add('pressed');
+
+      // Add dragstart event to each mode
+      modeEntry.setAttribute('draggable', true);
+      modeEntry.addEventListener('dragstart', (event) => {
+        draggedElement = event.target;
+        draggedIndex = parseInt(draggedElement.getAttribute('mode-index'));
+        draggedElement.classList.add('dragging');
+        event.dataTransfer.effectAllowed = "move";
       });
+
+      // Remove styling when dragging ends
+      modeEntry.addEventListener('dragend', () => {
+        draggedElement.classList.remove('dragging');
+        draggedElement = null;
+      });
+
+      // Handle drag over - prevent default behavior to allow dropping
+      modeEntry.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      });
+
+      // Handle drop - reorder the modes
+      modeEntry.addEventListener('drop', (event) => {
+        event.preventDefault();
+
+        const targetElement = event.target.closest('.mode-entry');
+        if (!draggedElement || !targetElement || draggedElement === targetElement) return;
+
+        const targetIndex = parseInt(targetElement.getAttribute('mode-index'));
+
+        console.log(`Reorder: ${draggedIndex} to ${targetIndex}`);
+        const curIdx = this.lightshow.vortex.engine().modes().curModeIndex();
+        if (curIdx !== draggedIndex) {
+          // dragging wrong element? how?
+          console.log(`Not dragging current index! (curIdx: ${curIdx} dragged: ${draggedIndex})`);
+          this.lightshow.vortex.setCurMode(draggedIndex, true);
+        }
+        this.lightshow.vortex.shiftCurMode(targetIndex - draggedIndex, true);
+        this.refreshModeList();
+        this.refreshPatternControlPanel();
+      });
+
+      // Click select - Fix multi-selection issue
+      modeEntry.addEventListener('mousedown', (event) => {
+        const modeElement = event.target.closest('.mode-entry');
+
+        if (!modeElement) return;
+
+        // Ensure only one mode is selected at a time
+        document.querySelectorAll('.mode-entry.selected').forEach(selected => {
+          selected.classList.remove('selected');
+        });
+
+        modeElement.classList.add('selected');
+
+        // Set this panel as selected
+        this.setSelected();
+      });
+
+      // Prevent selection when mouse moves off original element before release
+      //modeEntry.addEventListener('mouseleave', (event) => {
+      //  const modeElement = event.target.closest('.mode-entry');
+      //  if (modeElement) {
+      //    modeElement.classList.remove('selected');
+      //  }
+      //});
+
+      //modeEntry.addEventListener('mousedown', event => {
+      //  const modeElement = event.target.closest('.mode-entry');
+      //  modeElement.classList.add('pressed');
+      //});
 
       modeEntry.addEventListener('mouseup', event => {
         const modeElement = event.target.closest('.mode-entry');

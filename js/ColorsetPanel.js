@@ -26,6 +26,7 @@ export default class ColorsetPanel extends Panel {
     this.vortexPort = editor.vortexPort;
     this.targetLed = 0;
     this.targetLeds = [ this.targetLed ];
+    this.selectedColorIndex = null;
     this.isMulti = false;
   }
 
@@ -232,6 +233,66 @@ export default class ColorsetPanel extends Panel {
     this.refreshColorset(fromEvent);
   }
 
+  // Enable copy support if a color is selected
+  canCopy() {
+    return this.selectedColorIndex !== null;
+  }
+
+  // Enable paste support if a color is selected
+  canPaste() {
+    return this.selectedColorIndex !== null;
+  }
+
+  // Copy selected color to clipboard
+  copy() {
+    if (this.selectedColorIndex === null) return;
+
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const set = cur.getColorset(this.targetLed);
+    if (!set || this.selectedColorIndex >= set.numColors()) return;
+
+    const col = set.get(this.selectedColorIndex);
+    const hexColor = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+
+    navigator.clipboard.writeText(hexColor).then(() => {
+      Notification.success("Copied color to clipboard");
+    }).catch(() => {
+      Notification.failure("Failed to copy color");
+    });
+  }
+
+  // Paste color from clipboard
+  paste() {
+    navigator.clipboard.readText().then((hexValue) => {
+      if (!/^#?[0-9A-Fa-f]{6}$/.test(hexValue)) {
+        Notification.failure("Invalid color format");
+        return;
+      }
+
+      const cur = this.lightshow.vortex.engine().modes().curMode();
+      if (!cur) return;
+
+      const set = cur.getColorset(this.targetLed);
+      if (!set || this.selectedColorIndex >= set.numColors()) return;
+
+      const { r, g, b } = this.hexToRGB(hexValue);
+      const newColor = new this.lightshow.vortexLib.RGBColor(r, g, b);
+
+      set.set(this.selectedColorIndex, newColor);
+      this.targetLeds.forEach(led => cur.setColorset(set, led));
+
+      cur.init();
+      this.lightshow.vortex.engine().modes().saveCurMode();
+      this.refreshColorset();
+
+      Notification.success("Pasted color successfully");
+    }).catch(() => {
+      Notification.failure("Failed to paste color");
+    });
+  }
+
   async refreshColorset(fromEvent = false) {
     const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
@@ -241,6 +302,9 @@ export default class ColorsetPanel extends Panel {
 
     const set = cur.getColorset(this.targetLed);
     const numColors = set ? set.numColors() : 0;
+
+    // Preserve selected index
+    const prevSelectedIndex = this.selectedColorIndex;
 
     let draggingElement = null;
     let dragStartIndex = null;
@@ -388,10 +452,34 @@ export default class ColorsetPanel extends Panel {
         container.style.backgroundColor = hexColor;
         container.style.boxShadow = `0 0 10px ${hexColor}`;
 
+        // Restore selection after refresh
+        if (i === prevSelectedIndex) {
+          container.classList.add('selected');
+        }
+
         // Left-click to open color picker
+        //container.addEventListener('click', () => {
+        //  if (!isDragging) {
+        //    this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+        //  }
+        //});
+
         container.addEventListener('click', () => {
           if (!isDragging) {
+            // Remove previous selection
+            document.querySelectorAll('.color-cube.selected').forEach(selected => {
+              selected.classList.remove('selected');
+            });
+
+            // Mark this one as selected
+            container.classList.add('selected');
+            this.selectedColorIndex = i;
+
+            // Open color picker
             this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+
+            // Ensure this panel is set as active for copy/paste
+            this.setSelected();
           }
         });
 

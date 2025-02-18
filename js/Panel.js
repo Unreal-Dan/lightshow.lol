@@ -2,6 +2,7 @@
 export default class Panel {
   static panels = []; // Static list to track all panels
   static topZIndex = 3; // Initialize the top Z-Index to the default panel Z-Index
+  static selectedPanel = null;
 
   constructor(id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
@@ -48,12 +49,61 @@ export default class Panel {
 
     this.initDraggable();
 
+    this.initGlobalListeners();
+
     document.addEventListener('deviceChange', async (deviceChangeEvent) => {
       await this.handleDeviceEvent(deviceChangeEvent);
     });
 
     // Add this panel to the global list
     Panel.panels.push(this);
+  }
+
+  initGlobalListeners() {
+    if (Panel.globalListenersInitialized) {
+      return;
+    }
+    Panel.globalListenersInitialized = true;
+    document.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && event.key === 'c') {
+        if (Panel.selectedPanel && Panel.selectedPanel.canCopy()) {
+          Panel.selectedPanel.copy();
+          event.preventDefault();
+        }
+      } else if (event.ctrlKey && event.key === 'v') {
+        if (Panel.selectedPanel && Panel.selectedPanel.canPaste()) {
+          Panel.selectedPanel.paste();
+          event.preventDefault();
+        }
+      }
+    });
+  }
+
+  // Method to handle selection
+  setSelected() {
+    if (Panel.selectedPanel !== this) {
+      Panel.selectedPanel = this;
+    }
+  }
+
+  // Method for panels to determine if they support copy
+  canCopy() {
+    return false; // Override in subclass if needed
+  }
+
+  // Method for panels to determine if they support paste
+  canPaste() {
+    return false; // Override in subclass if needed
+  }
+
+  // Copy method to be overridden in derived panels
+  copy() {
+    console.warn("Copy not implemented for this panel.");
+  }
+
+  // Paste method to be overridden in derived panels
+  paste() {
+    console.warn("Paste not implemented for this panel.");
   }
 
   bringToFront() {
@@ -100,7 +150,6 @@ export default class Panel {
     this.panel.style.left = `${rect.left}px`;
     this.panel.style.top = `${rect.top}px`;
   }
-
 
   show() {
     const tabContainer = document.querySelector('.mobile-panel-content');
