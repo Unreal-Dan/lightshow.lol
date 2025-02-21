@@ -32,7 +32,6 @@ export default class PatternPanel extends Panel {
     this.refresh();
     document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
-    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
 
     // Attach event listeners for help and randomize buttons
     document.getElementById('patternRandomizeButton').addEventListener('click', () => this.randomizePattern());

@@ -53,7 +53,7 @@ export default class AnimationPanel extends Panel {
         type: 'range',
         min: 0,
         max: 100,
-        default: 15,
+        default: 55,
         label: 'Spread',
         update: value => editor.lightshow.spread = parseInt(value),
       },
@@ -77,17 +77,17 @@ export default class AnimationPanel extends Panel {
           <i class="fa-solid fa-arrow-pointer"></i>
         </button>
       </div>
-      <div id="animationPresetsContainer">
+      <!-- TODO: make this dropdown visible? -->
+      <div id="animationPresetsContainer" style="display:none;">
         <label for="animationPresets">Presets:</label>
         <select id="animationPresets">
           <option value="default">Default</option>
-          <option value="defaultfast">Default Fast</option>
-          <option value="defaultslow">Default Slow</option>
-          <option value="fewfast">Few Leds Fast</option>
-          <option value="fewslow">Few Leds Slow</option>
-          <option value="manyfast">Many Leds Fast</option>
-          <option value="manyslow">Many Leds Slow</option>
-          <option value="lag">Laggy PC</option>
+          <option value="orbit">Orbit</option>
+          <option value="handle">Handle</option>
+          <option value="gloves">Gloves</option>
+          <option value="chromadeck">Chromadeck</option>
+          <option value="spark">Spark</option>
+          <option value="duo">Duo</option>
         </select>
       </div>
       <div id="animationControls">
@@ -118,6 +118,31 @@ export default class AnimationPanel extends Panel {
     `).join('');
   }
 
+  applyPreset(presetName) {
+    const preset = presetName.toLowerCase();
+    console.log("Applying preset" + preset);
+    const presets = {
+      default: { tickRate: 3, trailSize: 100, dotSize: 25, blurFac: 5, circleRadius: 400, spread: 20 },
+      orbit: { tickRate: 30, trailSize: 50, dotSize: 8, blurFac: 2, circleRadius: 60, spread: 15 },
+      handle: { tickRate: 30, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
+      gloves: { tickRate: 30, trailSize: 20, dotSize: 20, blurFac: 3, circleRadius: 100, spread: 40 },
+      chromadeck: { tickRate: 30, trailSize: 50, dotSize: 10, blurFac: 3, circleRadius: 60, spread: 20 },
+      spark: { tickRate: 30, trailSize: 100, dotSize: 16, blurFac: 3, circleRadius: 80, spread: 60 },
+      duo: { tickRate: 30, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
+    };
+
+    if (presets[preset]) {
+      Object.entries(presets[preset]).forEach(([id, value]) => {
+        const control = this.controls.find(c => c.id === id);
+        if (control) {
+          const element = this.panel.querySelector(`#${id}`);
+          element.value = value;
+          control.update(value);
+        }
+      });
+    }
+  }
+
   initialize() {
     const panelElement = document.getElementById('animationPanel');
 
@@ -128,6 +153,14 @@ export default class AnimationPanel extends Panel {
         control.update(event.target.value);
       });
     });
+
+    // Attach event listener to preset dropdown
+    const presetDropdown = this.panel.querySelector('#animationPresets');
+    presetDropdown.addEventListener('change', (event) => {
+      this.applyPreset(event.target.value);
+    });
+
+    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
 
     // Attach event listeners to shape buttons
     this.attachShapeButtonListeners();
@@ -202,6 +235,11 @@ export default class AnimationPanel extends Panel {
       spreadDiv.style.display = 'none';
     }
 
+    // need to re-apply the spread value now
+    const element = this.panel.querySelector('#spread');
+    const control = this.controls.find(c => c.id === 'spread');
+    control.update(element.value);
+
     if (propagate) {
       // Step 3: Calculate the new height
       const heightChange = animationPanel.offsetHeight - previousHeight;
@@ -247,6 +285,7 @@ export default class AnimationPanel extends Panel {
       this.hideSpreadSlider();
     } else {
       this.showSpreadSlider();
+      this.applyPreset(deviceName);
     }
   }
 }
