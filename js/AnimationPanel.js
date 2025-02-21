@@ -77,6 +77,19 @@ export default class AnimationPanel extends Panel {
           <i class="fa-solid fa-arrow-pointer"></i>
         </button>
       </div>
+      <div id="animationPresetsContainer">
+        <label for="animationPresets">Presets:</label>
+        <select id="animationPresets">
+          <option value="default">Default</option>
+          <option value="defaultfast">Default Fast</option>
+          <option value="defaultslow">Default Slow</option>
+          <option value="fewfast">Few Leds Fast</option>
+          <option value="fewslow">Few Leds Slow</option>
+          <option value="manyfast">Many Leds Fast</option>
+          <option value="manyslow">Many Leds Slow</option>
+          <option value="lag">Laggy PC</option>
+        </select>
+      </div>
       <div id="animationControls">
         ${AnimationPanel.generateControlsContent(controls)}
       </div>
