@@ -50,4 +50,41 @@
   pointer-events: none; /* Ensure clicks pass through to the button */
 }
 
+/* Animation Presets Dropdown */
+#animationPresetsContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding: 5px;
+}
+
+#animationPresetsContainer label {
+  font-weight: bold;
+  color: #d8d4cf;
+  margin-right: 10px;
+}
+
+#animationPresets {
+  width: 100%;
+  background-color: #333; /* Dark background */
+  color: #fff; /* Light text color for contrast */
+  border: 1px solid #555; /* Dark border for distinction */
+  padding: 5px; /* Padding for aesthetic spacing */
+  border-radius: 4px; /* Rounded corners for a modern look */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5); /* subtle shadow for depth */
+  font-size: 1rem; /* Adjust font size as needed */
+  cursor: pointer;
+}
+
+#animationPresets option {
+  background-color: #444; /* Slightly lighter background for options */
+  color: white; /* Light text color for options */
+}
+
+#animationPresets:focus {
+  outline: none;
+  border-color: #888; /* Highlight border on focus */
+}
+
 
