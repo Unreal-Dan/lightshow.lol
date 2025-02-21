@@ -273,6 +273,7 @@ export default class AnimationPanel extends Panel {
   async onDeviceConnect(deviceName) {
     // display the spread slider
     this.showSpreadSlider();
+    this.applyPreset(deviceName);
   }
 
   async onDeviceDisconnect(deviceName) {
