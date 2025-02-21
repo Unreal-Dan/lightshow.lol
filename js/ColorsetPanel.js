@@ -466,14 +466,8 @@ export default class ColorsetPanel extends Panel {
 
         container.addEventListener('click', () => {
           if (!isDragging) {
-            // Remove previous selection
-            document.querySelectorAll('.color-cube.selected').forEach(selected => {
-              selected.classList.remove('selected');
-            });
-
-            // Mark this one as selected
-            container.classList.add('selected');
-            this.selectedColorIndex = i;
+            // select the color
+            this.selectColor(i, container);
 
             // Open color picker
             this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
@@ -494,6 +488,7 @@ export default class ColorsetPanel extends Panel {
         container.classList.add('add-color');
         container.textContent = '+';
         container.addEventListener('click', () => {
+          this.selectColor(i, container);
           this.addColor();
           this.editor.colorPickerPanel.open(i, cur.getColorset(this.targetLed), this.updateColor.bind(this));
         });
@@ -502,6 +497,17 @@ export default class ColorsetPanel extends Panel {
       }
       colorsetElement.appendChild(container);
     }
+  }
+
+  selectColor(index, container) {
+    // Remove previous selection
+    document.querySelectorAll('.color-cube.selected').forEach(selected => {
+      selected.classList.remove('selected');
+    });
+
+    // Mark this one as selected
+    container.classList.add('selected');
+    this.selectedColorIndex = index;
   }
 
   // Helper: Convert Hex to RGB
