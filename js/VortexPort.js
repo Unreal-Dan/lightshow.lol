@@ -505,6 +505,7 @@ export default class VortexPort {
       const numModes = vortex.numModes();
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
+      numModesBuf.recalcCRC();
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
       vortex.setCurMode(0, false);
