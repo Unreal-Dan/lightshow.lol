@@ -19,6 +19,7 @@
   height: auto;            /* Adjust height as needed */
   user-select: none;
   margin-top: 5px;
+  display: none;
 }
 
 /* Styling for options */
@@ -135,5 +136,15 @@
 
 #swapDeviceImage:hover {
   background: rgba(50, 50, 50, 0.8);
+}
+
+#toggleLedList {
+  margin: 0 auto;
+  cursor: pointer;
+  margin-bottom: -10px;
+}
+
+#toggleLedList:hover {
+  background: transparent;
 }
 

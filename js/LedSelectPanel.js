@@ -6,11 +6,6 @@ export default class LedSelectPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="ledSelectSection">
-        <fieldset id="ledsFieldset" style="display:none;">
-          <div class="flex-container">
-            <div id="deviceImageContainer">
-              <!-- Device image and LED indicators will be dynamically added here -->
-            </div>
             <div id="ledControls">
               <button id="selectAllLeds" title="Select All">All</button>
               <button id="selectNoneLeds" title="Select None">None</button>
@@ -18,9 +13,16 @@ export default class LedSelectPanel extends Panel {
               <button id="evenLeds" title="Select Even">Evens</button>
               <button id="oddLeds" title="Select Odd">Odds</button>
             </div>
-            <select id="ledList" size="8" multiple style="display:none;"></select>
+
+
+        <fieldset id="ledsFieldset">
+          <div class="flex-container">
+            <div id="deviceImageContainer">
+              <!-- Device image and LED indicators will be dynamically added here -->
+            </div>
           </div>
         </fieldset>
+          <select id="ledList" size="8" multiple></select>
       </div>
     `;
     super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
@@ -53,7 +55,23 @@ export default class LedSelectPanel extends Panel {
     document.addEventListener('patternChange', () => this.updateLedIndicators());
 
     // hide till device connects
-    this.hide();
+    //this.hide();
+  }
+
+  toggleLedList() {
+    const ledList = document.getElementById('ledList');
+    const toggleButton = document.getElementById('toggleLedList');
+
+    const isHidden = ledList.classList.toggle('hidden');
+    const icon = toggleButton.querySelector('i');
+
+    if (isHidden) {
+      icon.classList.remove('fa-chevron-up');
+      icon.classList.add('fa-chevron-down');
+    } else {
+      icon.classList.remove('fa-chevron-down');
+      icon.classList.add('fa-chevron-up');
+    }
   }
 
   async toggleAltImage() {
@@ -94,7 +112,6 @@ export default class LedSelectPanel extends Panel {
     const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     const ledControls = document.getElementById('ledControls');
-    const ledList = document.getElementById('ledList');
 
     if (!deviceName || deviceName === 'None') {
       ledsFieldset.style.display = 'none';
@@ -103,7 +120,6 @@ export default class LedSelectPanel extends Panel {
     }
 
     ledsFieldset.style.display = 'block';
-    ledList.style.display = 'block';
     ledControls.style.display = 'flex';
 
     // Check if an existing overlay already exists
