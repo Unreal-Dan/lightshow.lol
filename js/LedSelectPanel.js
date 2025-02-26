@@ -6,24 +6,25 @@ export default class LedSelectPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="ledSelectSection">
-            <div id="ledControls">
-              <button id="selectAllLeds" title="Select All">All</button>
-              <button id="selectNoneLeds" title="Select None">None</button>
-              <button id="invertLeds" title="Invert Selection">Invert</button>
-              <button id="evenLeds" title="Select Even">Evens</button>
-              <button id="oddLeds" title="Select Odd">Odds</button>
-            </div>
-
-
-        <fieldset id="ledsFieldset">
-          <div class="flex-container">
-            <div id="deviceImageContainer">
-              <!-- Device image and LED indicators will be dynamically added here -->
-            </div>
-          </div>
-        </fieldset>
-          <select id="ledList" size="8" multiple></select>
+        <div id="ledControls">
+          <button id="selectAllLeds" class="led-select-button" title="Select All">All</button>
+          <button id="selectNoneLeds" class="led-select-button" title="Select None">None</button>
+          <button id="invertLeds" class="led-select-button" title="Invert Selection">Invert</button>
+          <button id="evenLeds" class="led-select-button" title="Select Even">Evens</button>
+          <button id="oddLeds" class="led-select-button" title="Select Odd">Odds</button>
+        </div>
       </div>
+      <fieldset id="ledsFieldset">
+        <div class="flex-container">
+          <div id="deviceImageContainer">
+            <!-- Device image and LED indicators will be dynamically added here -->
+          </div>
+        </div>
+      </fieldset>
+      <select id="ledList" class="hidden" size="8" multiple></select>
+      <button id="toggleLedList" class="icon-button" title="Show/Hide Advanced">
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
     `;
     super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
@@ -45,6 +46,7 @@ export default class LedSelectPanel extends Panel {
     document.getElementById('evenLeds').addEventListener('click', () => this.evenLeds());
     document.getElementById('oddLeds').addEventListener('click', () => this.oddLeds());
     //document.getElementById('randomLeds').addEventListener('click', () => this.randomLeds());
+    document.getElementById('toggleLedList').addEventListener('click', () => this.toggleLedList());
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));
@@ -55,12 +57,13 @@ export default class LedSelectPanel extends Panel {
     document.addEventListener('patternChange', () => this.updateLedIndicators());
 
     // hide till device connects
-    //this.hide();
+    this.hide();
   }
 
   toggleLedList() {
     const ledList = document.getElementById('ledList');
     const toggleButton = document.getElementById('toggleLedList');
+    console.log("ya");
 
     const isHidden = ledList.classList.toggle('hidden');
     const icon = toggleButton.querySelector('i');
@@ -177,6 +180,8 @@ export default class LedSelectPanel extends Panel {
 
         overlay.appendChild(ledIndicator);
       });
+      // Ensure indicators get their selection and highlight state immediately
+      this.updateLedIndicators(selectedLeds);
     };
   }
 
@@ -275,19 +280,28 @@ export default class LedSelectPanel extends Panel {
     if (!ledIndicators) {
       return;
     }
+
+    let minIndex = Math.min(...selectedLeds.map(Number));
+
     ledIndicators.forEach(indicator => {
-      const index = indicator.dataset.ledIndex;
+      const index = Number(indicator.dataset.ledIndex);
       if (cur && cur.isMultiLed()) {
         indicator.classList.add('selected');
       } else {
         if (selectedLeds.includes(index.toString())) {
           indicator.classList.add('selected');
+          if (index === minIndex) {
+            indicator.classList.add('highlighted');
+          } else {
+            indicator.classList.remove('highlighted');
+          }
         } else {
-          indicator.classList.remove('selected');
+          indicator.classList.remove('selected', 'highlighted');
         }
         indicator.style.backgroundColor = '';
       }
     });
+
   }
 
   selectAllLeds() {

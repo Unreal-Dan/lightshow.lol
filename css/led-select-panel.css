@@ -19,6 +19,9 @@
   height: auto;            /* Adjust height as needed */
   user-select: none;
   margin-top: 5px;
+}
+
+#ledList.hidden {
   display: none;
 }
 
@@ -63,6 +66,33 @@
   z-index: 2; /* Ensure it appears above the image */
 }
 
+.led-select-button {
+  width: auto;
+  font-size: 18px;
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as inline-block */
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.led-select-button:hover {
+  /*background-color: #45a049; /* Darker green on hover */
+  background-color: #3e4446;
+}
+
+.led-select-button:active {
+  /*background-color: #3e8e41; /* Even darker green on click */
+  background-color: #2e3436
+}
+
 .led-indicator {
   position: absolute;
   width: 13px; /* Adjust size */
@@ -78,37 +108,15 @@
   background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
 }
 
+.led-indicator.highlighted {
+  background: radial-gradient(circle, rgba(0, 0, 255, 1) 0%, rgba(0, 0, 255, 0.9) 100%);
+  box-shadow:0px 0px 0px 3px green inset;
+}
+
 #ledControls {
   display: flex;
   justify-content: space-between;
   gap: 5px; /* Space between buttons */
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ledControls button {
-  text-align: center; /* Center text */
-  text-decoration: none; /* Remove underline */
-  display: inline-block; /* Display as inline-block */
-  font-size: 12px; /* Font size */
-  background-color: #202020;
-  color: #d8d4cf;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin: 4px 0px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-#ledControls button:hover {
-  /*background-color: #45a049; /* Darker green on hover */
-  background-color: #3e4446;
-}
-
-#ledControls button:active {
-  /*background-color: #3e8e41; /* Even darker green on click */
-  background-color: #2e3436
 }
 
 .selection-box {

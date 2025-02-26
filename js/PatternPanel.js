@@ -3,19 +3,19 @@ import Panel from './Panel.js';
 export default class PatternPanel extends Panel {
   constructor(editor) {
     const content = `
-        <div id="patternDropdownContainer">
-          <select id="patternDropdown"></select>
-          <div class="pattern-buttons">
-            <button id="patternRandomizeButton" class="icon-button" title="Randomize">
-              <i class="fa-solid fa-dice"></i>
-            </button>
-          </div>
+      <div id="patternDropdownContainer">
+        <select id="patternDropdown"></select>
+        <div class="pattern-buttons">
+          <button id="patternRandomizeButton" class="icon-button" title="Randomize">
+            <i class="fa-solid fa-dice"></i>
+          </button>
         </div>
-        <hr id="patternDivider">
-        <button id="togglePatternParams" class="icon-button" title="Show/Hide Advanced">
-          <i class="fa-solid fa-chevron-down"></i>
-        </button>
-        <div id="patternParams" class="grid-container hidden"></div>
+      </div>
+      <hr id="patternDivider">
+      <button id="togglePatternParams" class="icon-button" title="Show/Hide Advanced">
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+      <div id="patternParams" class="grid-container hidden"></div>
     `;
     super('patternPanel', content, 'Pattern');
     this.editor = editor;

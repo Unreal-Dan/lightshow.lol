@@ -197,6 +197,7 @@ export default class ChromalinkPanel extends Panel {
     const progressBar = document.getElementById('firmwareProgressBar');
     progressContainer.style.display = 'block';
     progressBar.style.width = '0%';
+    this.editor.lightshow.stop();
     try {
       await this.vortexPort.flashFirmware(
         this.editor.vortexLib,
@@ -210,7 +211,7 @@ export default class ChromalinkPanel extends Panel {
     } catch (error) {
       Notification.failure('Firmware flash failed: ' + error.message);
     }
-    Notification.success('Duo Firmware Successfully Updated');
+    this.editor.lightshow.start();
     if (this.isConnected) {
       await this.disconnect();
     }
