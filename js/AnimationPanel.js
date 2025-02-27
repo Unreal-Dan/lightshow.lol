@@ -123,12 +123,12 @@ export default class AnimationPanel extends Panel {
     console.log("Applying preset" + preset);
     const presets = {
       default: { tickRate: 3, trailSize: 100, dotSize: 25, blurFac: 5, circleRadius: 400, spread: 20 },
-      orbit: { tickRate: 30, trailSize: 50, dotSize: 8, blurFac: 2, circleRadius: 60, spread: 15 },
-      handle: { tickRate: 30, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
-      gloves: { tickRate: 30, trailSize: 20, dotSize: 20, blurFac: 3, circleRadius: 100, spread: 40 },
-      chromadeck: { tickRate: 30, trailSize: 50, dotSize: 10, blurFac: 3, circleRadius: 60, spread: 20 },
-      spark: { tickRate: 30, trailSize: 100, dotSize: 16, blurFac: 3, circleRadius: 80, spread: 60 },
-      duo: { tickRate: 30, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
+      orbit: { tickRate: 10, trailSize: 100, dotSize: 8, blurFac: 2, circleRadius: 60, spread: 15 },
+      handle: { tickRate: 10, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
+      gloves: { tickRate: 10, trailSize: 150, dotSize: 20, blurFac: 3, circleRadius: 100, spread: 40 },
+      chromadeck: { tickRate: 10, trailSize: 100, dotSize: 10, blurFac: 3, circleRadius: 60, spread: 20 },
+      spark: { tickRate: 10, trailSize: 180, dotSize: 16, blurFac: 3, circleRadius: 80, spread: 60 },
+      duo: { tickRate: 10, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
     };
 
     if (presets[preset]) {

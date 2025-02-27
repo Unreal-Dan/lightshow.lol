@@ -82,6 +82,10 @@ export default class LedSelectPanel extends Panel {
     await this.renderLedIndicators(this.selectedDevice);
   }
 
+  useAltImage() {
+    return this.selectedDevice === 'Spark' && this.isAlt;
+  }
+
   async updateSelectedDevice(device) {
     const ledsFieldset = document.getElementById('ledsFieldset');
 
@@ -147,8 +151,8 @@ export default class LedSelectPanel extends Panel {
     swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
     swapDeviceButton.onclick = async () => this.toggleAltImage();
 
-    const deviceData = await this.getLedPositions(this.isAlt ? this.editor.devices[deviceName].altLabel : deviceName);
-    const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
+    const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
+    const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
 
     // Check if the existing device image needs to be replaced
     let deviceImage = deviceImageContainer.querySelector('img');
@@ -257,9 +261,10 @@ export default class LedSelectPanel extends Panel {
   handleLedSelectionChange() {
     const targetLeds = this.getSelectedLeds();
     const mainSelectedLed = this.getMainSelectedLed();
+    console.log("x: " + targetLeds, mainSelectedLed);
     // Default to first if unset
-    document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
     this.updateLedIndicators(targetLeds, mainSelectedLed);
+    document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
   }
 
   getSelectedLeds() {
@@ -268,10 +273,22 @@ export default class LedSelectPanel extends Panel {
   }
 
   getMainSelectedLed() {
+    const targetLeds = this.getSelectedLeds();
+    if (this.mainSelectedLed === null) {
+      if (targetLeds === null  || targetLeds.length === 0) {
+        return null;
+      }
+      this.mainSelectedLed = targetLeds[0];
+    }
+    console.log(`leds: ${targetLeds}:` + typeof targetLeds);
+    if (!targetLeds.includes(this.mainSelectedLed)) {
+      this.mainSelectedLed = targetLeds[0];
+    }
     return this.mainSelectedLed;
   }
 
   updateLedIndicators(selectedLeds = null, mainSelectedLed = null) {
+    console.log(selectedLeds,  mainSelectedLed);
     if (!selectedLeds) {
       selectedLeds = this.getSelectedLeds();
     }

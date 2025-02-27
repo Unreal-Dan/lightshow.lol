@@ -98,8 +98,9 @@ export default class PatternPanel extends Panel {
 
   handleLedsChange(event) {
     const { targetLeds, mainSelectedLed } = event.detail;
+    console.log("leds change: " + targetLeds);
     this.populatePatternDropdown();
-    this.refresh();
+    this.refresh(mainSelectedLed);
   }
 
   async onDeviceConnect(deviceName) {
