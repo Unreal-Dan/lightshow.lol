@@ -262,7 +262,12 @@ export default class LedSelectPanel extends Panel {
 
   handleLedSelectionChange() {
     this.lightshow.targetLeds = this.getSelectedLeds();
-    document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.lightshow.targetLeds }));
+    document.dispatchEvent(new CustomEvent('ledsChange', {
+      detail: {
+        targetLeds: this.lightshow.targetLeds,
+        mainSelectedLed: this.mainSelectedLed || this.lightshow.targetLeds[0] // Default to first if unset
+      }
+    }));
     this.updateLedIndicators(this.lightshow.targetLeds);
   }
 
@@ -455,30 +460,55 @@ export default class LedSelectPanel extends Panel {
       }
 
       if (withinBounds) {
-        this.selectLed(indicator.dataset.ledIndex, !event.ctrlKey);
-        option.selected = !event.ctrlKey;
-        if (option.selected) {
-          indicator.classList.add('selected');
+        const clickedLedIndex = indicator.dataset.ledIndex;
+
+        if (indicator.classList.contains('selected')) {
+          console.log("selected");
+          // Change main selection to clicked LED, without changing the selection state
+          this.setMainSelection(clickedLedIndex, false);
         } else {
-          indicator.classList.remove('selected');
+          console.log("not selected");
+          // Default selection behavior (selects new LED)
+          this.selectLed(clickedLedIndex, !event.ctrlKey, false);
+          option.selected = !event.ctrlKey;
+          if (option.selected) {
+            indicator.classList.add('selected');
+          } else {
+            indicator.classList.remove('selected');
+          }
+          // Also update the main selection to this newly selected LED
+          this.setMainSelection(clickedLedIndex, false);
         }
       } else if (!event.shiftKey && !event.ctrlKey) {
-        this.selectLed(indicator.dataset.ledIndex, false);
+        this.selectLed(indicator.dataset.ledIndex, true, false);
         if (option) option.selected = false;
         indicator.classList.remove('selected');
       }
     });
-
     this.handleLedSelectionChange();
   }
 
-  selectLed(index, selected = true) {
+  selectLed(index, selected = true, update = true) {
     const ledList = document.getElementById('ledList');
     let option = ledList.querySelector(`option[value='${index}']`);
     if (!option) return; // no adding new options
-    option.selected = selected;
 
-    this.handleLedSelectionChange();
+    option.selected = selected;
+    if (update) {
+      this.handleLedSelectionChange();
+    }
+  }
+
+  setMainSelection(ledIndex, update = true) {
+    this.mainSelectedLed = ledIndex;
+    document.querySelectorAll('.led-indicator').forEach(indicator => {
+      indicator.classList.toggle('main-selected', indicator.dataset.ledIndex === ledIndex);
+    });
+
+    //this.lightshow.targetLeds = this.getSelectedLeds(); // Maintain the selected LEDs
+    if (update) {
+      this.handleLedSelectionChange(); // Trigger panel updates
+    }
   }
 }
 

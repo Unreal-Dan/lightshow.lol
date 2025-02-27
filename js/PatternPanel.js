@@ -99,11 +99,12 @@ export default class PatternPanel extends Panel {
   }
 
   handleLedsChange(event) {
-    const selectedLeds = event.detail;
-    if (selectedLeds.includes('multi')) {
+    const { targetLeds, mainSelectedLed } = event.detail;
+      console.log(event);
+    if (targetLeds.includes('multi')) {
       this.setTargetMulti();
     } else {
-      this.setTargetSingles(selectedLeds);
+      this.setTargetSingles(targetLeds, mainSelectedLed);
     }
     this.populatePatternDropdown();
     this.refresh(true);
@@ -121,11 +122,11 @@ export default class PatternPanel extends Panel {
     // nothing yet
   }
 
-  setTargetSingles(selectedLeds = null) {
+  setTargetSingles(selectedLeds = null, mainSelectedLed = null) {
     const ledCount = this.lightshow.vortex.engine().leds().ledCount();
     this.targetLeds = (selectedLeds || Array.from({ length: ledCount }, (_, i) => i.toString()))
       .map(led => parseInt(led, 10));
-    this.targetLed = this.targetLeds[0];
+    this.targetLed = mainSelectedLed !== null ? mainSelectedLed : this.targetLeds[0];
     this.isMulti = false;
   }
 
