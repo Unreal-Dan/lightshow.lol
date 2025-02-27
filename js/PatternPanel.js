@@ -21,8 +21,6 @@ export default class PatternPanel extends Panel {
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
-    this.targetLed = 0;
-    this.targetLeds = [this.targetLed];
     this.isMulti = false;
   }
 
@@ -94,20 +92,14 @@ export default class PatternPanel extends Panel {
       this.setTargetSingles(selectedLeds);
     }
     this.populatePatternDropdown();
-    this.refresh(true);
+    this.refresh();
     this.editor.demoModeOnDevice();
   }
 
   handleLedsChange(event) {
     const { targetLeds, mainSelectedLed } = event.detail;
-      console.log(event);
-    if (targetLeds.includes('multi')) {
-      this.setTargetMulti();
-    } else {
-      this.setTargetSingles(targetLeds, mainSelectedLed);
-    }
     this.populatePatternDropdown();
-    this.refresh(true);
+    this.refresh();
   }
 
   async onDeviceConnect(deviceName) {
@@ -122,23 +114,9 @@ export default class PatternPanel extends Panel {
     // nothing yet
   }
 
-  setTargetSingles(selectedLeds = null, mainSelectedLed = null) {
-    const ledCount = this.lightshow.vortex.engine().leds().ledCount();
-    this.targetLeds = (selectedLeds || Array.from({ length: ledCount }, (_, i) => i.toString()))
-      .map(led => parseInt(led, 10));
-    this.targetLed = mainSelectedLed !== null ? mainSelectedLed : this.targetLeds[0];
-    this.isMulti = false;
-  }
-
-  setTargetMulti() {
-    this.targetLed = this.lightshow.vortex.engine().leds().ledMulti();
-    this.targetLeds = [this.targetLed];
-    this.isMulti = true;
-  }
-
-  refresh() {
-    this.refreshPatternDropdown();
-    this.refreshPatternArgs();
+  refresh(sourceLed = null) {
+    this.refreshPatternDropdown(sourceLed);
+    this.refreshPatternArgs(sourceLed);
   }
 
   populatePatternDropdown() {
@@ -202,16 +180,27 @@ export default class PatternPanel extends Panel {
     dropdown.addEventListener('change', this.handlePatternSelect.bind(this));
   }
 
-  refreshPatternDropdown() {
+  getTargetLeds() {
+    return this.editor.ledSelectPanel.getSelectedLeds();
+  }
+
+  getMainSelectedLed() {
+    return this.editor.ledSelectPanel.getMainSelectedLed();
+  }
+
+  refreshPatternDropdown(sourceLed = null) {
+    if (sourceLed === null) {
+      sourceLed = this.getMainSelectedLed();
+    }
     const dropdown = document.getElementById('patternDropdown');
     const curMode = this.lightshow.vortex.engine().modes().curMode();
-    if (!curMode) {
+    if (curMode === null || sourceLed === null) {
       dropdown.value = -1;
       dropdown.disabled = true;
       return;
     }
     dropdown.disabled = false;
-    dropdown.value = curMode.getPatternID(this.targetLed).value;
+    dropdown.value = curMode.getPatternID(sourceLed).value;
   }
 
   handlePatternSelect() {
@@ -219,9 +208,12 @@ export default class PatternPanel extends Panel {
     const selectedPattern = dropdown.value;
     const curMode = this.lightshow.vortex.engine().modes().curMode();
     const patID = this.lightshow.vortexLib.PatternID.values[selectedPattern];
-    if (!curMode || !patID) return;
+    const sourceLed = this.getMainSelectedLed();
+    if (curMode === null || patID === null || sourceLed === null) {
+      return;
+    }
 
-    const set = curMode.getColorset(this.targetLed);
+    const set = curMode.getColorset(sourceLed);
 
     if (this.lightshow.vortexLib.isSingleLedPatternID(patID)) {
       curMode.clearPattern(this.lightshow.vortex.engine().leds().ledMulti());
@@ -230,7 +222,7 @@ export default class PatternPanel extends Panel {
         curMode.setColorset(set, this.lightshow.vortex.engine().leds().ledCount());
         this.setTargetSingles();
       } else {
-        this.targetLeds.forEach(led => {
+        this.getTargetLeds().forEach(led => {
           curMode.setPattern(patID, led, null, null);
           curMode.setColorset(set, led);
         });
@@ -247,7 +239,7 @@ export default class PatternPanel extends Panel {
     this.editor.demoModeOnDevice();
   }
 
-  refreshPatternArgs() {
+  refreshPatternArgs(sourceLed = null) {
     const paramsDiv = document.getElementById('patternParams');
     const curMode = this.lightshow.vortex.engine().modes().curMode();
     const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
@@ -289,7 +281,7 @@ export default class PatternPanel extends Panel {
       slider.type = 'range';
       slider.min = '0';
       slider.max = '255';
-      slider.value = isDisabled ? 0 : curMode.getArg(i, this.targetLed) || '0';
+      slider.value = isDisabled ? 0 : curMode.getArg(i, this.getMainSelectedLed()) || '0';
       slider.className = 'control-slider';
       this.updateSliderFill(slider); // Set initial gradient
 
@@ -346,8 +338,10 @@ export default class PatternPanel extends Panel {
 
   updatePatternArg(index, value) {
     const curMode = this.lightshow.vortex.engine().modes().curMode();
-    if (!curMode) return;
-    this.targetLeds.forEach(led => {
+    if (curMode === null) {
+      return;
+    }
+    this.getTargetLeds().forEach(led => {
       curMode.getPattern(led).setArg(index, value);
     });
     curMode.init();

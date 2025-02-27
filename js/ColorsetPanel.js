@@ -24,8 +24,6 @@ export default class ColorsetPanel extends Panel {
     this.editor = editor
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
-    this.targetLed = 0;
-    this.targetLeds = [ this.targetLed ];
     this.selectedColorIndex = null;
     this.isMulti = false;
   }
@@ -43,37 +41,28 @@ export default class ColorsetPanel extends Panel {
     document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
-      //console.log("Mode change detected by control panel, refreshing");
-      const selectedLeds = event.detail;
-      // if array is just multi do this:
-      if (selectedLeds.includes('multi')) {
-        this.setTargetMulti();
-      } else {
-        this.setTargetSingles(selectedLeds);
-      }
-      //console.log('mode changed:', selectedLeds);
-      this.refresh(true);
-      this.editor.demoModeOnDevice();
+      this.refresh();
     });
     document.addEventListener('ledsChange', (event) => {
       const { targetLeds, mainSelectedLed } = event.detail;
-      // if array is just multi do this:
-      if (targetLeds.includes('multi')) {
-        this.setTargetMulti();
-      } else {
-        this.setTargetSingles(targetLeds, mainSelectedLed);
-      }
-      //console.log('LEDs changed:', this.targetLeds);
-      this.refresh(true);
+      this.refresh(mainSelectedLed);
     });
     document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
+  }
+
+  getTargetLeds() {
+    return this.editor.ledSelectPanel.getSelectedLeds();
+  }
+
+  getMainSelectedLed() {
+    return this.editor.ledSelectPanel.getMainSelectedLed();
   }
 
   applyPreset(preset) {
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) return;
 
-    const set = cur.getColorset(this.targetLed);
+    const set = cur.getColorset(this.getMainSelectedLed());
     set.clear();
     let numCols = ((Math.random() * 100) % 8);
 
@@ -139,12 +128,12 @@ export default class ColorsetPanel extends Panel {
     default:
       break;
     }
-    for (let i = 0; i < this.targetLeds.length; ++i) {
-      cur.setColorset(set, this.targetLeds[i]);
+    for (let i = 0; i < this.getTargetLeds().length; ++i) {
+      cur.setColorset(set, this.getTargetLeds()[i]);
     }
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
-    this.refreshColorset();
+    this.refresh();
     this.editor.demoModeOnDevice();
   }
 
@@ -209,30 +198,6 @@ export default class ColorsetPanel extends Panel {
     // nothing yet
   }
 
-  setTargetSingles(selectedLeds = null, mainSelectedLed = null) {
-    if (!selectedLeds) {
-      const ledCount = this.lightshow.vortex.engine().leds().ledCount();
-      selectedLeds = []
-      for (let i = 0; i < ledCount; i++) {
-        selectedLeds.push(i.toString());
-      }
-    }
-    this.targetLeds = selectedLeds.map(led => parseInt(led, 10));;
-    this.targetLed = mainSelectedLed !== null ? mainSelectedLed : this.targetLeds[0];
-    this.isMulti = false;
-  }
-
-  setTargetMulti() {
-    this.targetLed = this.lightshow.vortex.engine().leds().ledMulti();
-    this.targetLeds = [ this.targetLed ];
-    this.isMulti = true;
-  }
-
-  refresh(fromEvent = false) {
-    //this.refreshSelectedLedsBar();
-    this.refreshColorset(fromEvent);
-  }
-
   // Enable copy support if a color is selected
   canCopy() {
     return this.selectedColorIndex !== null;
@@ -250,7 +215,7 @@ export default class ColorsetPanel extends Panel {
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) return;
 
-    const set = cur.getColorset(this.targetLed);
+    const set = cur.getColorset(this.getMainSelectedLed());
     if (!set || this.selectedColorIndex >= set.numColors()) return;
 
     const col = set.get(this.selectedColorIndex);
@@ -274,18 +239,18 @@ export default class ColorsetPanel extends Panel {
       const cur = this.lightshow.vortex.engine().modes().curMode();
       if (!cur) return;
 
-      const set = cur.getColorset(this.targetLed);
+      const set = cur.getColorset(this.getMainSelectedLed());
       if (!set || this.selectedColorIndex >= set.numColors()) return;
 
       const { r, g, b } = this.hexToRGB(hexValue);
       const newColor = new this.lightshow.vortexLib.RGBColor(r, g, b);
 
       set.set(this.selectedColorIndex, newColor);
-      this.targetLeds.forEach(led => cur.setColorset(set, led));
+      this.getTargetLeds().forEach(led => cur.setColorset(set, led));
 
       cur.init();
       this.lightshow.vortex.engine().modes().saveCurMode();
-      this.refreshColorset();
+      this.refresh();
 
       Notification.success("Pasted color successfully");
     }).catch(() => {
@@ -293,14 +258,21 @@ export default class ColorsetPanel extends Panel {
     });
   }
 
-  async refreshColorset(fromEvent = false) {
+  async refresh(sourceLed = null) {
+    if (sourceLed === null) {
+      sourceLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    }
+
     const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
     colorsetElement.innerHTML = ''; // Clear colorset
 
-    if (!cur) return;
+    if (cur === null || sourceLed === null) {
+      this.editor.colorPickerPanel.hide();
+      return;
+    }
 
-    const set = cur.getColorset(this.targetLed);
+    const set = cur.getColorset(sourceLed);
     const numColors = set ? set.numColors() : 0;
 
     // Preserve selected index
@@ -415,9 +387,9 @@ export default class ColorsetPanel extends Panel {
 
       if (dropIndex > dragStartIndex) dropIndex -= 1; // Adjust for placeholder
       if (dragStartIndex !== dropIndex && dropIndex >= 0) {
-        const set = cur.getColorset(this.targetLed);
+        const set = cur.getColorset(this.getMainSelectedLed());
         set.shift(dragStartIndex, dropIndex);
-        cur.setColorset(set, this.targetLed);
+        cur.setColorset(set, this.getTargetLeds());
         cur.init();
         this.lightshow.vortex.engine().modes().saveCurMode();
       }
@@ -437,7 +409,7 @@ export default class ColorsetPanel extends Panel {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
 
-      this.refreshColorset();
+      this.refresh();
     };
 
     for (let i = 0; i < 8; i++) {
@@ -490,7 +462,7 @@ export default class ColorsetPanel extends Panel {
         container.addEventListener('click', () => {
           this.selectColor(i, container);
           this.addColor();
-          this.editor.colorPickerPanel.open(i, cur.getColorset(this.targetLed), this.updateColor.bind(this));
+          this.editor.colorPickerPanel.open(i, cur.getColorset(this.getMainSelectedLed()), this.updateColor.bind(this));
         });
       } else {
         container.classList.add('empty');
@@ -526,10 +498,10 @@ export default class ColorsetPanel extends Panel {
     if (!cur) {
       return;
     }
-    let set = cur.getColorset(this.targetLed);
+    let set = cur.getColorset(this.getMainSelectedLed());
     let col = new this.lightshow.vortexLib.RGBColor(r, g, b);
     set.set(index, col);
-    this.targetLeds.forEach(led => {
+    this.getTargetLeds().forEach(led => {
       cur.setColorset(set, led);
     });
     // re-initialize the demo mode because num colors may have changed
@@ -537,7 +509,7 @@ export default class ColorsetPanel extends Panel {
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
     // refresh
-    this.refreshColorset();
+    this.refresh();
     if (isDragging) {
       this.editor.demoColorOnDevice(col);
     } else {
@@ -547,8 +519,8 @@ export default class ColorsetPanel extends Panel {
   }
 
   addColor() {
-    this.lightshow.addColor(255, 0, 0, this.targetLeds);
-    this.refreshColorset();
+    this.lightshow.addColor(255, 0, 0, this.getTargetLeds(), this.getMainSelectedLed());
+    this.refresh();
     // demo on device
     this.editor.demoModeOnDevice();
   }
@@ -558,12 +530,12 @@ export default class ColorsetPanel extends Panel {
     if (!cur) {
       return;
     }
-    let set = cur.getColorset(this.targetLed);
+    let set = cur.getColorset(this.getMainSelectedLed());
     if (set.numColors() <= 0) {
       return;
     }
     set.removeColor(index);
-    this.targetLeds.forEach(led => {
+    this.getTargetLeds().forEach(led => {
       cur.setColorset(set, led);
     });
     // re-initialize the demo mode because num colors may have changed
@@ -571,7 +543,7 @@ export default class ColorsetPanel extends Panel {
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
     // refresh
-    this.refreshColorset();
+    this.refresh();
     // demo on device
     this.editor.demoModeOnDevice();
   }

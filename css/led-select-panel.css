@@ -108,7 +108,7 @@
   background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
 }
 
-.led-indicator.highlighted {
+.led-indicator.main-selected {
   background: radial-gradient(circle, rgba(0, 0, 255, 1) 0%, rgba(0, 0, 255, 0.9) 100%);
   box-shadow:0px 0px 0px 3px green inset;
 }

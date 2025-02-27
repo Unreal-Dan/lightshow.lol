@@ -100,8 +100,8 @@ export default class ModesPanel extends Panel {
     this.refreshModeList(fromEvent);
   }
 
-  refreshPatternControlPanel() {
-    document.dispatchEvent(new CustomEvent('modeChange', { detail: this.editor.ledSelectPanel.getSelectedLeds() }));
+  refreshOtherPanels() {
+    document.dispatchEvent(new CustomEvent('modeChange'));
   }
 
   clearModeList() {
@@ -164,7 +164,7 @@ export default class ModesPanel extends Panel {
 
     if (refresh) {
       this.editor.ledSelectPanel.refreshLedList();
-      this.refreshPatternControlPanel();
+      this.refreshOtherPanels();
     }
   }
 
@@ -258,7 +258,7 @@ export default class ModesPanel extends Panel {
         }
         this.lightshow.vortex.shiftCurMode(targetIndex - draggedIndex, true);
         this.refreshModeList();
-        this.refreshPatternControlPanel();
+        this.refreshOtherPanels();
       });
 
       // Click select - Fix multi-selection issue
@@ -375,7 +375,7 @@ export default class ModesPanel extends Panel {
       return;
     }
     this.refreshModeList();
-    this.refreshPatternControlPanel();
+    this.refreshOtherPanels();
     Notification.success("Successfully Added Mode " + modeCount);
   }
 
@@ -718,7 +718,7 @@ export default class ModesPanel extends Panel {
     this.lightshow.vortex.setCurMode(cur, false);
     this.lightshow.vortex.engine().modes().saveCurMode();
     this.refreshModeList();
-    this.refreshPatternControlPanel();
+    this.refreshOtherPanels();
     Notification.success("Successfully Deleted Mode " + index);
   }
 }

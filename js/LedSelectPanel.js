@@ -165,23 +165,17 @@ export default class LedSelectPanel extends Panel {
     deviceImage.onload = () => {
       const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
       const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
-
-      const selectedLeds = this.getSelectedLeds();
-
+      // initialzie all the led indicators
       deviceData.points.forEach((point, index) => {
         const ledIndicator = document.createElement('div');
         ledIndicator.classList.add('led-indicator');
-        if (index in selectedLeds) {
-          ledIndicator.classList.add('selected');
-        }
         ledIndicator.style.left = `${point.x * scaleX}px`;
         ledIndicator.style.top = `${point.y * scaleY}px`;
         ledIndicator.dataset.ledIndex = index;
-
         overlay.appendChild(ledIndicator);
       });
-      // Ensure indicators get their selection and highlight state immediately
-      this.updateLedIndicators(selectedLeds);
+      // update indicators with appropriate highlights
+      this.updateLedIndicators();
     };
   }
 
@@ -261,14 +255,11 @@ export default class LedSelectPanel extends Panel {
   }
 
   handleLedSelectionChange() {
-    this.lightshow.targetLeds = this.getSelectedLeds();
-    document.dispatchEvent(new CustomEvent('ledsChange', {
-      detail: {
-        targetLeds: this.lightshow.targetLeds,
-        mainSelectedLed: this.mainSelectedLed || this.lightshow.targetLeds[0] // Default to first if unset
-      }
-    }));
-    this.updateLedIndicators(this.lightshow.targetLeds);
+    const targetLeds = this.getSelectedLeds();
+    const mainSelectedLed = this.getMainSelectedLed();
+    // Default to first if unset
+    document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
+    this.updateLedIndicators(targetLeds, mainSelectedLed);
   }
 
   getSelectedLeds() {
@@ -276,38 +267,42 @@ export default class LedSelectPanel extends Panel {
     return Array.from(ledList.selectedOptions).map(option => option.value);
   }
 
-  updateLedIndicators(selectedLeds = null) {
+  getMainSelectedLed() {
+    return this.mainSelectedLed;
+  }
+
+  updateLedIndicators(selectedLeds = null, mainSelectedLed = null) {
     if (!selectedLeds) {
       selectedLeds = this.getSelectedLeds();
     }
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    const ledIndicators = document.querySelectorAll('.led-indicator');
-    if (!ledIndicators) {
-      return;
+    if (mainSelectedLed === null) {
+      mainSelectedLed = selectedLeds.length > 0 ? selectedLeds[0] : null;
     }
 
-    let minIndex = Math.min(...selectedLeds.map(Number));
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const ledIndicators = document.querySelectorAll('.led-indicator');
+    if (!ledIndicators) return;
 
     ledIndicators.forEach(indicator => {
       const index = Number(indicator.dataset.ledIndex);
+      indicator.classList.remove('main-selected'); // Reset styles first
+
       if (cur && cur.isMultiLed()) {
         indicator.classList.add('selected');
       } else {
         if (selectedLeds.includes(index.toString())) {
           indicator.classList.add('selected');
-          if (index === minIndex) {
-            indicator.classList.add('highlighted');
-          } else {
-            indicator.classList.remove('highlighted');
+          if (index == mainSelectedLed) {
+            indicator.classList.add('main-selected');
           }
         } else {
-          indicator.classList.remove('selected', 'highlighted');
+          indicator.classList.remove('selected');
         }
-        indicator.style.backgroundColor = '';
       }
+      indicator.style.backgroundColor = '';
     });
-
   }
+
 
   selectAllLeds() {
     const ledList = document.getElementById('ledList');
@@ -390,6 +385,113 @@ export default class LedSelectPanel extends Panel {
     this.selectionBox.style.top = `${Math.min(this.currentY, this.startY)}px`;
   }
 
+  handleClickOnLed(indicator, event) {
+    const clickedLedIndex = indicator.dataset.ledIndex;
+    const isSelected = indicator.classList.contains('selected');
+    const isCtrl = event.ctrlKey;
+    const isShift = event.shiftKey;
+
+    if (!isSelected) {
+      if (isCtrl) {
+        return; // Do nothing when clicking a red LED while holding CTRL
+      } else if (isShift) {
+        this.selectLed(clickedLedIndex, true, false);
+        if (!this.mainSelectedLed) {
+          this.setMainSelection(clickedLedIndex, false);
+        }
+      } else {
+        this.unselectAllLeds();
+        this.selectLed(clickedLedIndex, true, false);
+        this.setMainSelection(clickedLedIndex, false);
+      }
+    } else {
+      if (isCtrl) {
+        this.deselectLed(clickedLedIndex);
+      } else if (isShift) {
+        return; // Do nothing when clicking a green LED while holding SHIFT
+      } else {
+        this.setMainSelection(clickedLedIndex, false);
+      }
+    }
+  }
+
+  handleBoxSelection(startX, startY, endX, endY, event) {
+    const isCtrl = event.ctrlKey;
+    const isShift = event.shiftKey;
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    const rect = deviceImageContainer.getBoundingClientRect();
+
+    let selectedIndices = [];
+    let deselectedIndices = [];
+    let allIndices = [];
+
+    document.querySelectorAll('.led-indicator').forEach(indicator => {
+      const ledRect = indicator.getBoundingClientRect();
+      const ledX = ledRect.left - rect.left + ledRect.width / 2;
+      const ledY = ledRect.top - rect.top + ledRect.height / 2;
+      const ledIndex = indicator.dataset.ledIndex;
+
+      if (ledX >= startX && ledX <= endX && ledY >= startY && ledY <= endY) {
+        allIndices.push(ledIndex);
+        if (indicator.classList.contains('selected')) {
+          deselectedIndices.push(ledIndex);
+        } else {
+          selectedIndices.push(ledIndex);
+        }
+      }
+    });
+
+    if (isShift) {
+      // Shift → Add all red indicators in the box without changing other selections
+      selectedIndices.forEach(index => this.selectLed(index, true, false));
+      if (!this.mainSelectedLed && selectedIndices.length > 0) {
+        this.setMainSelection(Math.min(...selectedIndices), false);
+      }
+    } else if (isCtrl) {
+      // Ctrl → Remove all green indicators from the selection
+      allIndices.forEach(index => this.deselectLed(index));
+    } else {
+      // Default → Select all in the box (don't toggle)
+      this.unselectAllLeds();
+      allIndices.forEach(index => this.selectLed(index, true, false));
+      if (allIndices.length > 0) {
+        this.setMainSelection(Math.min(...allIndices), false);
+      }
+    }
+  }
+
+
+  unselectAllLeds() {
+    document.querySelectorAll('.led-indicator.selected').forEach(indicator => {
+      indicator.classList.remove('selected');
+    });
+
+    document.querySelectorAll('#ledList option').forEach(option => {
+      option.selected = false;
+    });
+
+    this.mainSelectedLed = null;
+    this.lightshow.targetLeds = [];
+  }
+
+  deselectLed(index) {
+    const indicator = document.querySelector(`.led-indicator[data-led-index='${index}']`);
+    if (indicator) {
+      indicator.classList.remove('selected');
+    }
+
+    const option = document.querySelector(`#ledList option[value='${index}']`);
+    if (option) {
+      option.selected = false;
+    }
+
+    const selectedLeds = this.getSelectedLeds();
+    if (this.mainSelectedLed === index) {
+      this.setMainSelection(selectedLeds.length ? selectedLeds[0] : null, false);
+    }
+  }
+
+
   onMouseUp(event) {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -434,57 +536,33 @@ export default class LedSelectPanel extends Panel {
     const clickX = (startX + endX) / 2;
     const clickY = (startY + endY) / 2;
 
-    document.querySelectorAll('.led-indicator').forEach(indicator => {
+    let clickedLed = null;
+    let ledIndicators = Array.from(document.querySelectorAll('.led-indicator'));
+
+    // Determine which LED (if any) was clicked
+    for (let indicator of ledIndicators) {
       const ledRect = indicator.getBoundingClientRect();
-      const ledX1 = (ledRect.left - rect.left) + 1;
-      const ledY1 = (ledRect.top - rect.top) + 1;
-      const ledX2 = (ledRect.right - rect.left) - 1;
-      const ledY2 = (ledRect.bottom - rect.top) - 1;
-      const ledMidX = ledX1 + (ledRect.width / 2);
-      const ledMidY = ledY1 + (ledRect.height / 2);
+      const ledX1 = ledRect.left - rect.left;
+      const ledY1 = ledRect.top - rect.top;
+      const ledX2 = ledRect.right - rect.left;
+      const ledY2 = ledRect.bottom - rect.top;
 
-      const ledList = document.getElementById('ledList');
-      let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
+      if (clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2) {
+        clickedLed = indicator;
+        break;
+      }
+    }
 
-      let withinBounds = false;
-
-      if (isClick) {
-        withinBounds = clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2;
+    if (isClick) {
+      if (!clickedLed) {
+        this.unselectAllLeds();
       } else {
-        withinBounds =
-          (ledX1 >= startX && ledX1 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-          (ledX2 >= startX && ledX2 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-          (ledX1 >= startX && ledX1 <= endX && ledY2 >= startY && ledY2 <= endY) ||
-          (ledX2 >= startX && ledX2 <= endX && ledY2 >= startY && ledY2 <= endY) ||
-          (ledMidX >= startX && ledMidX <= endX && ledMidY >= startY && ledMidY <= endY);
+        this.handleClickOnLed(clickedLed, event);
       }
+    } else {
+      this.handleBoxSelection(startX, startY, endX, endY, event);
+    }
 
-      if (withinBounds) {
-        const clickedLedIndex = indicator.dataset.ledIndex;
-
-        if (indicator.classList.contains('selected')) {
-          console.log("selected");
-          // Change main selection to clicked LED, without changing the selection state
-          this.setMainSelection(clickedLedIndex, false);
-        } else {
-          console.log("not selected");
-          // Default selection behavior (selects new LED)
-          this.selectLed(clickedLedIndex, !event.ctrlKey, false);
-          option.selected = !event.ctrlKey;
-          if (option.selected) {
-            indicator.classList.add('selected');
-          } else {
-            indicator.classList.remove('selected');
-          }
-          // Also update the main selection to this newly selected LED
-          this.setMainSelection(clickedLedIndex, false);
-        }
-      } else if (!event.shiftKey && !event.ctrlKey) {
-        this.selectLed(indicator.dataset.ledIndex, true, false);
-        if (option) option.selected = false;
-        indicator.classList.remove('selected');
-      }
-    });
     this.handleLedSelectionChange();
   }
 
@@ -500,6 +578,7 @@ export default class LedSelectPanel extends Panel {
   }
 
   setMainSelection(ledIndex, update = true) {
+    console.log("Setting main to: " +ledIndex);
     this.mainSelectedLed = ledIndex;
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       indicator.classList.toggle('main-selected', indicator.dataset.ledIndex === ledIndex);
