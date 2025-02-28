@@ -120,9 +120,10 @@ export default class AnimationPanel extends Panel {
 
   applyPreset(presetName) {
     const preset = presetName.toLowerCase();
-    console.log("Applying preset" + preset);
+    console.log("Applying preset: " + preset);
     const presets = {
       default: { tickRate: 3, trailSize: 100, dotSize: 25, blurFac: 5, circleRadius: 400, spread: 20 },
+      none: { tickRate: 3, trailSize: 100, dotSize: 25, blurFac: 5, circleRadius: 400, spread: 20 },
       orbit: { tickRate: 10, trailSize: 100, dotSize: 8, blurFac: 2, circleRadius: 60, spread: 15 },
       handle: { tickRate: 10, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
       gloves: { tickRate: 10, trailSize: 150, dotSize: 20, blurFac: 3, circleRadius: 100, spread: 40 },
@@ -286,8 +287,8 @@ export default class AnimationPanel extends Panel {
       this.hideSpreadSlider();
     } else {
       this.showSpreadSlider();
-      this.applyPreset(deviceName);
     }
+    this.applyPreset(deviceName);
   }
 }
 

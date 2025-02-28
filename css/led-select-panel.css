@@ -93,6 +93,19 @@
   background-color: #2e3436
 }
 
+.led-select-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.led-select-button:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+}
+
 .led-indicator {
   position: absolute;
   width: 14px; /* Adjust size */
@@ -121,7 +134,7 @@
 .selection-box {
   position: absolute;
   border: 2px dashed #000;
-  background-color: rgba(0, 0, 255, 0.2);
+  background-color: rgba(0, 180, 255, 0.2);
   pointer-events: none;
   z-index: 1000;
 }

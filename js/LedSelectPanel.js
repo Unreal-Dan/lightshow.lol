@@ -28,8 +28,6 @@ export default class LedSelectPanel extends Panel {
     `;
     super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
-    this.lightshow = editor.lightshow;
-    this.vortexPort = editor.vortexPort;
   }
 
   initialize() {
@@ -49,12 +47,13 @@ export default class LedSelectPanel extends Panel {
     document.getElementById('toggleLedList').addEventListener('click', () => this.toggleLedList());
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));
+    const ledsFieldset = document.getElementById('ledsFieldset');
+    ledsFieldset.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
 
     // Listen to pattern changes to refresh LED indicators as needed
-    document.addEventListener('patternChange', () => this.updateLedIndicators());
+    document.addEventListener('patternChange', () => this.handlePatternChange());
 
     // hide till device connects
     this.hide();
@@ -63,7 +62,6 @@ export default class LedSelectPanel extends Panel {
   toggleLedList() {
     const ledList = document.getElementById('ledList');
     const toggleButton = document.getElementById('toggleLedList');
-    console.log("ya");
 
     const isHidden = ledList.classList.toggle('hidden');
     const icon = toggleButton.querySelector('i');
@@ -183,13 +181,34 @@ export default class LedSelectPanel extends Panel {
     };
   }
 
+  // changs the current selection to be the multi, primarily to be used
+  // when the pattern is changing from single to multi
+  switchToSelectMulti() {
+    const selectedLeds = [ this.editor.vortex.engine().leds().ledMulti() ];
+    this.refreshLedList();
+    this.applyLedSelections(selectedLeds);
+  }
+
+  // changs the current selection to be the singles, primarily to be used
+  // when the pattern is changing from multi to singles
+  switchToSelectSingles() {
+    const ledCount = this.editor.vortex.engine().leds().ledCount();
+    let selectedLeds = [];
+    for (let i = 0; i < ledCount; ++i) {
+      selectedLeds.push(`${i}`);
+    }
+    this.refreshLedList();
+    this.setMainSelection("0", false);
+    this.applyLedSelections(selectedLeds);
+  }
+
   refreshLedList() {
     const ledList = document.getElementById('ledList');
     const ledControls = document.getElementById('ledControls');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
-    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const cur = this.editor.vortex.engine().modes().curMode();
 
     if (!cur) {
       ledList.innerHTML = '';
@@ -199,41 +218,49 @@ export default class LedSelectPanel extends Panel {
     this.clearLedList();
     this.clearLedSelections();
 
-    if (!cur.isMultiLed()) {
-      for (let pos = 0; pos < this.lightshow.vortex.numLedsInMode(); ++pos) {
-        let ledName = this.lightshow.vortex.ledToString(pos) + " (" + this.lightshow.vortex.getPatternName(pos) + ")";
+    const isMultiLed = cur.isMultiLed();
+    const multiIndex = this.editor.vortex.engine().leds().ledMulti();
+
+    // Enable/disable buttons instead of hiding them
+    Array.from(ledControls.querySelectorAll('button')).forEach(button => {
+      button.disabled = isMultiLed;
+    });
+
+    if (!isMultiLed) {
+      for (let pos = 0; pos < this.editor.vortex.numLedsInMode(); ++pos) {
+        let ledName = this.editor.vortex.ledToString(pos) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
         option.textContent = ledName;
         ledList.appendChild(option);
       }
-      ledControls.style.display = 'flex';
+
       deviceImageContainer.querySelectorAll('.led-indicator').forEach(indicator => {
         indicator.style.backgroundColor = '';
       });
-      if (selectedLeds.includes("multi")) {
+
+      if (selectedLeds.includes(multiIndex)) {
         this.selectAllLeds();
         selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
       }
     } else {
-      let ledName = "Multi led (" + this.lightshow.vortex.getPatternName(this.lightshow.vortex.engine().leds().ledMulti()) + ")";
+      let ledName = `Multi led (${this.editor.vortex.getPatternName(multiIndex)})`;
       const option = document.createElement('option');
-      option.value = 'multi';
+      option.value = multiIndex;
       option.textContent = ledName;
       ledList.appendChild(option);
-      selectedLeds = [ "multi" ];
 
-      // Disable LED controls
-      ledControls.style.display = 'none';
+      // **Ensure Multi LED is properly selected**
+      selectedLeds = [ `${multiIndex}` ];
 
       // All LED indicators green
       deviceImageContainer.querySelectorAll('.led-indicator').forEach(indicator => {
-        indicator.classList.add('selected');
+        indicator.classList.add('main-selected');
       });
     }
 
     if (!selectedLeds.length && ledList.options.length > 0) {
-      selectedLeds = [ "0" ];
+      selectedLeds = [ledList.options[0].value]; // Default to first
     }
 
     this.applyLedSelections(selectedLeds);
@@ -254,14 +281,13 @@ export default class LedSelectPanel extends Panel {
   applyLedSelections(selectedLeds) {
     const ledList = document.getElementById('ledList');
     for (let option of ledList.options) {
-      option.selected = selectedLeds.includes(option.value);
+      option.selected = selectedLeds.includes(option.value) || (selectedLeds === option.value);
     }
   }
 
   handleLedSelectionChange() {
     const targetLeds = this.getSelectedLeds();
     const mainSelectedLed = this.getMainSelectedLed();
-    console.log("x: " + targetLeds, mainSelectedLed);
     // Default to first if unset
     this.updateLedIndicators(targetLeds, mainSelectedLed);
     document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
@@ -278,17 +304,19 @@ export default class LedSelectPanel extends Panel {
       if (targetLeds === null  || targetLeds.length === 0) {
         return null;
       }
-      this.mainSelectedLed = targetLeds[0];
+      this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
     }
-    console.log(`leds: ${targetLeds}:` + typeof targetLeds);
-    if (!targetLeds.includes(this.mainSelectedLed)) {
-      this.mainSelectedLed = targetLeds[0];
+    if (!this.mainSelectedLed || !targetLeds.includes(this.mainSelectedLed)) {
+      this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
     }
     return this.mainSelectedLed;
   }
 
+  handlePatternChange() {
+    this.refreshLedList();
+  }
+
   updateLedIndicators(selectedLeds = null, mainSelectedLed = null) {
-    console.log(selectedLeds,  mainSelectedLed);
     if (!selectedLeds) {
       selectedLeds = this.getSelectedLeds();
     }
@@ -296,7 +324,7 @@ export default class LedSelectPanel extends Panel {
       mainSelectedLed = selectedLeds.length > 0 ? selectedLeds[0] : null;
     }
 
-    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const isMulti = this.isCurModeMultiLed();
     const ledIndicators = document.querySelectorAll('.led-indicator');
     if (!ledIndicators) return;
 
@@ -304,8 +332,8 @@ export default class LedSelectPanel extends Panel {
       const index = Number(indicator.dataset.ledIndex);
       indicator.classList.remove('main-selected'); // Reset styles first
 
-      if (cur && cur.isMultiLed()) {
-        indicator.classList.add('selected');
+      if (isMulti) {
+        indicator.classList.add('main-selected');
       } else {
         if (selectedLeds.includes(index.toString())) {
           indicator.classList.add('selected');
@@ -319,7 +347,6 @@ export default class LedSelectPanel extends Panel {
       indicator.style.backgroundColor = '';
     });
   }
-
 
   selectAllLeds() {
     const ledList = document.getElementById('ledList');
@@ -488,7 +515,6 @@ export default class LedSelectPanel extends Panel {
     });
 
     this.mainSelectedLed = null;
-    this.lightshow.targetLeds = [];
   }
 
   deselectLed(index) {
@@ -508,6 +534,10 @@ export default class LedSelectPanel extends Panel {
     }
   }
 
+  isCurModeMultiLed() {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    return (cur && cur.isMultiLed());
+  }
 
   onMouseUp(event) {
     if (event.button !== 0) return;
@@ -528,10 +558,8 @@ export default class LedSelectPanel extends Panel {
     }
 
     this.isDragging = false;
-
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (cur && cur.isMultiLed()) {
-      Notification.failure("To select LEDs switch to a single led pattern.", 3000);
+    if (this.isCurModeMultiLed()) {
+      Notification.failure("Switch to a single-led pattern to make individual led selections", 4000);
       return;
     }
 
@@ -586,8 +614,9 @@ export default class LedSelectPanel extends Panel {
   selectLed(index, selected = true, update = true) {
     const ledList = document.getElementById('ledList');
     let option = ledList.querySelector(`option[value='${index}']`);
-    if (!option) return; // no adding new options
-
+    if (!option) {
+      return; // no adding new options
+    }
     option.selected = selected;
     if (update) {
       this.handleLedSelectionChange();
@@ -595,13 +624,11 @@ export default class LedSelectPanel extends Panel {
   }
 
   setMainSelection(ledIndex, update = true) {
-    console.log("Setting main to: " +ledIndex);
     this.mainSelectedLed = ledIndex;
     document.querySelectorAll('.led-indicator').forEach(indicator => {
       indicator.classList.toggle('main-selected', indicator.dataset.ledIndex === ledIndex);
     });
 
-    //this.lightshow.targetLeds = this.getSelectedLeds(); // Maintain the selected LEDs
     if (update) {
       this.handleLedSelectionChange(); // Trigger panel updates
     }

@@ -136,7 +136,7 @@ export default class ModesPanel extends Panel {
         <div class="mode-btn-container" style="display: ${isSelected ? 'flex' : 'none'};">
           <button class="share-mode-btn mode-btn" title="Share Mode"><i class="fas fa-share-alt"></i></button>
           <button class="link-mode-btn mode-btn" title="Get Link"><i class="fas fa-link"></i></button>
-          <button class="export-mode-btn mode-btn" title="Export Mode"><i class="fa-solid fa-copy"></i></button>
+          <button class="export-mode-btn mode-btn" title="Copy Mode"><i class="fa-solid fa-copy"></i></button>
         </div>
         <button class="delete-mode-btn mode-btn" title="Delete Mode">&times;</button>
         </div>
@@ -161,6 +161,12 @@ export default class ModesPanel extends Panel {
     if (selectedMode) {
       selectedMode.style.display = 'flex';
     }
+
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const isMultiLed = (cur && cur.isMultiLed());
+    const device = this.editor.devicePanel.selectedDevice;
+    const shouldDisable = (!this.editor.vortexPort.isActive() || device === 'None' || isMultiLed); 
+    document.getElementById('transmitVLButton').disabled = shouldDisable;
 
     if (refresh) {
       this.editor.ledSelectPanel.refreshLedList();
@@ -249,7 +255,6 @@ export default class ModesPanel extends Panel {
 
         const targetIndex = parseInt(targetElement.getAttribute('mode-index'));
 
-        console.log(`Reorder: ${draggedIndex} to ${targetIndex}`);
         const curIdx = this.lightshow.vortex.engine().modes().curModeIndex();
         if (curIdx !== draggedIndex) {
           // dragging wrong element? how?
@@ -305,10 +310,10 @@ export default class ModesPanel extends Panel {
         event.stopPropagation();
         this.showLinkModeModal();
       });
-      // Export Mode
+      // Copy Mode
       modeEntry.querySelector('.export-mode-btn').addEventListener('click', (event) => {
         event.stopPropagation();
-        this.showExportModeModal();
+        this.showCopyModeModal();
       });
       // click select
       modeEntry.addEventListener('click', event => {
@@ -450,7 +455,7 @@ export default class ModesPanel extends Panel {
     }
   }
 
-  showExportModeModal() {
+  showCopyModeModal() {
     if (!this.lightshow.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to export");
       return;
@@ -463,10 +468,10 @@ export default class ModesPanel extends Panel {
     this.exportModal.show({
       buttons: [],
       defaultValue: compressedBase64,
-      title: 'Export/Copy a Mode',
+      title: 'Copy a Mode',
     });
     this.exportModal.selectAndCopyText();
-    Notification.success("Copied JSON mode to clipboard");
+    Notification.success("Copied mode to clipboard");
   }
 
   showPasteModeModal() {
@@ -632,8 +637,6 @@ export default class ModesPanel extends Panel {
     this.refresh();
     Notification.success("Successfully imported mode");
   }
-
-
 
   importPatternFromData(patternData, addNew = false) {
     if (!patternData) {

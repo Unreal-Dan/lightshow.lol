@@ -19,9 +19,6 @@ export default class PatternPanel extends Panel {
     `;
     super('patternPanel', content, 'Pattern');
     this.editor = editor;
-    this.lightshow = editor.lightshow;
-    this.vortexPort = editor.vortexPort;
-    this.isMulti = false;
   }
 
   initialize() {
@@ -78,6 +75,10 @@ export default class PatternPanel extends Panel {
     const options = Array.from(dropdown.options);
     const randomOption = options[Math.floor(Math.random() * options.length)];
 
+    if (!this.getTargetLeds().length) {
+      return;
+    }
+
     if (randomOption) {
       dropdown.value = randomOption.value;
       this.handlePatternSelect(); // Apply the random pattern
@@ -86,11 +87,6 @@ export default class PatternPanel extends Panel {
 
   handleModeChange(event) {
     const selectedLeds = event.detail;
-    if (selectedLeds.includes('multi')) {
-      this.setTargetMulti();
-    } else {
-      this.setTargetSingles(selectedLeds);
-    }
     this.populatePatternDropdown();
     this.refresh();
     this.editor.demoModeOnDevice();
@@ -98,7 +94,6 @@ export default class PatternPanel extends Panel {
 
   handleLedsChange(event) {
     const { targetLeds, mainSelectedLed } = event.detail;
-    console.log("leds change: " + targetLeds);
     this.populatePatternDropdown();
     this.refresh(mainSelectedLed);
   }
@@ -112,7 +107,17 @@ export default class PatternPanel extends Panel {
   }
 
   async onDeviceSelected(deviceName) {
-    // nothing yet
+    // when switching to device none make sure multi-led pat isnt selected
+    if (deviceName !== 'None') {
+      return;
+    }
+    const curMode = this.editor.vortex.engine().modes().curMode();
+    if (!curMode || !curMode.isMultiLed()) {
+      return;
+    }
+    const dropdown = document.getElementById('patternDropdown');
+    dropdown.value = 0;
+    this.handlePatternSelect();
   }
 
   refresh(sourceLed = null) {
@@ -135,7 +140,7 @@ export default class PatternPanel extends Panel {
     multiGroup.label = "Special Patterns (Multi Led)";
 
     // Get the PatternID enum values from your wasm module
-    const patternEnum = this.lightshow.vortexLib.PatternID;
+    const patternEnum = this.editor.vortexLib.PatternID;
 
     for (let pattern in patternEnum) {
       if (patternEnum.hasOwnProperty(pattern)) {
@@ -145,7 +150,7 @@ export default class PatternPanel extends Panel {
           continue;
         }
         let option = document.createElement('option');
-        let str = this.lightshow.vortex.patternToString(patternEnum[pattern]);
+        let str = this.editor.vortex.patternToString(patternEnum[pattern]);
         if (str.startsWith("complementary")) {
           str = "comp. " + str.slice(14);
         }
@@ -194,7 +199,7 @@ export default class PatternPanel extends Panel {
       sourceLed = this.getMainSelectedLed();
     }
     const dropdown = document.getElementById('patternDropdown');
-    const curMode = this.lightshow.vortex.engine().modes().curMode();
+    const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null || sourceLed === null) {
       dropdown.value = -1;
       dropdown.disabled = true;
@@ -207,34 +212,38 @@ export default class PatternPanel extends Panel {
   handlePatternSelect() {
     const dropdown = document.getElementById('patternDropdown');
     const selectedPattern = dropdown.value;
-    const curMode = this.lightshow.vortex.engine().modes().curMode();
-    const patID = this.lightshow.vortexLib.PatternID.values[selectedPattern];
+    const curMode = this.editor.vortex.engine().modes().curMode();
+    const patID = this.editor.vortexLib.PatternID.values[selectedPattern];
     const sourceLed = this.getMainSelectedLed();
     if (curMode === null || patID === null || sourceLed === null) {
       return;
     }
 
     const set = curMode.getColorset(sourceLed);
+    const multiIndex = this.editor.vortex.engine().leds().ledMulti();
+    const isMulti = curMode.isMultiLed();
 
-    if (this.lightshow.vortexLib.isSingleLedPatternID(patID)) {
-      curMode.clearPattern(this.lightshow.vortex.engine().leds().ledMulti());
-      if (this.isMulti) {
-        curMode.setPattern(patID, this.lightshow.vortex.engine().leds().ledCount(), null, null);
-        curMode.setColorset(set, this.lightshow.vortex.engine().leds().ledCount());
-        this.setTargetSingles();
-      } else {
-        this.getTargetLeds().forEach(led => {
-          curMode.setPattern(patID, led, null, null);
-          curMode.setColorset(set, led);
-        });
+    if (this.editor.vortexLib.isSingleLedPatternID(patID)) {
+      // if currently on a multi then need to do some extra steps
+      if (isMulti) {
+        // clear the multi
+        curMode.clearPattern(multiIndex);
+        // this will switch back to displaying singles and select them all
+        // so that getTargetLeds will return all singles
+        this.editor.ledSelectPanel.switchToSelectSingles();
       }
+      // iterate all target leds and update
+      this.getTargetLeds().forEach(led => {
+        curMode.setPattern(patID, led, null, null);
+        curMode.setColorset(set, led);
+      });
     } else {
-      curMode.setPattern(patID, this.lightshow.vortex.engine().leds().ledMulti(), null, null);
-      curMode.setColorset(set, this.lightshow.vortex.engine().leds().ledMulti());
-      this.setTargetMulti();
+      curMode.setPattern(patID, multiIndex, null, null);
+      curMode.setColorset(set, multiIndex);
+      this.editor.ledSelectPanel.switchToSelectMulti();
     }
     curMode.init();
-    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.engine().modes().saveCurMode();
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.refreshPatternArgs();
     this.editor.demoModeOnDevice();
@@ -242,15 +251,15 @@ export default class PatternPanel extends Panel {
 
   refreshPatternArgs(sourceLed = null) {
     const paramsDiv = document.getElementById('patternParams');
-    const curMode = this.lightshow.vortex.engine().modes().curMode();
-    const patternID = this.lightshow.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
+    const curMode = this.editor.vortex.engine().modes().curMode();
+    const patternID = this.editor.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
 
     if (!curMode || !patternID) {
       paramsDiv.innerHTML = this.generateEmptySlots(7);
       return;
     }
 
-    const numOfParams = this.lightshow.vortex.numCustomParams(patternID);
+    const numOfParams = this.editor.vortex.numCustomParams(patternID);
     paramsDiv.innerHTML = ''; // Clear existing params
 
     const isMobile = this.editor.detectMobile(); // Check for mobile layout
@@ -267,7 +276,7 @@ export default class PatternPanel extends Panel {
       const label = document.createElement('span');
       label.className = 'control-label';
 
-      let customParams = this.lightshow.vortex.getCustomParams(patternID);
+      let customParams = this.editor.vortex.getCustomParams(patternID);
       const param = customParams.get(i);
       if (param) {
         // Convert to a user-friendly label
@@ -338,7 +347,7 @@ export default class PatternPanel extends Panel {
   }
 
   updatePatternArg(index, value) {
-    const curMode = this.lightshow.vortex.engine().modes().curMode();
+    const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null) {
       return;
     }
@@ -346,7 +355,7 @@ export default class PatternPanel extends Panel {
       curMode.getPattern(led).setArg(index, value);
     });
     curMode.init();
-    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.engine().modes().saveCurMode();
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.editor.demoModeOnDevice();
   }

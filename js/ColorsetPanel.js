@@ -45,7 +45,6 @@ export default class ColorsetPanel extends Panel {
     });
     document.addEventListener('ledsChange', (event) => {
       const { targetLeds, mainSelectedLed } = event.detail;
-      console.log("leds change: " + targetLeds);
       this.refresh(mainSelectedLed);
     });
     document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
@@ -263,7 +262,6 @@ export default class ColorsetPanel extends Panel {
     if (sourceLed === null) {
       sourceLed = this.editor.ledSelectPanel.getMainSelectedLed();
     }
-    console.log("refresh colset: " + sourceLed);
 
     const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
@@ -273,8 +271,6 @@ export default class ColorsetPanel extends Panel {
       this.editor.colorPickerPanel.hide();
       return;
     }
-
-    console.log(`Refreshing with ${cur}  and ${sourceLed}`);
 
     const set = cur.getColorset(sourceLed);
     const numColors = set ? set.numColors() : 0;
