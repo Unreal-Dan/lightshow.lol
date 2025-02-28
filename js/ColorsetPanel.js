@@ -41,7 +41,7 @@ export default class ColorsetPanel extends Panel {
     document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
-      this.refresh();
+      //this.refresh();
     });
     document.addEventListener('ledsChange', (event) => {
       const { targetLeds, mainSelectedLed } = event.detail;

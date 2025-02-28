@@ -111,11 +111,11 @@ export default class VortexEditor {
     this.welcomePanel = new WelcomePanel(this);
     this.aboutPanel = new AboutPanel(this);
     this.animationPanel = new AnimationPanel(this);
+    this.ledSelectPanel = new LedSelectPanel(this);
     this.patternPanel = new PatternPanel(this);
     this.colorsetPanel = new ColorsetPanel(this);
     this.devicePanel = new DevicePanel(this);
     this.modesPanel = new ModesPanel(this);
-    this.ledSelectPanel = new LedSelectPanel(this);
     this.colorPickerPanel = new ColorPickerPanel(this);
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
@@ -125,11 +125,12 @@ export default class VortexEditor {
       this.welcomePanel,
       this.aboutPanel,
       this.animationPanel,
+      // led select must be before pattern and colorset
+      this.ledSelectPanel,
       this.patternPanel,
       this.colorsetPanel,
       this.devicePanel,
       this.modesPanel,
-      this.ledSelectPanel,
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel,

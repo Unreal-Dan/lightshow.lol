@@ -25,7 +25,7 @@ export default class PatternPanel extends Panel {
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
-    document.addEventListener('modeChange', this.handleModeChange.bind(this));
+    //document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
 
     // Attach event listeners for help and randomize buttons
@@ -231,12 +231,16 @@ export default class PatternPanel extends Panel {
         // this will switch back to displaying singles and select them all
         // so that getTargetLeds will return all singles
         this.editor.ledSelectPanel.switchToSelectSingles();
+        const allLeds = this.editor.vortex.engine().leds().ledCount();
+        curMode.setPattern(patID, allLeds, null, null);
+        curMode.setColorset(set, allLeds);
+      } else {
+        // iterate all target leds and update
+        this.getTargetLeds().forEach(led => {
+          curMode.setPattern(patID, led, null, null);
+          curMode.setColorset(set, led);
+        });
       }
-      // iterate all target leds and update
-      this.getTargetLeds().forEach(led => {
-        curMode.setPattern(patID, led, null, null);
-        curMode.setColorset(set, led);
-      });
     } else {
       curMode.setPattern(patID, multiIndex, null, null);
       curMode.setColorset(set, multiIndex);

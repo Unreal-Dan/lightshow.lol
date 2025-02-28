@@ -55,6 +55,15 @@ export default class LedSelectPanel extends Panel {
     // Listen to pattern changes to refresh LED indicators as needed
     document.addEventListener('patternChange', () => this.handlePatternChange());
 
+    document.addEventListener('modeChange', (event) => {
+      this.selectAllLeds();
+      this.updateLedIndicators();
+      this.refreshLedList();
+    });
+
+    // refresh so the led list is populated
+    this.refreshLedList();
+
     // hide till device connects
     this.hide();
   }
@@ -503,7 +512,6 @@ export default class LedSelectPanel extends Panel {
       }
     }
   }
-
 
   unselectAllLeds() {
     document.querySelectorAll('.led-indicator.selected').forEach(indicator => {
