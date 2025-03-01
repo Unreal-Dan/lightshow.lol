@@ -152,22 +152,18 @@ export default class Panel {
   }
 
   show() {
-    this.panel.style.visibility = 'visible'; // Restore visibility
-    this.panel.style.pointerEvents = 'auto'; // Restore interactions
+    this.panel.style.opacity = '1';  // Make it visible
+    this.panel.style.pointerEvents = 'auto'; // Enable interaction
+    this.panel.style.position = 'relative'; // Restore normal positioning
+    this.panel.style.zIndex = '10'; // Bring to front
     this.isVisible = true;
-
-    if (!this.editor.isMobile && this.isCollapsed) {
-      this.toggleCollapse();
-    }
   }
 
   hide() {
-    if (this.editor.isMobile) {
-      this.panel.style.visibility = 'hidden'; // Hide in mobile mode
-      this.panel.style.pointerEvents = 'none';
-    } else {
-      this.panel.style.display = 'none'; // Fully hide in desktop mode
-    }
+    this.panel.style.opacity = '0'; // Make invisible but keep in DOM
+    this.panel.style.pointerEvents = 'none'; // Disable interaction
+    this.panel.style.position = 'absolute'; // Prevent stacking issues
+    this.panel.style.zIndex = '1'; // Push to back
     this.isVisible = false;
   }
 
@@ -434,8 +430,10 @@ export default class Panel {
     if (isActive) {
       this.show();
     } else {
-      this.panel.style.visibility = 'hidden'; // Use visibility instead of display
-      this.panel.style.position = 'absolute'; // Keep layout intact
+      this.panel.style.opacity = '0';  // Hide visually
+      this.panel.style.pointerEvents = 'none'; // Disable interaction
+      this.panel.style.position = 'absolute'; // Keep it out of the way
+      this.panel.style.zIndex = '1'; // Keep it behind the active panel
     }
   }
 

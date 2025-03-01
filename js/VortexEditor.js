@@ -186,7 +186,10 @@ export default class VortexEditor {
     await this.sleep(300);
 
     // Append panels to the DOM
-    this.panels.forEach((panel) => panel.appendTo(document.body));
+    const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
+    this.panels.forEach((panel) => {
+      panel.appendTo(panelContainer);
+    });
 
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
@@ -388,8 +391,12 @@ export default class VortexEditor {
       panel.setActiveForMobile(isActive);
 
       if (isActive) {
-        panelContentContainer.innerHTML = ''; // Clear previous panel
-        panelContentContainer.appendChild(panel.panel); // Show the active panel
+        //panelContentContainer.innerHTML = ''; // Clear previous panel
+        //panelContentContainer.appendChild(panel.panel); // Show the active panel
+        this.panels.forEach(panel => {
+          const isActive = panel.panel.id === panelId;
+          panel.setActiveForMobile(isActive);
+        });
       }
     });
 
