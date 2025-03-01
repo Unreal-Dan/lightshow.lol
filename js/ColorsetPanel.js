@@ -18,7 +18,6 @@ export default class ColorsetPanel extends Panel {
         <button id="colorset-preset-dark" class="preset-button" title="Randomize Dark Colors"></button>
       </div>
       <hr id="patternDivider">
-      <div id="colorset-empty-label" class="colorset-empty-label">Select Leds First</div>
       <div id="colorset" class="color-row"></div>
     `;
     super('colorsetPanel', content, 'Colorset');
@@ -265,15 +264,18 @@ export default class ColorsetPanel extends Panel {
     }
 
     const colorsetElement = document.getElementById('colorset');
-    const emptyLabel = document.getElementById('colorset-empty-label');
     const cur = this.lightshow.vortex.engine().modes().curMode();
 
     colorsetElement.innerHTML = ''; // Clear colorset
 
     if (!cur || sourceLed === null) {
       this.editor.colorPickerPanel.hide();
-      colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
+      const emptyLabel = document.createElement('div');
+      emptyLabel.id = 'colorset-empty-label';
+      emptyLabel.className = 'colorset-empty-label';
+      emptyLabel.textContent = 'Select Leds First';
       emptyLabel.style.display = 'block'; // Show the message
+      colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
       return;
     }
 
