@@ -18,6 +18,8 @@ import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
 import { VERSION } from './version.js';  // Adjust path if needed
 
+import * as BLE from './ble.js'; // Import BLE module
+
 export default class VortexEditor {
   devices = {
     'None': {
