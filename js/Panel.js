@@ -162,8 +162,9 @@ export default class Panel {
         const activePanels = tabContainer.querySelectorAll('.active');
         activePanels.forEach(activePanel => activePanel.classList.remove('active'));
 
-        this.panel.classList.add('active');
-        this.panel.style.display = ''; // Ensure it's visible
+        this.panel.style.display = '';  // Restore visibility
+        this.panel.style.opacity = '1';  // Ensure full visibility
+        this.panel.style.pointerEvents = 'auto';  // Allow interactions
       } else {
         // For desktop: Just ensure visibility
         this.panel.style.display = '';
@@ -184,7 +185,9 @@ export default class Panel {
         this.panel.style.display = 'none';
       } else {
         // For mobile: Just remove 'active' class
-        this.panel.classList.remove('active');
+        this.panel.style.opacity = '0'; // Make invisible
+        this.panel.style.pointerEvents = 'none'; // Disable interaction
+        this.isVisible = false;
       }
     }
   }

@@ -189,6 +189,9 @@ export default class VortexEditor {
     const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
     this.panels.forEach((panel) => {
       panel.appendTo(panelContainer);
+      if (this.detectMobile()) {
+        panel.hide();
+      }
     });
 
     // Initialize Panels
