@@ -152,19 +152,41 @@ export default class Panel {
   }
 
   show() {
-    this.panel.style.opacity = '1';  // Make it visible
-    this.panel.style.pointerEvents = 'auto'; // Enable interaction
-    this.panel.style.position = 'relative'; // Restore normal positioning
-    this.panel.style.zIndex = '10'; // Bring to front
-    this.isVisible = true;
+    const tabContainer = document.querySelector('.mobile-panel-content');
+
+    if (!this.isVisible) {
+      this.isVisible = true;
+
+      if (tabContainer) {
+        // For mobile: Add 'active' class and display the panel in the content area
+        const activePanels = tabContainer.querySelectorAll('.active');
+        activePanels.forEach(activePanel => activePanel.classList.remove('active'));
+
+        this.panel.classList.add('active');
+        this.panel.style.display = ''; // Ensure it's visible
+      } else {
+        // For desktop: Just ensure visibility
+        this.panel.style.display = '';
+      }
+    }
+
+    if (this.isCollapsed && !document.querySelector('.mobile-panel-container')) {
+      this.toggleCollapse();
+    }
   }
 
   hide() {
-    this.panel.style.opacity = '0'; // Make invisible but keep in DOM
-    this.panel.style.pointerEvents = 'none'; // Disable interaction
-    this.panel.style.position = 'absolute'; // Prevent stacking issues
-    this.panel.style.zIndex = '1'; // Push to back
-    this.isVisible = false;
+    if (this.isVisible) {
+      this.isVisible = false;
+
+      if (!document.querySelector('.mobile-panel-container')) {
+        // For desktop: Directly hide the panel
+        this.panel.style.display = 'none';
+      } else {
+        // For mobile: Just remove 'active' class
+        this.panel.classList.remove('active');
+      }
+    }
   }
 
   getSnappedPanels() {
@@ -430,10 +452,7 @@ export default class Panel {
     if (isActive) {
       this.show();
     } else {
-      this.panel.style.opacity = '0';  // Hide visually
-      this.panel.style.pointerEvents = 'none'; // Disable interaction
-      this.panel.style.position = 'absolute'; // Keep it out of the way
-      this.panel.style.zIndex = '1'; // Keep it behind the active panel
+      this.hide();
     }
   }
 
