@@ -78,8 +78,10 @@ export default class LedSelectPanel extends Panel {
     // refresh so the led list is populated
     this.refreshLedList();
 
-    // hide till device connects
-    this.hide();
+    if (!this.editor.detectMobile()) {
+      // hide till device connects
+      this.hide();
+    }
   }
 
   toggleLedList() {
@@ -109,6 +111,9 @@ export default class LedSelectPanel extends Panel {
 
   async updateSelectedDevice(device) {
     const ledsFieldset = document.getElementById('ledsFieldset');
+    if (!ledsFieldset) {
+      return;
+    }
 
     if (device === 'None') {
       ledsFieldset.style.display = 'none';

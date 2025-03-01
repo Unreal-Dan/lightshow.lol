@@ -436,8 +436,16 @@ export default class VortexEditor {
   }
 
   detectMobile() {
+    // isMobile is used to manage layout so we use seperate var here to
+    // prevent regex'ing the userAgent over and over
+    if (this.detectedMobile) {
+      return true
+    }
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200) {
+      this.detectedMobile = true;
+    }
+    return this.detectedMobile;
   }
 
   isBLESupported() {
