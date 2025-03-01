@@ -127,6 +127,9 @@ export default class PatternPanel extends Panel {
 
   populatePatternDropdown() {
     const dropdown = document.getElementById('patternDropdown');
+    if (!dropdown) {
+      return;
+    }
     dropdown.innerHTML = '';
 
     // Create optgroups for each pattern type
@@ -199,6 +202,9 @@ export default class PatternPanel extends Panel {
       sourceLed = this.getMainSelectedLed();
     }
     const dropdown = document.getElementById('patternDropdown');
+    if (!dropdown) {
+      return;
+    }
     const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null || sourceLed === null) {
       const placeholderOption = document.createElement('option');
@@ -261,8 +267,12 @@ export default class PatternPanel extends Panel {
 
   refreshPatternArgs(sourceLed = null) {
     const paramsDiv = document.getElementById('patternParams');
+    const patternDropdown = document.getElementById('patternDropdown');
+    if (!paramsDiv || !patternDropdown) {
+      return;
+    }
     const curMode = this.editor.vortex.engine().modes().curMode();
-    const patternID = this.editor.vortexLib.PatternID.values[document.getElementById('patternDropdown').value];
+    const patternID = this.editor.vortexLib.PatternID.values[patternDropdown.value];
 
     if (!curMode || !patternID) {
       paramsDiv.innerHTML = this.generateEmptySlots(7);

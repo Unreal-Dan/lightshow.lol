@@ -259,11 +259,13 @@ export default class ColorsetPanel extends Panel {
   }
 
   async refresh(sourceLed = null) {
+    const colorsetElement = document.getElementById('colorset');
+    if (!colorsetElement) {
+      return;
+    }
     if (sourceLed === null) {
       sourceLed = this.editor.ledSelectPanel.getMainSelectedLed();
     }
-
-    const colorsetElement = document.getElementById('colorset');
     const cur = this.lightshow.vortex.engine().modes().curMode();
 
     colorsetElement.innerHTML = ''; // Clear colorset
