@@ -51,7 +51,7 @@ export default class VortexPort {
     this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
-    this.debugLogging = false;
+    this.debugLogging = true;
     this.editor = editor;
     this.useBLE = useBLE; // Determine if BLE should be used
     this.bleConnected = false;
@@ -275,8 +275,11 @@ export default class VortexPort {
         console.error("BLE is not connected!");
         return null;
       }
-      return await new Promise((resolve) => {
-        BLE.onNotification((data) => resolve(data));
+      return new Promise((resolve) => {
+        BLE.onNotification((data) => {
+          console.log("✅ BLE Data Received in readData():", data);
+          resolve(data);
+        });
       });
     }
 
