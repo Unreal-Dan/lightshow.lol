@@ -74,7 +74,6 @@ export function isBleConnected() {
     return isConnected;
 }
 
-
 /**
  * Read the accumulated BLE data
  * @returns {string|null} - Returns accumulated data if available, otherwise null

@@ -138,10 +138,6 @@ export default class VortexPort {
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
         Notification.success("BLE Connected!");
-        BLE.onNotification((data) => {
-          console.log("🔔 BLE Notification Received:", data);
-          this.handleIncomingBLEData(data);
-        });
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
         }
