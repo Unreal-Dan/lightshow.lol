@@ -152,41 +152,23 @@ export default class Panel {
   }
 
   show() {
-    const tabContainer = document.querySelector('.mobile-panel-content');
+    this.panel.style.visibility = 'visible'; // Restore visibility
+    this.panel.style.pointerEvents = 'auto'; // Restore interactions
+    this.isVisible = true;
 
-    if (!this.isVisible) {
-      this.isVisible = true;
-
-      if (tabContainer) {
-        // For mobile: Add 'active' class and display the panel in the content area
-        const activePanels = tabContainer.querySelectorAll('.active');
-        activePanels.forEach(activePanel => activePanel.classList.remove('active'));
-
-        this.panel.classList.add('active');
-        this.panel.style.display = ''; // Ensure it's visible
-      } else {
-        // For desktop: Just ensure visibility
-        this.panel.style.display = '';
-      }
-    }
-
-    if (this.isCollapsed && !document.querySelector('.mobile-panel-container')) {
+    if (!this.editor.isMobile && this.isCollapsed) {
       this.toggleCollapse();
     }
   }
 
   hide() {
-    if (this.isVisible) {
-      this.isVisible = false;
-
-      if (!document.querySelector('.mobile-panel-container')) {
-        // For desktop: Directly hide the panel
-        this.panel.style.display = 'none';
-      } else {
-        // For mobile: Just remove 'active' class
-        this.panel.classList.remove('active');
-      }
+    if (this.editor.isMobile) {
+      this.panel.style.visibility = 'hidden'; // Hide in mobile mode
+      this.panel.style.pointerEvents = 'none';
+    } else {
+      this.panel.style.display = 'none'; // Fully hide in desktop mode
     }
+    this.isVisible = false;
   }
 
   getSnappedPanels() {
@@ -452,10 +434,10 @@ export default class Panel {
     if (isActive) {
       this.show();
     } else {
-      this.hide();
+      this.panel.style.visibility = 'hidden'; // Use visibility instead of display
+      this.panel.style.position = 'absolute'; // Keep layout intact
     }
   }
-
 
   applyMobileLayout() {
     const tabContainer = document.querySelector('.mobile-panel-content');

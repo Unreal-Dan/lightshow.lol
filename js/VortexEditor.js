@@ -191,7 +191,7 @@ export default class VortexEditor {
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
 
-    if (!this.isMobile) {
+    if (!this.detectMobile()) {
       // position the panels
       let leftTop = 5;
       this.leftPanels.forEach((panel) => {

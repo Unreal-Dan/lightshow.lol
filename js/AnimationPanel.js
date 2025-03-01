@@ -170,7 +170,10 @@ export default class AnimationPanel extends Panel {
     this.toggleSpreadSlider(false);
 
     // animation panel starts collapsed, don't move panels below when collapsing it
-    this.toggleCollapse(false);
+    if (!this.editor.detectMobile()) {
+      // animation panel starts collapsed, don't move panels below when collapsing it
+      this.toggleCollapse(false);
+    }
   }
 
   applyMobileLayout() {
@@ -206,7 +209,7 @@ export default class AnimationPanel extends Panel {
 
   showSpreadSlider() {
     const spreadDiv = document.getElementById('spread_div');
-    if (spreadDiv.style.display === 'none') {
+    if (spreadDiv && spreadDiv.style.display === 'none') {
       this.toggleSpreadSlider();
     }
   }
