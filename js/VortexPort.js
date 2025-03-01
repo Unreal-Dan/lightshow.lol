@@ -138,15 +138,6 @@ export default class VortexPort {
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
         Notification.success("BLE Connected!");
-
-        // Ensure notifications are set up before listening for greeting
-        await new Promise(resolve => {
-          BLE.onNotification((data) => {
-            console.log("🔔 BLE Notification Received:", data);
-            resolve(); // Ensures we are ready to receive data
-          });
-        });
-
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
         }
@@ -172,10 +163,9 @@ export default class VortexPort {
         console.error('Error:', error);
       }
     }
-    // Finally, start listening for greeting
+    // finally
     await this.beginConnection();
   }
-
 
   async beginConnection(){
     if (!this.useBLE && !this.serialPort) {
@@ -217,80 +207,82 @@ export default class VortexPort {
   listenForGreeting = async () => {
     let tries = 0;
     while (!this.portActive && !this.cancelListeningForGreeting && tries++ < 30) {
-      try {
-        console.log("🔍 Listening for greeting...");
-
-        let response;
-        if (this.useBLE) {
-          console.log("⏳ Waiting for BLE notification...");
-          response = await new Promise(resolve => {
-            BLE.onNotification((data) => {
-              console.log("✅ BLE Greeting Received:", data);
-              resolve(data);
-            });
-          });
-        } else if (this.serialPort) {
-          response = await this.readData(true); // Serial reads from port
-        } else {
-          console.warn("⚠️ No valid connection (BLE/Serial)");
-          break;
-        }
-
-        if (!response) {
-          console.log("❌ Error: Connection broken");
-          await this.sleep(500);
-          continue;
-        }
-
-        console.log("Matching: [" + response + "]...");
-
-        let responseRegex = /== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==/;
-        let match = response.match(responseRegex);
-        if (!match) {
-          responseRegex = /== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==/;
-          match = response.match(responseRegex);
-        }
-
-        if (match) {
-          this.version = match[1]; // Capturing the version number
-          this.name = match[2];    // Capturing the name
-          this.buildDate = match[3]; // Capturing the build date
-
-          console.log('✅ Successfully Received Greeting from Vortex Device');
-          console.log('🔹 Device Type:', this.name);
-          console.log('🔹 Version:', this.version);
-          console.log('🔹 Build Date:', this.buildDate);
-
-          this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
-
-          this.portActive = true;
-
-          if (!this.useBLE && this.serialPort) {
-            this.serialPort.addEventListener("disconnect", () => this.disconnect());
+      if (this.useBLE || this.serialPort) {
+        try {
+          console.log("Listening for greeting...");
+          // Read data from the serial port
+          const response = await this.readData(true);
+          if (!response) {
+            console.log("Error: Connection broken");
+            // broken connection
+            await this.sleep(500);
+            continue;
           }
 
-          if (this.deviceCallback && typeof this.deviceCallback === 'function') {
-            this.deviceCallback('connect');
+          console.log("Matching: [" + response + "]...");
+
+          let responseRegex = /== Vortex Engine v(\d+\.\d+.\d+) '([\w\s]+)' \(built (.*)\) ==/;
+          let match = response.match(responseRegex);
+          if (!match) {
+            // TODO: removeme later! backwards compatibility for old connection string
+            responseRegex = /== Vortex Engine v(\d+\.\d+) '([\w\s]+)' \( built (.*)\) ==/;
+            match = response.match(responseRegex);
           }
-          return; // ✅ Exit after successful connection
-        }
-      } catch (err) {
-        if (this.cancelListeningForGreeting) {
-          this.cancelListeningForGreeting = false;
-          console.error('❌ Cancelling...');
-        } else {
-          console.error('❌ Error reading data:', err);
+
+          if (match) {
+            this.version = match[1]; // Capturing the version number
+            this.name = match[2];    // Capturing the name
+            this.buildDate = match[3]; // Capturing the build date
+
+            console.log('Successfully Received greeting from Vortex Device');
+            console.log('Device Type:', this.name);
+            console.log('Version:', this.version);
+            console.log('Date:', this.buildDate);
+
+            // old logic: sending updi in the name
+            // new logic: a command to check if updi is available
+            //// check if this is UPDI supported chromadeck
+            //const regex = /\bUPDI\b/;
+            //if (regex.test(this.name)) {
+            //  // Replace 'UPDI' with an empty string and trim any remaining spaces
+            //  this.name = this.name.replace(regex, '').replace(/\s+/g, ' ').trim();
+            //  // note that we have updi support for this chromadeck
+            //  this.hasUPDI = true;
+            //}
+
+            // 1.3.0 compatibility layer
+            this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
+            //if (this.useNewPushPull) {
+            //  console.log('Detected 1.3.0+');
+            //}
+
+            this.portActive = true;
+            if (this.serialPort) {
+              this.serialPort.addEventListener("disconnect", (event) => {
+                this.disconnect();
+              });
+            }
+            // TODO: BLE disconnect handler?
+            if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+              this.deviceCallback('connect');
+            }
+          }
+        } catch (err) {
+          if (this.cancelListeningForGreeting) {
+            this.cancelListeningForGreeting = false;
+            console.error('Cancelling...');
+          } else {
+            console.error('Error reading data:', err);
+          }
         }
       }
-
-      await this.sleep(300);
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
-
     if (tries >= 30) {
-      throw new Error('❌ Failed to listen for greeting, tried 30 times');
+      throw new Error('Failed to listen for greeting, tried 30 times');
     }
     this.cancelListeningForGreeting = false;
-  };
+  }
 
   async restartConnecton() {
     await this.beginConnection();
