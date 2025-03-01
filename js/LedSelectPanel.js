@@ -45,8 +45,6 @@ export default class LedSelectPanel extends Panel {
   }
 
   initialize() {
-    document.getElementById('ledsFieldset').style.display = 'none';
-
     // Event listeners for LED list and controls
     const ledList = document.getElementById('ledList');
     ledList.addEventListener('change', () => this.handleLedSelectionChange());
