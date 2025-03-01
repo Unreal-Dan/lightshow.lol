@@ -201,8 +201,14 @@ export default class PatternPanel extends Panel {
     const dropdown = document.getElementById('patternDropdown');
     const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null || sourceLed === null) {
-      dropdown.value = -1;
+      const placeholderOption = document.createElement('option');
+      placeholderOption.textContent = 'Select Leds First';
+      placeholderOption.value = '-1';
+      placeholderOption.disabled = true;
+      placeholderOption.selected = true;
+      dropdown.appendChild(placeholderOption);
       dropdown.disabled = true;
+      dropdown.value = -1;
       return;
     }
     dropdown.disabled = false;

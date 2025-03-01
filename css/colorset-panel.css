@@ -122,3 +122,13 @@
 #colorset-preset-four {
   background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, #00a2e8 50%, #00a2e8 75%, orange 75%, orange 100%);
 }
+
+.colorset-empty-label {
+  text-align: center;
+  color: #454545;
+  font-size: 24px;
+  font-style: italic;
+  margin: 0 auto;
+  display: none; /* Initially hidden */
+}
+
