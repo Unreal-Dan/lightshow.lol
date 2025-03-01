@@ -378,6 +378,8 @@ export default class UpdatePanel extends Panel {
       Notification.success('Starting firmware update...');
       updateProgress.textContent = 'Initializing firmware update...';
 
+      this.editor.lightshow.stop();
+
       // Check for active device connection or request a new one
       if (!this.vortexPort.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
@@ -390,6 +392,8 @@ export default class UpdatePanel extends Panel {
 
       await this.initializeESPFlasher();
       await this.fetchAndFlashFirmware();
+
+      this.editor.lightshow.start();
       updateProgress.textContent = 'Firmware update completed successfully!';
       Notification.success('Firmware updated successfully.');
     } catch (error) {

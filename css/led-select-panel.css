@@ -21,6 +21,10 @@
   margin-top: 5px;
 }
 
+#ledList.hidden {
+  display: none;
+}
+
 /* Styling for options */
 #ledList option {
   background-color: #181a1b;  /* Dark background for options */
@@ -62,11 +66,51 @@
   z-index: 2; /* Ensure it appears above the image */
 }
 
+.led-select-button {
+  width: auto;
+  font-size: 18px;
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as inline-block */
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.led-select-button:hover {
+  /*background-color: #45a049; /* Darker green on hover */
+  background-color: #3e4446;
+}
+
+.led-select-button:active {
+  /*background-color: #3e8e41; /* Even darker green on click */
+  background-color: #2e3436
+}
+
+.led-select-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.led-select-button:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+}
+
 .led-indicator {
   position: absolute;
-  width: 13px; /* Adjust size */
-  height: 13px; /* Adjust size */
-  background: radial-gradient(circle, rgba(150, 0, 0, 1) 0%, rgba(150, 0, 0, 1) 10%, rgba(50, 0, 0, 0.3) 100%);
+  width: 14px; /* Adjust size */
+  height: 14px; /* Adjust size */
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
@@ -74,46 +118,25 @@
 }
 
 .led-indicator.selected {
-  background: radial-gradient(circle, rgba(0, 255, 0, 1) 0%, rgba(0, 0, 0, 0.3) 100%);
+  background: radial-gradient(circle, rgba(180, 180, 0, 1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: rgb(180, 180, 0) 0px 0px 10px;
+}
+
+.led-indicator.main-selected {
+  background: radial-gradient(circle, rgb(83, 255, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  box-shadow: rgb(83, 255, 0) 0px 0px 10px;
 }
 
 #ledControls {
   display: flex;
   justify-content: space-between;
   gap: 5px; /* Space between buttons */
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#ledControls button {
-  text-align: center; /* Center text */
-  text-decoration: none; /* Remove underline */
-  display: inline-block; /* Display as inline-block */
-  font-size: 12px; /* Font size */
-  background-color: #202020;
-  color: #d8d4cf;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  padding: 4px 8px;
-  margin: 4px 0px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-#ledControls button:hover {
-  /*background-color: #45a049; /* Darker green on hover */
-  background-color: #3e4446;
-}
-
-#ledControls button:active {
-  /*background-color: #3e8e41; /* Even darker green on click */
-  background-color: #2e3436
 }
 
 .selection-box {
   position: absolute;
   border: 2px dashed #000;
-  background-color: rgba(0, 0, 255, 0.2);
+  background-color: rgba(0, 180, 255, 0.2);
   pointer-events: none;
   z-index: 1000;
 }
@@ -135,5 +158,57 @@
 
 #swapDeviceImage:hover {
   background: rgba(50, 50, 50, 0.8);
+}
+
+#toggleLedList {
+  margin: 0 auto;
+  cursor: pointer;
+  margin-bottom: -10px;
+}
+
+#toggleLedList:hover {
+  background: transparent;
+}
+
+.led-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+  padding-top: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #454545;
+  margin-bottom: 10px;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-circle.main-selected {
+  background: radial-gradient(circle, rgb(83, 255, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  box-shadow: rgb(83, 255, 0) 0px 0px 5px;
+}
+
+.legend-circle.selected {
+  background: radial-gradient(circle, rgba(180, 180, 0, 1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: rgb(180, 180, 0) 0px 0px 5px;
+}
+
+.legend-circle.unselected {
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
+  border: 1px solid black;
 }
 

@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
+import Modal from  './Modal.js';
 
 export default class DevicePanel extends Panel {
   constructor(editor) {
@@ -23,6 +24,7 @@ export default class DevicePanel extends Panel {
     super('devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
     this.selectedDevice = 'None';
+    this.multiLedWarningModal = new Modal('multiLedWarning');
   }
 
   initialize() {
@@ -35,6 +37,17 @@ export default class DevicePanel extends Panel {
     document.getElementById('deviceTypeOptions').addEventListener('click', async (event) => {
       if (event.target.classList.contains('custom-dropdown-option')) {
         const selectedValue = event.target.getAttribute('data-value');
+
+        // when switching devices to duo
+        if (selectedValue === 'Duo' && this.editor.modesPanel.hasMultiLedPatterns()) {
+          const confirmed = await this.confirmSwitchToDuo();
+          if (!confirmed) {
+            return;
+          }
+          console.log("Switching modes...");
+          this.editor.modesPanel.convertModesToSingle();
+        }
+
         await this.updateSelectedDevice(selectedValue, true);
         Notification.success(`Selected Device: '${selectedValue}'`);
       }
@@ -53,6 +66,19 @@ export default class DevicePanel extends Panel {
     const brightnessSlider = document.getElementById('brightnessSlider');
     brightnessSlider.addEventListener('input', this.onBrightnessSliderInput.bind(this));
     brightnessSlider.addEventListener('change', this.onBrightnessSliderChange.bind(this));
+  }
+
+  async confirmSwitchToDuo() {
+    return new Promise((resolve) => {
+      this.multiLedWarningModal.show({
+        title: 'Switching to Duo',
+        blurb: 'Duo does not support multi-LED patterns. Switching will convert all multi-LED patterns. Are you sure you want to proceed?',
+        buttons: [
+          { label: 'Convert & Switch', class: 'modal-button primary', onClick: () => { this.multiLedWarningModal.hide(); resolve(true); } },
+          { label: 'Cancel', class: 'modal-button', onClick: () => { this.multiLedWarningModal.hide(); resolve(false); } }
+        ]
+      });
+    });
   }
 
   // when the slider is slid around

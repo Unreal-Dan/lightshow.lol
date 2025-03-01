@@ -6,27 +6,42 @@ export default class LedSelectPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="ledSelectSection">
-        <fieldset id="ledsFieldset" style="display:none;">
-          <div class="flex-container">
-            <div id="deviceImageContainer">
-              <!-- Device image and LED indicators will be dynamically added here -->
-            </div>
-            <div id="ledControls">
-              <button id="selectAllLeds" title="Select All">All</button>
-              <button id="selectNoneLeds" title="Select None">None</button>
-              <button id="invertLeds" title="Invert Selection">Invert</button>
-              <button id="evenLeds" title="Select Even">Evens</button>
-              <button id="oddLeds" title="Select Odd">Odds</button>
-            </div>
-            <select id="ledList" size="8" multiple style="display:none;"></select>
-          </div>
-        </fieldset>
+        <div id="ledControls">
+          <button id="selectAllLeds" class="led-select-button" title="Select All">All</button>
+          <button id="selectNoneLeds" class="led-select-button" title="Select None">None</button>
+          <button id="invertLeds" class="led-select-button" title="Invert Selection">Invert</button>
+          <button id="evenLeds" class="led-select-button" title="Select Even">Evens</button>
+          <button id="oddLeds" class="led-select-button" title="Select Odd">Odds</button>
+        </div>
       </div>
+      <fieldset id="ledsFieldset">
+        <div id="ledLegend" class="led-legend">
+          <div class="legend-item">
+            <div class="legend-circle main-selected"></div>
+            <span>Source</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-circle selected"></div>
+            <span>Selected</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-circle unselected"></div>
+            <span>Unselected</span>
+          </div>
+        </div>
+        <div class="flex-container">
+          <div id="deviceImageContainer">
+            <!-- Device image and LED indicators will be dynamically added here -->
+          </div>
+        </div>
+      </fieldset>
+      <select id="ledList" class="hidden" size="6" multiple></select>
+      <button id="toggleLedList" class="icon-button" title="Show/Hide Advanced">
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
     `;
     super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
-    this.lightshow = editor.lightshow;
-    this.vortexPort = editor.vortexPort;
   }
 
   initialize() {
@@ -43,22 +58,53 @@ export default class LedSelectPanel extends Panel {
     document.getElementById('evenLeds').addEventListener('click', () => this.evenLeds());
     document.getElementById('oddLeds').addEventListener('click', () => this.oddLeds());
     //document.getElementById('randomLeds').addEventListener('click', () => this.randomLeds());
+    document.getElementById('toggleLedList').addEventListener('click', () => this.toggleLedList());
 
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    deviceImageContainer.addEventListener('mousedown', (event) => this.onMouseDown(event));
+    const ledsFieldset = document.getElementById('ledsFieldset');
+    ledsFieldset.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
 
     // Listen to pattern changes to refresh LED indicators as needed
-    document.addEventListener('patternChange', () => this.updateLedIndicators());
+    document.addEventListener('patternChange', () => this.handlePatternChange());
+
+    document.addEventListener('modeChange', (event) => {
+      this.selectAllLeds();
+      this.updateLedIndicators();
+      this.refreshLedList();
+    });
+
+    // refresh so the led list is populated
+    this.refreshLedList();
 
     // hide till device connects
     this.hide();
   }
 
+  toggleLedList() {
+    const ledList = document.getElementById('ledList');
+    const toggleButton = document.getElementById('toggleLedList');
+
+    const isHidden = ledList.classList.toggle('hidden');
+    const icon = toggleButton.querySelector('i');
+
+    if (isHidden) {
+      icon.classList.remove('fa-chevron-up');
+      icon.classList.add('fa-chevron-down');
+    } else {
+      icon.classList.remove('fa-chevron-down');
+      icon.classList.add('fa-chevron-up');
+    }
+  }
+
   async toggleAltImage() {
     this.isAlt = !this.isAlt;
     await this.renderLedIndicators(this.selectedDevice);
+  }
+
+  useAltImage() {
+    return this.selectedDevice === 'Spark' && this.isAlt;
   }
 
   async updateSelectedDevice(device) {
@@ -94,7 +140,6 @@ export default class LedSelectPanel extends Panel {
     const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     const ledControls = document.getElementById('ledControls');
-    const ledList = document.getElementById('ledList');
 
     if (!deviceName || deviceName === 'None') {
       ledsFieldset.style.display = 'none';
@@ -103,7 +148,6 @@ export default class LedSelectPanel extends Panel {
     }
 
     ledsFieldset.style.display = 'block';
-    ledList.style.display = 'block';
     ledControls.style.display = 'flex';
 
     // Check if an existing overlay already exists
@@ -128,8 +172,8 @@ export default class LedSelectPanel extends Panel {
     swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
     swapDeviceButton.onclick = async () => this.toggleAltImage();
 
-    const deviceData = await this.getLedPositions(this.isAlt ? this.editor.devices[deviceName].altLabel : deviceName);
-    const deviceImageSrc = this.isAlt ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
+    const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
+    const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
 
     // Check if the existing device image needs to be replaced
     let deviceImage = deviceImageContainer.querySelector('img');
@@ -146,22 +190,39 @@ export default class LedSelectPanel extends Panel {
     deviceImage.onload = () => {
       const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
       const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
-
-      const selectedLeds = this.getSelectedLeds();
-
+      // initialzie all the led indicators
       deviceData.points.forEach((point, index) => {
         const ledIndicator = document.createElement('div');
         ledIndicator.classList.add('led-indicator');
-        if (index in selectedLeds) {
-          ledIndicator.classList.add('selected');
-        }
         ledIndicator.style.left = `${point.x * scaleX}px`;
         ledIndicator.style.top = `${point.y * scaleY}px`;
         ledIndicator.dataset.ledIndex = index;
-
         overlay.appendChild(ledIndicator);
       });
+      // update indicators with appropriate highlights
+      this.updateLedIndicators();
     };
+  }
+
+  // changs the current selection to be the multi, primarily to be used
+  // when the pattern is changing from single to multi
+  switchToSelectMulti() {
+    const selectedLeds = [ this.editor.vortex.engine().leds().ledMulti() ];
+    this.refreshLedList();
+    this.applyLedSelections(selectedLeds);
+  }
+
+  // changs the current selection to be the singles, primarily to be used
+  // when the pattern is changing from multi to singles
+  switchToSelectSingles() {
+    const ledCount = this.editor.vortex.engine().leds().ledCount();
+    let selectedLeds = [];
+    for (let i = 0; i < ledCount; ++i) {
+      selectedLeds.push(`${i}`);
+    }
+    this.refreshLedList();
+    this.setMainSelection("0", false);
+    this.applyLedSelections(selectedLeds);
   }
 
   refreshLedList() {
@@ -170,7 +231,7 @@ export default class LedSelectPanel extends Panel {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
-    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const cur = this.editor.vortex.engine().modes().curMode();
 
     if (!cur) {
       ledList.innerHTML = '';
@@ -180,41 +241,49 @@ export default class LedSelectPanel extends Panel {
     this.clearLedList();
     this.clearLedSelections();
 
-    if (!cur.isMultiLed()) {
-      for (let pos = 0; pos < this.lightshow.vortex.numLedsInMode(); ++pos) {
-        let ledName = this.lightshow.vortex.ledToString(pos) + " (" + this.lightshow.vortex.getPatternName(pos) + ")";
+    const isMultiLed = cur.isMultiLed();
+    const multiIndex = this.editor.vortex.engine().leds().ledMulti();
+
+    // Enable/disable buttons instead of hiding them
+    Array.from(ledControls.querySelectorAll('button')).forEach(button => {
+      button.disabled = isMultiLed;
+    });
+
+    if (!isMultiLed) {
+      for (let pos = 0; pos < this.editor.vortex.numLedsInMode(); ++pos) {
+        let ledName = this.editor.vortex.ledToString(pos + 1) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
         option.textContent = ledName;
         ledList.appendChild(option);
       }
-      ledControls.style.display = 'flex';
+
       deviceImageContainer.querySelectorAll('.led-indicator').forEach(indicator => {
         indicator.style.backgroundColor = '';
       });
-      if (selectedLeds.includes("multi")) {
+
+      if (selectedLeds.includes(multiIndex)) {
         this.selectAllLeds();
         selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
       }
     } else {
-      let ledName = "Multi led (" + this.lightshow.vortex.getPatternName(this.lightshow.vortex.engine().leds().ledMulti()) + ")";
+      let ledName = `Multi led (${this.editor.vortex.getPatternName(multiIndex)})`;
       const option = document.createElement('option');
-      option.value = 'multi';
+      option.value = multiIndex;
       option.textContent = ledName;
       ledList.appendChild(option);
-      selectedLeds = [ "multi" ];
 
-      // Disable LED controls
-      ledControls.style.display = 'none';
+      // **Ensure Multi LED is properly selected**
+      selectedLeds = [ `${multiIndex}` ];
 
       // All LED indicators green
       deviceImageContainer.querySelectorAll('.led-indicator').forEach(indicator => {
-        indicator.classList.add('selected');
+        indicator.classList.add('main-selected');
       });
     }
 
     if (!selectedLeds.length && ledList.options.length > 0) {
-      selectedLeds = [ "0" ];
+      selectedLeds = [ledList.options[0].value]; // Default to first
     }
 
     this.applyLedSelections(selectedLeds);
@@ -235,14 +304,16 @@ export default class LedSelectPanel extends Panel {
   applyLedSelections(selectedLeds) {
     const ledList = document.getElementById('ledList');
     for (let option of ledList.options) {
-      option.selected = selectedLeds.includes(option.value);
+      option.selected = selectedLeds.includes(option.value) || (selectedLeds === option.value);
     }
   }
 
   handleLedSelectionChange() {
-    this.lightshow.targetLeds = this.getSelectedLeds();
-    document.dispatchEvent(new CustomEvent('ledsChange', { detail: this.lightshow.targetLeds }));
-    this.updateLedIndicators(this.lightshow.targetLeds);
+    const targetLeds = this.getSelectedLeds();
+    const mainSelectedLed = this.getMainSelectedLed();
+    // Default to first if unset
+    this.updateLedIndicators(targetLeds, mainSelectedLed);
+    document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
   }
 
   getSelectedLeds() {
@@ -250,27 +321,53 @@ export default class LedSelectPanel extends Panel {
     return Array.from(ledList.selectedOptions).map(option => option.value);
   }
 
-  updateLedIndicators(selectedLeds = null) {
+  getMainSelectedLed() {
+    const targetLeds = this.getSelectedLeds();
+    if (this.mainSelectedLed === null) {
+      if (targetLeds === null  || targetLeds.length === 0) {
+        return null;
+      }
+      this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
+    }
+    if (!this.mainSelectedLed || !targetLeds.includes(this.mainSelectedLed)) {
+      this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
+    }
+    return this.mainSelectedLed;
+  }
+
+  handlePatternChange() {
+    this.refreshLedList();
+  }
+
+  updateLedIndicators(selectedLeds = null, mainSelectedLed = null) {
     if (!selectedLeds) {
       selectedLeds = this.getSelectedLeds();
     }
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    const ledIndicators = document.querySelectorAll('.led-indicator');
-    if (!ledIndicators) {
-      return;
+    if (mainSelectedLed === null) {
+      mainSelectedLed = selectedLeds.length > 0 ? selectedLeds[0] : null;
     }
+
+    const isMulti = this.isCurModeMultiLed();
+    const ledIndicators = document.querySelectorAll('.led-indicator');
+    if (!ledIndicators) return;
+
     ledIndicators.forEach(indicator => {
-      const index = indicator.dataset.ledIndex;
-      if (cur && cur.isMultiLed()) {
-        indicator.classList.add('selected');
+      const index = Number(indicator.dataset.ledIndex);
+      indicator.classList.remove('main-selected'); // Reset styles first
+
+      if (isMulti) {
+        indicator.classList.add('main-selected');
       } else {
         if (selectedLeds.includes(index.toString())) {
           indicator.classList.add('selected');
+          if (index == mainSelectedLed) {
+            indicator.classList.add('main-selected');
+          }
         } else {
           indicator.classList.remove('selected');
         }
-        indicator.style.backgroundColor = '';
       }
+      indicator.style.backgroundColor = '';
     });
   }
 
@@ -355,6 +452,115 @@ export default class LedSelectPanel extends Panel {
     this.selectionBox.style.top = `${Math.min(this.currentY, this.startY)}px`;
   }
 
+  handleClickOnLed(indicator, event) {
+    const clickedLedIndex = indicator.dataset.ledIndex;
+    const isSelected = indicator.classList.contains('selected');
+    const isCtrl = event.ctrlKey;
+    const isShift = event.shiftKey;
+
+    if (!isSelected) {
+      if (isCtrl) {
+        return; // Do nothing when clicking a red LED while holding CTRL
+      } else if (isShift) {
+        this.selectLed(clickedLedIndex, true, false);
+        if (!this.mainSelectedLed) {
+          this.setMainSelection(clickedLedIndex, false);
+        }
+      } else {
+        this.unselectAllLeds();
+        this.selectLed(clickedLedIndex, true, false);
+        this.setMainSelection(clickedLedIndex, false);
+      }
+    } else {
+      if (isCtrl) {
+        this.deselectLed(clickedLedIndex);
+      } else if (isShift) {
+        return; // Do nothing when clicking a green LED while holding SHIFT
+      } else {
+        this.setMainSelection(clickedLedIndex, false);
+      }
+    }
+  }
+
+  handleBoxSelection(startX, startY, endX, endY, event) {
+    const isCtrl = event.ctrlKey;
+    const isShift = event.shiftKey;
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    const rect = deviceImageContainer.getBoundingClientRect();
+
+    let selectedIndices = [];
+    let deselectedIndices = [];
+    let allIndices = [];
+
+    document.querySelectorAll('.led-indicator').forEach(indicator => {
+      const ledRect = indicator.getBoundingClientRect();
+      const ledX = ledRect.left - rect.left + ledRect.width / 2;
+      const ledY = ledRect.top - rect.top + ledRect.height / 2;
+      const ledIndex = indicator.dataset.ledIndex;
+
+      if (ledX >= startX && ledX <= endX && ledY >= startY && ledY <= endY) {
+        allIndices.push(ledIndex);
+        if (indicator.classList.contains('selected')) {
+          deselectedIndices.push(ledIndex);
+        } else {
+          selectedIndices.push(ledIndex);
+        }
+      }
+    });
+
+    if (isShift) {
+      // Shift → Add all red indicators in the box without changing other selections
+      selectedIndices.forEach(index => this.selectLed(index, true, false));
+      if (!this.mainSelectedLed && selectedIndices.length > 0) {
+        this.setMainSelection(Math.min(...selectedIndices), false);
+      }
+    } else if (isCtrl) {
+      // Ctrl → Remove all green indicators from the selection
+      allIndices.forEach(index => this.deselectLed(index));
+    } else {
+      // Default → Select all in the box (don't toggle)
+      this.unselectAllLeds();
+      allIndices.forEach(index => this.selectLed(index, true, false));
+      if (allIndices.length > 0) {
+        this.setMainSelection(Math.min(...allIndices), false);
+      }
+    }
+  }
+
+  unselectAllLeds() {
+    document.querySelectorAll('.led-indicator.selected').forEach(indicator => {
+      indicator.classList.remove('selected');
+    });
+
+    document.querySelectorAll('#ledList option').forEach(option => {
+      option.selected = false;
+    });
+
+    this.mainSelectedLed = null;
+  }
+
+  deselectLed(index) {
+    const indicator = document.querySelector(`.led-indicator[data-led-index='${index}']`);
+    if (indicator) {
+      indicator.classList.remove('selected');
+    }
+
+    const option = document.querySelector(`#ledList option[value='${index}']`);
+    if (option) {
+      option.selected = false;
+    }
+
+    const selectedLeds = this.getSelectedLeds();
+    if (this.mainSelectedLed === index) {
+      this.setMainSelection(selectedLeds.length ? selectedLeds[0] : null, false);
+    }
+  }
+
+  isCurModeMultiLed() {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    return (cur && cur.isMultiLed());
+  }
+
   onMouseUp(event) {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -374,10 +580,8 @@ export default class LedSelectPanel extends Panel {
     }
 
     this.isDragging = false;
-
-    const cur = this.lightshow.vortex.engine().modes().curMode();
-    if (cur && cur.isMultiLed()) {
-      Notification.failure("To select LEDs switch to a single led pattern.", 3000);
+    if (this.isCurModeMultiLed()) {
+      Notification.failure("Switch to a single-led pattern to make individual led selections", 4000);
       return;
     }
 
@@ -399,56 +603,57 @@ export default class LedSelectPanel extends Panel {
     const clickX = (startX + endX) / 2;
     const clickY = (startY + endY) / 2;
 
-    document.querySelectorAll('.led-indicator').forEach(indicator => {
+    let clickedLed = null;
+    let ledIndicators = Array.from(document.querySelectorAll('.led-indicator'));
+
+    // Determine which LED (if any) was clicked
+    for (let indicator of ledIndicators) {
       const ledRect = indicator.getBoundingClientRect();
-      const ledX1 = (ledRect.left - rect.left) + 1;
-      const ledY1 = (ledRect.top - rect.top) + 1;
-      const ledX2 = (ledRect.right - rect.left) - 1;
-      const ledY2 = (ledRect.bottom - rect.top) - 1;
-      const ledMidX = ledX1 + (ledRect.width / 2);
-      const ledMidY = ledY1 + (ledRect.height / 2);
+      const ledX1 = ledRect.left - rect.left;
+      const ledY1 = ledRect.top - rect.top;
+      const ledX2 = ledRect.right - rect.left;
+      const ledY2 = ledRect.bottom - rect.top;
 
-      const ledList = document.getElementById('ledList');
-      let option = ledList.querySelector(`option[value='${indicator.dataset.ledIndex}']`);
+      if (clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2) {
+        clickedLed = indicator;
+        break;
+      }
+    }
 
-      let withinBounds = false;
-
-      if (isClick) {
-        withinBounds = clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2;
+    if (isClick) {
+      if (!clickedLed) {
+        this.unselectAllLeds();
       } else {
-        withinBounds =
-          (ledX1 >= startX && ledX1 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-          (ledX2 >= startX && ledX2 <= endX && ledY1 >= startY && ledY1 <= endY) ||
-          (ledX1 >= startX && ledX1 <= endX && ledY2 >= startY && ledY2 <= endY) ||
-          (ledX2 >= startX && ledX2 <= endX && ledY2 >= startY && ledY2 <= endY) ||
-          (ledMidX >= startX && ledMidX <= endX && ledMidY >= startY && ledMidY <= endY);
+        this.handleClickOnLed(clickedLed, event);
       }
-
-      if (withinBounds) {
-        this.selectLed(indicator.dataset.ledIndex, !event.ctrlKey);
-        option.selected = !event.ctrlKey;
-        if (option.selected) {
-          indicator.classList.add('selected');
-        } else {
-          indicator.classList.remove('selected');
-        }
-      } else if (!event.shiftKey && !event.ctrlKey) {
-        this.selectLed(indicator.dataset.ledIndex, false);
-        if (option) option.selected = false;
-        indicator.classList.remove('selected');
-      }
-    });
+    } else {
+      this.handleBoxSelection(startX, startY, endX, endY, event);
+    }
 
     this.handleLedSelectionChange();
   }
 
-  selectLed(index, selected = true) {
+  selectLed(index, selected = true, update = true) {
     const ledList = document.getElementById('ledList');
     let option = ledList.querySelector(`option[value='${index}']`);
-    if (!option) return; // no adding new options
+    if (!option) {
+      return; // no adding new options
+    }
     option.selected = selected;
+    if (update) {
+      this.handleLedSelectionChange();
+    }
+  }
 
-    this.handleLedSelectionChange();
+  setMainSelection(ledIndex, update = true) {
+    this.mainSelectedLed = ledIndex;
+    document.querySelectorAll('.led-indicator').forEach(indicator => {
+      indicator.classList.toggle('main-selected', indicator.dataset.ledIndex === ledIndex);
+    });
+
+    if (update) {
+      this.handleLedSelectionChange(); // Trigger panel updates
+    }
   }
 }
 

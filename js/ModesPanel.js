@@ -61,21 +61,6 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
   }
 
-  onDeviceConnect(deviceName) {
-    // if the device has UPDI support open a chromalink window
-    if (deviceName === 'Chromadeck') {
-      this.show();
-    }
-  }
-
-  async onDeviceDisconnect(deviceName) {
-    this.hide();
-  }
-
-  async onDeviceSelected(devicename) {
-    // maybe do something here
-  }
-
   async onDeviceConnect(deviceName) {
     // Enable the 3 buttons when a device is connected
     document.getElementById('pushToDeviceButton').disabled = false;
@@ -100,8 +85,8 @@ export default class ModesPanel extends Panel {
     this.refreshModeList(fromEvent);
   }
 
-  refreshPatternControlPanel() {
-    document.dispatchEvent(new CustomEvent('modeChange', { detail: this.editor.ledSelectPanel.getSelectedLeds() }));
+  refreshOtherPanels() {
+    document.dispatchEvent(new CustomEvent('modeChange'));
   }
 
   clearModeList() {
@@ -112,44 +97,91 @@ export default class ModesPanel extends Panel {
   refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     this.clearModeList();
-    let cur = this.lightshow.vortex.engine().modes().curMode();
+    let cur = this.editor.vortex.engine().modes().curMode();
     if (!cur) {
-      this.lightshow.vortex.setCurMode(0, false);
-      cur = this.lightshow.vortex.engine().modes().curMode();
+      this.editor.vortex.setCurMode(0, false);
+      cur = this.editor.vortex.engine().modes().curMode();
       if (!cur) {
         return;
       }
     }
-    let curSel = this.lightshow.vortex.engine().modes().curModeIndex();
-    this.lightshow.vortex.setCurMode(0, false);
-    for (let i = 0; i < this.lightshow.vortex.numModes(); ++i) {
-      let isSelected = (i == curSel);
+    this.forEachMode((index, mode, curSel) => { 
+      let isSelected = (index == curSel);
       const modeDiv = document.createElement('div');
       modeDiv.className = 'mode-entry';
-      modeDiv.setAttribute('mode-index', i);
+      modeDiv.setAttribute('mode-index', index);
       if (isSelected) {
         modeDiv.classList.add('selected');
       }
       modeDiv.innerHTML = `
-        <span class="mode-name">Mode ${i + 1} - ${this.lightshow.vortex.getModeName()}</span>
+        <span class="mode-name">Mode ${index + 1} - ${this.editor.vortex.getModeName()}</span>
         <div style="display:flex">
         <div class="mode-btn-container" style="display: ${isSelected ? 'flex' : 'none'};">
           <button class="share-mode-btn mode-btn" title="Share Mode"><i class="fas fa-share-alt"></i></button>
           <button class="link-mode-btn mode-btn" title="Get Link"><i class="fas fa-link"></i></button>
-          <button class="export-mode-btn mode-btn" title="Export Mode"><i class="fa-solid fa-copy"></i></button>
+          <button class="export-mode-btn mode-btn" title="Copy Mode"><i class="fa-solid fa-copy"></i></button>
         </div>
         <button class="delete-mode-btn mode-btn" title="Delete Mode">&times;</button>
         </div>
       `;
       modesListContainer.appendChild(modeDiv);
-      this.lightshow.vortex.nextMode(false);
-    }
-    this.lightshow.vortex.setCurMode(curSel, false);
+    });
     this.attachModeEventListeners();
   }
 
+  hasMultiLedPatterns() {
+    let hasMultiLedPatterns = false;
+    this.forEachMode((index, mode) => {
+      if (mode && mode.isMultiLed()) {
+        hasMultiLedPatterns = true;
+      }
+    });
+    return hasMultiLedPatterns;
+  }
+
+  convertModesToSingle() {
+    let count = 0;
+    this.forEachMode((index, mode) => {
+      console.log("Checking mode " + index);
+      if (mode && mode.isMultiLed()) {
+        const multiIndex = this.editor.vortex.engine().leds().ledMulti();
+        const set = mode.getColorset(multiIndex);
+        mode.clearPattern(multiIndex);
+        this.editor.ledSelectPanel.switchToSelectSingles();
+        const allLeds = this.editor.vortex.engine().leds().ledCount();
+        const patID = this.editor.vortexLib.intToPatternID(0);
+        mode.setPattern(patID, allLeds, null, null);
+        mode.setColorset(set, allLeds);
+        mode.init();
+        this.editor.vortex.engine().modes().saveCurMode();
+        count++;
+      }
+    });
+    if (count > 0) {
+      this.refreshModeList();
+      Notification.success(`Converted ${count} Multi-LED patterns to Single-LED`);
+    }
+  }
+
+  forEachMode(callback) {
+    // backup the current mode index/selection
+    const curSel = this.editor.vortex.engine().modes().curModeIndex();
+    // switch to mode 0
+    this.editor.vortex.setCurMode(0, false);
+    for (let i = 0; i < this.editor.vortex.numModes(); ++i) {
+      // call curMode each time after calling nextMode
+      const cur = this.editor.vortex.engine().modes().curMode();
+      // call the callback with the mode
+      callback(i, cur, curSel);
+      // iterate to next mode
+      this.editor.vortex.nextMode(false);
+    }
+    // restore the mode
+    this.editor.vortex.setCurMode(curSel, false);
+  }
+
   selectMode(index, refresh = true) {
-    this.lightshow.vortex.setCurMode(index, true);
+    this.editor.vortex.setCurMode(index, true);
 
     // Hide buttons for all modes first
     document.querySelectorAll('.mode-btn-container').forEach(buttonContainer => {
@@ -162,16 +194,22 @@ export default class ModesPanel extends Panel {
       selectedMode.style.display = 'flex';
     }
 
+    const cur = this.editor.vortex.engine().modes().curMode();
+    const isMultiLed = (cur && cur.isMultiLed());
+    const device = this.editor.devicePanel.selectedDevice;
+    const shouldDisable = (!this.editor.vortexPort.isActive() || device === 'None' || isMultiLed); 
+    document.getElementById('transmitVLButton').disabled = shouldDisable;
+
     if (refresh) {
       this.editor.ledSelectPanel.refreshLedList();
-      this.refreshPatternControlPanel();
+      this.refreshOtherPanels();
     }
   }
 
   // Override setSelected to set this panel as the active panel
   setSelected() {
     super.setSelected();
-    this.selectedModeIndex = this.lightshow.vortex.engine().modes().curModeIndex();
+    this.selectedModeIndex = this.editor.vortex.engine().modes().curModeIndex();
   }
 
   // Enable copy support
@@ -189,7 +227,7 @@ export default class ModesPanel extends Panel {
     if (this.selectedModeIndex === undefined) {
       return;
     }
-    const modeData = this.lightshow.vortex.printModeJson(false);
+    const modeData = this.editor.vortex.printModeJson(false);
     navigator.clipboard.writeText(modeData).then(() => {
       Notification.success("Copied mode to clipboard");
     }).catch(() => {
@@ -249,16 +287,15 @@ export default class ModesPanel extends Panel {
 
         const targetIndex = parseInt(targetElement.getAttribute('mode-index'));
 
-        console.log(`Reorder: ${draggedIndex} to ${targetIndex}`);
-        const curIdx = this.lightshow.vortex.engine().modes().curModeIndex();
+        const curIdx = this.editor.vortex.engine().modes().curModeIndex();
         if (curIdx !== draggedIndex) {
           // dragging wrong element? how?
           console.log(`Not dragging current index! (curIdx: ${curIdx} dragged: ${draggedIndex})`);
-          this.lightshow.vortex.setCurMode(draggedIndex, true);
+          this.editor.vortex.setCurMode(draggedIndex, true);
         }
-        this.lightshow.vortex.shiftCurMode(targetIndex - draggedIndex, true);
+        this.editor.vortex.shiftCurMode(targetIndex - draggedIndex, true);
         this.refreshModeList();
-        this.refreshPatternControlPanel();
+        this.refreshOtherPanels();
       });
 
       // Click select - Fix multi-selection issue
@@ -305,10 +342,10 @@ export default class ModesPanel extends Panel {
         event.stopPropagation();
         this.showLinkModeModal();
       });
-      // Export Mode
+      // Copy Mode
       modeEntry.querySelector('.export-mode-btn').addEventListener('click', (event) => {
         event.stopPropagation();
-        this.showExportModeModal();
+        this.showCopyModeModal();
       });
       // click select
       modeEntry.addEventListener('click', event => {
@@ -362,7 +399,7 @@ export default class ModesPanel extends Panel {
   }
 
   addMode() {
-    let modeCount = this.lightshow.vortex.numModes();
+    let modeCount = this.editor.vortex.numModes();
     // check the mode count against max
     const device = this.editor.devicePanel.selectedDevice;
     const maxModes = this.getMaxModes(device)
@@ -370,22 +407,22 @@ export default class ModesPanel extends Panel {
       Notification.failure(`The ${device} can only hold ${maxModes} modes`);
       return;
     }
-    if (!this.lightshow.vortex.addNewMode(false)) {
+    if (!this.editor.vortex.addNewMode(false)) {
       Notification.failure("Failed to add another mode");
       return;
     }
     this.refreshModeList();
-    this.refreshPatternControlPanel();
+    this.refreshOtherPanels();
     Notification.success("Successfully Added Mode " + modeCount);
   }
 
   shareModeToCommunity() {
-    if (!this.lightshow.vortex.engine().modes().curMode()) {
+    if (!this.editor.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to share");
       return;
     }
 
-    const modeJson = this.lightshow.vortex.printModeJson(false);
+    const modeJson = this.editor.vortex.printModeJson(false);
     const modeData = JSON.parse(modeJson);
     const base64EncodedData = btoa(JSON.stringify(modeData));
 
@@ -400,12 +437,12 @@ export default class ModesPanel extends Panel {
   }
 
   showLinkModeModal() {
-    if (!this.lightshow.vortex.engine().modes().curMode()) {
+    if (!this.editor.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to share");
       return;
     }
 
-    const modeJson = this.lightshow.vortex.printModeJson(false);
+    const modeJson = this.editor.vortex.printModeJson(false);
 
     // Compress with Pako (Gzip)
     const compressed = pako.deflate(modeJson, { level: 9 });
@@ -450,12 +487,12 @@ export default class ModesPanel extends Panel {
     }
   }
 
-  showExportModeModal() {
-    if (!this.lightshow.vortex.engine().modes().curMode()) {
+  showCopyModeModal() {
+    if (!this.editor.vortex.engine().modes().curMode()) {
       Notification.failure("Must select a mode to export");
       return;
     }
-    const modeJson = this.lightshow.vortex.printModeJson(false);
+    const modeJson = this.editor.vortex.printModeJson(false);
     // Compress with pako (Gzip)
     const compressed = pako.deflate(modeJson, { level: 9 });
     // Convert to Base64 (for clipboard/export safety)
@@ -463,10 +500,10 @@ export default class ModesPanel extends Panel {
     this.exportModal.show({
       buttons: [],
       defaultValue: compressedBase64,
-      title: 'Export/Copy a Mode',
+      title: 'Copy a Mode',
     });
     this.exportModal.selectAndCopyText();
-    Notification.success("Copied JSON mode to clipboard");
+    Notification.success("Copied mode to clipboard");
   }
 
   showPasteModeModal() {
@@ -553,24 +590,24 @@ export default class ModesPanel extends Panel {
       await this.editor.devicePanel.updateSelectedDevice(deviceName, true);
     }
 
-    const modeCount = this.lightshow.vortex.numModes();
+    const modeCount = this.editor.vortex.numModes();
     let curSel;
     if (addNew) {
-      curSel = this.lightshow.vortex.engine().modes().curModeIndex();
+      curSel = this.editor.vortex.engine().modes().curModeIndex();
       const device = this.editor.devicePanel.selectedDevice;
       const maxModes = this.getMaxModes(device);
       if (modeCount >= maxModes) {
         Notification.failure(`The ${device} can only hold ${maxModes} modes`);
         return;
       }
-      if (!this.lightshow.vortex.addNewMode(false)) {
+      if (!this.editor.vortex.addNewMode(false)) {
         Notification.failure("Failed to add another mode");
         return;
       }
-      this.lightshow.vortex.setCurMode(modeCount, false);
+      this.editor.vortex.setCurMode(modeCount, false);
     }
 
-    let cur = this.lightshow.vortex.engine().modes().curMode();
+    let cur = this.editor.vortex.engine().modes().curMode();
     if (!cur) {
       console.log("cur empty!");
       return;
@@ -583,7 +620,7 @@ export default class ModesPanel extends Panel {
       return;
     }
 
-    const totalLeds = this.lightshow.vortex.engine().leds().ledCount(); // Get target device LED count
+    const totalLeds = this.editor.vortex.engine().leds().ledCount(); // Get target device LED count
     const modeLeds = modeData.num_leds; // Get mode's original LED count
 
     for (let i = 0; i < totalLeds; i++) {
@@ -598,12 +635,12 @@ export default class ModesPanel extends Panel {
         return;
       }
 
-      const set = new this.lightshow.vortexLib.Colorset();
+      const set = new this.editor.vortexLib.Colorset();
       patData.colorset.forEach(hexCode => {
         const normalizedHex = hexCode.replace('0x', '#');
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
         if (result) {
-          set.addColor(new this.lightshow.vortexLib.RGBColor(
+          set.addColor(new this.editor.vortexLib.RGBColor(
             parseInt(result[1], 16),
             parseInt(result[2], 16),
             parseInt(result[3], 16)
@@ -611,29 +648,27 @@ export default class ModesPanel extends Panel {
         }
       });
 
-      const patID = this.lightshow.vortexLib.intToPatternID(patData.pattern_id);
-      const args = new this.lightshow.vortexLib.PatternArgs();
+      const patID = this.editor.vortexLib.intToPatternID(patData.pattern_id);
+      const args = new this.editor.vortexLib.PatternArgs();
       patData.args.forEach(arg => args.addArgs(arg));
 
-      cur = this.lightshow.vortex.engine().modes().curMode();
+      cur = this.editor.vortex.engine().modes().curMode();
       cur.setPattern(patID, i, args, set);
-      this.lightshow.vortex.setPatternArgs(i, args, true);
+      this.editor.vortex.setPatternArgs(i, args, true);
     }
 
-    cur = this.lightshow.vortex.engine().modes().curMode();
+    cur = this.editor.vortex.engine().modes().curMode();
     cur.init();
-    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.engine().modes().saveCurMode();
 
     if (addNew) {
-      this.lightshow.vortex.setCurMode(curSel, false);
+      this.editor.vortex.setCurMode(curSel, false);
     }
 
     this.selectMode(addNew ? modeCount : curSel, false);
     this.refresh();
     Notification.success("Successfully imported mode");
   }
-
-
 
   importPatternFromData(patternData, addNew = false) {
     if (!patternData) {
@@ -709,16 +744,16 @@ export default class ModesPanel extends Panel {
   }
 
   deleteMode(index) {
-    let cur = this.lightshow.vortex.curModeIndex();
-    this.lightshow.vortex.setCurMode(index, false);
-    this.lightshow.vortex.delCurMode(true);
+    let cur = this.editor.vortex.curModeIndex();
+    this.editor.vortex.setCurMode(index, false);
+    this.editor.vortex.delCurMode(true);
     if (cur && cur >= index) {
       cur--;
     }
-    this.lightshow.vortex.setCurMode(cur, false);
-    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.setCurMode(cur, false);
+    this.editor.vortex.engine().modes().saveCurMode();
     this.refreshModeList();
-    this.refreshPatternControlPanel();
+    this.refreshOtherPanels();
     Notification.success("Successfully Deleted Mode " + index);
   }
 }

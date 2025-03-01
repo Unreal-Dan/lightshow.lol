@@ -31,7 +31,6 @@ export default class Lightshow {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.modeData = modeData;
     this.applyModeData();
-    this.targetLeds = [0];
 
     this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Center default
     this.targetPosition = { x: this.cursorPosition.x, y: this.cursorPosition.y };
@@ -164,14 +163,6 @@ export default class Lightshow {
 
   get tickRate() {
     return this._tickRate || 1;
-  }
-
-  set targetLeds(value) {
-    this._targetLeds = value;
-  }
-
-  get targetLeds() {
-    return this._targetLeds || [];
   }
 
   set trailSize(value) {
@@ -502,10 +493,9 @@ export default class Lightshow {
   }
 
   // set the pattern
-  setPattern(patternIDValue, targetLeds = this.targetLeds) {
+  setPattern(patternIDValue, targetLeds) {
     // the selected dropdown pattern
     const selectedPattern = this.vortexLib.PatternID.values[patternIDValue];
-    // grab the 'preview' mode for the current mode (randomizer)
     let demoMode = this.vortex.engine().modes().curMode();
     targetLeds.forEach(ledIndex => {
       // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
@@ -528,7 +518,7 @@ export default class Lightshow {
   }
 
   // update colorset
-  setColorset(colorset, targetLeds = this.targetLeds) {
+  setColorset(colorset, targetLeds) {
     // grab the 'preview' mode for the current mode (randomizer)
     let demoMode = this.vortex.engine().modes().curMode();
     if (!demoMode) {
@@ -545,12 +535,12 @@ export default class Lightshow {
   }
 
   // add a color to the colorset
-  addColor(r, g, b, targetLeds = this.targetLeds) {
+  addColor(r, g, b, targetLeds, sourceLed) {
     // there's two ways we could do this, we could actually add a color to each
     // colorset regardless of whats there... or we could add a color to the displayed
     // colorset (first selected led) then set that colorset on the rest thereby overwriting
     // I think the more intuitive approach is the latter which overwrites
-    let set = this.getColorset(targetLeds[0]);
+    let set = this.getColorset(sourceLed);
     set.addColor(new this.vortexLib.RGBColor(r, g, b));
     targetLeds.forEach(ledIndex => {
       this.setColorset(set, [ledIndex]);
@@ -558,8 +548,8 @@ export default class Lightshow {
   }
 
   // delete a color from the colorset
-  delColor(index, targetLeds = this.targetLeds) {
-    let set = this.getColorset(targetLeds[0]);
+  delColor(index, targetLeds, sourceLed) {
+    let set = this.getColorset(sourceLed);
     if (set.numColors() <= 1) {
       return;
     }
@@ -570,15 +560,15 @@ export default class Lightshow {
   }
 
   // update a color in the colorset
-  updateColor(index, r, g, b, targetLeds = this.targetLeds) {
-    let set = this.getColorset(targetLeds[0]);
+  updateColor(index, r, g, b, targetLeds,  sourceLed) {
+    let set = this.getColorset(sourceLed);
     set.set(index, new this.vortexLib.RGBColor(r, g, b));
     targetLeds.forEach(ledIndex => {
       this.setColorset(set, [ledIndex]);
     });
   }
 
-  randomizeColorset(targetLeds = this.targetLeds) {
+  randomizeColorset(targetLeds) {
     this.vortex.openRandomizer(true);
     let numCmds = 3;
     if (targetLeds.length > 0) {
@@ -605,7 +595,7 @@ export default class Lightshow {
     this.vortex.engine().modes().saveCurMode();
   }
 
-  randomizePattern(targetLeds = this.targetLeds) {
+  randomizePattern(targetLeds) {
     this.vortex.openRandomizer(true);
     let numCmds = 4;
     if (targetLeds.length > 0) {
