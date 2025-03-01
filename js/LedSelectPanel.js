@@ -251,7 +251,7 @@ export default class LedSelectPanel extends Panel {
 
     if (!isMultiLed) {
       for (let pos = 0; pos < this.editor.vortex.numLedsInMode(); ++pos) {
-        let ledName = this.editor.vortex.ledToString(pos) + " (" + this.editor.vortex.getPatternName(pos) + ")";
+        let ledName = this.editor.vortex.ledToString(pos + 1) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
         option.textContent = ledName;
