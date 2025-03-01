@@ -138,6 +138,10 @@ export default class VortexPort {
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
         Notification.success("BLE Connected!");
+        BLE.onNotification((data) => {
+          console.log("🔔 BLE Notification Received:", data);
+          this.handleIncomingBLEData(data);
+        });
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
         }
@@ -313,17 +317,22 @@ export default class VortexPort {
         console.error("BLE is not connected!");
         return null;
       }
+      let data = BLE.readBleData(); // ✅ Read directly from BLE buffer
+      if (data) return data;
+      // ✅ If no data yet, wait until new data arrives
       return new Promise((resolve) => {
-        BLE.onNotification((data) => {
-          console.log("✅ BLE Data Received in readData():", data);
-          resolve(data);
-        });
+        let interval = setInterval(() => {
+          let newData = BLE.readBleData();
+          if (newData) {
+            clearInterval(interval);
+            resolve(newData);
+          }
+        }, 50);
       });
     }
 
-    if (!this.serialPort || !this.serialPort.readable) {
-      return null;
-    }
+    // Serial Port Handling (Unchanged)
+    if (!this.serialPort || !this.serialPort.readable) return null;
 
     if (this.accumulatedData.length > 0) {
       const singleByte = this.accumulatedData[0];
@@ -332,11 +341,7 @@ export default class VortexPort {
     }
 
     if (this.reader) {
-      try {
-        this.reader.releaseLock();
-      } catch (error) {
-        console.warn('Failed to release reader lock:', error);
-      }
+      try { this.reader.releaseLock(); } catch (error) {}
     }
 
     this.reader = this.serialPort.readable.getReader();
@@ -373,11 +378,7 @@ export default class VortexPort {
       return null;
     } finally {
       if (this.reader) {
-        try {
-          this.reader.releaseLock();
-        } catch (error) {
-          console.warn('Failed to release reader lock:', error);
-        }
+        try { this.reader.releaseLock(); } catch (error) {}
         this.reader = null;
       }
     }
