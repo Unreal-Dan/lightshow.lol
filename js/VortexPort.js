@@ -53,6 +53,8 @@ export default class VortexPort {
     this.resetState();
     this.debugLogging = false;
     this.editor = editor;
+    this.useBLE = this.editor.useBLE; // Determine if BLE should be used
+    this.bleConnected = false;
   }
 
   cancelListening() {
@@ -92,8 +94,25 @@ export default class VortexPort {
     return this.portActive;
   }
 
+  isActive = () => {
+    return this.useBLE ? BLE.isBleConnected() : this.portActive;
+  }
+
   async requestDevice(callback) {
     this.deviceCallback = callback;
+
+    if (this.useBLE) {
+      Notification.info("Using BLE for VortexPort...");
+      this.bleConnected = await BLE.connect();
+      if (this.bleConnected) {
+        Notification.success("BLE Connected!");
+        return;
+      } else {
+        Notification.failure("BLE Connection Failed. Falling back to Serial.");
+        this.useBLE = false; // Fall back to Serial
+      }
+    }
+
     try {
       if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
@@ -101,8 +120,8 @@ export default class VortexPort {
           throw new Error('Failed to open serial port');
         }
         await this.serialPort.open({ baudRate: 115200 });
-        // is this necessary...? I don't remember why it's here
         await this.serialPort.setSignals({ dataTerminalReady: true });
+
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
         }
@@ -123,6 +142,16 @@ export default class VortexPort {
   }
 
   async writeData(data) {
+    if (this.useBLE) {
+      if (!BLE.isBleConnected()) {
+        console.error("BLE is not connected!");
+        return;
+      }
+      console.log("Sending via BLE:", data);
+      await BLE.sendCommand(data);
+      return;
+    }
+
     if (!this.serialPort || !this.serialPort.writable) {
       console.error('Port is not writable.');
       return;
@@ -241,16 +270,26 @@ export default class VortexPort {
   }
 
   async readData(fullResponse) {
+    if (this.useBLE) {
+      if (!BLE.isBleConnected()) {
+        console.error("BLE is not connected!");
+        return null;
+      }
+      return await new Promise((resolve) => {
+        BLE.onNotification((data) => resolve(data));
+      });
+    }
+
     if (!this.serialPort || !this.serialPort.readable) {
       return null;
     }
+
     if (this.accumulatedData.length > 0) {
-      // check the buffer first...
-      // Return any single byte
       const singleByte = this.accumulatedData[0];
       this.accumulatedData = this.accumulatedData.substring(1);
       return singleByte;
     }
+
     if (this.reader) {
       try {
         this.reader.releaseLock();
@@ -258,12 +297,12 @@ export default class VortexPort {
         console.warn('Failed to release reader lock:', error);
       }
     }
+
     this.reader = this.serialPort.readable.getReader();
     try {
       while (true) {
         const { value, done } = await this.reader.read();
         if (done) {
-          // Ensure the reader is not released multiple times
           if (this.reader) {
             this.reader.releaseLock();
             this.reader = null;
@@ -282,17 +321,7 @@ export default class VortexPort {
             this.accumulatedData = '';
             return result;
           }
-        // If it starts with '=' or '==', look for the end delimiter '=='
-        //if (this.accumulatedData.startsWith('=') || this.accumulatedData.startsWith('==')) {
-        //  const endIndex = this.accumulatedData.indexOf('==', 2); // Search for '==' after the first one.
-
-        //  if (endIndex >= 0) {
-        //    const fullMessage = this.accumulatedData.substring(0, endIndex + 2).trim();
-        //    this.accumulatedData = this.accumulatedData.substring(endIndex + 2); // Trim accumulatedData
-        //    return fullMessage; // Return the full message
-        //  }
         } else {
-          // Return any single byte
           const singleByte = this.accumulatedData[0];
           this.accumulatedData = this.accumulatedData.substring(1);
           return singleByte;
@@ -304,9 +333,9 @@ export default class VortexPort {
     } finally {
       if (this.reader) {
         try {
-          this.reader.releaseLock(); // Ensure release of reader in the finally block
+          this.reader.releaseLock();
         } catch (error) {
-          console.warn('Failed to release reader lock in finally:', error);
+          console.warn('Failed to release reader lock:', error);
         }
         this.reader = null;
       }
@@ -969,6 +998,17 @@ export default class VortexPort {
 
   // send raw data to the device
   async sendRaw(data) {
+    if (!this.isActive()) {
+      console.error("Port not active. Cannot send raw data.");
+      return;
+    }
+
+    if (this.useBLE) {
+      if (this.debugLogging) console.log("Sending raw data via BLE:", data);
+      await BLE.sendCommand(data);
+      return;
+    }
+
     if (!this.serialPort || !this.serialPort.writable) {
       console.error('Port is not writable.');
       return;
@@ -976,7 +1016,7 @@ export default class VortexPort {
 
     const writer = this.serialPort.writable.getWriter();
     try {
-      if (this.debugLogging) console.log("SENDING RAW: " + JSON.stringify(data));
+      if (this.debugLogging) console.log("Sending raw data via Serial:", data);
       await writer.write(data);
     } catch (error) {
       console.error('Error writing data:', error);
@@ -988,12 +1028,20 @@ export default class VortexPort {
   // send a command to the device
   async sendCommand(verb) {
     if (!this.isActive()) {
-      console.error('Port not active or another transmission is ongoing. Cannot send command.');
+      console.error('Port not active. Cannot send command.');
       return;
     }
-    if (this.debugLogging) console.log("SENDING: " + verb);
-    const encodedVerb = new TextEncoder().encode(verb); // Ensure encoding for consistent communication
+
+    if (this.useBLE) {
+      if (this.debugLogging) console.log("Sending command via BLE:", verb);
+      await BLE.sendCommand(verb);
+      return;
+    }
+
+    if (this.debugLogging) console.log("Sending command via Serial:", verb);
+    const encodedVerb = new TextEncoder().encode(verb);
     await this.sendRaw(encodedVerb);
   }
+
 }
 

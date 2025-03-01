@@ -210,6 +210,12 @@ export default class VortexEditor {
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
 
+    // Check for mobile + BLE support
+    this.useBLE = this.detectMobile() && this.isBLESupported();
+    if (this.useBLE) {
+      this.initializeBLE();
+    }
+
     // Keydown event to show updatePanel
     document.addEventListener('keydown', async (event) => {
       if (event.key === 'Insert') {
@@ -330,6 +336,20 @@ export default class VortexEditor {
     }
   }
 
+  async initializeBLE() {
+    Notification.info("Mobile BLE mode detected. Attempting to connect...");
+
+    this.bleConnected = await BLE.connect();
+
+    if (this.bleConnected) {
+      Notification.success("Connected to ESP32 via BLE!");
+      this.vortexPort.useBLE = true;
+    } else {
+      Notification.failure("BLE connection failed. Falling back to Serial.");
+      this.vortexPort.useBLE = false;
+    }
+  }
+
   // Function to create the version overlay
   createVersionOverlay(versionText = "v1.0.0") {
     // Check if overlay already exists
@@ -434,6 +454,10 @@ export default class VortexEditor {
   detectMobile() {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
+  }
+
+  isBLESupported() {
+    return navigator.bluetooth !== undefined;
   }
 
   applyLayout() {
