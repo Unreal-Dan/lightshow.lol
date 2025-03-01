@@ -134,7 +134,9 @@ export default class LedSelectPanel extends Panel {
 
   async renderLedIndicators(deviceName = null) {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-
+    if (!deviceImageContainer) {
+      return;
+    }
     if (!deviceName || deviceName === 'None') {
       this.hide();
       return;
@@ -369,6 +371,9 @@ export default class LedSelectPanel extends Panel {
 
   selectAllLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = true;
     }
@@ -377,6 +382,9 @@ export default class LedSelectPanel extends Panel {
 
   selectNoneLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = false;
     }
@@ -385,6 +393,9 @@ export default class LedSelectPanel extends Panel {
 
   invertLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = !option.selected;
     }
@@ -393,6 +404,9 @@ export default class LedSelectPanel extends Panel {
 
   evenLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let i = 0; i < ledList.options.length; i++) {
       ledList.options[i].selected = (i % 2 === 0);
     }
@@ -401,6 +415,9 @@ export default class LedSelectPanel extends Panel {
 
   oddLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let i = 0; i < ledList.options.length; i++) {
       ledList.options[i].selected = (i % 2 !== 0);
     }
@@ -409,6 +426,9 @@ export default class LedSelectPanel extends Panel {
 
   randomLeds(probability = 0.5) {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = Math.random() < probability;
     }
