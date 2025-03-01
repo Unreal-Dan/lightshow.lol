@@ -110,7 +110,7 @@
   position: absolute;
   width: 14px; /* Adjust size */
   height: 14px; /* Adjust size */
-  background: radial-gradient(circle, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
   transform: translate(-50%, -50%);
@@ -168,5 +168,47 @@
 
 #toggleLedList:hover {
   background: transparent;
+}
+
+.led-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+  padding-top: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #454545;
+  margin-bottom: 10px;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-circle.main-selected {
+  background: radial-gradient(circle, rgb(83, 255, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  box-shadow: rgb(83, 255, 0) 0px 0px 5px;
+}
+
+.legend-circle.selected {
+  background: radial-gradient(circle, rgba(180, 180, 0, 1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: rgb(180, 180, 0) 0px 0px 5px;
+}
+
+.legend-circle.unselected {
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
+  border: 1px solid black;
 }
 

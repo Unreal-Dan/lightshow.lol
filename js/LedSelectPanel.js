@@ -15,13 +15,27 @@ export default class LedSelectPanel extends Panel {
         </div>
       </div>
       <fieldset id="ledsFieldset">
+        <div id="ledLegend" class="led-legend">
+          <div class="legend-item">
+            <div class="legend-circle main-selected"></div>
+            <span>Source</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-circle selected"></div>
+            <span>Selected</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-circle unselected"></div>
+            <span>Unselected</span>
+          </div>
+        </div>
         <div class="flex-container">
           <div id="deviceImageContainer">
             <!-- Device image and LED indicators will be dynamically added here -->
           </div>
         </div>
       </fieldset>
-      <select id="ledList" class="hidden" size="8" multiple></select>
+      <select id="ledList" class="hidden" size="6" multiple></select>
       <button id="toggleLedList" class="icon-button" title="Show/Hide Advanced">
         <i class="fa-solid fa-chevron-down"></i>
       </button>
