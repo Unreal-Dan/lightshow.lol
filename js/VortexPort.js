@@ -102,7 +102,7 @@ export default class VortexPort {
     this.deviceCallback = callback;
 
     if (this.useBLE) {
-      Notification.info("Using BLE for VortexPort...");
+      Notification.success("Using BLE for VortexPort...");
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
         Notification.success("BLE Connected!");
