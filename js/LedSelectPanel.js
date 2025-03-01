@@ -326,10 +326,10 @@ export default class LedSelectPanel extends Panel {
 
   getMainSelectedLed() {
     const targetLeds = this.getSelectedLeds();
+    if (targetLeds === null  || targetLeds.length === 0) {
+      return null;
+    }
     if (this.mainSelectedLed === null) {
-      if (targetLeds === null  || targetLeds.length === 0) {
-        return null;
-      }
       this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
     }
     if (!this.mainSelectedLed || !targetLeds.includes(this.mainSelectedLed)) {
