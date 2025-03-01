@@ -318,6 +318,9 @@ export default class LedSelectPanel extends Panel {
 
   getSelectedLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList)  {
+      return null;
+    }
     return Array.from(ledList.selectedOptions).map(option => option.value);
   }
 
