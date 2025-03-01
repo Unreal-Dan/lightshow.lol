@@ -191,23 +191,25 @@ export default class VortexEditor {
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
 
-    // position the panels
-    let leftTop = 5;
-    this.leftPanels.forEach((panel) => {
-      if (!panel || !panel.panel) return;
-      panel.panel.style.position = 'absolute';
-      panel.panel.style.left = '5px';
-      panel.panel.style.top = `${leftTop}px`;
-      leftTop += panel.panel.offsetHeight + 5;
-    });
-    let rightTop = 5;
-    this.rightPanels.forEach((panel) => {
-      if (!panel || !panel.panel) return;
-      panel.panel.style.position = 'absolute';
-      panel.panel.style.right = '5px';
-      panel.panel.style.top = `${rightTop}px`;
-      rightTop += panel.panel.offsetHeight + 5;
-    });
+    if (!this.isMobile) {
+      // position the panels
+      let leftTop = 5;
+      this.leftPanels.forEach((panel) => {
+        if (!panel || !panel.panel) return;
+        panel.panel.style.position = 'absolute';
+        panel.panel.style.left = '5px';
+        panel.panel.style.top = `${leftTop}px`;
+        leftTop += panel.panel.offsetHeight + 5;
+      });
+      let rightTop = 5;
+      this.rightPanels.forEach((panel) => {
+        if (!panel || !panel.panel) return;
+        panel.panel.style.position = 'absolute';
+        panel.panel.style.right = '5px';
+        panel.panel.style.top = `${rightTop}px`;
+        rightTop += panel.panel.offsetHeight + 5;
+      });
+    }
 
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
