@@ -269,14 +269,13 @@ export default class ColorsetPanel extends Panel {
     const cur = this.lightshow.vortex.engine().modes().curMode();
 
     colorsetElement.innerHTML = ''; // Clear colorset
-    colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
 
     if (!cur || sourceLed === null) {
       this.editor.colorPickerPanel.hide();
+      colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
       emptyLabel.style.display = 'block'; // Show the message
       return;
     }
-    emptyLabel.style.display = 'none'; // Hide message when LEDs are selected
 
     const set = cur.getColorset(sourceLed);
     const numColors = set ? set.numColors() : 0;
