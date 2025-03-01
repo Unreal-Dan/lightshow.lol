@@ -207,7 +207,7 @@ export default class VortexPort {
   listenForGreeting = async () => {
     let tries = 0;
     while (!this.portActive && !this.cancelListeningForGreeting && tries++ < 30) {
-      if (this.serialPort) {
+      if (this.useBLE || this.serialPort) {
         try {
           console.log("Listening for greeting...");
           // Read data from the serial port
@@ -257,9 +257,12 @@ export default class VortexPort {
             //}
 
             this.portActive = true;
-            this.serialPort.addEventListener("disconnect", (event) => {
-              this.disconnect();
-            });
+            if (this.serialPort) {
+              this.serialPort.addEventListener("disconnect", (event) => {
+                this.disconnect();
+              });
+            }
+            // TODO: BLE disconnect handler?
             if (this.deviceCallback && typeof this.deviceCallback === 'function') {
               this.deviceCallback('connect');
             }
