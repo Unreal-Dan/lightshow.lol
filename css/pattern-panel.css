@@ -174,3 +174,7 @@
   background: transparent;
 }
 
+#patternDropdown:disabled {
+  color: #656565;
+}
+
