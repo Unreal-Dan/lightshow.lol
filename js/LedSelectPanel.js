@@ -134,14 +134,11 @@ export default class LedSelectPanel extends Panel {
 
   async renderLedIndicators(deviceName = null) {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    const ledControls = document.getElementById('ledControls');
 
     if (!deviceName || deviceName === 'None') {
       this.hide();
       return;
     }
-
-    ledControls.style.display = 'flex';
 
     // Check if an existing overlay already exists
     let overlay = deviceImageContainer.querySelector('.led-overlay');
@@ -222,6 +219,9 @@ export default class LedSelectPanel extends Panel {
     const ledList = document.getElementById('ledList');
     const ledControls = document.getElementById('ledControls');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!ledList || !ledControls || !deviceImageContainer) {
+      return;
+    }
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
     const cur = this.editor.vortex.engine().modes().curMode();
