@@ -337,7 +337,7 @@ export default class VortexEditor {
   }
 
   async initializeBLE() {
-    Notification.info("Mobile BLE mode detected. Attempting to connect...");
+    Notification.success("Mobile BLE mode detected. Attempting to connect...");
 
     this.bleConnected = await BLE.connect();
 
