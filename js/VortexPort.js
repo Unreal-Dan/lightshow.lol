@@ -127,10 +127,6 @@ export default class VortexPort {
   }
 
   isActive = () => {
-    return this.portActive;
-  }
-
-  isActive = () => {
     return this.useBLE ? BLE.isBleConnected() : this.portActive;
   }
 
@@ -142,34 +138,37 @@ export default class VortexPort {
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
         Notification.success("BLE Connected!");
-        return;
+        if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+          this.deviceCallback('waiting');
+        }
       } else {
         Notification.failure("BLE Connection Failed. Falling back to Serial.");
         this.useBLE = false; // Fall back to Serial
       }
-    }
-
-    try {
-      if (!this.serialPort) {
-        this.serialPort = await navigator.serial.requestPort();
+    } else {
+      try {
         if (!this.serialPort) {
-          throw new Error('Failed to open serial port');
-        }
-        await this.serialPort.open({ baudRate: 115200 });
-        await this.serialPort.setSignals({ dataTerminalReady: true });
+          this.serialPort = await navigator.serial.requestPort();
+          if (!this.serialPort) {
+            throw new Error('Failed to open serial port');
+          }
+          await this.serialPort.open({ baudRate: 115200 });
+          await this.serialPort.setSignals({ dataTerminalReady: true });
 
-        if (this.deviceCallback && typeof this.deviceCallback === 'function') {
-          this.deviceCallback('waiting');
+          if (this.deviceCallback && typeof this.deviceCallback === 'function') {
+            this.deviceCallback('waiting');
+          }
         }
+      } catch (error) {
+        console.error('Error:', error);
       }
-      await this.beginConnection();
-    } catch (error) {
-      console.error('Error:', error);
     }
+    // finally
+    await this.beginConnection();
   }
 
   async beginConnection(){
-    if (!this.serialPort) {
+    if (!this.useBLE && !this.serialPort) {
       return;
     }
     console.log("Beginning connection...");
