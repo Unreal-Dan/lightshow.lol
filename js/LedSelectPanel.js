@@ -110,18 +110,11 @@ export default class LedSelectPanel extends Panel {
   }
 
   async updateSelectedDevice(device) {
-    const ledsFieldset = document.getElementById('ledsFieldset');
-    if (!ledsFieldset) {
-      return;
-    }
-
     if (device === 'None') {
-      ledsFieldset.style.display = 'none';
       this.hide();
       return;
     }
 
-    ledsFieldset.style.display = 'block';
     this.selectedDevice = device;
     await this.renderLedIndicators(device);
     this.show();
@@ -142,17 +135,14 @@ export default class LedSelectPanel extends Panel {
   }
 
   async renderLedIndicators(deviceName = null) {
-    const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     const ledControls = document.getElementById('ledControls');
 
     if (!deviceName || deviceName === 'None') {
-      ledsFieldset.style.display = 'none';
       this.hide();
       return;
     }
 
-    ledsFieldset.style.display = 'block';
     ledControls.style.display = 'flex';
 
     // Check if an existing overlay already exists
