@@ -104,7 +104,8 @@ export default class VortexEditor {
     document.body.appendChild(this.canvas);
 
     // Initialize VortexPort
-    this.vortexPort = new VortexPort(this);
+    this.useBLE = this.detectMobile() && this.isBLESupported();
+    this.vortexPort = new VortexPort(this, this.useBLE);
 
     // Instantiate Lightshow
     this.lightshow = new Lightshow(vortexLib, this.vortex, this.canvas);
@@ -339,17 +340,34 @@ export default class VortexEditor {
   }
 
   async initializeBLE() {
-    Notification.success("Mobile BLE mode detected. Attempting to connect...");
+    Notification.success("Click to connect to Bluetooth!");
 
-    this.bleConnected = await BLE.connect();
+    const button = document.createElement("button");
+    button.innerText = "Connect to Bluetooth";
+    button.style.position = "fixed";
+    button.style.bottom = "20px";
+    button.style.left = "50%";
+    button.style.transform = "translateX(-50%)";
+    button.style.padding = "10px 20px";
+    button.style.fontSize = "16px";
+    button.style.zIndex = "1000";
 
-    if (this.bleConnected) {
-      Notification.success("Connected to ESP32 via BLE!");
-      this.vortexPort.useBLE = true;
-    } else {
-      Notification.failure("BLE connection failed. Falling back to Serial.");
-      this.vortexPort.useBLE = false;
-    }
+    document.body.appendChild(button);
+
+    button.addEventListener("click", async () => {
+      try {
+        Notification.success("Attempting BLE Connection...");
+        this.bleConnected = await BLE.connect();
+        if (this.bleConnected) {
+          Notification.success("Connected to ESP32 via BLE!");
+          this.vortexPort = new VortexPort(this, true);
+        }
+        button.remove();
+      } catch (error) {
+        console.error("BLE Connection Error:", error);
+        Notification.failure("Bluetooth connection failed!");
+      }
+    });
   }
 
   // Function to create the version overlay

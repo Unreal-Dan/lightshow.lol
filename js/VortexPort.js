@@ -47,13 +47,13 @@ export default class VortexPort {
   isTransmitting = null; // Flag to track if a transmission is active
   sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-  constructor(editor) {
+  constructor(editor, useBLE = false) {
     this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
     this.debugLogging = false;
     this.editor = editor;
-    this.useBLE = this.editor.useBLE; // Determine if BLE should be used
+    this.useBLE = useBLE; // Determine if BLE should be used
     this.bleConnected = false;
   }
 
