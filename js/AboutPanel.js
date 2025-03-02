@@ -15,7 +15,7 @@ export default class AboutPanel extends Panel {
         </div>
       </div>
     `;
-    super('aboutPanel', content, 'Help & About');
+    super(editor, 'aboutPanel', content, 'Help & About');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

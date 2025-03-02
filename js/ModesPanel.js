@@ -30,7 +30,7 @@ export default class ModesPanel extends Panel {
         </div>
       </div>
     `;
-    super('modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
+    super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
@@ -63,18 +63,42 @@ export default class ModesPanel extends Panel {
 
   async onDeviceConnect(deviceName) {
     // Enable the 3 buttons when a device is connected
-    document.getElementById('pushToDeviceButton').disabled = false;
-    document.getElementById('pullFromDeviceButton').disabled = false;
-    document.getElementById('transmitVLButton').disabled = false;
-    document.getElementById('connectDeviceButton').disabled = true;
+    const pushToDevice = document.getElementById('pushToDeviceButton');
+    if (pushToDevice) {
+      pushToDevice.disabled = false;
+    }
+    const pullFromDevice = document.getElementById('pullFromDeviceButton');
+    if (pullFromDevice) {
+      pullFromDevice.disabled = false;
+    }
+    const transmitVL = document.getElementById('transmitVLButton');
+    if (transmitVL) {
+      transmitVL.disabled = false;
+    }
+    const connectDevice = document.getElementById('connectDeviceButton');
+    if (connectDevice) {
+      connectDevice.disabled = true;
+    }
   }
 
   async onDeviceDisconnect(deviceName) {
     // Disable the 3 buttons when a device is disconnected
-    document.getElementById('pushToDeviceButton').disabled = true;
-    document.getElementById('pullFromDeviceButton').disabled = true;
-    document.getElementById('transmitVLButton').disabled = true;
-    document.getElementById('connectDeviceButton').disabled = false;
+    const pushToDevice = document.getElementById('pushToDeviceButton');
+    if (pushToDevice) {
+      pushToDevice.disabled = true;
+    }
+    const pullFromDevice = document.getElementById('pullFromDeviceButton');
+    if (pullFromDevice) {
+      pullFromDevice.disabled = true;
+    }
+    const transmitVL = document.getElementById('transmitVLButton');
+    if (transmitVL) {
+      transmitVL.disabled = true;
+    }
+    const connectDevice = document.getElementById('connectDeviceButton');
+    if (connectDevice) {
+      connectDevice.disabled = false;
+    }
   }
 
   async onDeviceSelected(devicename) {

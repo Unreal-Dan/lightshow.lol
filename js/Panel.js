@@ -4,11 +4,12 @@ export default class Panel {
   static topZIndex = 3; // Initialize the top Z-Index to the default panel Z-Index
   static selectedPanel = null;
 
-  constructor(id, content, title = 'Panel', options = {}) {
+  constructor(editor, id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
     this.panel.id = id;
     this.panel.className = 'draggable-panel';
     this.panel.title = title;
+    this.panel.editor = editor;
 
     const { showCloseButton = false } = options;
 
@@ -146,9 +147,11 @@ export default class Panel {
   appendTo(parent) {
     parent.appendChild(this.panel);
 
-    const rect = this.panel.getBoundingClientRect();
-    this.panel.style.left = `${rect.left}px`;
-    this.panel.style.top = `${rect.top}px`;
+    if (!this.panel.editor.detectMobile())  {
+      const rect = this.panel.getBoundingClientRect();
+      this.panel.style.left = `${rect.left}px`;
+      this.panel.style.top = `${rect.top}px`;
+    }
   }
 
   show() {
@@ -162,8 +165,9 @@ export default class Panel {
         const activePanels = tabContainer.querySelectorAll('.active');
         activePanels.forEach(activePanel => activePanel.classList.remove('active'));
 
-        this.panel.classList.add('active');
-        this.panel.style.display = ''; // Ensure it's visible
+        this.panel.style.display = '';  // Restore visibility
+        this.panel.style.opacity = '1';  // Ensure full visibility
+        this.panel.style.pointerEvents = 'auto';  // Allow interactions
       } else {
         // For desktop: Just ensure visibility
         this.panel.style.display = '';
@@ -184,7 +188,9 @@ export default class Panel {
         this.panel.style.display = 'none';
       } else {
         // For mobile: Just remove 'active' class
-        this.panel.classList.remove('active');
+        this.panel.style.opacity = '0'; // Make invisible
+        this.panel.style.pointerEvents = 'none'; // Disable interaction
+        this.isVisible = false;
       }
     }
   }
@@ -455,7 +461,6 @@ export default class Panel {
       this.hide();
     }
   }
-
 
   applyMobileLayout() {
     const tabContainer = document.querySelector('.mobile-panel-content');

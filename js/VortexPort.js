@@ -58,39 +58,6 @@ export default class VortexPort {
     // Check for mobile + BLE support
     this.bleConnected = false;
     this.useBLE = this.editor.detectMobile() && this.editor.isBLESupported();
-    if (this.useBLE) {
-      this.initializeBLE();
-    }
-  }
-
-  async initializeBLE() {
-    Notification.success("Click to connect to Bluetooth!");
-
-    const button = document.createElement("button");
-    button.innerText = "Connect to Bluetooth";
-    button.style.position = "fixed";
-    button.style.bottom = "20px";
-    button.style.left = "50%";
-    button.style.transform = "translateX(-50%)";
-    button.style.padding = "10px 20px";
-    button.style.fontSize = "16px";
-    button.style.zIndex = "1000";
-
-    document.body.appendChild(button);
-
-    button.addEventListener("click", async () => {
-      try {
-        Notification.success("Attempting BLE Connection...");
-        this.bleConnected = await this.requestDevice();
-        if (this.bleConnected) {
-          Notification.success("Connected to ESP32 via BLE!");
-        }
-        button.remove();
-      } catch (error) {
-        console.error("BLE Connection Error:", error);
-        Notification.failure("Bluetooth connection failed!");
-      }
-    });
   }
 
   cancelListening() {

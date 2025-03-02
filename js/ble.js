@@ -78,11 +78,24 @@ export function isBleConnected() {
  * Read the accumulated BLE data
  * @returns {string|null} - Returns accumulated data if available, otherwise null
  */
+/**
+ * Read the accumulated BLE data from notifications
+ * @returns {Uint8Array|null} - Returns accumulated data if available, otherwise null
+ */
 export function readBleData() {
-    if (accumulatedData.length > 0) {
-        let data = accumulatedData;
-        accumulatedData = ""; // Clear buffer after reading
-        return data;
-    }
+  if (!isBleConnected()) {
+    console.error("BLE is not connected!");
     return null;
+  }
+
+  if (accumulatedData.length === 0) {
+    return null;
+  }
+
+  // Convert accumulated string data to Uint8Array
+  const buffer = new TextEncoder().encode(accumulatedData);
+  accumulatedData = ""; // Clear buffer after reading
+
+  return buffer;
 }
+

@@ -17,7 +17,7 @@ export default class UpdatePanel extends Panel {
         </div>
       </div>
     `;
-    super('updatePanel', content, 'Device Updates', { showCloseButton: true });
+    super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     // this.serialPort is a local copy of the vortexport.serialport if it's

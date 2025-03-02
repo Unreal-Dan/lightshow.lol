@@ -40,13 +40,11 @@ export default class LedSelectPanel extends Panel {
         <i class="fa-solid fa-chevron-down"></i>
       </button>
     `;
-    super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
+    super(editor, 'ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
   }
 
   initialize() {
-    document.getElementById('ledsFieldset').style.display = 'none';
-
     // Event listeners for LED list and controls
     const ledList = document.getElementById('ledList');
     ledList.addEventListener('change', () => this.handleLedSelectionChange());
@@ -78,8 +76,10 @@ export default class LedSelectPanel extends Panel {
     // refresh so the led list is populated
     this.refreshLedList();
 
-    // hide till device connects
-    this.hide();
+    if (!this.editor.detectMobile()) {
+      // hide till device connects
+      this.hide();
+    }
   }
 
   toggleLedList() {
@@ -108,15 +108,11 @@ export default class LedSelectPanel extends Panel {
   }
 
   async updateSelectedDevice(device) {
-    const ledsFieldset = document.getElementById('ledsFieldset');
-
     if (device === 'None') {
-      ledsFieldset.style.display = 'none';
       this.hide();
       return;
     }
 
-    ledsFieldset.style.display = 'block';
     this.selectedDevice = device;
     await this.renderLedIndicators(device);
     this.show();
@@ -137,18 +133,14 @@ export default class LedSelectPanel extends Panel {
   }
 
   async renderLedIndicators(deviceName = null) {
-    const ledsFieldset = document.getElementById('ledsFieldset');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
-    const ledControls = document.getElementById('ledControls');
-
+    if (!deviceImageContainer) {
+      return;
+    }
     if (!deviceName || deviceName === 'None') {
-      ledsFieldset.style.display = 'none';
       this.hide();
       return;
     }
-
-    ledsFieldset.style.display = 'block';
-    ledControls.style.display = 'flex';
 
     // Check if an existing overlay already exists
     let overlay = deviceImageContainer.querySelector('.led-overlay');
@@ -229,6 +221,9 @@ export default class LedSelectPanel extends Panel {
     const ledList = document.getElementById('ledList');
     const ledControls = document.getElementById('ledControls');
     const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!ledList || !ledControls || !deviceImageContainer) {
+      return;
+    }
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
     const cur = this.editor.vortex.engine().modes().curMode();
@@ -376,6 +371,9 @@ export default class LedSelectPanel extends Panel {
 
   selectAllLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = true;
     }
@@ -384,6 +382,9 @@ export default class LedSelectPanel extends Panel {
 
   selectNoneLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = false;
     }
@@ -392,6 +393,9 @@ export default class LedSelectPanel extends Panel {
 
   invertLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = !option.selected;
     }
@@ -400,6 +404,9 @@ export default class LedSelectPanel extends Panel {
 
   evenLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let i = 0; i < ledList.options.length; i++) {
       ledList.options[i].selected = (i % 2 === 0);
     }
@@ -408,6 +415,9 @@ export default class LedSelectPanel extends Panel {
 
   oddLeds() {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let i = 0; i < ledList.options.length; i++) {
       ledList.options[i].selected = (i % 2 !== 0);
     }
@@ -416,6 +426,9 @@ export default class LedSelectPanel extends Panel {
 
   randomLeds(probability = 0.5) {
     const ledList = document.getElementById('ledList');
+    if (!ledList) {
+      return;
+    }
     for (let option of ledList.options) {
       option.selected = Math.random() < probability;
     }

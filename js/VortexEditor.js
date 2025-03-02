@@ -186,12 +186,15 @@ export default class VortexEditor {
     await this.sleep(300);
 
     // Append panels to the DOM
-    this.panels.forEach((panel) => panel.appendTo(document.body));
+    const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
+    this.panels.forEach((panel) => {
+      panel.appendTo(panelContainer);
+    });
 
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
 
-    if (!this.isMobile) {
+    if (!this.detectMobile()) {
       // position the panels
       let leftTop = 5;
       this.leftPanels.forEach((panel) => {
@@ -379,27 +382,6 @@ export default class VortexEditor {
     return true;
   }
 
-  setActiveTab(panelId) {
-    const panelContentContainer = document.querySelector('.mobile-panel-content');
-
-    // Hide all panels except the selected one
-    this.panels.forEach(panel => {
-      const isActive = panel.panel.id === panelId;
-      panel.setActiveForMobile(isActive);
-
-      if (isActive) {
-        panelContentContainer.innerHTML = ''; // Clear previous panel
-        panelContentContainer.appendChild(panel.panel); // Show the active panel
-      }
-    });
-
-    // Update the active state of the tab buttons
-    const tabButtons = document.querySelectorAll('.mobile-tab-button');
-    tabButtons.forEach(button => {
-      button.classList.toggle('active', button.dataset.panelId === panelId);
-    });
-  }
-
   async loadDependencies() {
     this.loadStylesheet("mainStyles", "css/styles.css");
     this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
@@ -436,8 +418,16 @@ export default class VortexEditor {
   }
 
   detectMobile() {
+    // isMobile is used to manage layout so we use seperate var here to
+    // prevent regex'ing the userAgent over and over
+    if (this.detectedMobile) {
+      return true
+    }
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200;
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200) {
+      this.detectedMobile = true;
+    }
+    return this.detectedMobile;
   }
 
   isBLESupported() {
@@ -476,20 +466,22 @@ export default class VortexEditor {
   setActiveTab(panelId) {
     const panelContentContainer = document.querySelector('.mobile-panel-content');
 
-    // Ensure only the active panel is visible
     this.panels.forEach(panel => {
       const isActive = panel.panel.id === panelId;
 
       if (isActive) {
-        panel.panel.classList.add('active'); // Mark as active
-        panelContentContainer.innerHTML = ''; // Clear any previously active panel
-        panelContentContainer.appendChild(panel.panel); // Show the active panel
+        // Ensure only the active panel is visible and takes full height
+        panel.panel.style.display = 'block';
+        panel.panel.style.visibility = 'visible';
+        panel.panel.style.position = 'relative';
       } else {
-        panel.panel.classList.remove('active'); // Mark as inactive
+        // Hide all other panels
+        panel.panel.style.display = 'none';
+        panel.panel.style.visibility = 'hidden';
       }
     });
 
-    // Update tab button states
+    // Update the active state of the tab buttons
     const tabButtons = document.querySelectorAll('.mobile-tab-button');
     tabButtons.forEach(button => {
       button.classList.toggle('active', button.dataset.panelId === panelId);
