@@ -320,7 +320,9 @@ export default class Lightshow {
       }
     });
 
-    requestAnimationFrame(this.draw.bind(this));
+    if (!this._pause) {
+      requestAnimationFrame(this.draw.bind(this));
+    }
   }
 
   feedCirclePoints() {
