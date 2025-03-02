@@ -180,11 +180,11 @@ export default class UpdatePanel extends Panel {
     progressBar.style.width = '0%';
     progressMessage.textContent = 'Erasing flash...';
 
-    // Slowly fill progress bar from 0% to 15% while eraseFlash is in progress
+    // Slowly fill progress bar from 0% to 50% while eraseFlash is in progress
     let currentWidth = 0;
-    const targetWidth = 15;
+    const targetWidth = 50;
     const incrementSteps = 50; // number of increments
-    const intervalDelay = 500; // ms
+    const intervalDelay = 300; // ms
     const incrementValue = (targetWidth - currentWidth) / incrementSteps;
 
     const intervalId = setInterval(() => {
@@ -234,8 +234,8 @@ export default class UpdatePanel extends Panel {
         await this.espStub.flashData(
           contents,
           (bytesWritten, totalThisFile) => {
-            // 85% range left after 15% used for erase
-            const progress = Math.floor((bytesWritten / totalBytes) * 85) + 15;
+            // 50% range left after 50% used for erase
+            const progress = Math.floor((bytesWritten / totalBytes) * 50) + 50;
             progressBar.style.width = progress + '%';
             const msg = `Flashing ${bytesWritten} / ${totalBytes} (${progress}%)...`;
             progressMessage.textContent = msg;
