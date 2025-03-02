@@ -178,13 +178,15 @@ export default class VortexPort {
         try {
           console.log("Listening for greeting...");
           // Read data from the serial port
-          const response = await this.readData(true);
-          if (!response) {
+          const responseEncoded = await this.readData(true);
+          if (!responseEncoded) {
             console.log("Error: Connection broken");
             // broken connection
             await this.sleep(500);
             continue;
           }
+
+          const response = new TextDecoder().decode(responseEncoded);
 
           console.log("Matching: [" + response + "]...");
 
