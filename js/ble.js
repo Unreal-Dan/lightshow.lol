@@ -6,8 +6,7 @@ let bleDevice = null;
 let writeCharacteristic = null;
 let notifyCharacteristic = null;
 let isConnected = false;
-let notificationCallback = null;
-let accumulatedData = "";
+let accumulatedData = new Uint8Array(0); // Store binary data
 
 /**
  * Connect to the ESP32 Bluetooth device
@@ -43,13 +42,16 @@ export async function connect() {
 }
 
 /**
- * Handle incoming notifications from ESP32
+ * Handle incoming notifications from ESP32 (BINARY ONLY)
  * @param {Event} event - The characteristic change event
  */
 function handleNotifications(event) {
-    let value = new TextDecoder().decode(event.target.value);
-    console.log("Received from ESP32:", value);
-    accumulatedData += value;
+    let rawData = new Uint8Array(event.target.value.buffer);
+
+    console.log("Received BINARY from ESP32:", rawData);
+    console.log("HEX Representation:", rawData.map(byte => byte.toString(16).padStart(2, '0')).join(" "));
+
+    accumulatedData = new Uint8Array([...accumulatedData, ...rawData]);
 }
 
 /**
@@ -75,11 +77,7 @@ export function isBleConnected() {
 }
 
 /**
- * Read the accumulated BLE data
- * @returns {string|null} - Returns accumulated data if available, otherwise null
- */
-/**
- * Read the accumulated BLE data from notifications
+ * Read the accumulated BLE binary data
  * @returns {Uint8Array|null} - Returns accumulated data if available, otherwise null
  */
 export function readBleData() {
@@ -91,8 +89,12 @@ export function readBleData() {
   if (accumulatedData.length === 0) {
     return null;
   }
+
+  console.log("Current BLE Buffer:", accumulatedData);
+  console.log("HEX Representation:", accumulatedData.map(byte => byte.toString(16).padStart(2, '0')).join(" "));
+
   const returnedData = accumulatedData;
-  accumulatedData =  '';
+  accumulatedData = new Uint8Array(0);  // Reset buffer
   return returnedData;
 }
 
