@@ -91,11 +91,8 @@ export function readBleData() {
   if (accumulatedData.length === 0) {
     return null;
   }
-
-  // Convert accumulated string data to Uint8Array
-  const buffer = new TextEncoder().encode(accumulatedData);
-  accumulatedData = ""; // Clear buffer after reading
-
-  return buffer;
+  const returnedData = accumulatedData;
+  accumulatedData =  '';
+  return returnedData;
 }
 
