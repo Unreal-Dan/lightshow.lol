@@ -186,7 +186,7 @@ export default class VortexPort {
             continue;
           }
 
-          const response = new TextDecoder().decode(responseEncoded);
+          const response = this.useBLE ? new TextDecoder().decode(responseEncoded) : responseEncoded;
 
           console.log("Matching: [" + response + "]...");
 
