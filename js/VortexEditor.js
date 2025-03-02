@@ -570,7 +570,6 @@ export default class VortexEditor {
       Notification.success("Successfully pulled save");
     }
     this.modesPanel.refreshModeList();
-    this.modesPanel.refreshPatternControlPanel();
   }
 
   async transmitVL() {
