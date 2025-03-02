@@ -227,6 +227,7 @@ export default class ModesPanel extends Panel {
     if (refresh) {
       this.editor.ledSelectPanel.refreshLedList();
       this.refreshOtherPanels();
+      this.editor.demoModeOnDevice();
     }
   }
 
