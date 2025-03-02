@@ -33,7 +33,7 @@ export default class WelcomePanel extends Panel {
       ` + content;
     }
 
-    super('welcomePanel', content, 'Welcome', { showCloseButton: true });
+    super(editor, 'welcomePanel', content, 'Welcome', { showCloseButton: true });
     this.welcomeToken = 'showNewWelcome';
     this.editor = editor;
   }

@@ -189,9 +189,6 @@ export default class VortexEditor {
     const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
     this.panels.forEach((panel) => {
       panel.appendTo(panelContainer);
-      if (this.detectMobile()) {
-        panel.hide();
-      }
     });
 
     // Initialize Panels
@@ -385,31 +382,6 @@ export default class VortexEditor {
     return true;
   }
 
-  setActiveTab(panelId) {
-    const panelContentContainer = document.querySelector('.mobile-panel-content');
-
-    // Hide all panels except the selected one
-    this.panels.forEach(panel => {
-      const isActive = panel.panel.id === panelId;
-      panel.setActiveForMobile(isActive);
-
-      if (isActive) {
-        //panelContentContainer.innerHTML = ''; // Clear previous panel
-        //panelContentContainer.appendChild(panel.panel); // Show the active panel
-        this.panels.forEach(panel => {
-          const isActive = panel.panel.id === panelId;
-          panel.setActiveForMobile(isActive);
-        });
-      }
-    });
-
-    // Update the active state of the tab buttons
-    const tabButtons = document.querySelectorAll('.mobile-tab-button');
-    tabButtons.forEach(button => {
-      button.classList.toggle('active', button.dataset.panelId === panelId);
-    });
-  }
-
   async loadDependencies() {
     this.loadStylesheet("mainStyles", "css/styles.css");
     this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
@@ -494,20 +466,22 @@ export default class VortexEditor {
   setActiveTab(panelId) {
     const panelContentContainer = document.querySelector('.mobile-panel-content');
 
-    // Ensure only the active panel is visible
     this.panels.forEach(panel => {
       const isActive = panel.panel.id === panelId;
 
       if (isActive) {
-        panel.panel.classList.add('active'); // Mark as active
-        panelContentContainer.innerHTML = ''; // Clear any previously active panel
-        panelContentContainer.appendChild(panel.panel); // Show the active panel
+        // Ensure only the active panel is visible and takes full height
+        panel.panel.style.display = 'block';
+        panel.panel.style.visibility = 'visible';
+        panel.panel.style.position = 'relative';
       } else {
-        panel.panel.classList.remove('active'); // Mark as inactive
+        // Hide all other panels
+        panel.panel.style.display = 'none';
+        panel.panel.style.visibility = 'hidden';
       }
     });
 
-    // Update tab button states
+    // Update the active state of the tab buttons
     const tabButtons = document.querySelectorAll('.mobile-tab-button');
     tabButtons.forEach(button => {
       button.classList.toggle('active', button.dataset.panelId === panelId);

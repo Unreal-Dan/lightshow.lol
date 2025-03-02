@@ -95,7 +95,7 @@ export default class AnimationPanel extends Panel {
       </div>
     `;
 
-    super('animationPanel', content, 'Animation');
+    super(editor, 'animationPanel', content, 'Animation');
 
     this.editor = editor;
     this.lightshow = editor.lightshow;

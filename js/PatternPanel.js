@@ -17,7 +17,7 @@ export default class PatternPanel extends Panel {
       </button>
       <div id="patternParams" class="grid-container hidden"></div>
     `;
-    super('patternPanel', content, 'Pattern');
+    super(editor, 'patternPanel', content, 'Pattern');
     this.editor = editor;
   }
 

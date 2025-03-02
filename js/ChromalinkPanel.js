@@ -27,7 +27,7 @@ export default class ChromalinkPanel extends Panel {
         <input type="file" id="firmwareFileInput" style="display:none;" />
       </div>
     `;
-    super('chromalinkPanel', content, 'Chromalink Duo');
+    super(editor, 'chromalinkPanel', content, 'Chromalink Duo');
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;

@@ -20,7 +20,7 @@ export default class ColorsetPanel extends Panel {
       <hr id="patternDivider">
       <div id="colorset" class="color-row"></div>
     `;
-    super('colorsetPanel', content, 'Colorset');
+    super(editor, 'colorsetPanel', content, 'Colorset');
     this.editor = editor
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

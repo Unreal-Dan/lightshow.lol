@@ -17,7 +17,7 @@ export default class CommunityBrowserPanel extends Panel {
         </div>
       </div>
     `;
-    super('communityBrowserPanel', initialHTML, 'Community Modes');
+    super(editor, 'communityBrowserPanel', initialHTML, 'Community Modes');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

@@ -4,11 +4,12 @@ export default class Panel {
   static topZIndex = 3; // Initialize the top Z-Index to the default panel Z-Index
   static selectedPanel = null;
 
-  constructor(id, content, title = 'Panel', options = {}) {
+  constructor(editor, id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
     this.panel.id = id;
     this.panel.className = 'draggable-panel';
     this.panel.title = title;
+    this.panel.editor = editor;
 
     const { showCloseButton = false } = options;
 
@@ -146,9 +147,11 @@ export default class Panel {
   appendTo(parent) {
     parent.appendChild(this.panel);
 
-    const rect = this.panel.getBoundingClientRect();
-    this.panel.style.left = `${rect.left}px`;
-    this.panel.style.top = `${rect.top}px`;
+    if (!this.panel.editor.detectMobile())  {
+      const rect = this.panel.getBoundingClientRect();
+      this.panel.style.left = `${rect.left}px`;
+      this.panel.style.top = `${rect.top}px`;
+    }
   }
 
   show() {

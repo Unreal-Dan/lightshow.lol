@@ -30,7 +30,7 @@ export default class ModesPanel extends Panel {
         </div>
       </div>
     `;
-    super('modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
+    super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;

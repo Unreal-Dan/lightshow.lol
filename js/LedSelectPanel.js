@@ -40,7 +40,7 @@ export default class LedSelectPanel extends Panel {
         <i class="fa-solid fa-chevron-down"></i>
       </button>
     `;
-    super('ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
+    super(editor, 'ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
   }
 

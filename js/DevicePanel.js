@@ -21,7 +21,7 @@ export default class DevicePanel extends Panel {
         <i class="fa-solid fa-sun" id="brightnessIcon"></i>
       </div>
     `;
-    super('devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
+    super(editor, 'devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
     this.selectedDevice = 'None';
     this.multiLedWarningModal = new Modal('multiLedWarning');
@@ -169,12 +169,14 @@ export default class DevicePanel extends Panel {
     await this.updateSelectedDevice(deviceName);
     this.lockDeviceSelection(true);
 
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Delay 1s
+
     // brightness added and versions rolled to 1.5.x at same time
     // TODO: removeme this 1.3.0 check is for dev testing
     if (this.editor.isVersionGreaterOrEqual(deviceVersion, '1.5.0') || deviceVersion === '1.3.0') {
       const vortexLib = this.editor.vortexLib;
       const vortex = this.editor.lightshow.vortex;
-      const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
+      const deviceBrightness = 255; //await this.editor.vortexPort.getBrightness(vortexLib, vortex);
       // Unlock and show brightness control
       this.toggleBrightnessSlider(deviceBrightness);
     }
