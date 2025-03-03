@@ -169,8 +169,6 @@ export default class DevicePanel extends Panel {
     await this.updateSelectedDevice(deviceName);
     this.lockDeviceSelection(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Delay 1s
-
     // brightness added and versions rolled to 1.5.x at same time
     // TODO: removeme this 1.3.0 check is for dev testing
     if (this.editor.isVersionGreaterOrEqual(deviceVersion, '1.5.0') || deviceVersion === '1.3.0') {

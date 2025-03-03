@@ -47,10 +47,6 @@ export async function connect() {
  */
 function handleNotifications(event) {
     let rawData = new Uint8Array(event.target.value.buffer);
-
-    console.log("Received BINARY from ESP32:", rawData);
-    console.log("HEX Representation:", rawData.map(byte => byte.toString(16).padStart(2, '0')).join(" "));
-
     accumulatedData = new Uint8Array([...accumulatedData, ...rawData]);
 }
 
@@ -63,9 +59,20 @@ export async function sendCommand(command) {
         console.error("BLE not connected!");
         return;
     }
-    console.log("Sending:", command);
     let encoder = new TextEncoder();
     await writeCharacteristic.writeValue(encoder.encode(command));
+}
+
+/**
+ * Send a command string to the ESP32 over BLE
+ * @param {string} command - Command string to send
+ */
+export async function sendRaw(data) {
+    if (!writeCharacteristic) {
+        console.error("BLE not connected!");
+        return;
+    }
+    await writeCharacteristic.writeValue(data);
 }
 
 /**
@@ -89,9 +96,6 @@ export function readBleData() {
   if (accumulatedData.length === 0) {
     return null;
   }
-
-  console.log("Current BLE Buffer:", accumulatedData);
-  console.log("HEX Representation:", accumulatedData.map(byte => byte.toString(16).padStart(2, '0')).join(" "));
 
   const returnedData = accumulatedData;
   accumulatedData = new Uint8Array(0);  // Reset buffer

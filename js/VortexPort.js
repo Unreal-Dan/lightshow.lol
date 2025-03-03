@@ -282,9 +282,9 @@ export default class VortexPort {
         console.error("BLE is not connected!");
         return null;
       }
-      let data = BLE.readBleData(); // ✅ Read directly from BLE buffer
+      let data = BLE.readBleData(); // Read directly from BLE buffer
       if (data) return data;
-      // ✅ If no data yet, wait until new data arrives
+      // If no data yet, wait until new data arrives
       return new Promise((resolve) => {
         let interval = setInterval(() => {
           let newData = BLE.readBleData();
@@ -906,6 +906,25 @@ export default class VortexPort {
   }
 
   async readFromSerialPort() {
+    if (this.useBLE) {
+      if (!BLE.isBleConnected()) {
+        console.error("BLE is not connected!");
+        return null;
+      }
+
+      let data = BLE.readBleData();
+      if (data) return { value: new TextEncoder().encode(data), done: false };
+
+      return new Promise((resolve) => {
+        let interval = setInterval(() => {
+          let newData = BLE.readBleData();
+          if (newData) {
+            clearInterval(interval);
+            resolve({ value: new TextEncoder().encode(newData), done: false });
+          }
+        }, 50);
+      });
+    }
     if (!this.serialPort || !this.serialPort.readable) {
       throw new Error('Serial port is not readable');
     }
@@ -921,9 +940,10 @@ export default class VortexPort {
     } catch (error) {
       // do nothing?
       console.error("Failed to read: " + error);
+    } finally {
+      this.reader.releaseLock();
+      this.reader = null;
     }
-    this.reader.releaseLock();
-    this.reader = null;
     return result;
   }
 
@@ -933,7 +953,6 @@ export default class VortexPort {
     }
 
     try {
-      // Function to append new data to existing data
       const appendData = (existing, newData) => {
         const combined = new Uint8Array(existing.length + newData.length);
         combined.set(existing);
@@ -941,33 +960,48 @@ export default class VortexPort {
         return combined;
       };
 
-      // Read the initial 4 bytes for size
       let sizeData = new Uint8Array(0);
-      while (sizeData.length < 4) {
-        const data = await this.readFromSerialPort();
-        sizeData = appendData(sizeData, data.value);
+
+      if (this.useBLE) {
+        while (sizeData.length < 4) {
+          const data = await BLE.readBleData();
+          if (data) {
+            sizeData = appendData(sizeData, data);
+          }
+        }
+      } else {
+        while (sizeData.length < 4) {
+          const data = await this.readFromSerialPort();
+          sizeData = appendData(sizeData, data.value);
+        }
       }
 
-      // Interpret the first 4 bytes as size
       const size = new DataView(sizeData.buffer).getUint32(0, true);
-
-      // Read the remaining data
       let accumulatedData = sizeData.slice(4);
-      while (accumulatedData.length < size) {
-        const data = await this.readFromSerialPort();
-        accumulatedData = appendData(accumulatedData, data.value);
+
+      if (this.useBLE) {
+        while (accumulatedData.length < size) {
+          const data = await BLE.readBleData();
+          if (data) {
+            accumulatedData = appendData(accumulatedData, data);
+          }
+        }
+      } else {
+        while (accumulatedData.length < size) {
+          const data = await this.readFromSerialPort();
+          accumulatedData = appendData(accumulatedData, data.value);
+        }
       }
 
-      // Validate the size of the accumulated data
       if (accumulatedData.length === size) {
-        if (this.debugLogging) console.log("RECEIVED BUFFER (size: " + size + "):" + JSON.stringify(accumulatedData));
+        if (this.debugLogging) console.log("RECEIVED BUFFER (size: " + size + "):", accumulatedData);
         return new Uint8Array(accumulatedData);
       } else {
         console.error("Data size mismatch.");
         return null;
       }
     } catch (error) {
-      console.error('Error reading modes:', error);
+      console.error('Error reading byte stream:', error);
       return null;
     }
   }
@@ -977,7 +1011,8 @@ export default class VortexPort {
     if (this.debugLogging) console.log("EXPECTING:" + expectedResponse);
     const startTime = Date.now();
     while (Date.now() - startTime < timeoutMs) {
-      const response = await this.readData();
+      const responseEncoded = await this.readData();
+      const response = this.useBLE ? new TextDecoder().decode(responseEncoded) : responseEncoded;
       if (response === expectedResponse) {
         if (this.debugLogging) console.log('RECEIVED GOOD:', response, ' (expected: ', expectedResponse, ')');
         return; // Expected response received
@@ -1012,7 +1047,7 @@ export default class VortexPort {
 
     if (this.useBLE) {
       if (this.debugLogging) console.log("Sending raw data via BLE:", data);
-      await BLE.sendCommand(data);
+      await BLE.sendRaw(data);
       return;
     }
 
