@@ -52,7 +52,7 @@ export default class VortexPort {
     this.cancelListeningForGreeting = false;
     this.debugSending = false;
     this.resetState();
-    this.debugLogging = true;
+    this.debugLogging = false;
     this.editor = editor;
     this.useBLE = useBLE; // Determine if BLE should be used
     // Check for mobile + BLE support
