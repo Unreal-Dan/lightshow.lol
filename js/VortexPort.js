@@ -952,56 +952,88 @@ export default class VortexPort {
       throw new Error('Port not active');
     }
 
-    try {
-      const appendData = (existing, newData) => {
-        const combined = new Uint8Array(existing.length + newData.length);
-        combined.set(existing);
-        combined.set(newData, existing.length);
-        return combined;
-      };
+    const appendData = (existing, newData) => {
+      const combined = new Uint8Array(existing.length + newData.length);
+      combined.set(existing);
+      combined.set(newData, existing.length);
+      return combined;
+    };
 
-      let sizeData = new Uint8Array(0);
+    let sizeData = new Uint8Array(0);
 
-      if (this.useBLE) {
-        while (sizeData.length < 4) {
-          const data = await BLE.readBleData();
-          if (data) {
-            sizeData = appendData(sizeData, data);
+    // Helper to poll BLE until we get data:
+    const pollBleUntilData = async () => {
+      return new Promise((resolve) => {
+        const tryRead = () => {
+          const chunk = BLE.readBleData();
+          if (chunk) {
+            resolve(chunk);
+          } else {
+            setTimeout(tryRead, 50);
           }
-        }
-      } else {
-        while (sizeData.length < 4) {
-          const data = await this.readFromSerialPort();
-          sizeData = appendData(sizeData, data.value);
-        }
-      }
+        };
+        tryRead();
+      });
+    };
 
-      const size = new DataView(sizeData.buffer).getUint32(0, true);
-      let accumulatedData = sizeData.slice(4);
-
-      if (this.useBLE) {
-        while (accumulatedData.length < size) {
-          const data = await BLE.readBleData();
-          if (data) {
-            accumulatedData = appendData(accumulatedData, data);
-          }
+    // -----------------------
+    // Read 4-byte size:
+    // -----------------------
+    if (this.useBLE) {
+      while (sizeData.length < 4) {
+        // Try immediate read:
+        let data = BLE.readBleData();
+        if (!data) {
+          // If none, poll until we have some:
+          data = await pollBleUntilData();
         }
-      } else {
-        while (accumulatedData.length < size) {
-          const data = await this.readFromSerialPort();
-          accumulatedData = appendData(accumulatedData, data.value);
-        }
+        sizeData = appendData(sizeData, data);
       }
+    } else {
+      while (sizeData.length < 4) {
+        const data = await this.readFromSerialPort();
+        // data.value for the Web Serial scenario
+        sizeData = appendData(sizeData, data.value);
+      }
+    }
 
-      if (accumulatedData.length === size) {
-        if (this.debugLogging) console.log("RECEIVED BUFFER (size: " + size + "):", accumulatedData);
-        return new Uint8Array(accumulatedData);
-      } else {
-        console.error("Data size mismatch.");
-        return null;
+    const size = new DataView(sizeData.buffer).getUint32(0, true);
+    let accumulatedData = sizeData.slice(4);
+
+    if (this.debugLogging) {
+      console.log("Expected data size:", size);
+    }
+
+    // -----------------------
+    // Read the actual data:
+    // -----------------------
+    if (this.useBLE) {
+      while (accumulatedData.length < size) {
+        // Try immediate read:
+        let data = BLE.readBleData();
+        if (!data) {
+          // Poll for data if none is ready right away
+          data = await pollBleUntilData();
+        }
+        accumulatedData = appendData(accumulatedData, data);
       }
-    } catch (error) {
-      console.error('Error reading byte stream:', error);
+    } else {
+      while (accumulatedData.length < size) {
+        const data = await this.readFromSerialPort();
+        accumulatedData = appendData(accumulatedData, data.value);
+      }
+    }
+
+    // -----------------------
+    // Final check:
+    // -----------------------
+    if (accumulatedData.length === size) {
+      if (this.debugLogging) {
+        console.log("RECEIVED BUFFER (size: " + size + "):", accumulatedData);
+      }
+      return new Uint8Array(accumulatedData);
+    } else {
+      console.error("Data size mismatch.");
       return null;
     }
   }
