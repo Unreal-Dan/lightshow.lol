@@ -54,19 +54,6 @@ function handleNotifications(event) {
  * Send a command string to the ESP32 over BLE
  * @param {string} command - Command string to send
  */
-export async function sendCommand(command) {
-    if (!writeCharacteristic) {
-        console.error("BLE not connected!");
-        return;
-    }
-    let encoder = new TextEncoder();
-    await writeCharacteristic.writeValue(encoder.encode(command));
-}
-
-/**
- * Send a command string to the ESP32 over BLE
- * @param {string} command - Command string to send
- */
 export async function sendRaw(data) {
     if (!writeCharacteristic) {
         console.error("BLE not connected!");

@@ -144,13 +144,14 @@ export default class VortexPort {
   }
 
   async writeData(data) {
+    const encoded = new TextEncoder().encode(data);
     if (this.useBLE) {
       if (!BLE.isBleConnected()) {
         console.error("BLE is not connected!");
         return;
       }
-      console.log("Sending via BLE:", data);
-      await BLE.sendCommand(data);
+      console.log("Sending via BLE: ", data);
+      await BLE.sendRaw(encoded);
       return;
     }
 
@@ -160,7 +161,6 @@ export default class VortexPort {
     }
 
     const writer = this.serialPort.writable.getWriter();
-    const encoded = new TextEncoder().encode(data);
 
     try {
       await writer.write(encoded);
@@ -1074,13 +1074,7 @@ export default class VortexPort {
       return;
     }
 
-    if (this.useBLE) {
-      if (this.debugLogging) console.log("Sending command via BLE:", verb);
-      await BLE.sendCommand(verb);
-      return;
-    }
-
-    if (this.debugLogging) console.log("Sending command via Serial:", verb);
+    if (this.debugLogging) console.log("Sending command:", verb);
     const encodedVerb = new TextEncoder().encode(verb);
     await this.sendRaw(encodedVerb);
   }
