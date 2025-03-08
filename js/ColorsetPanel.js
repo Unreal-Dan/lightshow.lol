@@ -19,6 +19,7 @@ export default class ColorsetPanel extends Panel {
       </div>
       <hr id="patternDivider">
       <div id="colorset" class="color-row"></div>
+      <div id="colorset-mobile-color-picker" style="display: ${editor.detectMobile() ? 'block' : 'none'};"></div>
     `;
     super(editor, 'colorsetPanel', content, 'Colorset');
     this.editor = editor
@@ -444,18 +445,38 @@ export default class ColorsetPanel extends Panel {
         //  }
         //});
 
-        container.addEventListener('click', () => {
-          if (!isDragging) {
-            // select the color
-            this.selectColor(i, container);
+        // Replace your existing container click handler with the following:
+        if (this.editor.detectMobile()) {
+          container.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (!isDragging) {
+              this.selectColor(i, container);
+              // Open the color picker panel as usual
+              this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+              // Reparent the color picker panel into the mobile mount and force it visible
+              const mount = document.getElementById('colorPickerMountMobile');
+              if (mount && !mount.contains(this.editor.colorPickerPanel.panel)) {
+                mount.style.display = 'block';
+                mount.appendChild(this.editor.colorPickerPanel.panel);
+                this.editor.colorPickerPanel.panel.style.display = 'block';
+                this.editor.colorPickerPanel.panel.style.opacity = '1';
+                this.editor.colorPickerPanel.panel.style.pointerEvents = 'auto';
+                this.editor.colorPickerPanel.panel.style.position = 'static';
+                this.editor.colorPickerPanel.panel.style.width = '100%';
+              }
+              this.setSelected();
+            }
+          });
+        } else {
+          container.addEventListener('click', () => {
+            if (!isDragging) {
+              this.selectColor(i, container);
+              this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
+              this.setSelected();
+            }
+          });
+        }
 
-            // Open color picker
-            this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
-
-            // Ensure this panel is set as active for copy/paste
-            this.setSelected();
-          }
-        });
 
         // Right-click to delete
         container.addEventListener('contextmenu', (e) => {
@@ -554,6 +575,20 @@ export default class ColorsetPanel extends Panel {
     this.refresh();
     // demo on device
     this.editor.demoModeOnDevice();
+  }
+
+  updateLayout(isMobile) {
+    if (isMobile) {
+      // Reparent the ColorPickerPanel’s content into the ColorsetPanel mount
+      const pickerMount = document.getElementById('colorset-mobile-color-picker');
+      if (pickerMount && this.editor.colorPickerPanel.contentContainer) {
+        pickerMount.appendChild(this.editor.colorPickerPanel.contentContainer);
+        // Adjust styles so it flows within the ColorsetPanel
+        this.editor.colorPickerPanel.contentContainer.style.position = 'static';
+        this.editor.colorPickerPanel.contentContainer.style.width = '100%';
+        this.editor.colorPickerPanel.contentContainer.style.display = 'block';
+      }
+    }
   }
 }
 

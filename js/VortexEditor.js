@@ -169,7 +169,8 @@ export default class VortexEditor {
       'colorsetPanel',
       'devicePanel',
       'modesPanel',
-      'ledSelectPanel'
+      'ledSelectPanel',
+      'communityBrowserPanel',
     ];
   }
 
