@@ -7,7 +7,7 @@ export default class ColorsetPanel extends Panel {
   constructor(editor) {
     //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
-      <div id="colorset-status">
+      <div id="colorset-status" style="display: ${editor.detectMobile() ? 'none' : ''};">
         <button id="colorset-preset-one" class="preset-button" title="Randomize One Color"></button>
         <button id="colorset-preset-two" class="preset-button" title="Randomize Two Colors"></button>
         <button id="colorset-preset-three" class="preset-button" title="Randomize Three Colors"></button>
@@ -17,7 +17,7 @@ export default class ColorsetPanel extends Panel {
         <button id="colorset-preset-pastel" class="preset-button" title="Randomize Pastels"></button>
         <button id="colorset-preset-dark" class="preset-button" title="Randomize Dark Colors"></button>
       </div>
-      <hr id="patternDivider">
+      <hr id="patternDivider" style="display: ${editor.detectMobile() ? 'none' : ''};">
       <div id="colorset" class="color-row"></div>
       <div id="colorPickerMountMobile" style="display: ${editor.detectMobile() ? 'block' : 'none'};"></div>
     `;
