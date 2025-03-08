@@ -19,7 +19,7 @@ export default class ColorsetPanel extends Panel {
       </div>
       <hr id="patternDivider">
       <div id="colorset" class="color-row"></div>
-      <div id="colorset-mobile-color-picker" style="display: ${editor.detectMobile() ? 'block' : 'none'};"></div>
+      <div id="colorPickerMountMobile" style="display: ${editor.detectMobile() ? 'block' : 'none'};"></div>
     `;
     super(editor, 'colorsetPanel', content, 'Colorset');
     this.editor = editor
@@ -451,19 +451,9 @@ export default class ColorsetPanel extends Panel {
             e.preventDefault();
             if (!isDragging) {
               this.selectColor(i, container);
-              // Open the color picker panel as usual
               this.editor.colorPickerPanel.open(i, set, this.updateColor.bind(this));
-              // Reparent the color picker panel into the mobile mount and force it visible
-              const mount = document.getElementById('colorPickerMountMobile');
-              if (mount && !mount.contains(this.editor.colorPickerPanel.panel)) {
-                mount.style.display = 'block';
-                mount.appendChild(this.editor.colorPickerPanel.panel);
-                this.editor.colorPickerPanel.panel.style.display = 'block';
-                this.editor.colorPickerPanel.panel.style.opacity = '1';
-                this.editor.colorPickerPanel.panel.style.pointerEvents = 'auto';
-                this.editor.colorPickerPanel.panel.style.position = 'static';
-                this.editor.colorPickerPanel.panel.style.width = '100%';
-              }
+              // Reparent the content with a proper wrapper so CSS applies
+              this.activateMobileColorPicker();
               this.setSelected();
             }
           });
@@ -476,7 +466,6 @@ export default class ColorsetPanel extends Panel {
             }
           });
         }
-
 
         // Right-click to delete
         container.addEventListener('contextmenu', (e) => {
@@ -577,18 +566,31 @@ export default class ColorsetPanel extends Panel {
     this.editor.demoModeOnDevice();
   }
 
-  updateLayout(isMobile) {
-    if (isMobile) {
-      // Reparent the ColorPickerPanel’s content into the ColorsetPanel mount
-      const pickerMount = document.getElementById('colorset-mobile-color-picker');
-      if (pickerMount && this.editor.colorPickerPanel.contentContainer) {
-        pickerMount.appendChild(this.editor.colorPickerPanel.contentContainer);
-        // Adjust styles so it flows within the ColorsetPanel
-        this.editor.colorPickerPanel.contentContainer.style.position = 'static';
-        this.editor.colorPickerPanel.contentContainer.style.width = '100%';
-        this.editor.colorPickerPanel.contentContainer.style.display = 'block';
-      }
+  activateMobileColorPicker() {
+    const mount = document.getElementById('colorPickerMountMobile');
+    if (mount && this.editor.colorPickerPanel.contentContainer) {
+      // Create a wrapper that mimics the original panel’s outer element
+      let wrapper = document.createElement('div');
+      // Assign the class your desktop CSS uses (for example, "color-picker-panel")
+      wrapper.className = "color-picker-panel";
+      // Optionally, assign an ID if your CSS selectors require one:
+      // wrapper.id = "colorPickerPanelEmbedded";
+
+      // Append the content container into the wrapper
+      wrapper.appendChild(this.editor.colorPickerPanel.contentContainer);
+
+      // Clear any existing content and insert the wrapper into the mobile mount
+      mount.innerHTML = "";
+      mount.appendChild(wrapper);
+
+      // Force the wrapper to adopt mobile-friendly styling
+      wrapper.style.position = 'static';
+      wrapper.style.width = '100%';
+      wrapper.style.display = 'block';
+      wrapper.style.marginTop = '10px';
     }
   }
+
+
 }
 
