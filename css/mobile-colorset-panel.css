@@ -39,6 +39,11 @@
   justify-content: center;
 }
 
+.color-cube.selected {
+  border: 6px solid white;
+  outline: 2px solid black;
+}
+
 .color-cube:hover {
   transform: scale(1.1);
   box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);

@@ -59,7 +59,7 @@ export default class ColorPickerPanel extends Panel {
     return `
       <div class="color-picker-top-section">
         <div class="sv-box-container">
-          <label for="svSelector">Saturation x Value</label>
+          <label for="svSelector">Saturation x Brightness</label>
           <div class="sv-box" style="background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(h / 255) * 360}, 100%, 50%));">
             <div id="svSelector" class="sv-selector" style="left: ${(s / 255) * 100}%; top: ${(1 - v / 255) * 100}%;"></div>
           </div>

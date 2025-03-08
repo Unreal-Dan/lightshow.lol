@@ -32,8 +32,6 @@
   margin: 0px;
   margin-top: 0px;
   display: flex;
-  padding-left: 15%;
-  padding-right: 15%;
   flex-direction: column;
   justify-content: space-between;
 }
@@ -56,34 +54,41 @@
   align-items: center;
 }
 
+.sliders-section label,
+.hue-slider-container label,
+.sv-box-container label {
+  font-size: 32px;
+}
+
 .color-picker-panel .input-group {
   display: flex;
   justify-content: space-between;
 }
 
 #hexInputLabel {
-  /* make the word 'Hex' line up with 'H' and 'R' */
   margin-left: -10px;
+  /* make the word 'Hex' line up with 'H' and 'R' */
+  font-size: 32px;
 }
 
 .color-picker-top-section {
   display: flex;
   width: 100%;
-  justify-content: space-between; /* Distribute space between SV box and sliders */
-  flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
+  justify-content: center;
   position: relative;
   z-index: 1;
+  gap: 20px;
 }
 
 .color-picker-bottom-section {
   display: flex;
   width: 100%;
-  margin-top: 15px;
-  justify-content: space-between; /* Align hue circle and input boxes */
+  margin-top: 30px;
+  justify-content: center; /* Align hue circle and input boxes */
   align-items: center;
-  flex-wrap: wrap;
   position: relative;
   z-index: 3;
+  gap: 50px;
 }
 
 .color-picker-bottom-section label {
@@ -92,40 +97,34 @@
 }
 
 .color-input {
-  width: 34px;
-  height: 24px;
+  width: 80px;
+  height: 80px;
+  font-size: 32px;
   padding: 3px;
-  background-color: #292c2e;
-  border: 1px solid #454545;
-  border-radius: 4px;
+  background-color: #252525;
+  border: 1px solid #080808;
+  border-radius: 15px;
   color: #d8d4cf;
   text-align: center; /* Center text for visual balance */
   user-select: text;
   appearance: none;
-}
-
-.input-box-container label {
-  width: 18px;
+  margin: 15px;
 }
 
 .input-box-container {
-  position: relative;
-  display: flex;
-  padding-top: 20px;
-  flex-direction: column; /* Stack input groups vertically */
-  gap: 25px; /* Add space between input groups */
-  justify-content: center; /* Align items to the left */
-  align-items: flex-end;
+  padding-top: 10px;  /* Reduce vertical space above input groups */
+  gap: 10px;          /* Closer spacing between input groups */
+  justify-content: center;
+  align-items: center;
 }
 
 .input-group {
-  display: flex;
+  gap: 5px;           /* Reduce space between labels and inputs */
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end; /* Align labels and inputs to the right */
 }
 
 .hex-input-group label {
-  width: 36px;
   margin-right: 5px;
   margin-left: 5px;
 }
@@ -142,8 +141,9 @@
 }
 
 .input-group label {
-  margin-top: 3px;
-  margin-right: 5px;
+  margin-top: 8px;
+  margin-right: 10px;
+  font-size: 36px;
 }
 
 .sliders-section {
@@ -155,9 +155,9 @@
   display: flex;
   flex-direction: column; /* Stack label and slider */
   align-items: left;
-  width: 200px; /* Minimum width to prevent squishing */
+  width: 400px; /* Minimum width to prevent squishing */
   height: auto;
-  margin-right: 15px;
+  margin-right: 40px;
   position: relative;
 }
 
@@ -191,6 +191,7 @@
   flex-direction: column; /* Stack label and slider */
   align-items: center;
   width: 30px;
+  margin-right: 60px;
 }
 
 .hue-slider-container label {
@@ -199,17 +200,18 @@
 
 .hue-slider {
   position: relative;
-  width: 100%;
+  width: 60px;
   height: 100%;
   border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
   border-radius: 4px;
   cursor: pointer;
+  margin-bottom: 10px;
 }
 
 .hue-selector {
   position: absolute;
-  width: 30px;
+  width: 60px;
   height: 10px;
   border: 2px solid white;
   border-radius: 4px;
@@ -222,7 +224,7 @@
 .rgb-sliders {
   display: flex;
   flex-direction: row; /* Align sliders horizontally */
-  gap: 20px; /* Space between sliders */
+  gap: 50px; /* Space between sliders */
   justify-content: flex-start; /* Align sliders to the left */
 }
 
@@ -238,7 +240,7 @@
 
 .slider-group input[type="range"] {
   width: 30px; /* Narrow width for the vertical slider */
-  height: 200px; /* Height for the vertical slider */
+  height: 400px; /* Height for the vertical slider */
   writing-mode: vertical-lr; /* Vertical writing mode for sliders */
   direction: rtl;
   -webkit-appearance: none;
@@ -251,8 +253,8 @@
 .slider-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: #fff;
   cursor: pointer;
   border-radius: 50%;
@@ -260,30 +262,32 @@
 }
 
 .slider-group input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: #fff;
   cursor: pointer;
   border-radius: 50%;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-#redSlider {
+#redSlider,
+#greenSlider,
+#blueSlider {
   margin: 0;
-  background: linear-gradient(to top, black, rgb(255, 0, 0)); /* Red gradient */
   border: 1px solid #454545;
+  width: 60px;
+}
+
+#redSlider {
+  background: linear-gradient(to top, black, rgb(255, 0, 0)); /* Red gradient */
 }
 
 #greenSlider {
-  margin: 0;
   background: linear-gradient(to top, black, rgb(0, 255, 0)); /* Green gradient */
-  border: 1px solid #454545;
 }
 
 #blueSlider {
-  margin: 0;
   background: linear-gradient(to top, black, rgb(0, 0, 255)); /* Blue gradient */
-  border: 1px solid #454545;
 }
 
 #redSlider::-webkit-slider-thumb,
@@ -291,8 +295,8 @@
 #blueSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   background: #fff;
   cursor: pointer;
   border-radius: 50%;
@@ -319,8 +323,8 @@
 }
 
 .radial-hue-cone {
-  width: 150px;
-  height: 150px;
+  width: 300px;
+  height: 300px;
   border-radius: 50%;
   border: 20px solid #292c2e;
   background: conic-gradient(from 90deg, red, magenta, blue, cyan, lime, yellow, red);
@@ -333,8 +337,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100px; /* Slimmer inner circle */
-  height: 100px;
+  width: 200px; /* Slimmer inner circle */
+  height: 200px;
   background-color: #292c2e; /* Match the modal's background */
   border-radius: 50%;
   transform: translate(-50%, -50%);
@@ -344,8 +348,8 @@
 .hue-indicator {
   position: absolute;
   left: 50%;
-  width: 2px; /* Line width */
-  height: 75px; /* Extend to the outer edge of the hue cone */
+  width: 4px; /* Line width */
+  height: 150px; /* Extend to the outer edge of the hue cone */
   background-color: #fff;
   transform-origin: 50% 100%; /* Set origin to the center bottom */
   pointer-events: none;
@@ -368,34 +372,32 @@
 
 .hue-label {
   position: absolute;
-  font-size: 16px;
+  font-size: 32px;
   color: #d8d4cf;
   transform-origin: 50% 50%;
   white-space: nowrap;
 }
 
 .hue-label-red {
-  transform: translate(85px, 0px) translate(-50%, -50%);
+  transform: translate(170px, 0px) translate(-50%, -50%);
 }
 
 .hue-label-yellow {
-  transform: translate(45px, -78px) translate(-50%, -50%);
+  transform: translate(90px, -156px) translate(-50%, -50%);
 }
 
 .hue-label-lime {
-  transform: translate(-45px, -78px) translate(-50%, -50%);
+  transform: translate(-90px, -156px) translate(-50%, -50%);
 }
 
 .hue-label-cyan {
-  transform: translate(-90px, 0px) translate(-50%, -50%);
+  transform: translate(-180px, 0px) translate(-50%, -50%);
 }
 
 .hue-label-blue {
-  transform: translate(-45px, 78px) translate(-50%, -50%);
+  transform: translate(-90px, 156px) translate(-50%, -50%);
 }
 
 .hue-label-magenta {
-  transform: translate(45px, 78px) translate(-50%, -50%);
+  transform: translate(90px, 156px) translate(-50%, -50%);
 }
-
-

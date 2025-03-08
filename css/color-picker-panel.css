@@ -32,6 +32,10 @@
   align-items: center;
 }
 
+.sv-box-container label {
+  text-align: center;
+}
+
 .color-picker-panel .input-group {
   display: flex;
   justify-content: space-between;

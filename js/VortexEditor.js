@@ -352,7 +352,6 @@ export default class VortexEditor {
     // Style the overlay
     Object.assign(overlay.style, {
       position: 'absolute',
-      bottom: '10px',
       left: '10px',
       background: 'rgba(0, 0, 0, 0.1)', // Semi-transparent background
       color: 'rgba(255, 255, 255, 0.2)', // semi transparent text
@@ -363,6 +362,12 @@ export default class VortexEditor {
       pointerEvents: 'none', // Prevent interactions
       zIndex: '9999',
     });
+
+    if (this.detectMobile) {
+      overlay.style.top = '10px';
+    } else {
+      overlay.style.bottom = '10px';
+    }
 
     // Set version text
     overlay.innerText = `${versionText}`;
