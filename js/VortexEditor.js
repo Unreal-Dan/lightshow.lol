@@ -363,7 +363,7 @@ export default class VortexEditor {
       zIndex: '9999',
     });
 
-    if (this.detectMobile) {
+    if (this.detectMobile()) {
       overlay.style.top = '10px';
     } else {
       overlay.style.bottom = '10px';
