@@ -25,7 +25,7 @@
   color: #fff; /* Light text color for contrast */
   border: 1px solid #555; /* Subtle border */
   border-radius: 4px; /* Rounded corners for a modern look */
-  font-size: 16px; /* Increase font size for better usability */
+  font-size: 28px; /* Increase font size for better usability */
 }
 
 .pattern-buttons {
@@ -97,7 +97,20 @@
 .control-label {
   font-weight: bold;
   color: #d8d4cf;
-  font-size: 14px;
+  font-size: 32px;
+}
+
+#togglePatternParams {
+  display: none;
+}
+
+#patternRandomizeButton {
+  width: 64px;
+  height: 64px;
+  font-size: 32px;
+  padding: 1px;
+  margin-left: 25px;
+  margin-right: 5%;
 }
 
 .control-slider {
