@@ -4,6 +4,7 @@ export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
     const initialHTML = `
       <div id="community-browser-container">
+        <input type="text" id="vcb-search-box" placeholder="Search modes..." />
         <div id="vcb-filter-container">
           <!-- This is where filter buttons will appear -->
         </div>
@@ -31,6 +32,11 @@ export default class CommunityBrowserPanel extends Panel {
     this.pageLabel = this.contentContainer.querySelector('#vcb-page-label');
     this.modesContainer = this.contentContainer.querySelector('#vcb-modes-container');
     this.filterContainer = this.contentContainer.querySelector('#vcb-filter-container');
+
+    this.searchBox = this.contentContainer.querySelector('#vcb-search-box');
+    this.searchBox.addEventListener('input', () => {
+      this.applyFilters();
+    });
 
     // Create filter button container
     // Loop through devices and create filter buttons dynamically
@@ -116,8 +122,12 @@ export default class CommunityBrowserPanel extends Panel {
     const pageData = this.modesCache[this.currentPage];
     if (!pageData) return;
 
-    // Apply filters to the cached data for the current page
-    const filteredModes = pageData.data.filter(mode => this.activeFilters.has(mode.deviceType));
+    const searchQuery = this.searchBox.value.trim().toLowerCase();
+    const filteredModes = pageData.data.filter(mode => {
+      const matchesDevice = this.activeFilters.has(mode.deviceType);
+      const matchesSearch = !searchQuery || (mode.name && mode.name.toLowerCase().includes(searchQuery));
+      return matchesDevice && matchesSearch;
+    });
 
     this.renderPage({ data: filteredModes, pages: this.totalPages });
   }

@@ -20,7 +20,7 @@
   margin-bottom: 10px;
   background-color: #202020; /* Slightly darker background */
   width: 350px;
-  height: 235px;
+  height: 200px;
   overflow: auto;
   border: 1px solid #ccc;
   margin-bottom: 10px;
@@ -150,4 +150,16 @@
 .community-mode-device-icon {
   width: 24px;
   height: 24px;
+}
+
+#vcb-search-box {
+  color: #ccc;
+  width: 100%;
+  padding: 5px 10px;
+  margin: 0;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  background-color: #252525;
+  border-radius: 5px;
+  font-size: 14px;
 }
