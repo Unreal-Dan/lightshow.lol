@@ -107,12 +107,12 @@ export default class AnimationPanel extends Panel {
     return controls.map(control => `
       <div id="${control.id}_div">
         <input 
+          class="animation-slider"
           type="${control.type}" 
           id="${control.id}" 
           min="${control.min}" 
           max="${control.max}" 
-          value="${control.default}" 
-          style="width: 80%;">
+          value="${control.default}">
         <label for="${control.id}">${control.label}</label>
       </div>
     `).join('');

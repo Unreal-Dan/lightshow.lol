@@ -9,6 +9,10 @@
   transition: transform 0.4s ease; /* Sliding animation */
 }
 
+.animation-slider {
+  width: 80%;
+}
+
 .animation-button {
   margin: 5px;
   width: 50px;

@@ -20,7 +20,7 @@
   flex-direction: row; /* Ensure tabs are in a row */
   justify-content: space-evenly; /* Distribute tabs evenly */
   align-items: center;
-  height: 50px; /* Fixed height for tabs */
+  height: 90px; /* Fixed height for tabs */
   background-color: #181a1b; /* Background for tabs */
 }
 
@@ -32,7 +32,7 @@
   border: none;
   background: #292c2e;
   color: #d8d4cf;
-  font-size: 22px; /* Font size for readability */
+  font-size: 32px; /* Font size for readability */
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
   border-radius: 0;

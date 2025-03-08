@@ -20,7 +20,8 @@
 
 #animationPanel .animation-button {
   flex: 1; /* Distribute buttons evenly across the container */
-  height: 50px;
+  height: 100px;
+  margin-bottom: 20px;
   background-color: #202020;
   border: 1px solid #454545;
   border-radius: 6px;
@@ -36,34 +37,40 @@
 }
 
 #animationPanel .animation-button i {
-  font-size: 20px;
+  font-size: 40px;
+}
+
+.animation-slider {
+  height: 200%;
 }
 
 #animationPanel #animationControls {
   flex: 1; /* Allow controls to take up the remaining space */
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Add more spacing between sliders */
+  gap: 25px; /* Add more spacing between sliders */
   overflow-y: auto; /* Enable scrolling if necessary */
   padding-right: 5px; /* Fix the right-side gap */
 }
 
 #animationPanel #animationControls > div {
   display: flex;
-  flex-direction: column;
-  align-items: stretch; /* Ensure child elements take full width */
-  width: 100%; /* Explicitly set width to 100% */
+  flex-direction: row;
+  align-items: center;
+  gap: 10px; /* space between label and slider */
 }
 
 #animationPanel #animationControls label {
-  font-size: 16px; /* Larger font for better readability */
-  margin-bottom: 5px;
-  color: #d8d4cf;
+  width: 10%;
+  margin-bottom: 0; /* remove default spacing for inline layout */
+  margin-left: 10px;
+  flex-shrink: 0; /* prevent label from shrinking */
+  font-size: 28px;  /* Increase font size for readability */
 }
 
 #animationPanel #animationControls input[type="range"] {
-  width: 100%; /* Full-width sliders */
-  height: 20px; /* Fatter sliders for easier interaction */
+  flex: 1; /* let the slider fill remaining width */
+  height: 40px; /* keep or adjust as needed */
   background: #454545;
   border-radius: 4px;
   -webkit-appearance: none; /* Remove default styling */
