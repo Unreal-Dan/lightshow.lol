@@ -346,16 +346,36 @@ export default class ColorPickerPanel extends Panel {
       document.addEventListener('mouseup', stopRgbDragging, { once: true });
     };
 
-    // Attach mousedown event for dragging
-    redSlider.addEventListener('input', () => {
-      handleRgbSliderChange(false);
-    });
-    greenSlider.addEventListener('input', () => {
-      handleRgbSliderChange(false);
-    });
-    blueSlider.addEventListener('input', () => {
-      handleRgbSliderChange(false);
-    })
+    if (this.editor.isMobile) {
+      redSlider.addEventListener('touchstart', () => {
+        handleRgbSliderMouseDown(event, redSlider, handleRgbSliderChange)
+      });
+      redSlider.addEventListener('input', () => {
+        handleRgbSliderChange(false);
+      });
+      greenSlider.addEventListener('touchstart', () => {
+        handleRgbSliderMouseDown(event, greenSlider, handleRgbSliderChange)
+      });
+      greenSlider.addEventListener('input', () => {
+        handleRgbSliderChange(false);
+      });
+      blueSlider.addEventListener('touchstart', () => {
+        handleRgbSliderMouseDown(event, blueSlider, handleRgbSliderChange)
+      });
+      blueSlider.addEventListener('input', () => {
+        handleRgbSliderChange(false);
+      })
+    } else {
+      redSlider.addEventListener('mousedown', (event) =>
+        handleRgbSliderMouseDown(event, redSlider, handleRgbSliderChange)
+      );
+      greenSlider.addEventListener('mousedown', (event) =>
+        handleRgbSliderMouseDown(event, greenSlider, handleRgbSliderChange)
+      );
+      blueSlider.addEventListener('mousedown', (event) =>
+        handleRgbSliderMouseDown(event, blueSlider, handleRgbSliderChange)
+      );
+    }
 
     // Simple input handlers (no dragging)
     redInput.addEventListener('input', handleRgbInputChange);
