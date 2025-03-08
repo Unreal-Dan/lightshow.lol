@@ -969,7 +969,7 @@ export default class VortexPort {
           if (chunk) {
             resolve(chunk);
           } else {
-            setTimeout(tryRead, 50);
+            setTimeout(tryRead, 1);
           }
         };
         tryRead();

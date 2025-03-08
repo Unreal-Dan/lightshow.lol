@@ -347,15 +347,15 @@ export default class ColorPickerPanel extends Panel {
     };
 
     // Attach mousedown event for dragging
-    redSlider.addEventListener('mousedown', (event) =>
-      handleRgbSliderMouseDown(event, redSlider, handleRgbSliderChange)
-    );
-    greenSlider.addEventListener('mousedown', (event) =>
-      handleRgbSliderMouseDown(event, greenSlider, handleRgbSliderChange)
-    );
-    blueSlider.addEventListener('mousedown', (event) =>
-      handleRgbSliderMouseDown(event, blueSlider, handleRgbSliderChange)
-    );
+    redSlider.addEventListener('input', () => {
+      handleRgbSliderChange(false);
+    });
+    greenSlider.addEventListener('input', () => {
+      handleRgbSliderChange(false);
+    });
+    blueSlider.addEventListener('input', () => {
+      handleRgbSliderChange(false);
+    })
 
     // Simple input handlers (no dragging)
     redInput.addEventListener('input', handleRgbInputChange);
@@ -367,6 +367,50 @@ export default class ColorPickerPanel extends Panel {
     valInput.addEventListener('input', handleHsvInputChange);
 
     hexInput.addEventListener('input', handleHexInputChange);
+
+    const startTouchMoveListener = (event, moveHandler) => {
+      let isDragging = true;
+      moveHandler(event.touches[0], isDragging);
+      const moveEventHandler = (moveEvent) => {
+        moveHandler(moveEvent.touches[0], isDragging);
+      };
+      const stopDragging = () => {
+        isDragging = false;
+        document.removeEventListener('touchmove', moveEventHandler);
+        document.removeEventListener('touchend', stopDragging);
+        updateColorUI(false); // Final update after dragging ends
+        this.editor.demoModeOnDevice();
+      };
+      document.addEventListener('touchmove', moveEventHandler);
+      document.addEventListener('touchend', stopDragging, { once: true });
+    };
+
+    svBox.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      startTouchMoveListener(event, handleSvBoxChange);
+    });
+
+    hueSlider.addEventListener('touchstart', (event) => {
+      event.preventDefault();
+      startTouchMoveListener(event, handleHueSliderChange);
+    });
+
+    const handleRgbSliderTouchStart = (event, slider, handler) => {
+      event.preventDefault();
+      let isDragging = false;
+      const handleTouchMove = (moveEvent) => {
+        isDragging = true;
+        handler(true);
+      };
+      const stopTouchDragging = () => {
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', stopTouchDragging);
+        handler(false);
+      };
+      handler(false); // Immediate update on touch start
+      document.addEventListener('touchmove', handleTouchMove);
+      document.addEventListener('touchend', stopTouchDragging, { once: true });
+    };
   }
 
   initHueCircle(h) {
