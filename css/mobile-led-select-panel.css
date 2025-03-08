@@ -17,6 +17,7 @@
   height: auto;            /* Adjust height as needed */
   user-select: none;
   margin-top: 5px;
+  font-size: 36px;
 }
 
 #ledList.hidden {
@@ -65,8 +66,7 @@
 }
 
 .led-select-button {
-  width: auto;
-  font-size: 18px;
+  flex: 1;                                                                                                                                                                                                         font-size: 36px;                                                                                                                                                                                                 height: 100px;
   text-align: center; /* Center text */
   text-decoration: none; /* Remove underline */
   display: inline-block; /* Display as inline-block */
@@ -106,8 +106,8 @@
 
 .led-indicator {
   position: absolute;
-  width: 14px; /* Adjust size */
-  height: 14px; /* Adjust size */
+  width: 24px; /* Adjust size */
+  height: 24px; /* Adjust size */
   background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
   border-radius: 50%; /* Circular indicators */
   cursor: pointer; /* Change cursor on hover */
@@ -149,7 +149,7 @@
   border: none;
   border-radius: 4px;
   padding: 6px 10px;
-  font-size: 14px;
+  font-size: 32px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -172,7 +172,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 32px;
   font-weight: bold;
   padding-top: 5px;
   padding-left: 5px;

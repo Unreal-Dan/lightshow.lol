@@ -234,7 +234,7 @@ export default class AnimationPanel extends Panel {
 
     // Update the toggle button icon
     if (isHidden) {
-      spreadDiv.style.display = 'block';
+      spreadDiv.style.display = '';
     } else {
       spreadDiv.style.display = 'none';
     }
