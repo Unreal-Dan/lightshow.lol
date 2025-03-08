@@ -1,22 +1,35 @@
 /* vortex-community-browser-panel.css */
 
 #communityBrowserPanel {
-  /* Positioning is optional; adjust as needed */
-  top: 110px;
-  right: 10px;
   position: absolute;
+}
+
+#community-browser-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Container that holds the list of modes */
 #vcb-modes-container {
-  height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
   border: 1px solid #454545;
   border-radius: 4px;
   padding-left: 5px;
+  margin-top: 30px;
   margin-bottom: 10px;
   background-color: #202020; /* Slightly darker background */
+  width: 90%;
+  height: 60%;
+  overflow: auto;
+  border: 1px solid #ccc;
+}
+
+#vcb-filter-container {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 50px;
 }
 
 /* Each mode entry row */
@@ -27,7 +40,6 @@
   padding: 5px;
   border: 1px solid #454545;
   margin: 5px 0;
-  width: 100%;
   border-radius: 4px;
   transition: background-color 0.1s ease;
   cursor: pointer;
@@ -55,7 +67,7 @@
   text-overflow: ellipsis;
   user-select: none;
   color: #d8d4cf;
-  font-size: 14px;
+  font-size: 32px;
 }
 
 /* Container for action buttons on the right side of each mode entry */
@@ -66,13 +78,16 @@
 
 /* Buttons in each mode entry */
 .community-mode-btn {
-  background-color: transparent;
+  background-color: #252525;
   border: 1px solid #454545;
   border-radius: 4px;
   color: #aaa;
   padding: 2px 6px;
   cursor: pointer;
   transition: background-color 0.1s ease;
+  width: 80px;
+  height: 80px;
+  font-size: 32px;
 }
 
 .community-mode-btn:hover {
@@ -90,6 +105,9 @@
   padding: 5px 10px;
   cursor: pointer;
   transition: background-color 0.1s ease;
+  width: auto;
+  font-size: 32px;
+  margin-top: 20px;
 }
 
 #vcb-prev-btn:hover,
@@ -99,7 +117,44 @@
 
 #vcb-page-label {
   color: #d8d4cf;
-  line-height: 28px;
-  margin: 0 5px;
+  line-height: 36px;
+  margin: 0;
+  font-size: 32px;
+  margin-top: 20px;
 }
 
+.vcb-filter-btn {
+  width: 128px;
+  height: 128px;
+  background: #0e0e0e;
+  border: none;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.filter-icon {
+  width: 100px;
+  height: 100px;
+}
+
+.vcb-filter-btn:hover {
+  background-color: #5067ff;
+  transform: scale(1.05);
+}
+
+.vcb-filter-btn.active {
+  background-color: #007bff;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.community-mode-device-icon {
+  width: 80px;
+  height: 80px;
+}

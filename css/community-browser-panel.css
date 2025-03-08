@@ -147,3 +147,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
+.community-mode-device-icon {
+  width: 24px;
+  height: 24px;
+}

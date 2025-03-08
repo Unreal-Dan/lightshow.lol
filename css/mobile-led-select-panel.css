@@ -1,23 +1,212 @@
-/* mobile-led-select-panel.css */
 #ledSelectPanel {
-  width: 100%;
-  text-align: left;
-  padding: 15px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  background-color: #292c2e;
 }
 
-#ledSelectPanel .led-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+.flex-container {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-#ledSelectPanel .led-grid div {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  border: 1px solid #454545;
-  background-color: #202020;
+/* Styling for the select box */
+#ledList {
+  background-color: #181a1b;  /* Dark background */
+  border: 1px solid #555;  /* Dark border */
+  border-radius: 4px;      /* Optional: rounded corners */
+  padding: 5px;            /* Some padding inside the select box */
+  width: 100%;             /* Optional: making the select box full width */
+  height: auto;            /* Adjust height as needed */
+  user-select: none;
+  margin-top: 5px;
 }
+
+#ledList.hidden {
+  display: none;
+}
+
+/* Styling for options */
+#ledList option {
+  background-color: #181a1b;  /* Dark background for options */
+  color: #ccc;            /* Light text color for options */
+}
+
+#ledList option:checked {
+  background-color: #444;  /* Dark background for options */
+  color: #ccc;            /* Light text color for options */
+}
+
+#ledList:focus {
+  outline: none;
+}
+
+#deviceImageContainer {
+  position: relative;
+  width: 100%; /* Take full width of the container */
+  height: 100%; /* Adjust height automatically */
+  max-width: 334px;
+}
+
+#deviceImageContainer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.led-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Prevent blocking interactions with the image */
+  z-index: 2; /* Ensure it appears above the image */
+}
+
+.led-select-button {
+  width: auto;
+  font-size: 18px;
+  text-align: center; /* Center text */
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Display as inline-block */
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.led-select-button:hover {
+  /*background-color: #45a049; /* Darker green on hover */
+  background-color: #3e4446;
+}
+
+.led-select-button:active {
+  /*background-color: #3e8e41; /* Even darker green on click */
+  background-color: #2e3436
+}
+
+.led-select-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.led-select-button:disabled:hover {
+  opacity: 0.5;
+  cursor: default;
+  background-color: #202020;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+}
+
+.led-indicator {
+  position: absolute;
+  width: 14px; /* Adjust size */
+  height: 14px; /* Adjust size */
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
+  border-radius: 50%; /* Circular indicators */
+  cursor: pointer; /* Change cursor on hover */
+  transform: translate(-50%, -50%);
+  z-index: 3; /* Ensure indicators are above other UI elements */
+}
+
+.led-indicator.selected {
+  background: radial-gradient(circle, rgba(180, 180, 0, 1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: rgb(180, 180, 0) 0px 0px 10px;
+}
+
+.led-indicator.main-selected {
+  background: radial-gradient(circle, rgb(83, 255, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  box-shadow: rgb(83, 255, 0) 0px 0px 10px;
+}
+
+#ledControls {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px; /* Space between buttons */
+}
+
+.selection-box {
+  position: absolute;
+  border: 2px dashed #000;
+  background-color: rgba(0, 180, 255, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+#swapDeviceImage {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#swapDeviceImage:hover {
+  background: rgba(50, 50, 50, 0.8);
+}
+
+#toggleLedList {
+  margin: 0 auto;
+  cursor: pointer;
+  margin-bottom: -10px;
+}
+
+#toggleLedList:hover {
+  background: transparent;
+}
+
+.led-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+  padding-top: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #454545;
+  margin-bottom: 10px;
+  gap: 15px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-circle.main-selected {
+  background: radial-gradient(circle, rgb(83, 255, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+  box-shadow: rgb(83, 255, 0) 0px 0px 5px;
+}
+
+.legend-circle.selected {
+  background: radial-gradient(circle, rgba(180, 180, 0, 1) 0%, rgba(0, 0, 0, 0.4) 100%);
+  box-shadow: rgb(180, 180, 0) 0px 0px 5px;
+}
+
+.legend-circle.unselected {
+  background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
+  border: 1px solid black;
+}
+
