@@ -24,14 +24,14 @@ export default class WelcomePanel extends Panel {
     `;
 
 
-    if (editor.detectMobile()) {
-      content = `
-      <div style="margin: 0 auto;">
-        <h1 style="color:orange;text-align:center;">⚠ <b style="color:red;">Warning</b> ⚠<br></h1>
-        <h3 style="color:yellow;text-align:center;">The Mobile Layout is under construction!</h3>
-      </div>
-      ` + content;
-    }
+    //if (editor.detectMobile()) {
+    //  content = `
+    //  <div style="margin: 0 auto;">
+    //    <h1 style="color:orange;text-align:center;">⚠ <b style="color:red;">Warning</b> ⚠<br></h1>
+    //    <h3 style="color:yellow;text-align:center;">The Mobile Layout is under construction!</h3>
+    //  </div>
+    //  ` + content;
+    //}
 
     super(editor, 'welcomePanel', content, 'Welcome', { showCloseButton: true });
     this.welcomeToken = 'showNewWelcome';

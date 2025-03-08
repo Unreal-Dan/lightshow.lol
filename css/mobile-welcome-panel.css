@@ -55,7 +55,7 @@
   align-items: center;
   justify-content: center; /* Center text horizontally */
   padding: 10px 16px;
-  font-size: 16px;
+  font-size: 28px;
   font-weight: bold; /* Bold the text */
   text-decoration: none;
   color: white;
@@ -133,8 +133,7 @@
   }
 
   .wiki-button {
-    font-size: 14px;
-    padding: 8px 12px;
+    font-size: 28px;
   }
 }
 

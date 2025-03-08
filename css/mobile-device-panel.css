@@ -1,7 +1,5 @@
 /* mobile-device-panel.css */
 #devicePanel {
-  top: 5px;
-  right: 5px;
   z-index: 5;
 }
 
@@ -13,7 +11,10 @@
 }
 
 .device-control-btn {
+  width: 100px;
+  height: 100px;
   margin-left: 10px;
+  font-size: 32px;
 }
 
 .device-control-btn.disconnect {
@@ -29,13 +30,15 @@
   position: relative;
   display: inline-block;
   width: 100%;
+  height: 100px;
+  padding: 0;
+  font-size: 32px;
 }
 
 .custom-dropdown-select {
   cursor: pointer;
-  padding: 10px;
-  height: 20px;
-  line-height: 20px;
+  height: 100px;
+  line-height: 64px;
   border: 1px solid #454545;
   border-radius: 4px;
   background-color: #181a1b;
@@ -43,6 +46,7 @@
   display: flex;
   align-items: center;
   transition: background-color 0.2s, color 0.2s;
+  padding-left: 16px;
 }
 
 .custom-dropdown-select:hover {
@@ -67,6 +71,7 @@
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   z-index: 10;
   width: 100%;
+  height: 100px;
 }
 
 .custom-dropdown-options.show {
@@ -95,4 +100,53 @@
   opacity: 0.6;
 }
 
+#brightnessControl {
+  height: 64px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: 32px;
+  display: none;
+}
+
+#brightnessSlider {
+  height: 40px;
+  flex: 1;
+  background: #454545;
+}
+
+#brightnessIcon {
+  font-size: 48px;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+#devicePanel #brightnessControl input[type="range"] {
+  flex: 1; /* let the slider fill remaining width */
+  height: 40px; /* keep or adjust as needed */
+  background: #454545;
+  border-radius: 4px;
+  -webkit-appearance: none; /* Remove default styling */
+  appearance: none;
+  margin: 0; /* Remove default margin */
+}
+
+#devicePanel #brightnessControl input[type="range"]::-webkit-slider-thumb {
+  width: 20px; /* Larger thumb for better usability */
+  height: 20px;
+  background: #66ff66; /* Highlighted thumb */
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+#devicePanel #brightnessControl input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #66ff66;
+  border-radius: 50%;
+  cursor: pointer;
+  background: #454545;
+}
 

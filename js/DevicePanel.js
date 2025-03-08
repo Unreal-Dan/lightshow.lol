@@ -4,6 +4,10 @@ import Modal from  './Modal.js';
 
 export default class DevicePanel extends Panel {
   constructor(editor) {
+    const isMobile = editor.detectMobile();
+    const iconClass = isMobile ? 'fa-bluetooth-b' : 'fa-usb';
+    const buttonTitle = isMobile ? 'Connect a device over Bluetooth' : 'Connect a device over USB';
+
     const content = `
       <div id="deviceConnectionSection">
         <div id="deviceTypeContainer" class="custom-dropdown" title="Pick which device is simulated">
@@ -12,8 +16,8 @@ export default class DevicePanel extends Panel {
             <!-- Device options populated dynamically -->
           </div>
         </div>
-        <button id="connectDeviceButton" class="device-control-btn" title="Connect a device over USB">
-          <i class="fa-brands fa-usb"></i>
+        <button id="connectDeviceButton" class="device-control-btn" title="${buttonTitle}">
+          <i class="fa-brands ${iconClass}"></i>
         </button>
       </div>
       <div id="brightnessControl">

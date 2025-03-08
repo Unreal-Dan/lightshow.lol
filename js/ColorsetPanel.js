@@ -317,7 +317,6 @@ export default class ColorsetPanel extends Panel {
       }
     };
 
-
     const DRAG_THRESHOLD = 5; // Adjust for better responsiveness
     let isDragging = false;
     let startX = 0;
