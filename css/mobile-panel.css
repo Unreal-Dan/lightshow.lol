@@ -6,7 +6,6 @@
   background-color: #181a1b; /* Retain the background color */
   user-select: none; /* Prevent text selection */
   color: #d8d4cf; /* Default text color */
-  padding: 10px; /* Add more padding for mobile */
   width: 100%; /* Panels should occupy full width */
   z-index: 3; /* Maintain layering */
 }
