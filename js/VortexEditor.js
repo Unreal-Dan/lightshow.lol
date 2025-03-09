@@ -306,36 +306,61 @@ export default class VortexEditor {
       const panelContainer = document.createElement('div');
       panelContainer.className = 'mobile-panel-container';
 
-      // Create tab buttons container
+      // Create a container for the hamburger button and its dropdown menu
       const tabButtonsContainer = document.createElement('div');
       tabButtonsContainer.className = 'mobile-tab-buttons';
+
+      // Create the hamburger button
+      const hamburgerButton = document.createElement('button');
+      hamburgerButton.className = 'mobile-hamburger-button';
+      hamburgerButton.innerHTML = '&#9776;'; // hamburger icon
+
+      // Create the context menu container for panel options
+      const hamburgerMenu = document.createElement('div');
+      hamburgerMenu.className = 'mobile-hamburger-menu';
+      hamburgerMenu.style.display = 'none';
+
+      // Populate the menu with panel items
+      this.panels.forEach((panel) => {
+        if (this.mobileTabs.includes(panel.panel.id)) {
+          const menuItem = document.createElement('div');
+          menuItem.className = 'mobile-hamburger-menu-item';
+          menuItem.innerText = panel.panel.title;
+          menuItem.addEventListener('click', () => {
+            this.setActiveTab(panel.panel.id);
+            hamburgerMenu.style.display = 'none'; // close menu after selection
+          });
+          hamburgerMenu.appendChild(menuItem);
+        }
+      });
+
+      // Toggle the hamburger menu on click and touch events
+      hamburgerButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'block' : 'none';
+      });
+      hamburgerButton.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'block' : 'none';
+      });
+
+      tabButtonsContainer.appendChild(hamburgerButton);
+      tabButtonsContainer.appendChild(hamburgerMenu);
 
       // Create panel content container
       const panelContentContainer = document.createElement('div');
       panelContentContainer.className = 'mobile-panel-content';
 
-      // Append tabs and content containers
+      // Append the containers
       panelContainer.appendChild(tabButtonsContainer);
       panelContainer.appendChild(panelContentContainer);
       document.body.appendChild(panelContainer);
 
-      // add panels to mobile tabs list
-      this.panels.forEach((panel) => {
-        if (this.mobileTabs.includes(panel.panel.id)) {
-          const tabButton = document.createElement('button');
-          tabButton.className = 'mobile-tab-button';
-          tabButton.dataset.panelId = panel.panel.id; // Link tab to panel by ID
-          tabButton.innerText = panel.panel.title;
-          tabButton.addEventListener('click', () => {
-            this.setActiveTab(panel.panel.id);
-          });
-          tabButtonsContainer.appendChild(tabButton);
-        }
-      });
-
-      // apply the mobile layout
+      // Apply the mobile layout adjustments
       this.applyLayout();
     }
+
+
   }
 
   // Function to create the version overlay
