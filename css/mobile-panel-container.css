@@ -75,7 +75,7 @@
   background-color: #292c2e;
   overflow-y: auto;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  z-index: 11;
+  z-index: 100;
 }
 
 .mobile-tab-buttons {

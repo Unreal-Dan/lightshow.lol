@@ -21,6 +21,7 @@
   flex-direction: column; /* Arrange content vertically */
   height: auto; /* Adjust height dynamically */
   padding: 15px; /* Increase padding for mobile spacing */
+  flex: 1;
 }
 
 /* Collapse Button */

@@ -498,9 +498,8 @@ export default class VortexEditor {
 
       if (isActive) {
         // Ensure only the active panel is visible and takes full height
-        panel.panel.style.display = 'block';
+        panel.panel.style.display = '';
         panel.panel.style.visibility = 'visible';
-        panel.panel.style.position = 'relative';
       } else {
         // Hide all other panels
         panel.panel.style.display = 'none';

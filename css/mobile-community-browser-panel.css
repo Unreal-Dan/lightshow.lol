@@ -2,6 +2,7 @@
 
 #communityBrowserPanel {
   position: absolute;
+  display: flex;
 }
 
 #community-browser-container {
@@ -12,7 +13,8 @@
 
 /* Container that holds the list of modes */
 #vcb-modes-container {
-  overflow-y: auto;
+  flex: 0 0 50%;
+  overflow-y: scroll;
   overflow-x: hidden;
   border: 1px solid #454545;
   border-radius: 4px;
@@ -21,15 +23,15 @@
   margin-bottom: 10px;
   background-color: #202020; /* Slightly darker background */
   width: 90%;
-  height: 60%;
-  overflow: auto;
   border: 1px solid #ccc;
 }
 
 #vcb-filter-container {
+  flex: 0 0 10%;
   margin-bottom: 10px;
   display: flex;
-  gap: 50px;
+  gap: 1em;
+  width: 90%;
 }
 
 /* Each mode entry row */
@@ -85,9 +87,7 @@
   padding: 2px 6px;
   cursor: pointer;
   transition: background-color 0.1s ease;
-  width: 80px;
-  height: 80px;
-  font-size: 32px;
+  font-size: 5em;
 }
 
 .community-mode-btn:hover {
@@ -124,8 +124,7 @@
 }
 
 .vcb-filter-btn {
-  width: 128px;
-  height: 128px;
+  flex: 1;
   background: #0e0e0e;
   border: none;
   border-radius: 10px;
@@ -160,6 +159,7 @@
 }
 
 #vcb-search-box {
+  flex: 0 0 5%;
   color: #ccc;
   width: 90%;
   padding: 5px 10px;

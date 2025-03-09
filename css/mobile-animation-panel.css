@@ -37,11 +37,12 @@
 }
 
 #animationPanel .animation-button i {
-  font-size: 40px;
+  font-size: 3em;
+  font-weight: bold;
 }
 
 .animation-slider {
-  height: 200%;
+  height: 2em;
 }
 
 #animationPanel #animationControls {
@@ -58,19 +59,21 @@
   flex-direction: row;
   align-items: center;
   gap: 10px; /* space between label and slider */
+  flex: 1;
 }
 
 #animationPanel #animationControls label {
-  width: 10%;
+  min-width: 15%;
   margin-bottom: 0; /* remove default spacing for inline layout */
   margin-left: 10px;
   flex-shrink: 0; /* prevent label from shrinking */
-  font-size: 28px;  /* Increase font size for readability */
+  font-size: 3em;  /* Increase font size for readability */
+  font-weight: bold;
 }
 
 #animationPanel #animationControls input[type="range"] {
   flex: 1; /* let the slider fill remaining width */
-  height: 40px; /* keep or adjust as needed */
+  height: 4em; /* keep or adjust as needed */
   background: #454545;
   border-radius: 4px;
   -webkit-appearance: none; /* Remove default styling */
