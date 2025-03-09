@@ -110,8 +110,7 @@ export default class VortexPort {
           this.deviceCallback('waiting');
         }
       } else {
-        Notification.failure("BLE Connection Failed. Falling back to Serial.");
-        this.useBLE = false; // Fall back to Serial
+        Notification.failure("BLE Connection Failed");
       }
     } else {
       try {
@@ -182,6 +181,10 @@ export default class VortexPort {
           const responseEncoded = await this.readData(true);
           if (!responseEncoded) {
             console.log("Error: Connection broken");
+            if (this.useBLE) {
+              // Using BLE, abort listen
+              return;
+            }
             // broken connection
             await this.sleep(500);
             continue;

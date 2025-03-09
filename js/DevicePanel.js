@@ -185,7 +185,7 @@ export default class DevicePanel extends Panel {
     connectDeviceButton.title = "Disconnect Device";
     //connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
 
-    //// Update event listener for disconnect
+    // TODO: Update event listener for disconnect
     //connectDeviceButton.onclick = () => {
     //  this.disconnectDevice();
     //};
@@ -283,9 +283,9 @@ export default class DevicePanel extends Panel {
     this.editor.vortexPort.resetState();
 
     // Restore event listener for connect
-    connectDeviceButton.onclick = async () => {
-      await this.connectDevice();
-    };
+    //connectDeviceButton.onclick = async () => {
+    //  await this.connectDevice();
+    //};
 
     // lock and hide brightness control only if it's showing
     if (!this.isBrightnessHidden()) {
