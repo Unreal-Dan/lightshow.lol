@@ -68,7 +68,7 @@
   text-overflow: ellipsis;
   user-select: none;
   color: #d8d4cf;
-  font-size: 32px;
+  font-size: 3em;
 }
 
 /* Container for action buttons on the right side of each mode entry */
@@ -105,7 +105,7 @@
   cursor: pointer;
   transition: background-color 0.1s ease;
   width: auto;
-  font-size: 32px;
+  font-size: 3em;
   margin-top: 20px;
 }
 
@@ -118,7 +118,7 @@
   color: #d8d4cf;
   line-height: 36px;
   margin: 0;
-  font-size: 32px;
+  font-size: 3em;
   margin-top: 20px;
 }
 
@@ -166,5 +166,5 @@
   box-sizing: border-box;
   background-color: #252525;
   border-radius: 15px;
-  font-size: 36px;
+  font-size: 3em;
 }
