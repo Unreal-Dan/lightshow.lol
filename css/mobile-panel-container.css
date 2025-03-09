@@ -71,9 +71,8 @@
   position: absolute;
   top: 100%;
   right: 0;
-  width: 50%;
+  width: 100%;
   background-color: #292c2e;
-  max-height: 600px;
   overflow-y: auto;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   z-index: 11;
@@ -92,10 +91,12 @@
   padding: 10px;
   border-bottom: 1px solid #3e4446;
   cursor: pointer;
-  text-align: left;
+  text-align: right;
   color: #ccc;
-  font-size: 36px;
+  font-size: 64px;
+  font-weight: bold;
   background-color: #252525;
+  padding: 0.5em;
 }
 
 .mobile-hamburger-menu-item:hover {
