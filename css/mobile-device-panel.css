@@ -46,6 +46,7 @@
   align-items: center;
   transition: background-color 0.2s, color 0.2s;
   padding-left: 16px;
+  font-size: 1.25em;
 }
 
 .custom-dropdown-select:hover {
@@ -169,3 +170,13 @@
   font-size: 3em;
 }
 
+
+.disconnect-btn {
+  background-color: #ff4d4d;
+  color: #fff;
+  margin-left: 10px;
+}
+
+.disconnect-btn:hover {
+  background-color: #e63939;
+}

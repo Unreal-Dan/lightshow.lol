@@ -29,6 +29,9 @@ export default class DevicePanel extends Panel {
           <div class="device-info">
             <h3>Connected Device</h3>
             <p id="deviceInfoText">No device connected</p>
+            <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device" style="display:none;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
         </div>` : ''}
     `;
@@ -72,6 +75,12 @@ export default class DevicePanel extends Panel {
 
       document.getElementById('deviceTypeOptions').classList.toggle('show');
     });
+
+    if (this.editor.isMobile) {
+      document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
+        await this.disconnectDevice();
+      });
+    }
 
     // Brightness slider listener
     const brightnessSlider = document.getElementById('brightnessSlider');
@@ -124,9 +133,14 @@ export default class DevicePanel extends Panel {
   }
 
   // call to disconnect the device
-  //async disconnectDevice() {
-  //  await this.vortexPort.disconnect(); 
-  //}
+  async disconnectDevice() {
+    if (!this.editor.vortexPort.serialPort) {
+      Notification.failure("No device connected");
+      return;
+    }
+    await this.editor.vortexPort.disconnect();
+    await this.onDeviceDisconnect();
+  }
 
   async connectDevice() {
     try {
@@ -203,6 +217,7 @@ export default class DevicePanel extends Panel {
       if (deviceInfoPanel) {
         deviceInfoPanel.style.display = 'flex';
       }
+      document.getElementById('connectDeviceButton').disabled = true;
     }
 
     console.log("Device connected: " + deviceName);
@@ -275,6 +290,7 @@ export default class DevicePanel extends Panel {
 
     if (this.editor.detectMobile()) {
       document.getElementById('deviceInfoText').innerText = 'No device connected';
+      document.getElementById('connectDeviceButton').disabled = false;
     }
 
     // unlock device selection
