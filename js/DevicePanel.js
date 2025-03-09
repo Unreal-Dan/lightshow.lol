@@ -138,12 +138,11 @@ export default class DevicePanel extends Panel {
 
   // call to disconnect the device
   async disconnectDevice() {
-    if (!this.editor.vortexPort.serialPort) {
+    if (!this.editor.vortexPort.serialPort && !this.editor.vortexPort.useBLE) {
       Notification.failure("No device connected");
       return;
     }
     await this.editor.vortexPort.disconnect();
-    await this.onDeviceDisconnect();
   }
 
   async connectDevice() {

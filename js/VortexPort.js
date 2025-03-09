@@ -259,11 +259,12 @@ export default class VortexPort {
   }
 
   async disconnect() {
-    if (this.reader) {
+    if (this.useBLE) {
+      if (BLE.isBleConnected()) {
+        await BLE.disconnect();
+      }
+    } else if (this.reader) {
       await this.reader.cancel();
-    }
-    if (this.useBLE && BLE.isBleConnected()) {
-      await BLE.disconnect();
     }
     this.resetState();
     if (this.deviceCallback && typeof this.deviceCallback === 'function') {
