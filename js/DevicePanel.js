@@ -198,7 +198,7 @@ export default class DevicePanel extends Panel {
     // show device information on mobile
     if (this.editor.detectMobile()) {
       // TODO: show this on desktop too
-      document.getElementById('deviceInfoText').innerText = `Connected: ${deviceName} (v${deviceVersion})`;
+      document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
       const deviceInfoPanel = document.getElementById('deviceInfoPanel');
       if (deviceInfoPanel) {
         deviceInfoPanel.style.display = 'flex';
