@@ -27,7 +27,6 @@
 }
 
 #vcb-filter-container {
-  flex: 0 0 10%;
   margin-bottom: 10px;
   display: flex;
   gap: 1em;
@@ -159,7 +158,6 @@
 }
 
 #vcb-search-box {
-  flex: 0 0 5%;
   color: #ccc;
   width: 90%;
   padding: 5px 10px;
