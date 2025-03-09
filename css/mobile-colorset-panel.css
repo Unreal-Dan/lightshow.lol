@@ -62,7 +62,7 @@
 }
 
 .color-cube.empty {
-  background: transparent;
+  background-color: #252525;
   border: 2px dashed #555;
   box-shadow: none;
 }

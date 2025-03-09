@@ -512,6 +512,11 @@ export default class VortexEditor {
     tabButtons.forEach(button => {
       button.classList.toggle('active', button.dataset.panelId === panelId);
     });
+
+    const activePanel = this.panels.find(panel => panel.panel.id === panelId);
+    if (activePanel && typeof activePanel.onActive === 'function') {
+      activePanel.onActive();
+    }
   }
 
   importModeDataFromUrl() {

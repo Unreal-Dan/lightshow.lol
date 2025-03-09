@@ -500,5 +500,10 @@ export default class Panel {
       console.error(`Button with ID ${buttonId} not found for removal.`);
     }
   }
+
+  // mobile panel selected
+  onActive() {
+    // override
+  }
 }
 

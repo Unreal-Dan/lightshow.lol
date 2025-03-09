@@ -63,6 +63,10 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
+    ledsFieldset.addEventListener('touchstart', (event) => this.onTouchStart(event));
+    ledsFieldset.addEventListener('touchmove', (event) => this.onTouchMove(event));
+    ledsFieldset.addEventListener('touchend', (event) => this.onTouchEnd(event));
+
 
     // Listen to pattern changes to refresh LED indicators as needed
     document.addEventListener('patternChange', () => this.handlePatternChange());
@@ -120,6 +124,15 @@ export default class LedSelectPanel extends Panel {
     this.selectAllLeds();
   }
 
+  // Add or override this method in your LedSelectPanel class
+  show() {
+    if (this.editor.detectMobile() && this.selectedDevice) {
+      this.renderLedIndicators(this.selectedDevice);
+      console.log("Rendering them...");
+    }
+    super.show();
+  }
+
   async getLedPositions(deviceName) {
     try {
       const cacheBuster = '?v=' + new Date().getTime();
@@ -162,7 +175,11 @@ export default class LedSelectPanel extends Panel {
       deviceImageContainer.appendChild(swapDeviceButton);
     }
     swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
-    swapDeviceButton.onclick = async () => this.toggleAltImage();
+    swapDeviceButton.addEventListener('click', async () => this.toggleAltImage());
+    swapDeviceButton.addEventListener('touchstart', async (e) => {
+      e.preventDefault();
+      await this.toggleAltImage();
+    });
 
     const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
     const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
@@ -649,6 +666,94 @@ export default class LedSelectPanel extends Panel {
     this.handleLedSelectionChange();
   }
 
+  // Add these methods to your LedSelectPanel class
+
+  onTouchStart(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.isDragging = true;
+    this.startX = touch.clientX;
+    this.startY = touch.clientY;
+    this.currentX = touch.clientX;
+    this.currentY = touch.clientY;
+    this.dragStartTime = Date.now();
+
+    this.selectionBox = document.createElement('div');
+    this.selectionBox.classList.add('selection-box');
+    document.body.appendChild(this.selectionBox);
+
+    this.selectionBox.style.left = `${this.startX}px`;
+    this.selectionBox.style.top = `${this.startY}px`;
+  }
+
+  onTouchMove(event) {
+    if (!this.isDragging) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    this.currentX = touch.clientX;
+    this.currentY = touch.clientY;
+
+    this.selectionBox.style.width = `${Math.abs(this.currentX - this.startX)}px`;
+    this.selectionBox.style.height = `${Math.abs(this.currentY - this.startY)}px`;
+    this.selectionBox.style.left = `${Math.min(this.currentX, this.startX)}px`;
+    this.selectionBox.style.top = `${Math.min(this.currentY, this.startY)}px`;
+  }
+
+  onTouchEnd(event) {
+    event.preventDefault();
+    if (!this.isDragging) return;
+
+    if (this.selectionBox) {
+      document.body.removeChild(this.selectionBox);
+      this.selectionBox = null;
+    }
+
+    this.isDragging = false;
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    const rect = deviceImageContainer.getBoundingClientRect();
+    let startX = Math.min(this.startX, this.currentX) - rect.left;
+    let startY = Math.min(this.startY, this.currentY) - rect.top;
+    let endX = Math.max(this.startX, this.currentX) - rect.left;
+    let endY = Math.max(this.startY, this.currentY) - rect.top;
+
+    // Ensure within container
+    startX = Math.max(startX, 0);
+    startY = Math.max(startY, 0);
+    endX = Math.min(endX, rect.width);
+    endY = Math.min(endY, rect.height);
+
+    const isClick = Math.abs(startX - endX) <= 3 && Math.abs(startY - endY) <= 3;
+    const clickX = (startX + endX) / 2;
+    const clickY = (startY + endY) / 2;
+
+    let clickedLed = null;
+    const ledIndicators = Array.from(document.querySelectorAll('.led-indicator'));
+    for (let indicator of ledIndicators) {
+      const ledRect = indicator.getBoundingClientRect();
+      const ledX1 = ledRect.left - rect.left;
+      const ledY1 = ledRect.top - rect.top;
+      const ledX2 = ledRect.right - rect.left;
+      const ledY2 = ledRect.bottom - rect.top;
+      if (clickX >= ledX1 && clickX <= ledX2 && clickY >= ledY1 && clickY <= ledY2) {
+        clickedLed = indicator;
+        break;
+      }
+    }
+
+    if (isClick) {
+      if (!clickedLed) {
+        this.unselectAllLeds();
+      } else {
+        this.handleClickOnLed(clickedLed, event);
+      }
+    } else {
+      this.handleBoxSelection(startX, startY, endX, endY, event);
+    }
+
+    this.handleLedSelectionChange();
+  }
+
+
   selectLed(index, selected = true, update = true) {
     const ledList = document.getElementById('ledList');
     let option = ledList.querySelector(`option[value='${index}']`);
@@ -669,6 +774,12 @@ export default class LedSelectPanel extends Panel {
 
     if (update) {
       this.handleLedSelectionChange(); // Trigger panel updates
+    }
+  }
+
+  onActive() {
+    if (this.selectedDevice) {
+      this.renderLedIndicators(this.selectedDevice);
     }
   }
 }

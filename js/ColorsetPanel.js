@@ -593,6 +593,8 @@ export default class ColorsetPanel extends Panel {
     }
   }
 
-
+  onActive() {
+    this.refresh();
+  }
 }
 
