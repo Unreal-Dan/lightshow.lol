@@ -203,5 +203,9 @@ export default class CommunityBrowserPanel extends Panel {
 
     this.pageLabel.textContent = `Page ${this.currentPage} / ${this.totalPages}`;
   }
+
+  onActive() {
+    this.applyFilters();
+  }
 }
 
