@@ -29,7 +29,7 @@ export default class DevicePanel extends Panel {
           <div class="device-info">
             <h3>Connected Device</h3>
             <p id="deviceInfoText">No device connected</p>
-            <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device" style="display:none;">
+            <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
