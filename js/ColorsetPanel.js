@@ -324,9 +324,12 @@ export default class ColorsetPanel extends Panel {
     let startY = 0;
 
     const handlePointerDown = (e) => {
+      if (e.pointerType === 'touch') {
+        e.preventDefault();
+      }
       if (e.button !== 0) {
-        e.preventDefault(); // Prevent default right-click behavior if necessary
-        return; // Abort drag handling for non-left-clicks
+        e.preventDefault();
+        return;
       }
 
       const target = e.target.closest('.color-cube');
@@ -341,7 +344,6 @@ export default class ColorsetPanel extends Panel {
       document.addEventListener('pointermove', checkForDragStart);
       document.addEventListener('pointerup', cancelDragStart);
     };
-
 
     const checkForDragStart = (e) => {
       const movedX = Math.abs(e.clientX - startX);
