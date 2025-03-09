@@ -21,7 +21,7 @@ export default class DevicePanel extends Panel {
         </button>
       </div>
       ${isMobile ? `
-        <div id="deviceInfoPanel">
+        <div id="deviceInfoPanel" style="display:none;">
           <div id="deviceInfoPanelHeader">
             <div class="device-info">
               <h3>Connected Device</h3>
@@ -31,7 +31,7 @@ export default class DevicePanel extends Panel {
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-          <div id="deviceInfoPanelContent" style="display:none;">
+          <div id="deviceInfoPanelContent">
             <div id="brightnessControl">
               <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
               <i class="fa-solid fa-sun" id="brightnessIcon"></i>
