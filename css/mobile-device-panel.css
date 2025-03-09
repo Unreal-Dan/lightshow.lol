@@ -102,13 +102,12 @@
 }
 
 #brightnessControl {
-  height: 64px;
+  height: 2em;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  margin-top: 32px;
-  display: none;
+  margin-top: 3em;
 }
 
 #brightnessSlider {
@@ -179,4 +178,16 @@
 
 .disconnect-btn:hover {
   background-color: #e63939;
+}
+
+#deviceInfoPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: none;
+}
+
+#deviceInfoPanelContent {
+  margin-top: 3em;
+  padding-top: 1em;
+  padding-bottom: 2em;
 }

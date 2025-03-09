@@ -20,18 +20,22 @@ export default class DevicePanel extends Panel {
           <i class="fa-brands ${iconClass}"></i>
         </button>
       </div>
-      <div id="brightnessControl">
-        <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
-        <i class="fa-solid fa-sun" id="brightnessIcon"></i>
-      </div>
       ${isMobile ? `
-        <div id="deviceInfoPanel" style="display:none;">
-          <div class="device-info">
-            <h3>Connected Device</h3>
-            <p id="deviceInfoText">No device connected</p>
+        <div id="deviceInfoPanel">
+          <div id="deviceInfoPanelHeader">
+            <div class="device-info">
+              <h3>Connected Device</h3>
+              <p id="deviceInfoText">No device connected</p>
+            </div>
             <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device">
               <i class="fa-solid fa-xmark"></i>
             </button>
+          </div>
+          <div id="deviceInfoPanelContent">
+            <div id="brightnessControl">
+              <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
+              <i class="fa-solid fa-sun" id="brightnessIcon"></i>
+            </div>
           </div>
         </div>` : ''}
     `;
