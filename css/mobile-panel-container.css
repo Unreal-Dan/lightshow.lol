@@ -92,10 +92,11 @@
   cursor: pointer;
   text-align: right;
   color: #ccc;
-  font-size: 64px;
+  font-size: 3em;
   font-weight: bold;
   background-color: #252525;
   padding: 0.5em;
+  flex: 1;
 }
 
 .mobile-hamburger-menu-item:hover {
