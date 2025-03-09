@@ -151,3 +151,22 @@
   background: #454545;
 }
 
+
+#deviceInfoPanel {
+  margin-top: 1em;
+  padding: 1em;
+  background-color: #1f1f1f;
+  border-radius: 8px;
+  color: #ffffff;
+}
+
+#deviceInfoPanel h3 {
+  margin: 0 0 8px 0;
+  font-size: 3.5em;
+}
+
+#deviceInfoPanel p {
+  margin: 0;
+  font-size: 3em;
+}
+

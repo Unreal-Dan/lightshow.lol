@@ -24,6 +24,13 @@ export default class DevicePanel extends Panel {
         <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
         <i class="fa-solid fa-sun" id="brightnessIcon"></i>
       </div>
+      ${isMobile ? `
+        <div id="deviceInfoPanel" style="display:none;">
+          <div class="device-info">
+            <h3>Connected Device</h3>
+            <p id="deviceInfoText">No device connected</p>
+          </div>
+        </div>` : ''}
     `;
     super(editor, 'devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
@@ -188,6 +195,16 @@ export default class DevicePanel extends Panel {
     this.editor.vortexPort.startReading();
     await this.editor.demoModeOnDevice();
 
+    // show device information on mobile
+    if (this.editor.detectMobile()) {
+      // TODO: show this on desktop too
+      document.getElementById('deviceInfoText').innerText = `Connected: ${deviceName} (v${deviceVersion})`;
+      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+      if (deviceInfoPanel) {
+        deviceInfoPanel.style.display = 'flex';
+      }
+    }
+
     console.log("Device connected: " + deviceName);
     Notification.success("Successfully Connected " + deviceName);
   }
@@ -255,6 +272,10 @@ export default class DevicePanel extends Panel {
 
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
+
+    if (this.editor.detectMobile()) {
+      document.getElementById('deviceInfoText').innerText = 'No device connected';
+    }
 
     // unlock device selection
     this.lockDeviceSelection(false);
