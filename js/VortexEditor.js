@@ -124,7 +124,6 @@ export default class VortexEditor {
     this.communityBrowserPanel = new CommunityBrowserPanel(this);
 
     this.panels = [
-      this.devicePanel,
       this.welcomePanel,
       this.aboutPanel,
       this.animationPanel,
@@ -132,6 +131,7 @@ export default class VortexEditor {
       this.ledSelectPanel,
       this.patternPanel,
       this.colorsetPanel,
+      this.devicePanel,
       this.modesPanel,
       this.colorPickerPanel,
       this.updatePanel,
