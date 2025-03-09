@@ -80,12 +80,6 @@ export default class DevicePanel extends Panel {
       document.getElementById('deviceTypeOptions').classList.toggle('show');
     });
 
-    if (this.editor.isMobile) {
-      document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
-        await this.disconnectDevice();
-      });
-    }
-
     // Brightness slider listener
     const brightnessSlider = document.getElementById('brightnessSlider');
     brightnessSlider.addEventListener('input', this.onBrightnessSliderInput.bind(this));
@@ -221,6 +215,10 @@ export default class DevicePanel extends Panel {
         deviceInfoPanel.style.display = 'flex';
       }
       document.getElementById('connectDeviceButton').disabled = true;
+      document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
+        await this.disconnectDevice();
+        deviceInfoPanel.style.display = 'none';
+      });
     }
 
     console.log("Device connected: " + deviceName);

@@ -41,6 +41,29 @@ export async function connect() {
   }
 }
 
+export async function disconnect() {
+  try {
+    await Promise.race([
+      new Promise(resolve => {
+        if (bleDevice && bleDevice.gatt.connected) {
+          bleDevice.gatt.disconnect();
+        }
+        resolve();
+      }),
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
+    console.log("Disconnected from BLE device.");
+  } catch (error) {
+    console.error("BLE disconnect error:", error);
+  } finally {
+    isConnected = false;
+    bleDevice = null;
+    writeCharacteristic = null;
+    notifyCharacteristic = null;
+    accumulatedData = new Uint8Array(0);
+  }
+}
+
 /**
  * Handle incoming notifications from ESP32 (BINARY ONLY)
  * @param {Event} event - The characteristic change event
