@@ -15,7 +15,7 @@ export async function connect() {
   try {
     console.log("Requesting Bluetooth Device...");
     bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ name: "ESP32-C3 BLE" }],
+      filters: [{ name: "Vortex Chromadeck" }, { name: "Vortex Spark" }],
       optionalServices: [SERVICE_UUID]
     });
 
@@ -32,7 +32,7 @@ export async function connect() {
     notifyCharacteristic.addEventListener("characteristicvaluechanged", handleNotifications);
 
     isConnected = true;
-    console.log("Connected to ESP32 BLE!");
+    console.log("Connected to Bluetooth Vortex Device!");
 
     return true;
   } catch (error) {
