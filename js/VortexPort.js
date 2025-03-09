@@ -90,9 +90,6 @@ export default class VortexPort {
       this.serialPort.close();
       this.serialPort = null;
     }
-    if (this.useBLE && BLE.isBleConnected()) {
-      await BLE.disconnect();
-    }
     this.bleConnected = false;
     // Further state reset logic if necessary
   }
@@ -264,6 +261,9 @@ export default class VortexPort {
   async disconnect() {
     if (this.reader) {
       await this.reader.cancel();
+    }
+    if (this.useBLE && BLE.isBleConnected()) {
+      await BLE.disconnect();
     }
     this.resetState();
     if (this.deviceCallback && typeof this.deviceCallback === 'function') {
