@@ -335,10 +335,6 @@ export default class VortexEditor {
       });
 
       // Toggle the hamburger menu on click and touch events
-      hamburgerButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'block' : 'none';
-      });
       hamburgerButton.addEventListener('touchstart', (e) => {
         e.stopPropagation();
         hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'block' : 'none';

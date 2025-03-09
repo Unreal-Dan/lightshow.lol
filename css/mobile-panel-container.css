@@ -57,14 +57,14 @@
   box-sizing: border-box; /* Include padding and borders in size calculation */
 }
 
-
 .mobile-hamburger-button {
   background: none;
   border: none;
   color: #d8d4cf;
   font-size: 64px;
   cursor: pointer;
-  padding: 20px;
+  padding: 0.25em;
+  margin: 0;
 }
 
 .mobile-hamburger-menu {
@@ -82,7 +82,6 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 8em; /* Fixed height for the header */
   background-color: #181a1b;
   position: relative;
 }
