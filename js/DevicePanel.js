@@ -22,7 +22,7 @@ export default class DevicePanel extends Panel {
       </div>
       ${!isMobile ? `
       <div id="brightnessControl">
-        <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
+        <input type="range" id="brightnessSlider" min="1" max="255" step="1" value="255" />
         <i class="fa-solid fa-sun" id="brightnessIcon"></i>
       </div>` : ''}
 
@@ -41,6 +41,13 @@ export default class DevicePanel extends Panel {
             <div id="brightnessControl">
               <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
               <i class="fa-solid fa-sun" id="brightnessIcon"></i>
+            </div>
+            <!-- TODO: finish the duo mode button -->
+            <div id="duoSwitchContainer" style="display:none;">
+              <label id="duoSwitchLabel">Duo Hub</label>
+              <button id="switchDuoModeButton" class="duo-mode-btn" title="Switch to Duo Mode" >
+                <img src="public/images/duo-logo-square-512.png" style="width: 100%; height: auto;">
+              </button>
             </div>
           </div>
         </div>` : ''}
@@ -123,15 +130,12 @@ export default class DevicePanel extends Panel {
   // when the slider is finally released
   async onBrightnessSliderChange(event) {
     // if it's a duo we don't update the brightness till the final 'change'
-    if (this.selectedDevice === 'Duo') {
-      // do nothing
-    } else {
-      // otherwise set the brightness of the device
-      const brightness = event.target.value;
-      const vortexLib = this.editor.vortexLib;
-      const vortex = this.editor.lightshow.vortex;
-      await this.editor.vortexPort.setBrightness(vortexLib, vortex, brightness);
-    }
+    const brightness = event.target.value;
+    const vortexLib = this.editor.vortexLib;
+    const vortex = this.editor.lightshow.vortex;
+    await this.editor.vortexPort.setBrightness(vortexLib, vortex, brightness);
+    // wait a second before setting the mode again
+    await this.editor.sleep(300);
     // then go back to demoing the mode
     await this.editor.demoModeOnDevice();
   }
@@ -214,7 +218,30 @@ export default class DevicePanel extends Panel {
 
     // show device information on mobile
     if (this.editor.detectMobile()) {
-      // TODO: show this on desktop too
+      this.physicalDeviceType = deviceName;
+      const switchContainer = document.getElementById('duoSwitchContainer');
+      const switchButton = document.getElementById('switchDuoModeButton');
+      if (deviceName === 'Chromadeck') {
+        switchContainer.style.display = 'flex';
+        switchButton.addEventListener('click', async () => {
+          if (this.selectedDevice === 'Duo') {
+            await this.updateSelectedDevice('Chromadeck', true);
+            Notification.success(`Switched back to Chromadeck Mode`);
+          } else {
+            if (this.editor.modesPanel.hasMultiLedPatterns()) {
+              const confirmed = await this.confirmSwitchToDuo();
+              if (!confirmed) {
+                return;
+              }
+              this.editor.modesPanel.convertModesToSingle();
+            }
+            await this.updateSelectedDevice('Duo', true);
+            Notification.success(`Switched to Duo Mode`);
+          }
+        });
+      } else {
+        switchContainer.style.display = 'none';
+      }
       document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
       const deviceInfoPanel = document.getElementById('deviceInfoPanel');
       if (deviceInfoPanel) {

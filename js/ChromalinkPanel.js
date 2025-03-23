@@ -134,6 +134,11 @@ export default class ChromalinkPanel extends Panel {
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
       await this.editor.devicePanel.updateSelectedDevice('Duo', true);
+      this.editor.devicePanel.toggleBrightnessSlider(255, false);
+      const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
+      if (deviceBrightness > 0) {
+        this.editor.devicePanel.toggleBrightnessSlider(deviceBrightness, true);
+      }
       this.editor.modesPanel.refreshModeList();
       // update ui
       document.getElementById('duoIcon').style.display = 'block';
