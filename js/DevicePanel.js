@@ -42,6 +42,7 @@ export default class DevicePanel extends Panel {
               <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
               <i class="fa-solid fa-sun" id="brightnessIcon"></i>
             </div>
+            <!-- TODO: finish the duo mode button -->
             <div id="duoSwitchContainer" style="display:none;">
               <label id="duoSwitchLabel">Duo Hub</label>
               <button id="switchDuoModeButton" class="duo-mode-btn" title="Switch to Duo Mode" >
