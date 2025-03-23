@@ -175,12 +175,14 @@ export default class LedSelectPanel extends Panel {
       deviceImageContainer.appendChild(swapDeviceButton);
     }
     swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
-    swapDeviceButton.addEventListener('click', async () => this.toggleAltImage());
-    swapDeviceButton.addEventListener('touchstart', async (e) => {
-      e.preventDefault();
-      await this.toggleAltImage();
-    });
-
+    if (!swapDeviceButton.dataset.handlerBound) {
+      swapDeviceButton.addEventListener('click', async () => this.toggleAltImage());
+      swapDeviceButton.addEventListener('touchstart', async (e) => {
+        e.preventDefault();
+        await this.toggleAltImage();
+      });
+      swapDeviceButton.dataset.handlerBound = 'true';
+    }
     const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
     const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
 
@@ -457,6 +459,13 @@ export default class LedSelectPanel extends Panel {
     if (event.button !== 0) return; // left mouse
     event.preventDefault();
 
+    // ignore clicks on the swap device image button which is in the led select
+    // area when the spark is the selected device
+    const target = event.target;
+    if (target.closest('#swapDeviceImage')) {
+      return;
+    }
+
     this.isDragging = true;
     this.startX = event.clientX;
     this.startY = event.clientY;
@@ -597,6 +606,13 @@ export default class LedSelectPanel extends Panel {
   onMouseUp(event) {
     if (event.button !== 0) return;
     event.preventDefault();
+
+    // ignore clicks on the swap device image button which is in the led select
+    // area when the spark is the selected device
+    const target = event.target;
+    if (target.closest('#swapDeviceImage')) {
+      return;
+    }
 
     if (!this.selectionBox) {
       this.isDragging = false;
