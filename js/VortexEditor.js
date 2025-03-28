@@ -687,9 +687,9 @@ window.addEventListener('load', async () => {
     const vortexEditor = new VortexEditor(vortexLib);
     await vortexEditor.initialize();
     // TODO: REMOVEME DEBUG CODE:
-    vortexEditor.devicePanel.updateSelectedDevice('Chromadeck');
-    vortexEditor.animationPanel.applyPreset('Chromadeck');
-    vortexEditor.setActiveTab('duoEditorPanel');
+    //vortexEditor.devicePanel.updateSelectedDevice('Chromadeck');
+    //vortexEditor.animationPanel.applyPreset('Chromadeck');
+    //vortexEditor.setActiveTab('duoEditorPanel');
   } catch (error) {
     console.error('Error initializing Vortex:', error);
   }
