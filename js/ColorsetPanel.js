@@ -260,6 +260,13 @@ export default class ColorsetPanel extends Panel {
   }
 
   async refresh(sourceLed = null) {
+    if (this.inDuoEditor) {
+      // Skip binding colorPickerPanel directly or skip mobile mount logic
+      // Maybe hide or collapse things like #colorPickerMountMobile
+      const pickerMount = document.getElementById('colorPickerMountMobile');
+      if (pickerMount) pickerMount.style.display = 'none';
+    }
+
     const colorsetElement = document.getElementById('colorset');
     if (!colorsetElement) {
       return;

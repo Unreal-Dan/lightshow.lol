@@ -440,5 +440,9 @@ export default class PatternPanel extends Panel {
     };
     return nicerNames[sliderName] || sliderName; // Default text if no description is found
   }
+
+  getPatternSelectElement() {
+    return this.panel.querySelector('#patternDropdown'); // or whatever the actual ID is
+  }
 }
 

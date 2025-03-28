@@ -375,6 +375,9 @@ export default class DevicePanel extends Panel {
     const ledCount = this.editor.devices[this.selectedDevice].ledCount;
     if (ledCount !== undefined) {
       this.editor.lightshow.setLedCount(ledCount);
+      if (this.editor.detectMobile()) {
+        this.editor.rebuildHamburgerMenu();
+      }
       console.log(`Set LED count to ${ledCount} for ${this.editor.vortexPort.name}`);
     } else {
       console.log(`Device name ${this.editor.vortexPort.name} not recognized`);

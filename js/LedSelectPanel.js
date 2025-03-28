@@ -124,11 +124,9 @@ export default class LedSelectPanel extends Panel {
     this.selectAllLeds();
   }
 
-  // Add or override this method in your LedSelectPanel class
   show() {
     if (this.editor.detectMobile() && this.selectedDevice) {
       this.renderLedIndicators(this.selectedDevice);
-      console.log("Rendering them...");
     }
     super.show();
   }

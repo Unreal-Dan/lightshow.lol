@@ -15,7 +15,7 @@ export default class Lightshow {
     this.dotSize = 25;
     this.blurFac = 5;
     this.circleRadius = 400;
-    this.tickRate = 3;
+    this.tickRate = 1;
     this.trailSize = 100;
     this.spread = 15;
     this.angle = 0;
@@ -31,6 +31,9 @@ export default class Lightshow {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.modeData = modeData;
     this.applyModeData();
+
+    // turn this on/off to only draw 2 leds at a time
+    this.duoEditorMode = false;
 
     this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Center default
     this.targetPosition = { x: this.cursorPosition.x, y: this.cursorPosition.y };
@@ -101,6 +104,16 @@ export default class Lightshow {
 
   setLedCount(count) {
     this.vortex.setLedCount(count);
+    this.updateHistories();
+  }
+
+  setFlashCanvas(canvas) {
+    this.flashCanvas = canvas;
+    this.flashCtx = canvas.getContext('2d');
+  }
+
+  setDuoEditorMode(editormode) {
+    this.duoEditorMode = editormode;
     this.updateHistories();
   }
 
@@ -291,7 +304,14 @@ export default class Lightshow {
     this.ctx.fillStyle = `rgba(0, 0, 0, 1)`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.histories.forEach(history => {
+    if (this.duoEditorMode && this.flashCtx) {
+      this.flashCtx.clearRect(0, 0, this.flashCanvas.width, this.flashCanvas.height);
+    }
+
+    this.histories.forEach((history, historyIndex) => {
+      if (this.duoEditorMode && historyIndex > 1) {
+        return;
+      }
       for (let index = history.length - 1; index >= 0; index--) {
         const point = history[index];
         if (!point.color.red && !point.color.green && !point.color.blue) {
@@ -310,6 +330,21 @@ export default class Lightshow {
         this.ctx.beginPath();
         this.ctx.arc(point.x, point.y, this.dotSize, 0, 2 * Math.PI);
         this.ctx.fill();
+
+        if (this.duoEditorMode && this.flashCtx && index === history.length - 1 && historyIndex < 2) {
+          const point = history[index];
+          if (!point.color.red && !point.color.green && !point.color.blue) {
+            this.flashCtx.fillStyle = `rgba(0, 0, 0, 1)`;
+          } else {
+            this.flashCtx.fillStyle = `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, 1)`;
+          }
+
+          if (historyIndex === 0) {
+            this.flashCtx.fillRect(100, 1, 100, 60);
+          } else {
+            this.flashCtx.fillRect(130, 55, 40, 25);
+          }
+        }
       }
     });
 

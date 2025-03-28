@@ -433,6 +433,18 @@ export default class ColorPickerPanel extends Panel {
     };
   }
 
+  mount(container) {
+    container.innerHTML = ''; // Clear any previous content
+    container.appendChild(this.contentContainer); // contentContainer should be the root wrapper of the picker
+    this.initialized = false; // force re-init on next open
+  }
+
+  teardown() {
+    // remove event listeners, null DOM refs, etc.
+    this.initialized = false;
+  }
+
+
   initHueCircle(h) {
     this.setHueIndicator(h);
   }

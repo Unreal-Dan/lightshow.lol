@@ -130,6 +130,7 @@ export default class AnimationPanel extends Panel {
       chromadeck: { tickRate: 10, trailSize: 100, dotSize: 10, blurFac: 3, circleRadius: 60, spread: 20 },
       spark: { tickRate: 10, trailSize: 180, dotSize: 16, blurFac: 3, circleRadius: 80, spread: 60 },
       duo: { tickRate: 10, trailSize: 200, dotSize: 20, blurFac: 3, circleRadius: 250, spread: 80 },
+      duoeditor: { tickRate: 1, trailSize: 300, dotSize: 30, blurFac: 3, circleRadius: 200, spread: 100 },
     };
 
     if (presets[preset]) {
