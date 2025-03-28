@@ -53,38 +53,82 @@ export default class DuoEditorPanel extends Panel {
     });
   }
 
+  createSingleLedPatternDropdown(selectedLed) {
+    const dropdown = document.createElement('select');
+    dropdown.id = 'duoPatternDropdown';
+
+    const vortex = this.editor.vortex;
+    const vortexLib = this.editor.vortexLib;
+    const patternEnum = vortexLib.PatternID;
+
+    for (let pattern in patternEnum) {
+      if (!patternEnum.hasOwnProperty(pattern)) continue;
+
+      const pat = patternEnum[pattern];
+      if (
+        pattern === 'values' ||
+        pattern === 'argCount' ||
+        pat === patternEnum.PATTERN_NONE ||
+        pat === patternEnum.PATTERN_COUNT
+      ) continue;
+
+      if (!vortexLib.isSingleLedPatternID(pat)) continue;
+
+      const option = document.createElement('option');
+      let label = vortex.patternToString(pat);
+      if (label.startsWith("complementary")) {
+        label = "comp. " + label.slice(14);
+      }
+
+      option.text = label;
+      option.value = pat.value;
+      dropdown.appendChild(option);
+    }
+
+    // Set initial value from current mode
+    const curMode = vortex.engine().modes().curMode();
+    if (curMode) {
+      const patID = curMode.getPatternID(selectedLed);
+      dropdown.value = patID.value;
+    }
+
+    return dropdown;
+  }
+
   handleLedTap(event) {
     const ledIndex = event.currentTarget.dataset.led;
     this.selectedLeds = [ledIndex];
     this.mainSelectedLed = ledIndex;
+
+    // Force LED selection in the LEDSelectPanel
+    this.editor.ledSelectPanel.unselectAllLeds();
+    this.editor.ledSelectPanel.selectLed(parseInt(ledIndex, 10));
+    this.editor.ledSelectPanel.setMainSelection(parseInt(ledIndex, 10), true);
+
     this.emitLedChange();
 
     this.duoPopupContent.innerHTML = '';
 
-    // Clone pattern select
     const originalPatternSelect = this.editor.patternPanel.getPatternSelectElement();
-    const clonedPatternSelect = originalPatternSelect.cloneNode(true);
-    clonedPatternSelect.id = 'duoPatternDropdown';
-    clonedPatternSelect.value = originalPatternSelect.value; // sync selection
 
-    // Add pattern change listener
-    clonedPatternSelect.addEventListener('change', (e) => {
+    const patternSelect = this.createSingleLedPatternDropdown(this.editor, this.mainSelectedLed);
+
+    patternSelect.addEventListener('change', (e) => {
       const newPatId = parseInt(e.target.value);
-      const cur = this.editor.vortex.engine().modes().curMode();
-      const args = new this.editor.vortexLib.PatternArgs();
+      const vortex = this.editor.vortex;
+      const vortexLib = this.editor.vortexLib;
+      const cur = vortex.engine().modes().curMode();
+      const args = new vortexLib.PatternArgs();
       const set = cur.getColorset(this.mainSelectedLed);
-      const patID = this.editor.vortexLib.intToPatternID(newPatId);
+      const patID = vortexLib.intToPatternID(newPatId);
 
-      console.log(`patID: ${patID} main: ${this.mainSelectedLed}`);
-
-      cur.setPattern(patID, this.mainSelectedLed, args, set);
+      cur.setPattern(patID, this.mainSelectedLed, null, null);
       cur.init();
-
-      this.editor.vortex.engine().modes().saveCurMode();
+      vortex.engine().modes().saveCurMode();
       this.editor.demoModeOnDevice();
     });
 
-    this.duoPopupContent.appendChild(clonedPatternSelect);
+    this.duoPopupContent.appendChild(patternSelect);
 
     // Clone the colorset panel
     const originalColorsetContent = this.editor.colorsetPanel.contentContainer;
@@ -175,8 +219,8 @@ export default class DuoEditorPanel extends Panel {
   emitLedChange() {
     document.dispatchEvent(new CustomEvent('ledsChange', {
       detail: {
-        targetLeds: this.selectedLeds,
-        mainSelectedLed: this.mainSelectedLed
+        targetLeds: this.selectedLeds.map(x => parseInt(x, 10)),
+        mainSelectedLed: parseInt(this.mainSelectedLed, 10)
       }
     }));
   }
@@ -222,9 +266,18 @@ export default class DuoEditorPanel extends Panel {
       this.originalColorsetPanelParent.appendChild(colorsetPanelContent);
     }
 
-    // Hide popup if it's still open
+    // Move color picker back to default mount
+    const cp = this.editor.colorPickerPanel;
+    if (cp && cp.contentContainer && !document.body.contains(cp.contentContainer)) {
+      // Optional teardown or re-initialization
+      cp.teardown?.(); // If defined
+      document.body.appendChild(cp.contentContainer);
+    }
+
+    // Hide and clear the Duo popup
     this.duoPopup.classList.add('hidden');
     this.duoPopup.style.display = 'none';
+    this.duoPopupContent.innerHTML = '';
 
     console.log("switch off duo editor");
   }

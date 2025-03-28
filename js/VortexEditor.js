@@ -92,7 +92,6 @@ export default class VortexEditor {
 
     // local server if the hostname is not lightshow.lol
     this.isLocalServer = !window.location.hostname.startsWith('lightshow.lol');
-    this.isDuoEditor = this.detectDuoEditor();
 
     // create a version overlay text in the bottom left
     const vlibVersion = this.vortex.getVersion();
@@ -478,18 +477,10 @@ export default class VortexEditor {
     document.head.appendChild(link);
   }
 
-  detectDuoEditor() {
-    if (this.isDuoEditor) {
-      return true;
-    }
-    this.duoEditor = window.location.search.includes('duo-editor');
-    return this.duoEditor;
-  }
-
   detectMobile() {
     // isMobile is used to manage layout so we use seperate var here to
     // prevent regex'ing the userAgent over and over
-    if (this.detectedMobile || this.detectDuoEditor()) {
+    if (this.detectedMobile) {
       return true
     }
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -525,12 +516,6 @@ export default class VortexEditor {
 
     // update the lightshow layout
     this.lightshow.updateLayout(this.isMobile);
-    if (this.detectDuoEditor()) {
-      this.lightshow.setLedCount(2);
-      this.lightshow.spread = 100;
-      this.lightshow.circleRadius = 300;
-      this.animationPanel.applyPreset('Duo');
-    }
 
     // set the active tab if mobile
     if (this.isMobile && this.panels.length > 0) {
@@ -555,7 +540,6 @@ export default class VortexEditor {
 
     this.panels.forEach(panel => {
       const isActive = panel.panel.id === panelId;
-
       if (isActive) {
         // Ensure only the active panel is visible and takes full height
         panel.panel.style.display = '';

@@ -34,8 +34,11 @@ export default class ColorPickerPanel extends Panel {
     controlsContainer.innerHTML = this.createColorPickerHTML(h, s, v, col);
 
     this.show(); // Show the panel
-    this.initColorPickerControls(updateColorCallback);
-    this.initHueCircle(h);
+    // Wait for the DOM to settle, then init safely
+    setTimeout(() => {
+      this.initColorPickerControls(updateColorCallback);
+      this.initHueCircle(h);
+    }, 0);
   }
 
   hide() {
@@ -434,16 +437,14 @@ export default class ColorPickerPanel extends Panel {
   }
 
   mount(container) {
-    container.innerHTML = ''; // Clear any previous content
-    container.appendChild(this.contentContainer); // contentContainer should be the root wrapper of the picker
-    this.initialized = false; // force re-init on next open
+    if (this.contentContainer.parentElement !== container) {
+      container.innerHTML = '';
+      container.appendChild(this.contentContainer);
+    }
   }
 
   teardown() {
-    // remove event listeners, null DOM refs, etc.
-    this.initialized = false;
   }
-
 
   initHueCircle(h) {
     this.setHueIndicator(h);

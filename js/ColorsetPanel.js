@@ -577,27 +577,20 @@ export default class ColorsetPanel extends Panel {
 
   activateMobileColorPicker() {
     const mount = document.getElementById('colorPickerMountMobile');
-    if (mount && this.editor.colorPickerPanel.contentContainer) {
-      // Create a wrapper that mimics the original panel’s outer element
-      let wrapper = document.createElement('div');
-      // Assign the class your desktop CSS uses (for example, "color-picker-panel")
-      wrapper.className = "color-picker-panel";
-      // Optionally, assign an ID if your CSS selectors require one:
-      // wrapper.id = "colorPickerPanelEmbedded";
+    if (!mount) return;
 
-      // Append the content container into the wrapper
-      wrapper.appendChild(this.editor.colorPickerPanel.contentContainer);
+    const wrapper = document.createElement('div');
+    wrapper.className = "color-picker-panel";
+    wrapper.style.position = 'static';
+    wrapper.style.width = '100%';
+    wrapper.style.display = 'block';
+    wrapper.style.marginTop = '10px';
 
-      // Clear any existing content and insert the wrapper into the mobile mount
-      mount.innerHTML = "";
-      mount.appendChild(wrapper);
+    // Don't move the contentContainer — just mount a wrapper and reuse the component
+    this.editor.colorPickerPanel.mount(wrapper);
 
-      // Force the wrapper to adopt mobile-friendly styling
-      wrapper.style.position = 'static';
-      wrapper.style.width = '100%';
-      wrapper.style.display = 'block';
-      wrapper.style.marginTop = '10px';
-    }
+    mount.innerHTML = '';
+    mount.appendChild(wrapper);
   }
 
   onActive() {
