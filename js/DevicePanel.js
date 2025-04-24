@@ -43,15 +43,15 @@ export default class DevicePanel extends Panel {
               <i class="fa-solid fa-sun" id="brightnessIcon"></i>
             </div>
             <!-- TODO: finish the duo mode button -->
-            <div id="duoSwitchContainer" style="display:none;">
-              <label id="duoSwitchLabel">Duo Hub</label>
-              <button id="switchDuoModeButton" class="duo-mode-btn" title="Switch to Duo Mode" >
-                <img src="public/images/duo-logo-square-512.png" style="width: 100%; height: auto;">
-              </button>
-            </div>
           </div>
         </div>` : ''}
     `;
+            // <div id="duoSwitchContainer" style="display:none;">
+            //   <label id="duoSwitchLabel">Duo Hub</label>
+            //   <button id="switchDuoModeButton" class="duo-mode-btn" title="Switch to Duo Mode" >
+            //     <img src="public/images/duo-logo-square-512.png" style="width: 100%; height: auto;">
+            //   </button>
+            // </div>
     super(editor, 'devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
     this.selectedDevice = 'None';
@@ -375,6 +375,9 @@ export default class DevicePanel extends Panel {
     const ledCount = this.editor.devices[this.selectedDevice].ledCount;
     if (ledCount !== undefined) {
       this.editor.lightshow.setLedCount(ledCount);
+      if (this.editor.detectMobile()) {
+        this.editor.rebuildHamburgerMenu();
+      }
       console.log(`Set LED count to ${ledCount} for ${this.editor.vortexPort.name}`);
     } else {
       console.log(`Device name ${this.editor.vortexPort.name} not recognized`);

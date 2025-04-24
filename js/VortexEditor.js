@@ -13,6 +13,7 @@ import VortexPort from './VortexPort.js';
 import WelcomePanel from './WelcomePanel.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 import CommunityBrowserPanel from './CommunityBrowserPanel.js';
+import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
@@ -109,6 +110,9 @@ export default class VortexEditor {
     // Instantiate Lightshow
     this.lightshow = new Lightshow(vortexLib, this.vortex, this.canvas);
 
+    // for tracking mobile panel switches
+    this.activePanelId = null;
+
     // Instantiate Panels
     this.welcomePanel = new WelcomePanel(this);
     this.aboutPanel = new AboutPanel(this);
@@ -122,7 +126,8 @@ export default class VortexEditor {
     this.updatePanel = new UpdatePanel(this);
     this.chromalinkPanel = new ChromalinkPanel(this);
     this.communityBrowserPanel = new CommunityBrowserPanel(this);
-
+    this.duoEditorPanel = new DuoEditorPanel(this);
+    this.duoCommunityPanel = new CommunityBrowserPanel(this);
     this.panels = [
       this.welcomePanel,
       this.aboutPanel,
@@ -136,8 +141,11 @@ export default class VortexEditor {
       this.colorPickerPanel,
       this.updatePanel,
       this.chromalinkPanel,
-      this.communityBrowserPanel
+      this.communityBrowserPanel,
     ];
+    if (this.detectMobile()) {
+      this.panels.push(this.duoEditorPanel);
+    }
     let allGood = true;
     this.panels.forEach((panel, index) => {
       if (!panel) {
@@ -171,6 +179,7 @@ export default class VortexEditor {
       'modesPanel',
       'ledSelectPanel',
       'communityBrowserPanel',
+      'duoEditorPanel'
     ];
   }
 
@@ -185,6 +194,25 @@ export default class VortexEditor {
     // loading of their own and we need to let it finish before appending the
     // panels to the page, otherwise the panels end up down below
     await this.sleep(300);
+
+    // In `VortexEditor.js` inside the `initialize` method:
+    if (this.detectMobile()) {
+      const panelContainer = document.createElement('div');
+      panelContainer.className = 'mobile-panel-container';
+
+      // Create a container for the hamburger button and its dropdown menu
+      const tabButtonsContainer = document.createElement('div');
+      tabButtonsContainer.className = 'mobile-tab-buttons';
+
+      // Create panel content container
+      const panelContentContainer = document.createElement('div');
+      panelContentContainer.className = 'mobile-panel-content';
+
+      // Append the containers
+      panelContainer.appendChild(tabButtonsContainer);
+      panelContainer.appendChild(panelContentContainer);
+      document.body.appendChild(panelContainer);
+    }
 
     // Append panels to the DOM
     const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
@@ -303,18 +331,6 @@ export default class VortexEditor {
 
     // In `VortexEditor.js` inside the `initialize` method:
     if (this.detectMobile()) {
-      const panelContainer = document.createElement('div');
-      panelContainer.className = 'mobile-panel-container';
-
-      // Create a container for the hamburger button and its dropdown menu
-      const tabButtonsContainer = document.createElement('div');
-      tabButtonsContainer.className = 'mobile-tab-buttons';
-
-      // Create the hamburger button
-      const hamburgerButton = document.createElement('button');
-      hamburgerButton.className = 'mobile-hamburger-button';
-      hamburgerButton.innerHTML = '&#9776;'; // hamburger icon
-
       // Create the context menu container for panel options
       const hamburgerMenu = document.createElement('div');
       hamburgerMenu.className = 'mobile-hamburger-menu';
@@ -322,7 +338,7 @@ export default class VortexEditor {
 
       // Populate the menu with panel items
       this.panels.forEach((panel) => {
-        if (this.mobileTabs.includes(panel.panel.id)) {
+        if (this.mobileTabs.includes(panel.panel.id) && panel.canOpen()) {
           const menuItem = document.createElement('div');
           menuItem.className = 'mobile-hamburger-menu-item';
           menuItem.innerText = panel.panel.title;
@@ -334,29 +350,46 @@ export default class VortexEditor {
         }
       });
 
+      // Create the hamburger button
+      const hamburgerButton = document.createElement('button');
+      hamburgerButton.className = 'mobile-hamburger-button';
+      hamburgerButton.innerHTML = '&#9776;'; // hamburger icon
+
       // Toggle the hamburger menu on click and touch events
       hamburgerButton.addEventListener('touchstart', (e) => {
         e.stopPropagation();
         hamburgerMenu.style.display = hamburgerMenu.style.display === 'none' ? 'block' : 'none';
       });
 
+      const tabButtonsContainer = document.querySelector('.mobile-tab-buttons');
       tabButtonsContainer.appendChild(hamburgerButton);
       tabButtonsContainer.appendChild(hamburgerMenu);
-
-      // Create panel content container
-      const panelContentContainer = document.createElement('div');
-      panelContentContainer.className = 'mobile-panel-content';
-
-      // Append the containers
-      panelContainer.appendChild(tabButtonsContainer);
-      panelContainer.appendChild(panelContentContainer);
-      document.body.appendChild(panelContainer);
 
       // Apply the mobile layout adjustments
       this.applyLayout();
     }
+  }
 
+  // for when the duo-editor option becomes available
+  rebuildHamburgerMenu() {
+    const hamburgerMenu = document.querySelector('.mobile-hamburger-menu');
+    if (!hamburgerMenu) return;
 
+    // Clear old items
+    hamburgerMenu.innerHTML = '';
+
+    this.panels.forEach((panel) => {
+      if (this.mobileTabs.includes(panel.panel.id) && (!panel.canOpen || panel.canOpen())) {
+        const menuItem = document.createElement('div');
+        menuItem.className = 'mobile-hamburger-menu-item';
+        menuItem.innerText = panel.panel.title;
+        menuItem.addEventListener('click', () => {
+          this.setActiveTab(panel.panel.id);
+          hamburgerMenu.style.display = 'none'; // close menu after selection
+        });
+        hamburgerMenu.appendChild(menuItem);
+      }
+    });
   }
 
   // Function to create the version overlay
@@ -493,9 +526,20 @@ export default class VortexEditor {
   setActiveTab(panelId) {
     const panelContentContainer = document.querySelector('.mobile-panel-content');
 
+    let activePanel = this.panels.find(panel => panel.panel.id === panelId);
+    if (activePanel && typeof activePanel.canOpen === 'function' && !activePanel.canOpen()) {
+      return;
+    }
+
+    if (this.activePanelId) {
+      const oldPanel = this.panels.find(panel => panel.panel.id === this.activePanelId);
+      if (oldPanel && typeof oldPanel.onInactive === 'function') {
+        oldPanel.onInactive();
+      }
+    }
+
     this.panels.forEach(panel => {
       const isActive = panel.panel.id === panelId;
-
       if (isActive) {
         // Ensure only the active panel is visible and takes full height
         panel.panel.style.display = '';
@@ -513,10 +557,13 @@ export default class VortexEditor {
       button.classList.toggle('active', button.dataset.panelId === panelId);
     });
 
-    const activePanel = this.panels.find(panel => panel.panel.id === panelId);
+    activePanel = this.panels.find(panel => panel.panel.id === panelId);
     if (activePanel && typeof activePanel.onActive === 'function') {
       activePanel.onActive();
     }
+
+    // Track the current active panel ID
+    this.activePanelId = panelId;
   }
 
   importModeDataFromUrl() {
@@ -639,6 +686,10 @@ window.addEventListener('load', async () => {
     const vortexLib = await VortexLib();
     const vortexEditor = new VortexEditor(vortexLib);
     await vortexEditor.initialize();
+    // TODO: REMOVEME DEBUG CODE:
+    //vortexEditor.devicePanel.updateSelectedDevice('Chromadeck');
+    //vortexEditor.animationPanel.applyPreset('Chromadeck');
+    //vortexEditor.setActiveTab('duoEditorPanel');
   } catch (error) {
     console.error('Error initializing Vortex:', error);
   }

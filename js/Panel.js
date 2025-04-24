@@ -505,5 +505,14 @@ export default class Panel {
   onActive() {
     // override
   }
+
+  onInactive() {
+    // override
+  }
+
+  // override to allow blocking open of a tab
+  canOpen() {
+    return true;
+  }
 }
 
