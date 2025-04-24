@@ -24,7 +24,7 @@ export default class ChromalinkPanel extends Panel {
             <div id="firmwareProgressBar"></div>
           </div>
         </div>
-        <input type="file" id="firmwareFileInput" style="display:none;" />
+        <input type="file" id="firmwareFileInput" accept=".bin" style="display:none;" />
       </div>
     `;
     super(editor, 'chromalinkPanel', content, 'Chromalink Duo');
