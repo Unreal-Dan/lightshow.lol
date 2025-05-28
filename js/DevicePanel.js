@@ -51,12 +51,25 @@ export default class DevicePanel extends Panel {
   }
 
   initialize() {
-    this.connectButtonHandler = async () => {
+    // event listener for connect
+    document.getElementById('connectDeviceButton').addEventListener('click', async () => {
       if (!this.editor.vortexPort.serialPort) {
         await this.connectDevice();
       }
-    };
-    document.getElementById('connectDeviceButton').addEventListener('click', this.connectButtonHandler);
+    });
+
+    // event listener for disconnect
+    document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
+      if (this.selectedDevice === 'Duo') {
+        await this.editor.chromalinkPanel.disconnect();
+        return;
+      }
+      await this.disconnectDevice();
+      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+      if (deviceInfoPanel) deviceInfoPanel.style.display = 'none';
+    });
+
+
     this.addIconsToDropdown();
 
     document.getElementById('deviceTypeOptions').addEventListener('click', async (event) => {
@@ -146,7 +159,7 @@ export default class DevicePanel extends Panel {
   // call to disconnect the device
   async disconnectDevice() {
     if (!this.editor.vortexPort.serialPort && !this.editor.vortexPort.useBLE) {
-      Notification.failure("No device connected");
+      Notification.failure("No device connected test");
       return;
     }
     await this.editor.vortexPort.disconnect();
@@ -192,14 +205,6 @@ export default class DevicePanel extends Panel {
     connectDeviceButton.title = "Disconnect Device";
     connectDeviceButton.disabled = false;
     //connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
-
-    // event listener for disconnect
-    document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
-      console.log("Disconnecting...");
-      await this.disconnectDevice();
-      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
-      if (deviceInfoPanel) deviceInfoPanel.style.display = 'none';
-    });
 
     // Lock the dropdown to prevent further changes
     document.getElementById('deviceTypeSelected').classList.add('locked');
@@ -308,8 +313,6 @@ export default class DevicePanel extends Panel {
     //connectDeviceButton.innerHTML = `<i class="fa-brands fa-usb"></i>`;
     connectDeviceButton.title = "Connect Device";
     connectDeviceButton.disabled = false;
-
-    //connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
 
     this.editor.vortexPort.resetState();
 
