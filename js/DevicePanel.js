@@ -20,31 +20,23 @@ export default class DevicePanel extends Panel {
           <i class="fa-brands ${iconClass}"></i>
         </button>
       </div>
-      ${!isMobile ? `
-      <div id="brightnessControl">
-        <input type="range" id="brightnessSlider" min="1" max="255" step="1" value="255" />
-        <i class="fa-solid fa-sun" id="brightnessIcon"></i>
-      </div>` : ''}
-
-      ${isMobile ? `
-        <div id="deviceInfoPanel" style="display:none;">
-          <div id="deviceInfoPanelHeader">
-            <div class="device-info">
-              <h3>Connected Device</h3>
-              <p id="deviceInfoText">No device connected</p>
-            </div>
-            <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+      <div id="deviceInfoPanel" style="display:none;">
+        <div id="deviceInfoPanelHeader">
+          <div class="device-info">
+            <p id="deviceInfoText">No device connected</p>
           </div>
-          <div id="deviceInfoPanelContent">
-            <div id="brightnessControl">
-              <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
-              <i class="fa-solid fa-sun" id="brightnessIcon"></i>
-            </div>
-            <!-- TODO: finish the duo mode button -->
+          <button id="disconnectDeviceButton" class="device-control-btn disconnect-btn" title="Disconnect Device">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="deviceInfoPanelContent">
+          <div id="brightnessControl">
+            <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
+            <i class="fa-solid fa-sun" id="brightnessIcon"></i>
           </div>
-        </div>` : ''}
+          <!-- TODO: finish the duo mode button -->
+        </div>
+      </div>
     `;
             // <div id="duoSwitchContainer" style="display:none;">
             //   <label id="duoSwitchLabel">Duo Hub</label>
@@ -59,10 +51,12 @@ export default class DevicePanel extends Panel {
   }
 
   initialize() {
-    document.getElementById('connectDeviceButton').addEventListener('click', async () => {
-      await this.connectDevice();
-    });
-
+    this.connectButtonHandler = async () => {
+      if (!this.editor.vortexPort.serialPort) {
+        await this.connectDevice();
+      }
+    };
+    document.getElementById('connectDeviceButton').addEventListener('click', this.connectButtonHandler);
     this.addIconsToDropdown();
 
     document.getElementById('deviceTypeOptions').addEventListener('click', async (event) => {
@@ -97,6 +91,15 @@ export default class DevicePanel extends Panel {
     const brightnessSlider = document.getElementById('brightnessSlider');
     brightnessSlider.addEventListener('input', this.onBrightnessSliderInput.bind(this));
     brightnessSlider.addEventListener('change', this.onBrightnessSliderChange.bind(this));
+
+    // transmit toggle button
+    const transmitToggle = document.getElementById('transmitToggle');
+    if (transmitToggle) {
+      transmitToggle.addEventListener('change', () => {
+        const enabled = transmitToggle.checked;
+        this.editor.setTransmitVL(enabled);
+      });
+    }
   }
 
   async confirmSwitchToDuo() {
@@ -187,12 +190,16 @@ export default class DevicePanel extends Panel {
     // Change button to "Disconnect Device"
     //connectDeviceButton.innerHTML = `<i class="fa-solid fa-power-off"></i>`;
     connectDeviceButton.title = "Disconnect Device";
+    connectDeviceButton.disabled = false;
     //connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
 
-    // TODO: Update event listener for disconnect
-    //connectDeviceButton.onclick = () => {
-    //  this.disconnectDevice();
-    //};
+    // event listener for disconnect
+    document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
+      console.log("Disconnecting...");
+      await this.disconnectDevice();
+      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+      if (deviceInfoPanel) deviceInfoPanel.style.display = 'none';
+    });
 
     // Lock the dropdown to prevent further changes
     document.getElementById('deviceTypeSelected').classList.add('locked');
@@ -208,7 +215,7 @@ export default class DevicePanel extends Panel {
       const vortex = this.editor.lightshow.vortex;
       const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
       // Unlock and show brightness control
-      this.toggleBrightnessSlider(deviceBrightness);
+      this.toggleDeviceInfo(deviceBrightness);
     }
 
     // start reading and demo on device
@@ -242,11 +249,6 @@ export default class DevicePanel extends Panel {
       } else {
         switchContainer.style.display = 'none';
       }
-      document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
-      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
-      if (deviceInfoPanel) {
-        deviceInfoPanel.style.display = 'flex';
-      }
       document.getElementById('connectDeviceButton').disabled = true;
       document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
         await this.disconnectDevice();
@@ -254,38 +256,39 @@ export default class DevicePanel extends Panel {
       });
     }
 
+    document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
+    const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+    if (deviceInfoPanel) {
+      deviceInfoPanel.style.display = 'flex';
+    }
+
+    const transmitToggle = document.getElementById('transmitToggle');
+    if (transmitToggle) {
+      const isDuo = (deviceName === 'Duo');
+      const isMultiLed = this.editor.vortex.engine().modes().curMode()?.isMultiLed?.() ?? true;
+      transmitToggle.disabled = isMultiLed;
+    }
+
     console.log("Device connected: " + deviceName);
     Notification.success("Successfully Connected " + deviceName);
   }
 
-  isBrightnessHidden() {
-    const brightnessControl = document.getElementById('brightnessControl');
-    return (brightnessControl.style.display === '');
-  }
-
-  toggleBrightnessSlider(brightness = 255, propagate = true) {
+  toggleDeviceInfo(brightness = 255, propagate = true) {
     const devicePanel = document.getElementById('devicePanel');
-    const patternParams = document.getElementById('patternParams');
-    const toggleButton = document.getElementById('togglePatternParams');
+    const deviceInfoPanel = document.getElementById('deviceInfoPanel');
     const brightnessSlider = document.getElementById('brightnessSlider');
 
-    // Step 1: Capture the previous height and identify snapped panels
     const previousHeight = devicePanel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
+    const snappedPanels = this.getSnappedPanels();
 
-    const brightnessControl = document.getElementById('brightnessControl');
-
-    // Step 2: Toggle the visibility
-    if (brightnessControl.style.display === '') {
-      brightnessControl.style.display = 'flex';
+    if (deviceInfoPanel.style.display === '' || deviceInfoPanel.style.display === 'none') {
+      deviceInfoPanel.style.display = 'flex';
     } else {
-      brightnessControl.style.display = '';
+      deviceInfoPanel.style.display = 'none';
     }
 
     if (propagate) {
-      // Step 3: Calculate the new height
       const heightChange = devicePanel.offsetHeight - previousHeight;
-      // Step 4: Move snapped panels after the height change
       snappedPanels.forEach((otherPanel) => {
         otherPanel.moveSnappedPanels(heightChange);
         const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
@@ -293,7 +296,6 @@ export default class DevicePanel extends Panel {
       });
     }
 
-    // set the initial value of the slider
     brightnessSlider.value = brightness;
   }
 
@@ -305,18 +307,16 @@ export default class DevicePanel extends Panel {
     // Change button back to "Connect Device"
     //connectDeviceButton.innerHTML = `<i class="fa-brands fa-usb"></i>`;
     connectDeviceButton.title = "Connect Device";
+    connectDeviceButton.disabled = false;
+
     //connectDeviceButton.classList.remove('disconnect'); // Optional: Remove the disconnect styling
 
     this.editor.vortexPort.resetState();
 
-    // Restore event listener for connect
-    //connectDeviceButton.onclick = async () => {
-    //  await this.connectDevice();
-    //};
-
-    // lock and hide brightness control only if it's showing
-    if (!this.isBrightnessHidden()) {
-      this.toggleBrightnessSlider();
+    // lock and device info
+    const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+    if (deviceInfoPanel && deviceInfoPanel.style.display !== 'none') {
+      this.toggleDeviceInfo();
     }
 
     // Unlock the dropdown to allow device selection
