@@ -25,7 +25,7 @@ export default class PatternPanel extends Panel {
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
-    //document.addEventListener('modeChange', this.handleModeChange.bind(this));
+    document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
 
     // Attach event listeners for help and randomize buttons
@@ -89,7 +89,7 @@ export default class PatternPanel extends Panel {
     const selectedLeds = event.detail;
     this.populatePatternDropdown();
     this.refresh();
-    this.editor.demoModeOnDevice();
+    //this.editor.demoModeOnDevice();
   }
 
   handleLedsChange(event) {
@@ -208,7 +208,7 @@ export default class PatternPanel extends Panel {
     const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null || sourceLed === null) {
       const placeholderOption = document.createElement('option');
-      placeholderOption.textContent = 'Select Leds First';
+      placeholderOption.textContent = curMode ? 'Select Leds First' : 'Add Modes First';
       placeholderOption.value = '-1';
       placeholderOption.disabled = true;
       placeholderOption.selected = true;

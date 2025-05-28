@@ -42,7 +42,7 @@ export default class ColorsetPanel extends Panel {
     document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
-      //this.refresh();
+      this.refresh();
     });
     document.addEventListener('ledsChange', (event) => {
       const { targetLeds, mainSelectedLed } = event.detail;
@@ -283,7 +283,7 @@ export default class ColorsetPanel extends Panel {
       const emptyLabel = document.createElement('div');
       emptyLabel.id = 'colorset-empty-label';
       emptyLabel.className = 'colorset-empty-label';
-      emptyLabel.textContent = 'Select Leds First';
+      emptyLabel.textContent = cur ? 'Select Leds First' : 'Add Modes First';
       emptyLabel.style.display = 'block'; // Show the message
       colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
       return;

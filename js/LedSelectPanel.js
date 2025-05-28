@@ -72,8 +72,8 @@ export default class LedSelectPanel extends Panel {
     document.addEventListener('patternChange', () => this.handlePatternChange());
 
     document.addEventListener('modeChange', (event) => {
-      this.selectAllLeds();
-      this.updateLedIndicators();
+      //this.selectAllLeds();
+      //this.updateLedIndicators();
       this.refreshLedList();
     });
 
@@ -116,11 +116,15 @@ export default class LedSelectPanel extends Panel {
       this.hide();
       return;
     }
-
+    // change the selected device name
     this.selectedDevice = device;
+    // render the led indicators for this device
     await this.renderLedIndicators(device);
+    // show the led selection window if it was previously hidden
     this.show();
+    // refresh the led list
     this.refreshLedList();
+    // select all of the leds
     this.selectAllLeds();
   }
 
@@ -243,17 +247,11 @@ export default class LedSelectPanel extends Panel {
     }
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
-    const cur = this.editor.vortex.engine().modes().curMode();
-
-    if (!cur) {
-      ledList.innerHTML = '';
-      return;
-    }
-
     this.clearLedList();
     this.clearLedSelections();
 
-    const isMultiLed = cur.isMultiLed();
+    const cur = this.editor.vortex.engine().modes().curMode();
+    const isMultiLed = cur && cur.isMultiLed();
     const multiIndex = this.editor.vortex.engine().leds().ledMulti();
 
     // Enable/disable buttons instead of hiding them
@@ -262,7 +260,7 @@ export default class LedSelectPanel extends Panel {
     });
 
     if (!isMultiLed) {
-      for (let pos = 0; pos < this.editor.vortex.numLedsInMode(); ++pos) {
+      for (let pos = 0; pos < this.editor.vortex.engine().leds().ledCount(); ++pos) {
         let ledName = this.editor.vortex.ledToString(pos + 1) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
