@@ -42,13 +42,14 @@ export default class ColorsetPanel extends Panel {
     document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
     // Listen for the modeChange event
     document.addEventListener('modeChange', (event) => {
+      console.log(`${this.panel.title} Handling: [${event.type}]`);
       this.refresh();
     });
     document.addEventListener('ledsChange', (event) => {
+      console.log(`${this.panel.title} Handling: [${event.type}]`);
       const { targetLeds, mainSelectedLed } = event.detail;
       this.refresh(mainSelectedLed);
     });
-    document.addEventListener('deviceChange', this.handleDeviceEvent.bind(this));
   }
 
   getTargetLeds() {
@@ -259,6 +260,18 @@ export default class ColorsetPanel extends Panel {
     });
   }
 
+  showEmptyPanel() {
+    this.editor.colorPickerPanel.hide();
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    const emptyLabel = document.createElement('div');
+    emptyLabel.id = 'colorset-empty-label';
+    emptyLabel.className = 'colorset-empty-label';
+    emptyLabel.textContent = cur ? 'Select Leds First' : 'Add Modes First';
+    emptyLabel.style.display = 'block';
+    const colorsetElement = document.getElementById('colorset');
+    colorsetElement.appendChild(emptyLabel);
+  }
+
   async refresh(sourceLed = null) {
     if (this.inDuoEditor) {
       // Skip binding colorPickerPanel directly or skip mobile mount logic
@@ -275,17 +288,9 @@ export default class ColorsetPanel extends Panel {
       sourceLed = this.editor.ledSelectPanel.getMainSelectedLed();
     }
     const cur = this.lightshow.vortex.engine().modes().curMode();
-
     colorsetElement.innerHTML = ''; // Clear colorset
-
     if (!cur || sourceLed === null) {
-      this.editor.colorPickerPanel.hide();
-      const emptyLabel = document.createElement('div');
-      emptyLabel.id = 'colorset-empty-label';
-      emptyLabel.className = 'colorset-empty-label';
-      emptyLabel.textContent = cur ? 'Select Leds First' : 'Add Modes First';
-      emptyLabel.style.display = 'block'; // Show the message
-      colorsetElement.appendChild(emptyLabel); // Ensure placeholder remains inside
+      this.showEmptyPanel();
       return;
     }
 

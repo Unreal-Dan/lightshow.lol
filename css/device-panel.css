@@ -125,10 +125,12 @@
 
 #brightnessControl {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
   padding: 0.25em;
   margin: 0.25em;
+  margin-top: 0;
 }
 
 #brightnessSlider {
@@ -141,10 +143,28 @@
   padding-right: 0.25em;
 }
 
+#brightnessLabelWrapper {
+  text-align: left;
+  padding-left: 0.2em;
+}
+
+#brightnessLabel {
+  font-size: 0.75em;
+  color: #ffffff;
+  opacity: 0.6;
+}
+
+#brightnessSliderWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .device-info {
   display: flex;
   gap: 2em;
   margin: 0.5em;
+  margin-bottom: 0;
   max-height: 1.5em;
   font-weight: bold;
 }
@@ -165,6 +185,7 @@
   display: flex;
   gap: 0.25em;
   margin: 0.2em;
+  margin-top: 0;
   flex-direction:column;
 }
 
@@ -225,4 +246,5 @@
 #transmitToggle:checked::before {
   transform: translateX(26px);
 }
+
 

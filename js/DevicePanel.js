@@ -31,8 +31,13 @@ export default class DevicePanel extends Panel {
         </div>
         <div id="deviceInfoPanelContent">
           <div id="brightnessControl">
-            <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
-            <i class="fa-solid fa-sun" id="brightnessIcon"></i>
+            <div id="brightnessLabelWrapper">
+              <label for="brightnessSlider" id="brightnessLabel">Brightness Control</label>
+            </div>
+            <div id="brightnessSliderWrapper">
+              <input type="range" id="brightnessSlider" min="0" max="255" step="1" value="255" />
+              <i class="fa-solid fa-sun" id="brightnessIcon"></i>
+            </div>
           </div>
           <!-- TODO: finish the duo mode button -->
         </div>
