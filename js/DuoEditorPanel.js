@@ -38,7 +38,10 @@ export default class DuoEditorPanel extends Panel {
     // Hook up the Bluetooth button
     const transmitVLButton = this.panel.querySelector('#duoEditorTransmitVLButton');
     if (transmitVLButton) {
-      transmitVLButton.addEventListener('click', () => this.editor.transmitVL());
+      transmitVLButton.addEventListener('click', async () => {
+        await this.editor.demoModeOnDevice();
+        await this.editor.transmitVL();
+      });
     }
 
     // Setup LED click/tap handlers
@@ -113,7 +116,7 @@ export default class DuoEditorPanel extends Panel {
 
     const patternSelect = this.createSingleLedPatternDropdown(this.editor, this.mainSelectedLed);
 
-    patternSelect.addEventListener('change', (e) => {
+    patternSelect.addEventListener('change', async (e) => {
       const newPatId = parseInt(e.target.value);
       const vortex = this.editor.vortex;
       const vortexLib = this.editor.vortexLib;
@@ -125,7 +128,7 @@ export default class DuoEditorPanel extends Panel {
       cur.setPattern(patID, this.mainSelectedLed, null, null);
       cur.init();
       vortex.engine().modes().saveCurMode();
-      this.editor.demoModeOnDevice();
+      await this.editor.demoModeOnDevice();
     });
 
     this.duoPopupContent.appendChild(patternSelect);
@@ -194,13 +197,13 @@ export default class DuoEditorPanel extends Panel {
       select.appendChild(opt);
     });
 
-    select.onchange = () => {
+    select.onchange = async () => {
       const newPatId = parseInt(select.value);
       const args = new this.editor.vortexLib.PatternArgs();
       cur.setPattern(this.editor.vortexLib.intToPatternID(newPatId), ledIndex, args, colorset);
       cur.init();
       this.editor.vortex.engine().modes().saveCurMode();
-      this.editor.demoModeOnDevice();
+      await this.editor.demoModeOnDevice();
     };
   }
 
@@ -284,6 +287,13 @@ export default class DuoEditorPanel extends Panel {
 
   canOpen() {
     return this.editor.devicePanel.selectedDevice === 'Chromadeck';
+  }
+
+  async onDeviceConnect(deviceName, deviceVersion) {
+    if (!this.editor.detectMobile() || deviceName !== 'Chromadeck') {
+      return;
+    }
+    this.show();
   }
 }
 

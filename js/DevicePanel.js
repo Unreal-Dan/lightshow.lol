@@ -154,9 +154,9 @@ export default class DevicePanel extends Panel {
     const brightness = event.target.value;
     const vortexLib = this.editor.vortexLib;
     const vortex = this.editor.lightshow.vortex;
-    await this.editor.vortexPort.setBrightness(vortexLib, vortex, brightness);
-    // wait a second before setting the mode again
-    await this.editor.sleep(300);
+    // use the chromalink to set the duo if we're connected to that
+    const useChromalink = (this.selectedDevice === 'Duo');
+    await this.editor.vortexPort.setBrightness(vortexLib, vortex, brightness, useChromalink);
     // then go back to demoing the mode
     await this.editor.demoModeOnDevice();
   }
@@ -203,13 +203,9 @@ export default class DevicePanel extends Panel {
   }
 
   async onDeviceConnect(deviceName, deviceVersion) {
+    // Change button to disabled
     const connectDeviceButton = document.getElementById('connectDeviceButton');
-
-    // Change button to "Disconnect Device"
-    //connectDeviceButton.innerHTML = `<i class="fa-solid fa-power-off"></i>`;
-    connectDeviceButton.title = "Disconnect Device";
-    connectDeviceButton.disabled = false;
-    //connectDeviceButton.classList.add('disconnect'); // Optional: Add a CSS class for styling
+    connectDeviceButton.disabled = true;
 
     // Lock the dropdown to prevent further changes
     document.getElementById('deviceTypeSelected').classList.add('locked');
@@ -235,35 +231,29 @@ export default class DevicePanel extends Panel {
 
     // show device information on mobile
     if (this.editor.detectMobile()) {
-      this.physicalDeviceType = deviceName;
-      const switchContainer = document.getElementById('duoSwitchContainer');
-      const switchButton = document.getElementById('switchDuoModeButton');
-      if (deviceName === 'Chromadeck') {
-        switchContainer.style.display = 'flex';
-        switchButton.addEventListener('click', async () => {
-          if (this.selectedDevice === 'Duo') {
-            await this.updateSelectedDevice('Chromadeck', true);
-            Notification.success(`Switched back to Chromadeck Mode`);
-          } else {
-            if (this.editor.modesPanel.hasMultiLedPatterns()) {
-              const confirmed = await this.confirmSwitchToDuo();
-              if (!confirmed) {
-                return;
-              }
-              this.editor.modesPanel.convertModesToSingle();
-            }
-            await this.updateSelectedDevice('Duo', true);
-            Notification.success(`Switched to Duo Mode`);
-          }
-        });
-      } else {
-        switchContainer.style.display = 'none';
-      }
-      document.getElementById('connectDeviceButton').disabled = true;
-      document.getElementById('disconnectDeviceButton').addEventListener('click', async () => {
-        await this.disconnectDevice();
-        deviceInfoPanel.style.display = 'none';
-      });
+      //const switchContainer = document.getElementById('duoSwitchContainer');
+      //const switchButton = document.getElementById('switchDuoModeButton');
+      //if (deviceName === 'Chromadeck') {
+      //  switchContainer.style.display = 'flex';
+      //  switchButton.addEventListener('click', async () => {
+      //    if (this.selectedDevice === 'Duo') {
+      //      await this.updateSelectedDevice('Chromadeck', true);
+      //      Notification.success(`Switched back to Chromadeck Mode`);
+      //    } else {
+      //      if (this.editor.modesPanel.hasMultiLedPatterns()) {
+      //        const confirmed = await this.confirmSwitchToDuo();
+      //        if (!confirmed) {
+      //          return;
+      //        }
+      //        this.editor.modesPanel.convertModesToSingle();
+      //      }
+      //      await this.updateSelectedDevice('Duo', true);
+      //      Notification.success(`Switched to Duo Mode`);
+      //    }
+      //  });
+      //} else {
+      //  switchContainer.style.display = 'none';
+      //}
     }
 
     document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
@@ -330,10 +320,8 @@ export default class DevicePanel extends Panel {
     // Unlock the dropdown to allow device selection
     document.getElementById('deviceTypeSelected').classList.remove('locked');
 
-    if (this.editor.detectMobile()) {
-      document.getElementById('deviceInfoText').innerText = 'No device connected';
-      document.getElementById('connectDeviceButton').disabled = false;
-    }
+    document.getElementById('deviceInfoText').innerText = 'No device connected';
+    document.getElementById('connectDeviceButton').disabled = false;
 
     // unlock device selection
     this.lockDeviceSelection(false);

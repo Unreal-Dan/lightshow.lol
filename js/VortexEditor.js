@@ -671,9 +671,17 @@ export default class VortexEditor {
 
   async demoModeOnDevice() {
     try {
-      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
-        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      let tries = 0;
+      while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
+        if (tries++ > 10) {
+          // failure
+          console.log("Failed to demo mode, waited 10 delays...");
+          return;
+        }
+        await this.sleep(10);
       }
+      // demo the mode
+      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } catch (error) {
       Notification.failure("Failed to demo mode (" + error + ")");
     }
