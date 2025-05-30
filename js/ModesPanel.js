@@ -55,7 +55,51 @@ export default class ModesPanel extends Panel {
     pullButton.addEventListener('click', async () => this.pullFromDevice());
 
     const transmitButton = document.getElementById('transmitVLButton');
-    transmitButton.addEventListener('click', () => this.editor.transmitVL());
+
+    this.transmitActive = false;
+    this.transmitInterval = null;
+
+    const startTransmit = () => {
+      if (this.transmitActive || transmitButton.disabled) return;
+      this.transmitActive = true;
+      transmitButton.classList.add('pressed');
+      let transmitRunning = false;
+      Notification.success("Transmitting mode to duo...");
+      this.transmitInterval = setInterval(async () => {
+        if (transmitRunning) return;
+        transmitRunning = true;
+        try {
+          await this.editor.transmitVL();
+          await this.editor.sleep(200);
+        } finally {
+          transmitRunning = false;
+        }
+      }, 100);
+    };
+
+    const stopTransmit = () => {
+      if (!this.transmitActive) return;
+      this.transmitActive = false;
+      clearInterval(this.transmitInterval);
+      this.transmitInterval = null;
+      transmitButton.classList.remove('pressed');
+      Notification.success("Stopped transmitting mode to Duo");
+    };
+
+    transmitButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.transmitActive) {
+        stopTransmit();
+      } else {
+        startTransmit();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!transmitButton.contains(e.target)) {
+        stopTransmit();
+      }
+    });
 
     document.addEventListener('patternChange', () => this.refresh(true));
 

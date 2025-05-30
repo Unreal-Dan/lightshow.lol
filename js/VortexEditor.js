@@ -656,7 +656,6 @@ export default class VortexEditor {
       return;
     }
     await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
-    Notification.success("Successfully finished transmitting");
   }
 
   async demoColorOnDevice(color) {

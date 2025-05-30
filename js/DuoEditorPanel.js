@@ -37,12 +37,40 @@ export default class DuoEditorPanel extends Panel {
 
     // Hook up the Bluetooth button
     const transmitVLButton = this.panel.querySelector('#duoEditorTransmitVLButton');
-    if (transmitVLButton) {
-      transmitVLButton.addEventListener('click', async () => {
-        await this.editor.demoModeOnDevice();
-        await this.editor.transmitVL();
-      });
-    }
+    this.transmitActive = false;
+    this.transmitInterval = null;
+
+    const startTransmit = () => {
+      if (this.transmitActive || transmitVLButton.disabled) return;
+      this.transmitActive = true;
+      transmitVLButton.classList.add('pressed');
+      this.editor.demoModeOnDevice();
+      this.transmitInterval = setInterval(() => this.editor.transmitVL(), 200);
+    };
+
+    const stopTransmit = () => {
+      if (!this.transmitActive) return;
+      this.transmitActive = false;
+      clearInterval(this.transmitInterval);
+      this.transmitInterval = null;
+      transmitVLButton.classList.remove('pressed');
+    };
+
+    transmitVLButton.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (this.transmitActive) {
+        stopTransmit();
+      } else {
+        startTransmit();
+      }
+    });
+
+    // Tapping anywhere else cancels the toggle
+    document.addEventListener('pointerdown', (e) => {
+      if (!transmitVLButton.contains(e.target)) {
+        stopTransmit();
+      }
+    });
 
     // Setup LED click/tap handlers
     this.panel.querySelectorAll('.duo-led-indicator').forEach((led) => {
