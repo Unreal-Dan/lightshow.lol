@@ -656,7 +656,6 @@ export default class VortexEditor {
       return;
     }
     await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
-    Notification.success("Successfully finished transmitting");
   }
 
   async demoColorOnDevice(color) {
@@ -671,9 +670,22 @@ export default class VortexEditor {
 
   async demoModeOnDevice() {
     try {
-      if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
-        await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+      let tries = 0;
+      // this is often used right after performing some operations and in
+      // practice it was found that the operation could take time and this
+      // could fire in another handler/thread and it would fail. By simply
+      // waiting for about a second it ensures the other operations can pass
+      // and then the mode is rendered afterward. A proper queue is needed.
+      while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
+        if (tries++ > 10) {
+          // failure
+          console.log("Failed to demo mode, waited 10 delays...");
+          return;
+        }
+        await this.sleep(100);
       }
+      // demo the mode
+      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
     } catch (error) {
       Notification.failure("Failed to demo mode (" + error + ")");
     }

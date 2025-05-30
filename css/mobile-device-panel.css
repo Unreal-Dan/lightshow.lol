@@ -102,18 +102,45 @@
 }
 
 #brightnessControl {
-  height: 2em;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 0.25em;
+  margin: 0.25em;
+  margin-top: 0;
+}
+
+#brightnessLabelWrapper {
+  text-align: left;
+  padding-left: 0.1em;
+}
+
+#brightnessLabel {
+  font-size: 2.5em;
+  color: #ffffff;
+  opacity: 0.6;
+}
+
+#brightnessSliderWrapper {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 3em;
+  justify-content: space-between;
 }
 
 #brightnessSlider {
-  height: 40px;
   flex: 1;
+  height: 40px;
   background: #454545;
+  border-radius: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+#brightnessIcon {
+  font-size: 48px;
+  margin-left: 20px;
 }
 
 #brightnessIcon {

@@ -42,6 +42,7 @@ export default class VortexPort {
   EDITOR_VERB_FLASH_FIRMWARE_DONE   = "K";
   EDITOR_VERB_SET_GLOBAL_BRIGHTNESS = "L";
   EDITOR_VERB_GET_GLOBAL_BRIGHTNESS = "M";
+  EDITOR_VERB_SET_CHROMA_BRIGHTNESS = "N";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -225,6 +226,7 @@ export default class VortexPort {
 
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
+            this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -447,6 +449,7 @@ export default class VortexPort {
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
     if (!vortex.engine().modes().curMode()) {
+      Notification.failure('Add a mode and it will play on the device!');
       // no error just return, no mode to demo
       return;
     }
@@ -472,24 +475,38 @@ export default class VortexPort {
     }
   }
 
-  async setBrightness(vortexLib, vortex, brightness) {
+  async setBrightness(vortexLib, vortex, brightness, chromalink = false) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
-      throw new Error('Already transmitting:' + this.isTransmitting);
+      console.log('Already transmitting:' + this.isTransmitting);
+      return;
     }
-    if (this.debugLogging) console.log("setBrightness Start");
+    // if the connected chromadeck isn't compatible version disable the new
+    // chromalink opton
+    if (!this.useNewBrightness) {
+      chromalink = false;
+    }
+    if (this.debugLogging) console.log(`setBrightness Start (chromalink: ${chromalink})`);
     this.isTransmitting = 'setBrightness'; // Reset the transmitting flag
     try {
       await this.cancelReading();
       // Start the connection process
-      await this.sendCommand(this.EDITOR_VERB_SET_GLOBAL_BRIGHTNESS);
+      await this.sendCommand(chromalink ?
+        this.EDITOR_VERB_SET_CHROMA_BRIGHTNESS :
+        this.EDITOR_VERB_SET_GLOBAL_BRIGHTNESS);
       await this.expectData(this.EDITOR_VERB_READY, 1000);
       // build the brightness packet
       let brightnessStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromData([ brightness ], brightnessStream);
       await this.sendRaw(this.constructCustomBuffer(vortexLib, brightnessStream));
+      if (chromalink) {
+        // if sending to chromalink there is a secondary READY after it is done
+        // indicating the set brightness is complete, this should probably be like
+        // an OK verb or something
+        await this.expectData(this.EDITOR_VERB_READY, 1000);
+      }
     } catch (error) {
       console.error('Error setting brightness:', error);
     } finally {
