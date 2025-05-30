@@ -226,6 +226,7 @@ export default class VortexPort {
 
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
+            this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -481,6 +482,11 @@ export default class VortexPort {
     if (this.isTransmitting) {
       console.log('Already transmitting:' + this.isTransmitting);
       return;
+    }
+    // if the connected chromadeck isn't compatible version disable the new
+    // chromalink opton
+    if (!this.useNewBrightness) {
+      chromalink = false;
     }
     if (this.debugLogging) console.log(`setBrightness Start (chromalink: ${chromalink})`);
     this.isTransmitting = 'setBrightness'; // Reset the transmitting flag
