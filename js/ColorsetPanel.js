@@ -520,7 +520,7 @@ export default class ColorsetPanel extends Panel {
     return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
   }
 
-  updateColor(index, hexValue, isDragging) {
+  async updateColor(index, hexValue, isDragging) {
     let hex = hexValue ? hexValue.replace(/^#/, '') : 0;
     let bigint = parseInt(hex, 16);
     let r = (bigint >> 16) & 255;
@@ -543,10 +543,10 @@ export default class ColorsetPanel extends Panel {
     // refresh
     this.refresh();
     if (isDragging) {
-      this.editor.demoColorOnDevice(col);
+      await this.editor.demoColorOnDevice(col);
     } else {
       // demo on device
-      this.editor.demoModeOnDevice();
+      await this.editor.demoModeOnDevice();
     }
   }
 

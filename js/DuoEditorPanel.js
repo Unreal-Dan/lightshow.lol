@@ -142,7 +142,7 @@ export default class DuoEditorPanel extends Panel {
 
     const originalPatternSelect = this.editor.patternPanel.getPatternSelectElement();
 
-    const patternSelect = this.createSingleLedPatternDropdown(this.editor, this.mainSelectedLed);
+    const patternSelect = this.createSingleLedPatternDropdown(this.mainSelectedLed);
 
     patternSelect.addEventListener('change', async (e) => {
       const newPatId = parseInt(e.target.value);
@@ -194,8 +194,9 @@ export default class DuoEditorPanel extends Panel {
     popup.classList.add('visible');
 
     const closeBtn = popup.querySelector('.popup-close');
-    closeBtn.onclick = () => {
+    closeBtn.onclick = async () => {
       this.duoPopup.classList.add('hidden');
+      await this.editor.demoModeOnDevice();
     };
 
     const cur = this.editor.vortex.engine().modes().curMode();

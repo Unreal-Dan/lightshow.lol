@@ -165,7 +165,7 @@ export default class ColorPickerPanel extends Panel {
     }
 
     // Update all color-related elements and call the external callback
-    const updateColorUI = (isDragging = false) => {
+    const updateColorUI = async (isDragging = false) => {
       if (this.preventPropagation) return;
 
       this.preventPropagation = true;
@@ -189,7 +189,7 @@ export default class ColorPickerPanel extends Panel {
       this.setHueIndicator(h);
 
       // Trigger external callback
-      updateColorCallback(
+      await updateColorCallback(
         this.selectedIndex,
         `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`,
         isDragging
@@ -304,12 +304,12 @@ export default class ColorPickerPanel extends Panel {
         moveHandler(moveEvent, isDragging);
       };
 
-      const stopDragging = () => {
+      const stopDragging = async () => {
         isDragging = false;
         document.removeEventListener('mousemove', moveEventHandler);
         document.removeEventListener('mouseup', stopDragging);
         updateColorUI(false); // Final update after dragging ends
-        this.editor.demoModeOnDevice();
+        await this.editor.demoModeOnDevice();
       };
 
       moveHandler(event, isDragging);
@@ -391,31 +391,31 @@ export default class ColorPickerPanel extends Panel {
 
     hexInput.addEventListener('input', handleHexInputChange);
 
-    const startTouchMoveListener = (event, moveHandler) => {
+    const startTouchMoveListener = async (event, moveHandler) => {
       let isDragging = true;
       moveHandler(event.touches[0], isDragging);
       const moveEventHandler = (moveEvent) => {
         moveHandler(moveEvent.touches[0], isDragging);
       };
-      const stopDragging = () => {
+      const stopDragging = async () => {
         isDragging = false;
         document.removeEventListener('touchmove', moveEventHandler);
         document.removeEventListener('touchend', stopDragging);
-        updateColorUI(false); // Final update after dragging ends
-        this.editor.demoModeOnDevice();
+        await updateColorUI(false); // Final update after dragging ends
+        await this.editor.demoModeOnDevice();
       };
       document.addEventListener('touchmove', moveEventHandler);
       document.addEventListener('touchend', stopDragging, { once: true });
     };
 
-    svBox.addEventListener('touchstart', (event) => {
+    svBox.addEventListener('touchstart', async (event) => {
       event.preventDefault();
-      startTouchMoveListener(event, handleSvBoxChange);
+      await startTouchMoveListener(event, handleSvBoxChange);
     });
 
-    hueSlider.addEventListener('touchstart', (event) => {
+    hueSlider.addEventListener('touchstart', async (event) => {
       event.preventDefault();
-      startTouchMoveListener(event, handleHueSliderChange);
+      await startTouchMoveListener(event, handleHueSliderChange);
     });
 
     const handleRgbSliderTouchStart = (event, slider, handler) => {
