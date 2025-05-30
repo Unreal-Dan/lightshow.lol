@@ -28,6 +28,7 @@ export default class ModesPanel extends Panel {
         <div id="modesListContainer">
           <!-- Dynamic list of modes will be populated here -->
         </div>
+        <div id="emptyModesLabel" class="empty-modes-label" style="display: none;">Add Modes to Begin</div>
       </div>
     `;
     super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
@@ -48,10 +49,10 @@ export default class ModesPanel extends Panel {
     importModeButton.addEventListener('click', () => this.showPasteModeModal());
 
     const pushButton = document.getElementById('pushToDeviceButton');
-    pushButton.addEventListener('click', () => this.editor.pushToDevice());
+    pushButton.addEventListener('click', async () => this.pushToDevice());
 
     const pullButton = document.getElementById('pullFromDeviceButton');
-    pullButton.addEventListener('click', () => this.editor.pullFromDevice());
+    pullButton.addEventListener('click', async () => this.pullFromDevice());
 
     const transmitButton = document.getElementById('transmitVLButton');
     transmitButton.addEventListener('click', () => this.editor.transmitVL());
@@ -59,6 +60,20 @@ export default class ModesPanel extends Panel {
     document.addEventListener('patternChange', () => this.refresh(true));
 
     this.refreshModeList();
+  }
+
+  async pushToDevice() {
+    await this.editor.pushToDevice();
+  }
+
+  async pullFromDevice() {
+    // first pull
+    await this.editor.pullFromDevice();
+    // if there was at least one mode
+    if (this.editor.vortex.numModes() > 0) {
+      // then make sure the first mode is selected
+      this.selectMode(0);
+    }
   }
 
   async onDeviceConnect(deviceName) {
@@ -121,11 +136,17 @@ export default class ModesPanel extends Panel {
   refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     this.clearModeList();
+    // make sure the 'empty label' never shows
+    const emptyLabel = document.getElementById('emptyModesLabel');
+    emptyLabel.style.display = 'none';
     let cur = this.editor.vortex.engine().modes().curMode();
     if (!cur) {
       this.editor.vortex.setCurMode(0, false);
       cur = this.editor.vortex.engine().modes().curMode();
       if (!cur) {
+        // actually show the label, there's no modes
+        emptyLabel.style.display = 'block';
+        this.editor.ledSelectPanel.refreshLedList();
         return;
       }
     }
@@ -151,6 +172,9 @@ export default class ModesPanel extends Panel {
       modesListContainer.appendChild(modeDiv);
     });
     this.attachModeEventListeners();
+
+
+
   }
 
   hasMultiLedPatterns() {
@@ -436,9 +460,12 @@ export default class ModesPanel extends Panel {
       Notification.failure("Failed to add another mode");
       return;
     }
-    this.refreshModeList();
-    this.refreshOtherPanels();
-    Notification.success("Successfully Added Mode " + modeCount);
+    setTimeout(() => {
+      this.selectMode(modeCount);
+      this.refreshModeList();
+      this.refreshOtherPanels();
+    }, 0);
+    Notification.success(`Successfully Added Mode ${modeCount + 1}`);
   }
 
   shareModeToCommunity() {
@@ -779,6 +806,6 @@ export default class ModesPanel extends Panel {
     this.editor.vortex.engine().modes().saveCurMode();
     this.refreshModeList();
     this.refreshOtherPanels();
-    Notification.success("Successfully Deleted Mode " + index);
+    Notification.success(`Successfully Deleted Mode ${parseInt(index) + 1}`);
   }
 }

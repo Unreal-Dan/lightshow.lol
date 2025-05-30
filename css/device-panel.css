@@ -16,12 +16,40 @@
   margin-left: 10px;
 }
 
-.device-control-btn.disconnect {
-  background-color: #ff4d4d; /* Red background for disconnect */
-  color: #fff; /* White text */
+.device-control-btn:disabled {
+  background: #2a2a2a;
+  color: #888;
+  cursor: default;
+  opacity: 0.6;
 }
 
-.device-control-btn.disconnect:hover {
+.device-control-btn:disabled:hover {
+  background: #2a2a2a; /* prevent hover effect */
+  color: #888;
+}
+
+.device-control-btn.disconnect-btn {
+  background-color: #ff4d4d; /* Red background for disconnect */
+  color: #fff; /* White text */
+  padding: 1px 2px;
+  margin: 0 0.5em;
+}
+.device-control-btn.disconnect-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 1rem;
+  padding: 0.2em;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: auto;
+  height: auto;
+}
+
+.device-control-btn.disconnect-btn:hover {
   background-color: #e63939; /* Darker red on hover */
 }
 
@@ -96,11 +124,13 @@
 }
 
 #brightnessControl {
-  display: none;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: space-between;
-  margin-top: 10px;
-  width: 100%; /* Ensure it spans the full width of the parent */
+  padding: 0.25em;
+  margin: 0.25em;
+  margin-top: 0;
 }
 
 #brightnessSlider {
@@ -110,4 +140,111 @@
 #brightnessIcon {
   flex-shrink: 0; /* Prevent the icon from shrinking */
   margin-left: 10px;
+  padding-right: 0.25em;
 }
+
+#brightnessLabelWrapper {
+  text-align: left;
+  padding-left: 0.2em;
+}
+
+#brightnessLabel {
+  font-size: 0.75em;
+  color: #ffffff;
+  opacity: 0.6;
+}
+
+#brightnessSliderWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.device-info {
+  display: flex;
+  gap: 2em;
+  margin: 0.5em;
+  margin-bottom: 0;
+  max-height: 1.5em;
+  font-weight: bold;
+}
+
+#deviceInfoPanelHeader {
+  display: flex;
+  flex-direction: row;
+}
+
+#deviceInfoPanel {
+  border: 1px solid #454545;
+  background-color: #202020;
+  flex-direction: column;
+  margin-top: 0.5em;
+}
+
+#deviceInfoPanelContent {
+  display: flex;
+  gap: 0.25em;
+  margin: 0.2em;
+  margin-top: 0;
+  flex-direction:column;
+}
+
+#transmitToggleContainer {
+  padding: 0.5em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  justify-content: right;
+}
+
+#transmitToggleContainer label {
+  color: #d8d4cf;
+  font-size: 14px;
+  display: flex;
+  flex-direction: row;
+  margin: 0.25em;
+}
+
+.duo-transmit-icon {
+  max-height: 1.25em;
+}
+
+#transmitToggleContainer i {
+  padding: 0.25em;
+}
+
+#transmitToggle {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 50px;
+  height: 24px;
+  background-color: #470000; /* Red for off */
+  border-radius: 5px; /* Fix: fully round switch */
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  outline: none;
+}
+
+#transmitToggle::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #ccc; /* Light gray toggle */
+  border-radius: 5px; /* Fix: round knob */
+  transition: transform 0.3s ease;
+}
+
+/* ON state */
+#transmitToggle:checked {
+  background-color: #006400; /* Green for on */
+}
+
+#transmitToggle:checked::before {
+  transform: translateX(26px);
+}
+
+

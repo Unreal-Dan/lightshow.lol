@@ -8,7 +8,7 @@ export default class ChromalinkPanel extends Panel {
       <div id="chromalinkOptions">
         <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo">Connect Duo</button>
         <div id="chromalinkDetails" style="display: none;">
-          <div class="device-info">
+          <div class="duo-device-info">
             <img src="./public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
             <div id="duoInfo">
               <p id="deviceUpdateLabel"><strong>Device:</strong> Duo</p>
@@ -133,17 +133,15 @@ export default class ChromalinkPanel extends Panel {
       }
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(2);
+      this.editor.devicePanel.toggleDeviceInfo(255, false);
       await this.editor.devicePanel.updateSelectedDevice('Duo', true);
-      this.editor.devicePanel.toggleBrightnessSlider(255, false);
+      this.oldDeviceInfoText = document.getElementById('deviceInfoText').innerText;
+      this.editor.devicePanel.toggleDeviceInfo(255, true);
+      document.getElementById('deviceInfoText').innerText = `Duo (v${this.duoHeader.version})`;
       const deviceBrightness = await this.editor.vortexPort.getBrightness(
         this.editor.vortexLib, this.editor.lightshow.vortex);
-      if (deviceBrightness > 0) {
-        this.editor.devicePanel.toggleBrightnessSlider(deviceBrightness, true);
-      }
       this.editor.modesPanel.refreshModeList();
       // update ui
-      document.getElementById('duoIcon').style.display = 'block';
-      document.getElementById('duoInfo').style.display = 'block';
       document.getElementById('duoVersion').textContent = this.duoHeader.version;
       document.getElementById('duoModes').textContent = this.duoHeader.numModes;
       const chromalinkDetails = document.getElementById('chromalinkDetails');
@@ -172,11 +170,12 @@ export default class ChromalinkPanel extends Panel {
       }
       this.editor.modesPanel.refreshModeList();
       this.oldModes = null;
+      this.editor.devicePanel.toggleDeviceInfo(255, false);
       await this.editor.devicePanel.updateSelectedDevice('Chromadeck', true);
+      document.getElementById('deviceInfoText').innerText = this.oldDeviceInfoText;
+      this.editor.devicePanel.toggleDeviceInfo(255, true);
       const chromalinkDetails = document.getElementById('chromalinkDetails');
       chromalinkDetails.style.display = 'none';
-      document.getElementById('duoIcon').style.display = 'none';
-      document.getElementById('duoInfo').style.display = 'none';
       if (notify) {
         Notification.success('Successfully Disconnected Chromalink');
       }

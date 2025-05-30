@@ -25,7 +25,7 @@ export default class PatternPanel extends Panel {
     this.populatePatternDropdown();
     this.attachPatternDropdownListener();
     this.refresh();
-    //document.addEventListener('modeChange', this.handleModeChange.bind(this));
+    document.addEventListener('modeChange', this.handleModeChange.bind(this));
     document.addEventListener('ledsChange', this.handleLedsChange.bind(this));
 
     // Attach event listeners for help and randomize buttons
@@ -86,13 +86,15 @@ export default class PatternPanel extends Panel {
   }
 
   handleModeChange(event) {
+    console.log(`${this.panel.title} Handling: [${event.type}]`);
     const selectedLeds = event.detail;
     this.populatePatternDropdown();
     this.refresh();
-    this.editor.demoModeOnDevice();
+    //this.editor.demoModeOnDevice();
   }
 
   handleLedsChange(event) {
+    console.log(`${this.panel.title} Handling: [${event.type}]`);
     const { targetLeds, mainSelectedLed } = event.detail;
     this.populatePatternDropdown();
     this.refresh(mainSelectedLed);
@@ -197,6 +199,19 @@ export default class PatternPanel extends Panel {
     return this.editor.ledSelectPanel.getMainSelectedLed();
   }
 
+  showEmptyPanel() {
+    const curMode = this.editor.vortex.engine().modes().curMode();
+    const placeholderOption = document.createElement('option');
+    placeholderOption.textContent = curMode ? 'Select Leds First' : 'Add Modes First';
+    placeholderOption.value = '-1';
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    const dropdown = document.getElementById('patternDropdown');
+    dropdown.appendChild(placeholderOption);
+    dropdown.disabled = true;
+    dropdown.value = -1;
+  }
+
   refreshPatternDropdown(sourceLed = null) {
     if (sourceLed === null) {
       sourceLed = this.getMainSelectedLed();
@@ -207,14 +222,7 @@ export default class PatternPanel extends Panel {
     }
     const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null || sourceLed === null) {
-      const placeholderOption = document.createElement('option');
-      placeholderOption.textContent = 'Select Leds First';
-      placeholderOption.value = '-1';
-      placeholderOption.disabled = true;
-      placeholderOption.selected = true;
-      dropdown.appendChild(placeholderOption);
-      dropdown.disabled = true;
-      dropdown.value = -1;
+      this.showEmptyPanel();
       return;
     }
     dropdown.disabled = false;
@@ -263,9 +271,15 @@ export default class PatternPanel extends Panel {
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.refreshPatternArgs();
     this.editor.demoModeOnDevice();
+    return;
   }
 
   refreshPatternArgs(sourceLed = null) {
+    const mainLed = this.getMainSelectedLed();
+    if (mainLed === null) {
+      // this shouldn't happen but just in case
+      return;
+    }
     const paramsDiv = document.getElementById('patternParams');
     const patternDropdown = document.getElementById('patternDropdown');
     if (!paramsDiv || !patternDropdown) {
@@ -311,7 +325,7 @@ export default class PatternPanel extends Panel {
       slider.type = 'range';
       slider.min = '0';
       slider.max = '255';
-      slider.value = isDisabled ? 0 : curMode.getArg(i, this.getMainSelectedLed()) || '0';
+      slider.value = isDisabled ? 0 : curMode.getArg(i, mainLed) || '0';
       slider.className = 'control-slider';
       this.updateSliderFill(slider); // Set initial gradient
 

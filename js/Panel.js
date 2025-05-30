@@ -52,8 +52,9 @@ export default class Panel {
 
     this.initGlobalListeners();
 
-    document.addEventListener('deviceChange', async (deviceChangeEvent) => {
-      await this.handleDeviceEvent(deviceChangeEvent);
+    // all panels subscribe to this event?
+    document.addEventListener('deviceChange', async (event) => {
+      await this.handleDeviceEvent(event);
     });
 
     // Add this panel to the global list

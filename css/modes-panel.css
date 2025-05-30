@@ -145,3 +145,11 @@
   background-color: transparent;
 }
 
+.empty-modes-label {
+  text-align: center;
+  color: #454545;
+  font-size: 24px;
+  padding: 1em 0;
+  display: none;
+}
+

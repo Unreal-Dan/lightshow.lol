@@ -63,17 +63,21 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
-    ledsFieldset.addEventListener('touchstart', (event) => this.onTouchStart(event));
-    ledsFieldset.addEventListener('touchmove', (event) => this.onTouchMove(event));
+    ledsFieldset.addEventListener('touchstart', (event) => this.onTouchStart(event), { passive: true });
+    ledsFieldset.addEventListener('touchmove', (event) => this.onTouchMove(event), { passive: true });
     ledsFieldset.addEventListener('touchend', (event) => this.onTouchEnd(event));
 
 
     // Listen to pattern changes to refresh LED indicators as needed
-    document.addEventListener('patternChange', () => this.handlePatternChange());
+    document.addEventListener('patternChange', (event) => {
+      console.log(`${this.panel.title} Handling: [${event.type}]`);
+      this.handlePatternChange();
+    });
 
     document.addEventListener('modeChange', (event) => {
-      this.selectAllLeds();
-      this.updateLedIndicators();
+      console.log(`${this.panel.title} Handling: [${event.type}]`);
+      //this.selectAllLeds();
+      //this.updateLedIndicators();
       this.refreshLedList();
     });
 
@@ -116,12 +120,16 @@ export default class LedSelectPanel extends Panel {
       this.hide();
       return;
     }
-
+    // change the selected device name
     this.selectedDevice = device;
+    // render the led indicators for this device
     await this.renderLedIndicators(device);
+    // show the led selection window if it was previously hidden
     this.show();
+    // refresh the led list
     this.refreshLedList();
-    this.selectAllLeds();
+    // select all of the leds but don't propagate this update
+    this.selectAllLeds(false);
   }
 
   show() {
@@ -178,7 +186,7 @@ export default class LedSelectPanel extends Panel {
       swapDeviceButton.addEventListener('touchstart', async (e) => {
         e.preventDefault();
         await this.toggleAltImage();
-      });
+      }, { passive: true });
       swapDeviceButton.dataset.handlerBound = 'true';
     }
     const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
@@ -243,17 +251,11 @@ export default class LedSelectPanel extends Panel {
     }
 
     let selectedLeds = Array.from(ledList.selectedOptions).map(option => option.value);
-    const cur = this.editor.vortex.engine().modes().curMode();
-
-    if (!cur) {
-      ledList.innerHTML = '';
-      return;
-    }
-
     this.clearLedList();
     this.clearLedSelections();
 
-    const isMultiLed = cur.isMultiLed();
+    const cur = this.editor.vortex.engine().modes().curMode();
+    const isMultiLed = cur && cur.isMultiLed();
     const multiIndex = this.editor.vortex.engine().leds().ledMulti();
 
     // Enable/disable buttons instead of hiding them
@@ -262,7 +264,7 @@ export default class LedSelectPanel extends Panel {
     });
 
     if (!isMultiLed) {
-      for (let pos = 0; pos < this.editor.vortex.numLedsInMode(); ++pos) {
+      for (let pos = 0; pos < this.editor.vortex.engine().leds().ledCount(); ++pos) {
         let ledName = this.editor.vortex.ledToString(pos + 1) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
@@ -320,17 +322,22 @@ export default class LedSelectPanel extends Panel {
     }
   }
 
-  handleLedSelectionChange() {
+  handleLedSelectionChange(propagate = true) {
     const targetLeds = this.getSelectedLeds();
     const mainSelectedLed = this.getMainSelectedLed();
     // Default to first if unset
     this.updateLedIndicators(targetLeds, mainSelectedLed);
-    document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
+    if (propagate) {
+      console.log("Dispatching: [ledsChange]");
+      document.dispatchEvent(new CustomEvent('ledsChange', { detail: { targetLeds, mainSelectedLed } }));
+    }
   }
 
   getSelectedLeds() {
     const ledList = document.getElementById('ledList');
-    if (!ledList)  {
+    // TODO: need to check this instead so that adding a new mode while no leds are selected but it causes other issues
+    //if (!ledList || ledList.selectedOptions === null || typeof ledList.seletedOptions === 'undefined')  {
+    if (!ledList) {
       return null;
     }
     return Array.from(ledList.selectedOptions).map(option => option.value);
@@ -341,6 +348,7 @@ export default class LedSelectPanel extends Panel {
     if (targetLeds === null  || targetLeds.length === 0) {
       return null;
     }
+    console.log("selected: " + JSON.stringify(targetLeds));
     if (this.mainSelectedLed === null) {
       this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
     }
@@ -357,6 +365,9 @@ export default class LedSelectPanel extends Panel {
   updateLedIndicators(selectedLeds = null, mainSelectedLed = null) {
     if (!selectedLeds) {
       selectedLeds = this.getSelectedLeds();
+    }
+    if (!selectedLeds) {
+      return;
     }
     if (mainSelectedLed === null) {
       mainSelectedLed = selectedLeds.length > 0 ? selectedLeds[0] : null;
@@ -386,7 +397,7 @@ export default class LedSelectPanel extends Panel {
     });
   }
 
-  selectAllLeds() {
+  selectAllLeds(propagate = true) {
     const ledList = document.getElementById('ledList');
     if (!ledList) {
       return;
@@ -394,10 +405,10 @@ export default class LedSelectPanel extends Panel {
     for (let option of ledList.options) {
       option.selected = true;
     }
-    this.handleLedSelectionChange();
+    this.handleLedSelectionChange(propagate);
   }
 
-  selectNoneLeds() {
+  selectNoneLeds(propagate = true) {
     const ledList = document.getElementById('ledList');
     if (!ledList) {
       return;
@@ -405,7 +416,7 @@ export default class LedSelectPanel extends Panel {
     for (let option of ledList.options) {
       option.selected = false;
     }
-    this.handleLedSelectionChange();
+    this.handleLedSelectionChange(propagate);
   }
 
   invertLeds() {
