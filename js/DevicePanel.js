@@ -269,6 +269,19 @@ export default class DevicePanel extends Panel {
       transmitToggle.disabled = isMultiLed;
     }
 
+    document.getElementById('deviceInfoText').innerText = `${deviceName} (v${deviceVersion})`;
+    const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+    if (deviceInfoPanel) {
+      deviceInfoPanel.style.display = 'flex';
+    }
+
+    const transmitToggle = document.getElementById('transmitToggle');
+    if (transmitToggle) {
+      const isDuo = (deviceName === 'Duo');
+      const isMultiLed = this.editor.vortex.engine().modes().curMode()?.isMultiLed?.() ?? true;
+      transmitToggle.disabled = isMultiLed;
+    }
+
     console.log("Device connected: " + deviceName);
     Notification.success("Successfully Connected " + deviceName);
   }

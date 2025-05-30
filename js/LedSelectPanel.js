@@ -348,6 +348,7 @@ export default class LedSelectPanel extends Panel {
     if (targetLeds === null  || targetLeds.length === 0) {
       return null;
     }
+    console.log("selected: " + JSON.stringify(targetLeds));
     if (this.mainSelectedLed === null) {
       this.mainSelectedLed = (targetLeds.length > 0) ? targetLeds[0] : null;
     }
