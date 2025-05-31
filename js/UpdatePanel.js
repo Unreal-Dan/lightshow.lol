@@ -264,7 +264,8 @@ export default class UpdatePanel extends Panel {
       }
       console.log('Resetting ESP32...');
       await this.espStub.hardReset();
-      await this.editor.vortexPort.restartConnecton();
+      // TODO: get this working sometime again
+      //await this.editor.vortexPort.restartConnecton();
     } catch (resetError) {
       console.error('Failed to reset ESP32:', resetError);
     }
