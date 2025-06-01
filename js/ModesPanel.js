@@ -687,9 +687,8 @@ export default class ModesPanel extends Panel {
     }
 
     const modeCount = this.editor.vortex.numModes();
-    let curSel;
+    let curSel = this.editor.vortex.engine().modes().curModeIndex();
     if (addNew) {
-      curSel = this.editor.vortex.engine().modes().curModeIndex();
       const device = this.editor.devicePanel.selectedDevice;
       const maxModes = this.getMaxModes(device);
       if (modeCount >= maxModes) {
@@ -761,9 +760,12 @@ export default class ModesPanel extends Panel {
       this.editor.vortex.setCurMode(curSel, false);
     }
 
-    this.selectMode(addNew ? modeCount : curSel, false);
-    this.refresh();
-    Notification.success("Successfully imported mode");
+    // select the new mode and refresh a moment later
+    setTimeout(() => {
+        this.selectMode(addNew ? modeCount : curSel);
+        this.refresh();
+        Notification.success("Successfully imported mode");
+    }, 100);
   }
 
   importPatternFromData(patternData, addNew = false) {
