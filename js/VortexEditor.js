@@ -17,6 +17,7 @@ import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
+import DeviceSelectScreen from './DeviceSelectScreen.js';
 import { VERSION } from './version.js';  // Adjust path if needed
 
 import * as BLE from './ble.js'; // Import BLE module
@@ -128,6 +129,7 @@ export default class VortexEditor {
     this.communityBrowserPanel = new CommunityBrowserPanel(this);
     this.duoEditorPanel = new DuoEditorPanel(this);
     this.duoCommunityPanel = new CommunityBrowserPanel(this);
+    this.deviceSelectScreen = new DeviceSelectScreen(this);
     this.panels = [
       this.welcomePanel,
       this.aboutPanel,
@@ -145,6 +147,7 @@ export default class VortexEditor {
     ];
     if (this.detectMobile()) {
       this.panels.push(this.duoEditorPanel);
+      this.deviceSelectScreen.show();
     }
     let allGood = true;
     this.panels.forEach((panel, index) => {
