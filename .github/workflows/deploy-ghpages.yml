@@ -85,6 +85,8 @@ jobs:
 
     - name: Copy WASM and JS into web project
       run: |
+        mkdir -p lightshow.lol/public
+        mkdir -p lightshow.lol/src
         cp VortexEngine/VortexEngine/VortexLib/VortexLib.js lightshow.lol/public/VortexLib.js
         cp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm lightshow.lol/public/VortexLib.wasm
         cp version.js lightshow.lol/src/version.js
