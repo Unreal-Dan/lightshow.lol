@@ -46,7 +46,7 @@ export default class CommunityBrowserPanel extends Panel {
       const button = document.createElement('button');
       button.className = 'vcb-filter-btn active';
       button.dataset.device = deviceName;
-      button.innerHTML = `<img src="/${deviceData.icon}" alt="${deviceName}" class="filter-icon" />`;
+      button.innerHTML = `<img src="${deviceData.icon}" alt="${deviceName}" class="filter-icon" />`;
       button.title = `Filter by ${deviceData.label}`;
 
       button.addEventListener('click', () => {
