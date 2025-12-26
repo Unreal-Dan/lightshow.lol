@@ -693,20 +693,28 @@ export default class VortexEditor {
 }
 
 console.log("ENTRY SCRIPT EXECUTED");
-document.addEventListener('DOMContentLoaded', () => console.log("DOM CONTENT LOADED"));
 
-window.addEventListener('load', async () => {
-  console.log("WINDOW LOAD FIRED")
+async function boot() {
   try {
-    // Wait until everything (including external scripts) is fully loaded
     const vortexLib = await VortexLib();
     const vortexEditor = new VortexEditor(vortexLib);
     await vortexEditor.initialize();
-    // TODO: REMOVEME DEBUG CODE:
-    //vortexEditor.devicePanel.updateSelectedDevice('Chromadeck');
-    //vortexEditor.animationPanel.applyPreset('Chromadeck');
-    //vortexEditor.setActiveTab('duoEditorPanel');
   } catch (error) {
     console.error('Error initializing Vortex:', error);
   }
-});
+}
+
+(function start() {
+  // If the page is already loaded (or interactive), run immediately.
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    console.log("REGULAR LOAD FIRED")
+    boot();
+    return;
+  }
+
+  // Otherwise wait for DOM (not full load of images/fonts/etc).
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM CONTENT LOAD FIRED")
+    boot();
+  }, { once: true });
+})();
