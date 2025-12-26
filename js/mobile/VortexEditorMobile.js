@@ -65,7 +65,7 @@ export default class VortexEditorMobile {
     );
 
     // Your single mobile css file
-    this.loadStylesheet('mobile-styles-css', 'css/mobile-styles.css');
+    this.loadStylesheet('mobile-app-styles-css', 'css/mobile-app-styles.css');
 
     // Bootstrap JS bundle (for future offcanvas/modals etc.)
     await this.loadScript(

@@ -1,7 +1,20 @@
 /* mobile-styles.css */
-@import url('mobile/mobile-app.css');
-@import url('mobile/mobile-ble-connect.css');
-@import url('mobile/editor.css');
-@import url('mobile/mode-source.css');
-@import url('mobile/duo-mode-receive.css');
-
+@import url('mobile-vortex-editor.css');
+@import url('mobile-notification.css');
+@import url('mobile-panel-container.css');
+@import url('mobile-panel.css');
+@import url('mobile-about-panel.css');
+@import url('mobile-animation-panel.css');
+@import url('mobile-chromalink-panel.css');
+@import url('mobile-color-picker-panel.css');
+@import url('mobile-colorset-panel.css');
+@import url('mobile-modes-panel.css');
+@import url('mobile-device-panel.css');
+@import url('mobile-led-select-panel.css');
+@import url('mobile-modal.css');
+@import url('mobile-notification.css');
+@import url('mobile-update-panel.css');
+@import url('mobile-welcome-panel.css');
+@import url('mobile-pattern-panel.css');
+@import url('mobile-community-browser-panel.css');
+@import url('mobile-duo-editor-panel.css');
