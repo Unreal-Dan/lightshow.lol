@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  EMSDK_VERSION: "3.1.74"
+  EMSDK_VERSION: "3.1.50"
 
 jobs:
   build:
