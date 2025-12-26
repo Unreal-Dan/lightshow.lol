@@ -175,7 +175,7 @@ export default class CommunityBrowserPanel extends Panel {
 
       // Device Icon
       const deviceIcon = document.createElement('img');
-      deviceIcon.src = `/public/images/${mode.deviceType.toLowerCase()}-logo-square-512.png`; // Assumes icons are stored in assets/icons
+      deviceIcon.src = `public/images/${mode.deviceType.toLowerCase()}-logo-square-512.png`; // Assumes icons are stored in assets/icons
       deviceIcon.alt = mode.deviceType;
       deviceIcon.classList.add('community-mode-device-icon');
       row.appendChild(deviceIcon);
