@@ -5,7 +5,8 @@
 #mobile-app-root .ble-screen {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh;     /* fallback for older browsers */
+  height: 100dvh;    /* correct behavior on modern mobile */
   background: #0b0b0b;
   overflow: hidden;
 }
