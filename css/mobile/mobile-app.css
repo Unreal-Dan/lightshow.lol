@@ -1,31 +1,33 @@
-/* ----------------------------
-   General Mobile App Styles
----------------------------- */
+/* ============================
+   Global Mobile App Styles
+============================ */
 
+/* Root & Scroll Behavior */
 html, body {
+  width: 100%;
   height: auto;
   min-height: 100vh;
-  overflow-y: auto;
-  width: 100%;
   margin: 0;
   padding: 0;
   background: #0b0b0b;
-  overflow: hidden;
+  color: #fff;
   font-family: system-ui, sans-serif;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* for momentum scrolling */
 }
 
 #mobile-app-root {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   width: 100%;
   background: #0b0b0b;
   color: #fff;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-/* Typography tweaks (Bootstrap uses system stack; we keep it) */
+/* Typography */
 #mobile-app-root h1,
 #mobile-app-root h2,
 #mobile-app-root h3,
@@ -35,12 +37,12 @@ html, body {
   color: #fff;
 }
 
-/* Make Bootstrap "text-secondary" readable on dark */
+/* Secondary text (from Bootstrap) */
 #mobile-app-root .text-secondary {
   color: rgba(255, 255, 255, 0.74) !important;
 }
 
-/* Primary buttons */
+/* Bootstrap Button Overrides */
 #mobile-app-root .btn-primary {
   border-radius: 14px;
   font-weight: 700;
@@ -51,32 +53,34 @@ html, body {
   padding-bottom: 12px;
 }
 
-/* Back / Link button */
+/* Link-style buttons */
 #mobile-app-root .btn-link {
   color: rgba(255, 255, 255, 0.80);
   text-decoration: none;
+  text-align: center;
 }
 
-#mobile-app-root .btn-link:active,
-#mobile-app-root .btn-link:hover {
+#mobile-app-root .btn-link:hover,
+#mobile-app-root .btn-link:active {
   color: #fff;
 }
 
-/* Make Bootstrap alert look okay on dark */
+/* Alerts (Bootstrap override) */
 #mobile-app-root .alert {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.90);
 }
 
-/* Tap highlight and accidental selection */
-#mobile-app-root, #mobile-app-root * {
+/* Tap highlight / selection handling */
+#mobile-app-root,
+#mobile-app-root * {
   -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
   user-select: none;
+  -webkit-user-select: none;
 }
 
-/* Device icon utility */
+/* Utility: Mobile Device Icon */
 .mobile-device-icon {
   width: 100%;
   height: auto;

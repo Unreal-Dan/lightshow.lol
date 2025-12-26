@@ -1,6 +1,6 @@
-/* ----------------------------
+/* ============================
    Device Select Page Styles
----------------------------- */
+============================ */
 
 #mobile-app-root #device-select-page {
   display: flex;
@@ -9,23 +9,23 @@
   overflow: hidden;
 }
 
-/* Scrollable content wrapper */
 #mobile-app-root #device-select-page .container-fluid {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 12px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* Heading area */
+/* Header */
 #mobile-app-root .mobile-title {
   font-size: clamp(20px, 5vw, 28px);
   font-weight: 800;
   text-align: center;
   margin-bottom: 4px;
+  color: #fff;
 }
 
 #mobile-app-root .mobile-subtitle {
@@ -34,7 +34,7 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-/* Card grid */
+/* Card Layout */
 #mobile-app-root .device-select-row {
   display: flex;
   flex-direction: column;
@@ -42,14 +42,13 @@
   margin-top: 12px;
 }
 
-/* Force full width per card */
 #mobile-app-root .device-select-row > [class*="col-"] {
   flex: 0 0 auto;
   width: 100% !important;
   max-width: 100% !important;
 }
 
-/* Device card */
+/* Device Card */
 #mobile-app-root .mobile-device-card {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.05);
@@ -58,7 +57,7 @@
   text-align: center;
   color: #fff;
   display: block;
-  transition: all 0.1s ease;
+  transition: transform 0.1s ease;
 }
 
 #mobile-app-root .mobile-device-card:active {
@@ -71,6 +70,7 @@
   background: rgba(13, 110, 253, 0.12);
 }
 
+/* Inner Content */
 #mobile-app-root .device-card-inner {
   display: flex;
   flex-direction: column;
@@ -78,18 +78,16 @@
   gap: 10px;
 }
 
-/* Icon box */
 #mobile-app-root .mobile-device-icon-wrap {
   width: clamp(100px, 22vw, 160px);
   height: clamp(100px, 22vw, 160px);
   border-radius: 20px;
-  display: grid;
-  place-items: center;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  display: grid;
+  place-items: center;
 }
 
-/* Icon image */
 #mobile-app-root .mobile-device-icon {
   width: 80%;
   height: 80%;
@@ -97,7 +95,6 @@
   display: block;
 }
 
-/* Text */
 #mobile-app-root .device-card-label {
   font-size: clamp(18px, 4vw, 24px);
   font-weight: 800;
@@ -109,7 +106,7 @@
   line-height: 1.2;
 }
 
-/* Landscape grid */
+/* Landscape Layout */
 @media (orientation: landscape) {
   #mobile-app-root .device-select-row {
     flex-direction: row;

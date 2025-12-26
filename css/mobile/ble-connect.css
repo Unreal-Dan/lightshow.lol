@@ -1,6 +1,6 @@
-/* ---------------------------------------
-   BLE Connect screen
---------------------------------------- */
+/* ================================
+   BLE Connect Screen Styles
+================================ */
 
 #mobile-app-root .ble-screen {
   display: flex;
@@ -8,22 +8,24 @@
   height: 100vh;     /* fallback for older browsers */
   height: 100dvh;    /* correct behavior on modern mobile */
   background: #0b0b0b;
-  overflow: hidden;
-  -webkit-overflow-scrolling: touch; /* enable momentum scroll */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* enables momentum scroll */
 }
 
+/* Inner layout container */
 #mobile-app-root .ble-screen-inner {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 20px 18px;
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  overflow: hidden;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  flex: 1 1 auto;
 }
 
-/* Center content area */
+/* Centered Content Area */
 #mobile-app-root .ble-center {
   flex: 1 1 auto;
   display: flex;
@@ -36,7 +38,7 @@
   overflow: hidden;
 }
 
-/* Bluetooth icon (Font Awesome) */
+/* Bluetooth icon (circle) */
 #mobile-app-root .ble-bt {
   position: relative;
   width: clamp(64px, 11vmin, 92px);
@@ -44,7 +46,6 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.18);
@@ -55,18 +56,16 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Device icon (big) */
+/* Device image block */
 #mobile-app-root .ble-device-wrap {
   width: clamp(220px, 40vmin, 380px);
   height: clamp(220px, 40vmin, 380px);
   border-radius: 30px;
-
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
   place-items: center;
   padding: 20px;
-
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 #mobile-app-root .ble-device-icon {
@@ -76,7 +75,7 @@
   display: block;
 }
 
-/* Instructions */
+/* Instructions text */
 #mobile-app-root .ble-instructions {
   width: min(620px, 100%);
   font-size: clamp(16px, 2.6vmin, 22px);
@@ -84,7 +83,7 @@
   color: rgba(255, 255, 255, 0.74);
 }
 
-/* Action buttons pinned to bottom */
+/* Action buttons section */
 #mobile-app-root .ble-actions {
   width: min(520px, 100%);
   margin: 0 auto;

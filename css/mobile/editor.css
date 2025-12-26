@@ -1,3 +1,7 @@
+/* ============================
+   Mobile Editor View Styles
+============================ */
+
 #mobile-app-root .m-editor {
   height: 100vh;
   display: flex;
@@ -14,7 +18,7 @@
   overflow: hidden;
 }
 
-/* Canvas fullscreen */
+/* Canvas (fullscreen render target) */
 #mobile-app-root .m-editor-canvas {
   position: absolute;
   inset: 0;
@@ -23,34 +27,37 @@
   display: block;
 }
 
-/* Placeholder render surface */
+/* Render surface (placeholder background) */
 #mobile-app-root .m-editor-render {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.06), rgba(0,0,0,0) 60%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.06),
+    rgba(0, 0, 0, 0) 60%
+  );
   z-index: 1;
 }
 
-/* Overlay label (top-left-ish) */
+/* Overlay label (top-left corner) */
 #mobile-app-root .m-editor-render-label {
   position: absolute;
   left: 12px;
   top: 12px;
   z-index: 6;
-
   font-size: clamp(14px, 2.2vmin, 18px);
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 #mobile-app-root .m-editor-mode-name {
-  color: rgba(255,255,255,0.92);
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* Right-side tool strip */
@@ -70,9 +77,9 @@
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.90);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
   display: grid;
   place-items: center;
 }
@@ -103,9 +110,9 @@
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.90);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
   display: grid;
   place-items: center;
 }
@@ -114,20 +121,21 @@
   min-width: min(260px, 60vw);
   padding: 10px 14px;
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.40);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.40);
   text-align: center;
 }
 
 #mobile-app-root .m-carousel-title {
   font-size: 12px;
-  color: rgba(255,255,255,0.70);
+  color: rgba(255, 255, 255, 0.70);
   line-height: 1.1;
 }
 
 #mobile-app-root .m-carousel-value {
   font-size: clamp(16px, 2.6vmin, 20px);
   font-weight: 800;
-  color: rgba(255,255,255,0.92);
+  color: rgba(255, 255, 255, 0.92);
   line-height: 1.15;
 }
+
