@@ -1,0 +1,147 @@
+/* /css/mobile/editor.css */
+
+#mobile-app-root .m-editor {
+  min-height: 100vh;
+  display: flex;
+}
+
+#mobile-app-root .m-editor-stage {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Canvas fullscreen */
+#mobile-app-root .m-editor-stage {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#mobile-app-root .m-editor-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Overlay label (top-left-ish) */
+#mobile-app-root .m-editor-render-label {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 6;
+
+  font-size: clamp(14px, 2.2vmin, 18px);
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+/* Placeholder render surface */
+#mobile-app-root .m-editor-render {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.06), rgba(0,0,0,0) 60%);
+}
+
+#mobile-app-root .m-editor-render-label {
+  font-size: clamp(14px, 2.2vmin, 18px);
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+#mobile-app-root .m-editor-mode-name {
+  color: rgba(255,255,255,0.92);
+  font-weight: 700;
+}
+
+/* Right-side tool strip */
+#mobile-app-root .m-editor-tools {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 10px;
+  z-index: 5;
+}
+
+#mobile-app-root .m-tool-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.90);
+  display: grid;
+  place-items: center;
+}
+
+#mobile-app-root .m-tool-btn:active {
+  transform: translateY(1px);
+}
+
+#mobile-app-root .m-tool-btn i {
+  font-size: 20px;
+}
+
+/* Bottom mode carousel */
+#mobile-app-root .m-editor-carousel {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 5;
+}
+
+#mobile-app-root .m-carousel-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.90);
+  display: grid;
+  place-items: center;
+}
+
+#mobile-app-root .m-carousel-pill {
+  min-width: min(260px, 60vw);
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.40);
+  text-align: center;
+}
+
+#mobile-app-root .m-carousel-title {
+  font-size: 12px;
+  color: rgba(255,255,255,0.70);
+  line-height: 1.1;
+}
+
+#mobile-app-root .m-carousel-value {
+  font-size: clamp(16px, 2.6vmin, 20px);
+  font-weight: 800;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.15;
+}
+
+
+
