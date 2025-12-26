@@ -1,9 +1,54 @@
-/* /css/mobile/mode-source.css */
+#mobile-app-root .mobile-fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0b0b0b;
+  overflow: hidden;
+}
 
-#mobile-app-root .mode-source-actions {
-  width: min(560px, 100%);
+#mobile-app-root .mobile-fullscreen-inner {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 16px;
+  max-width: 720px;
   margin: 0 auto;
+  overflow-y: auto;
+}
+
+/* Header section */
+#mobile-app-root .mobile-title {
+  font-size: clamp(22px, 4.2vw, 32px);
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+#mobile-app-root .mobile-subtitle {
+  font-size: clamp(14px, 2.8vw, 18px);
+  color: rgba(255, 255, 255, 0.74);
+  text-align: center;
+}
+
+/* Mode source action buttons */
+#mobile-app-root .mode-source-actions {
+  width: 100%;
   display: grid;
   gap: 12px;
+  margin-top: 20px;
+}
+
+/* Back link */
+#mobile-app-root .btn-link {
+  color: rgba(255, 255, 255, 0.80);
+  text-align: center;
+  text-decoration: none;
+}
+
+#mobile-app-root .btn-link:hover,
+#mobile-app-root .btn-link:active {
+  color: #fff;
 }
 

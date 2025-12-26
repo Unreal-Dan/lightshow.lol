@@ -3,28 +3,36 @@
 --------------------------------------- */
 
 #mobile-app-root .ble-screen {
-  min-height: 100vh;
   display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0b0b0b;
+  overflow: hidden;
 }
 
 #mobile-app-root .ble-screen-inner {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 20px 18px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 18px;
+  padding: 20px 18px;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
+/* Center content area */
 #mobile-app-root .ble-center {
   flex: 1 1 auto;
-  display: grid;
-  align-content: center;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 16px;
   text-align: center;
+  padding-bottom: 20px;
+  overflow: hidden;
 }
 
 /* Bluetooth icon (Font Awesome) */
@@ -67,18 +75,20 @@
   display: block;
 }
 
-/* Instructions (bigger + readable) */
+/* Instructions */
 #mobile-app-root .ble-instructions {
   width: min(620px, 100%);
   font-size: clamp(16px, 2.6vmin, 22px);
   line-height: 1.25;
+  color: rgba(255, 255, 255, 0.74);
 }
 
-/* Actions pinned near bottom */
+/* Action buttons pinned to bottom */
 #mobile-app-root .ble-actions {
   width: min(520px, 100%);
   margin: 0 auto;
+  display: grid;
+  gap: 12px;
+  padding-top: 10px;
 }
 
-
-#mobile-app-root .ble-screen { outline: 3px solid red; }

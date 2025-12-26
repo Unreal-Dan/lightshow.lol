@@ -1,25 +1,47 @@
-/* /css/mobile/duo-receive.css */
+#mobile-app-root .mobile-fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: #0b0b0b;
+}
+
+#mobile-app-root .mobile-fullscreen-inner {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow-y: auto;
+}
 
 #mobile-app-root .duo-rx-inner {
   gap: 14px;
 }
 
+/* Card container */
 #mobile-app-root .duo-rx-card {
-  width: min(560px, 100%);
-  margin: 0 auto;
   border-radius: 22px;
   padding: 16px;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
 
+/* Hero section (icon + device image) */
 #mobile-app-root .duo-rx-hero {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
 }
 
+/* Bluetooth icon circle */
 #mobile-app-root .duo-rx-icon {
   width: clamp(64px, 11vmin, 92px);
   height: clamp(64px, 11vmin, 92px);
@@ -30,11 +52,13 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
+/* FontAwesome icon inside */
 #mobile-app-root .duo-rx-icon i {
   font-size: clamp(30px, 6vmin, 44px);
   color: rgba(255, 255, 255, 0.92);
 }
 
+/* Device image box */
 #mobile-app-root .duo-rx-device {
   width: clamp(180px, 34vmin, 320px);
   height: clamp(180px, 34vmin, 320px);
@@ -53,11 +77,11 @@
   display: block;
 }
 
+/* Title + body text */
 #mobile-app-root .duo-rx-title {
   font-size: clamp(18px, 3.0vmin, 24px);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 6px;
   text-align: center;
 }
 
@@ -65,9 +89,9 @@
   font-size: clamp(14px, 2.4vmin, 18px);
   line-height: 1.25;
   text-align: center;
-  margin-bottom: 14px;
 }
 
+/* Buttons */
 #mobile-app-root .duo-rx-actions {
   display: grid;
   gap: 10px;
