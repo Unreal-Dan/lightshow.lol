@@ -645,13 +645,25 @@ export default class VortexEditorMobile {
 /* -----------------------------
    Entry Point
 ----------------------------- */
-window.addEventListener('load', async () => {
+async function boot() {
   try {
     const vortexLib = await VortexLib();
     const editor = new VortexEditorMobile(vortexLib);
     await editor.initialize();
-  } catch (err) {
-    console.error('[VortexEditorMobile] failed to start', err);
+  } catch (error) {
+    console.error('Error initializing Vortex:', error);
   }
-});
+}
 
+(function start() {
+  // If the page is already loaded (or interactive), run immediately.
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    boot();
+    return;
+  }
+
+  // Otherwise wait for DOM (not full load of images/fonts/etc).
+  document.addEventListener('DOMContentLoaded', () => {
+    boot();
+  }, { once: true });
+})();
