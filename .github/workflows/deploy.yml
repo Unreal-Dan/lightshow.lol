@@ -5,6 +5,9 @@ on:
     branches:
       - main  # Or your default branch
 
+env:
+  EMSDK_VERSION: "4.0.9"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -35,9 +38,10 @@ jobs:
       run: |
         git clone https://github.com/emscripten-core/emsdk.git
         cd emsdk
-        ./emsdk install latest
-        ./emsdk activate latest
-        source ./emsdk_env.sh
+        git fetch --tags
+        git checkout "${EMSDK_VERSION}"
+        ./emsdk install "${EMSDK_VERSION}"
+        ./emsdk activate "${EMSDK_VERSION}"
 
     # Build using Emscripten
     - name: Build WebAssembly with Emscripten
