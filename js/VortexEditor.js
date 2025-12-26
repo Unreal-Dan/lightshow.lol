@@ -692,7 +692,11 @@ export default class VortexEditor {
   }
 }
 
+console.log("ENTRY SCRIPT EXECUTED");
+document.addEventListener('DOMContentLoaded', () => console.log("DOM CONTENT LOADED"));
+
 window.addEventListener('load', async () => {
+  console.log("WINDOW LOAD FIRED")
   try {
     // Wait until everything (including external scripts) is fully loaded
     const vortexLib = await VortexLib();
