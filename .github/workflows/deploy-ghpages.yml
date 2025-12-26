@@ -1,18 +1,14 @@
-name: Deploy to GitHub Pages (gh-pages-test)
+name: Deploy PR Preview to GitHub Pages
 
 on:
-  push:
+  pull_request:
     branches:
-      - gh-pages-test
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: gh-pages-test
+  group: pages-pr-preview
   cancel-in-progress: true
 
 env:
