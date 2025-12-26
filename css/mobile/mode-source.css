@@ -1,0 +1,9 @@
+/* /css/mobile/mode-source.css */
+
+#mobile-app-root .mode-source-actions {
+  width: min(560px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+

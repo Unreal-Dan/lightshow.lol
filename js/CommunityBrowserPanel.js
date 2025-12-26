@@ -46,7 +46,7 @@ export default class CommunityBrowserPanel extends Panel {
       const button = document.createElement('button');
       button.className = 'vcb-filter-btn active';
       button.dataset.device = deviceName;
-      button.innerHTML = `<img src="/${deviceData.icon}" alt="${deviceName}" class="filter-icon" />`;
+      button.innerHTML = `<img src="${deviceData.icon}" alt="${deviceName}" class="filter-icon" />`;
       button.title = `Filter by ${deviceData.label}`;
 
       button.addEventListener('click', () => {
@@ -175,7 +175,7 @@ export default class CommunityBrowserPanel extends Panel {
 
       // Device Icon
       const deviceIcon = document.createElement('img');
-      deviceIcon.src = `/public/images/${mode.deviceType.toLowerCase()}-logo-square-512.png`; // Assumes icons are stored in assets/icons
+      deviceIcon.src = `public/images/${mode.deviceType.toLowerCase()}-logo-square-512.png`; // Assumes icons are stored in assets/icons
       deviceIcon.alt = mode.deviceType;
       deviceIcon.classList.add('community-mode-device-icon');
       row.appendChild(deviceIcon);

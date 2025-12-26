@@ -1,0 +1,29 @@
+<!-- /js/mobile/views/ble-connect.html -->
+<div class="ble-screen">
+  <div class="ble-screen-inner">
+    <div class="ble-center">
+      <div class="ble-bt" aria-hidden="true">
+        <i class="fa-brands fa-bluetooth-b"></i>
+      </div>
+
+      <div class="ble-device-wrap">
+        <img class="ble-device-icon" src="{{deviceImg}}" alt="{{deviceAlt}}" />
+      </div>
+
+      <div class="ble-instructions text-secondary">
+        {{instructions}}
+      </div>
+    </div>
+
+    <div class="ble-actions">
+      <button id="ble-connect-btn" class="btn btn-primary btn-lg w-100">
+        Connect
+      </button>
+
+      <button id="back-btn" class="btn btn-link w-100 mt-2">
+        Back
+      </button>
+    </div>
+  </div>
+</div>
+

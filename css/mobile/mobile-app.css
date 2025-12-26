@@ -1,0 +1,223 @@
+/* /css/mobile/mobile-app.css */
+
+/* Page + root */
+html, body {
+  height: 100%;
+  background: #0b0b0b;
+}
+
+body {
+  margin: 0;
+}
+
+#mobile-app-root {
+  min-height: 100vh;
+  background: #0b0b0b;
+  color: #fff;
+}
+
+/* Typography tweaks (Bootstrap uses system stack; we keep it) */
+#mobile-app-root h1,
+#mobile-app-root h2,
+#mobile-app-root h3,
+#mobile-app-root .h4,
+#mobile-app-root .h5,
+#mobile-app-root .h6 {
+  color: #fff;
+}
+
+/* Make Bootstrap "text-secondary" readable on dark */
+#mobile-app-root .text-secondary {
+  color: rgba(255, 255, 255, 0.74) !important;
+}
+
+/* ---------------------------------------
+   Device tiles (3 primary choices)
+--------------------------------------- */
+
+/* Make sure buttons never inherit dark text */
+#mobile-app-root .mobile-device-card {
+  appearance: none;
+  -webkit-appearance: none;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 22px;
+
+  padding: 22px;
+  text-align: center;
+  color: #fff !important;
+
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+#mobile-app-root .mobile-device-card:active {
+  transform: translateY(1px);
+}
+
+#mobile-app-root .mobile-device-card.is-selected {
+  border-color: rgba(13, 110, 253, 0.95);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  background: rgba(13, 110, 253, 0.12);
+}
+
+/* Card inner layout (icon on top, huge) */
+#mobile-app-root .device-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Icon container */
+#mobile-app-root .mobile-device-icon-wrap {
+  width: clamp(140px, 22vh, 240px);
+  height: clamp(140px, 22vh, 240px);
+  border-radius: 28px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Icon */
+#mobile-app-root .mobile-device-icon {
+  width: clamp(110px, 16vh, 190px);
+  height: clamp(110px, 16vh, 190px);
+  object-fit: contain;
+  display: block;
+}
+
+/* Labels */
+#mobile-app-root .device-card-label {
+  font-size: clamp(24px, 3.2vh, 38px);
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff;
+}
+
+#mobile-app-root .device-card-subtitle {
+  font-size: clamp(16px, 2.0vh, 24px);
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Buttons */
+#mobile-app-root .btn-primary {
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+#mobile-app-root .btn-lg {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* Back link button */
+#mobile-app-root .btn-link {
+  color: rgba(255, 255, 255, 0.80);
+  text-decoration: none;
+}
+
+#mobile-app-root .btn-link:active,
+#mobile-app-root .btn-link:hover {
+  color: #fff;
+}
+
+/* Make Bootstrap alert look okay on dark */
+#mobile-app-root .alert {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.90);
+}
+
+/* Optional: prevent tap highlight + accidental selection */
+#mobile-app-root, #mobile-app-root * {
+  -webkit-tap-highlight-color: transparent;
+}
+
+#mobile-app-root button {
+  user-select: none;
+}
+
+/* ------------------------------------------------------------
+   Responsive layout: portrait stacks, landscape lines up
+   NOTE: your device-select view uses .device-select-row
+------------------------------------------------------------ */
+
+/* Portrait (hotdog): stack 3 tiles vertically, make them tall */
+@media (orientation: portrait) {
+  #mobile-app-root .device-select-row > [class*="col-"] {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Use screen height so the 3 buttons feel BIG */
+  #mobile-app-root .mobile-device-card {
+    min-height: clamp(210px, 24vh, 340px);
+  }
+
+  /* Give more breathing room */
+  #mobile-app-root .container-fluid {
+    padding-top: 18px !important;
+    padding-bottom: 18px !important;
+  }
+}
+
+/* Extra-tall portrait (super hotdog): even bigger */
+@media (orientation: portrait) and (max-aspect-ratio: 3/7) {
+  #mobile-app-root .mobile-device-card {
+    min-height: clamp(240px, 28vh, 420px);
+  }
+
+  #mobile-app-root .mobile-device-icon-wrap {
+    width: clamp(160px, 24vh, 280px);
+    height: clamp(160px, 24vh, 280px);
+  }
+
+  #mobile-app-root .mobile-device-icon {
+    width: clamp(125px, 18vh, 220px);
+    height: clamp(125px, 18vh, 220px);
+  }
+}
+
+/* Landscape (hamburger): line up 3 tiles across */
+@media (orientation: landscape) {
+  #mobile-app-root .device-select-row > [class*="col-"] {
+    flex: 0 0 33.3333% !important;
+    width: 33.3333% !important;
+    max-width: 33.3333% !important;
+  }
+
+  /* Landscape is shorter: shrink a bit so it fits */
+  #mobile-app-root .container-fluid {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  #mobile-app-root .mobile-device-card {
+    padding: 16px;
+  }
+
+  #mobile-app-root .mobile-device-icon-wrap {
+    width: clamp(96px, 16vh, 160px);
+    height: clamp(96px, 16vh, 160px);
+  }
+
+  #mobile-app-root .mobile-device-icon {
+    width: clamp(74px, 11vh, 120px);
+    height: clamp(74px, 11vh, 120px);
+  }
+
+  #mobile-app-root .device-card-label {
+    font-size: clamp(18px, 3.2vh, 28px);
+  }
+
+  #mobile-app-root .device-card-subtitle {
+    font-size: clamp(12px, 2.0vh, 18px);
+  }
+}

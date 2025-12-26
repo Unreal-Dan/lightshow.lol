@@ -1,0 +1,44 @@
+<!-- /js/mobile/views/editor.html -->
+<div class="m-editor">
+  <div class="m-editor-stage">
+    <canvas id="mobile-lightshow-canvas" class="m-editor-canvas"></canvas>
+
+    <div class="m-editor-render-label text-secondary">
+      Duo editor (placeholder UI) — Mode: <span class="m-editor-mode-name">{{modeName}}</span>
+    </div>
+
+    <div class="m-editor-tools" aria-label="Editor tools">
+      <button class="m-tool-btn" type="button" title="Colors" data-tool="colors">
+        <i class="fa-solid fa-palette"></i>
+      </button>
+      <button class="m-tool-btn" type="button" title="Patterns" data-tool="patterns">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+      </button>
+      <button class="m-tool-btn" type="button" title="Speed" data-tool="speed">
+        <i class="fa-solid fa-gauge-high"></i>
+      </button>
+      <button class="m-tool-btn" type="button" title="Save/Share" data-tool="share">
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+      <button class="m-tool-btn" type="button" title="Back" id="editor-back-btn">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+    </div>
+
+    <div class="m-editor-carousel" aria-label="Mode carousel">
+      <button class="m-carousel-btn" type="button" id="mode-prev">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
+      <div class="m-carousel-pill">
+        <div class="m-carousel-title">Mode</div>
+        <div class="m-carousel-value">{{modeIndexLabel}}</div>
+      </div>
+
+      <button class="m-carousel-btn" type="button" id="mode-next">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
