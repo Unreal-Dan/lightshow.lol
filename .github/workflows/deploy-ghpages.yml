@@ -15,6 +15,9 @@ concurrency:
   group: gh-pages-test
   cancel-in-progress: true
 
+env:
+  EMSDK_VERSION: "3.1.50"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,15 +41,21 @@ jobs:
           cd VortexEngine/VortexEngine/VortexCLI
           make -j
 
-      - name: Install Emscripten
+      - name: Install Emscripten (pinned)
+        shell: bash
         run: |
+          set -euo pipefail
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          git fetch --tags
+          git checkout "${EMSDK_VERSION}"
+          ./emsdk install "${EMSDK_VERSION}"
+          ./emsdk activate "${EMSDK_VERSION}"
 
       - name: Build WebAssembly with Emscripten
+        shell: bash
         run: |
+          set -euo pipefail
           source emsdk/emsdk_env.sh
           cd VortexEngine/VortexEngine/VortexLib
           make clean
