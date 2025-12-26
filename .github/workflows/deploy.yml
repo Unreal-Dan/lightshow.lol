@@ -6,7 +6,7 @@ on:
       - main  # Or your default branch
 
 env:
-  EMSDK_VERSION: "4.0.9"
+  EMSDK_VERSION: "3.1.74"
 
 jobs:
   deploy:
