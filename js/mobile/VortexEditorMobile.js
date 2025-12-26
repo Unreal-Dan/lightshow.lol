@@ -3,6 +3,7 @@
 import VortexLib from '../VortexLib.js';
 import Lightshow from '../Lightshow.js';
 import SimpleViews from './SimpleViews.js';
+import * as BLE from '../ble.js';
 
 /* -----------------------------
    Mobile App State
@@ -226,7 +227,15 @@ export default class VortexEditorMobile {
     if (!connectBtn) throw new Error('ble-connect.html is missing #ble-connect-btn');
 
     connectBtn.addEventListener('click', async () => {
-      console.log('[Mobile] BLE connected (placeholder) for:', deviceType);
+      console.log('[Mobile] Attempting BLE connection for:', deviceType);
+
+      const success = await BLE.connect();
+      if (!success) {
+        alert('Failed to connect to Bluetooth device.');
+        return;
+      }
+
+      console.log('[Mobile] BLE connected successfully');
       await this.renderModeSource({ deviceType });
     });
   }
@@ -321,6 +330,7 @@ export default class VortexEditorMobile {
       const backBtn = this.root.querySelector('#editor-back-btn');
       if (backBtn) {
         backBtn.addEventListener('click', async () => {
+          if (BLE.isBleConnected()) await BLE.disconnect();
           const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
           await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
         });
@@ -645,13 +655,26 @@ export default class VortexEditorMobile {
 /* -----------------------------
    Entry Point
 ----------------------------- */
-window.addEventListener('load', async () => {
+async function boot() {
   try {
     const vortexLib = await VortexLib();
     const editor = new VortexEditorMobile(vortexLib);
     await editor.initialize();
-  } catch (err) {
-    console.error('[VortexEditorMobile] failed to start', err);
+  } catch (error) {
+    console.error('Error initializing Vortex:', error);
   }
-});
+}
+
+(function start() {
+  // If the page is already loaded (or interactive), run immediately.
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    boot();
+    return;
+  }
+
+  // Otherwise wait for DOM (not full load of images/fonts/etc).
+  document.addEventListener('DOMContentLoaded', () => {
+    boot();
+  }, { once: true });
+})();
 

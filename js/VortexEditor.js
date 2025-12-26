@@ -692,8 +692,6 @@ export default class VortexEditor {
   }
 }
 
-console.log("ENTRY SCRIPT EXECUTED");
-
 async function boot() {
   try {
     const vortexLib = await VortexLib();
@@ -707,14 +705,12 @@ async function boot() {
 (function start() {
   // If the page is already loaded (or interactive), run immediately.
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    console.log("REGULAR LOAD FIRED")
     boot();
     return;
   }
 
   // Otherwise wait for DOM (not full load of images/fonts/etc).
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM CONTENT LOAD FIRED")
     boot();
   }, { once: true });
 })();
