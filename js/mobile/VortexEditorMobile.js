@@ -37,8 +37,8 @@ export default class VortexEditorMobile {
     this.state = new MobileAppState();
     this.root = null;
 
-    // Views live next to mobile JS: /js/mobile/views/*.html
-    this.views = new SimpleViews({ basePath: '/js/mobile/views/' });
+    // Views live next to mobile JS: js/mobile/views/*.html
+    this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
   }
 
   async initialize() {
