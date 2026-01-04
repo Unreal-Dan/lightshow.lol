@@ -241,9 +241,6 @@ export default class VortexEditorMobile {
 
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     
-    const ledCount = this.devices[deviceType].ledCount;
-    this.lightshow.setLedCount(ledCount);
-
     await this.renderBleConnect({
       deviceType,
       deviceImg,
@@ -474,6 +471,8 @@ export default class VortexEditorMobile {
       spread: 120,
       direction: -1,
     });
+    const ledCount = this.devices[deviceType].ledCount;
+    this.lightshow.setLedCount(ledCount);
     this.lightshow.setShape('circle');
     this.lightshow.angle = 0;
     this.lightshow.resetToCenter();
