@@ -19,20 +19,6 @@
   gap: 12px;
 }
 
-/* Header */
-#mobile-app-root .mobile-title {
-  font-weight: 800;
-  text-align: center;
-  margin-bottom: 4px;
-  color: #fff;
-}
-
-#mobile-app-root .mobile-subtitle {
-  font-size: clamp(18px, 4vw, 22px);
-  text-align: center;
-  color: rgba(255, 255, 255, 0.72);
-}
-
 /* Card Layout */
 #mobile-app-root .device-select-row {
   display: flex;
@@ -77,8 +63,8 @@
 }
 
 #mobile-app-root .mobile-device-icon-wrap {
-  width: clamp(100px, 22vw, 160px);
-  height: clamp(100px, 22vw, 160px);
+  width: clamp(120px, 30vw, 160px);
+  height: clamp(120px, 30vw, 160px);
   border-radius: 20px;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -94,12 +80,12 @@
 }
 
 #mobile-app-root .device-card-label {
-  font-size: clamp(22px, 4vw, 28px);
+  font-size: clamp(1.25rem, 1.4rem + 0.3vw, 1.75rem);
   font-weight: 800;
 }
 
 #mobile-app-root .device-card-subtitle {
-  font-size: clamp(18px, 3.2vw, 22px);
+  font-size: clamp(1rem, 1.05rem + 0.25vw, 1.25rem);
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.2;
 }

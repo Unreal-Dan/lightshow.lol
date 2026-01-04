@@ -38,7 +38,7 @@
 }
 
 #mobile-app-root .duo-rx-icon i {
-  font-size: clamp(30px, 6vmin, 44px);
+  font-size: clamp(1rem, 1.05rem + 0.25vw, 1.25rem);
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -63,14 +63,14 @@
 
 /* Text Content */
 #mobile-app-root .duo-rx-title {
-  font-size: clamp(18px, 3.0vmin, 24px);
+  font-size: clamp(1.2rem, 1.25rem + 0.3vw, 1.5rem);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.95);
   text-align: center;
 }
 
 #mobile-app-root .duo-rx-body {
-  font-size: clamp(14px, 2.4vmin, 18px);
+  font-size: clamp(0.95rem, 1rem + 0.25vw, 1.125rem);
   line-height: 1.25;
   text-align: center;
   color: rgba(255, 255, 255, 0.74);

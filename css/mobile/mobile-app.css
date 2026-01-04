@@ -15,6 +15,7 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* for momentum scrolling */
+  font-size: 16px;
 }
 
 #mobile-app-root {
@@ -25,6 +26,22 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Header */
+#mobile-app-root .mobile-title {
+  font-size: clamp(1.5rem, 1.6rem + 0.4vw, 2rem);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 4px;
+  text-align: center;
+  color: #fff;
+}
+
+#mobile-app-root .mobile-subtitle {
+  font-size: clamp(0.95rem, 1rem + 0.25vw, 1.125rem);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 /* Typography */
