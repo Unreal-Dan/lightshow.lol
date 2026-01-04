@@ -3,7 +3,8 @@
 import VortexLib from '../VortexLib.js';
 import Lightshow from '../Lightshow.js';
 import SimpleViews from './SimpleViews.js';
-import * as BLE from '../ble.js';
+import VortexPort from '../VortexPort.js';
+//import * as BLE from '../ble.js';
 
 /* -----------------------------
    Mobile App State
@@ -35,6 +36,7 @@ class MobileAppState {
 export default class VortexEditorMobile {
   constructor(vortexLib) {
     this.vortexLib = vortexLib;
+    this.vortexPort = new VortexPort(this, true); // `true` enables BLE
     this.state = new MobileAppState();
     this.root = null;
 
@@ -229,15 +231,45 @@ export default class VortexEditorMobile {
     connectBtn.addEventListener('click', async () => {
       console.log('[Mobile] Attempting BLE connection for:', deviceType);
 
-      const success = await BLE.connect();
-      if (!success) {
+      // Ask VortexPort to connect via BLE and wait for greeting
+      try {
+        await this.vortexPort.requestDevice(async (status) => {
+          if (status === 'connect') {
+            console.log('[Mobile] BLE connected and greeting received');
+            await this.renderModeSource({ deviceType });
+          } else if (status === 'disconnect') {
+            console.warn('[Mobile] Device disconnected');
+            // Optionally handle disconnection here
+          } else if (status === 'waiting') {
+            console.log('[Mobile] BLE connected, waiting for greeting...');
+            // Optional loading spinner UI could go here
+          }
+        });
+      } catch (err) {
+        console.error('BLE connection failed:', err);
         alert('Failed to connect to Bluetooth device.');
-        return;
       }
-
-      console.log('[Mobile] BLE connected successfully');
-      await this.renderModeSource({ deviceType });
     });
+  }
+
+
+  detectMobile() {
+    return true;
+  }
+
+  isBLESupported() {
+    return true;
+  }
+
+  isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
+    const currentParts = currentVersion.split('.').map(Number);
+    const targetParts = targetVersion.split('.').map(Number);
+
+    for (let i = 0; i < targetParts.length; i++) {
+      if (currentParts[i] > targetParts[i]) return true;
+      if (currentParts[i] < targetParts[i]) return false;
+    }
+    return true;
   }
 
   async renderEditor({ deviceType }) {
@@ -330,7 +362,7 @@ export default class VortexEditorMobile {
       const backBtn = this.root.querySelector('#editor-back-btn');
       if (backBtn) {
         backBtn.addEventListener('click', async () => {
-          if (BLE.isBleConnected()) await BLE.disconnect();
+          //if (BLE.isBleConnected()) await BLE.disconnect();
           const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
           await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
         });
