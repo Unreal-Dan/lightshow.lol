@@ -194,7 +194,7 @@ export default class VortexEditorMobile {
       return {
         deviceImg: 'public/images/chromadeck-logo-square-512.png',
         deviceAlt: 'Chromadeck',
-        instructions: 'Turn on your Chromadeck, keep it nearby, then tap Connect and select it from the Bluetooth popup.',
+        instructions: 'Ensure bluetooth is enabled. Switch the Chromadeck off and back on, then tap Connect and choose Vortex Chromadeck.',
       };
     }
 
@@ -202,7 +202,7 @@ export default class VortexEditorMobile {
     return {
       deviceImg: 'public/images/spark-logo-square-512.png',
       deviceAlt: 'Spark',
-      instructions: 'Turn on your Spark, keep it nearby, then tap Connect and select it from the Bluetooth popup.',
+      instructions: 'Ensure bluetooth is enabled on your phone. Enter the Bluetooth menu on the Spark, then tap Connect and select Vortex Spark.',
     };
   }
 

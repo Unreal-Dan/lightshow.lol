@@ -78,7 +78,7 @@
 /* Instructions text */
 #mobile-app-root .ble-instructions {
   width: min(620px, 100%);
-  font-size: clamp(16px, 2.6vmin, 22px);
+  font-size: clamp(18px, 2.6vmin, 26px);
   line-height: 1.25;
   color: rgba(255, 255, 255, 0.74);
 }
