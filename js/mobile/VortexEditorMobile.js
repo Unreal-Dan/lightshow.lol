@@ -467,8 +467,8 @@ export default class VortexEditorMobile {
       trailSize: 300,
       dotSize: 10,
       blurFac: 1,
-      circleRadius: 220,
-      spread: 110,
+      circleRadius: 120,
+      spread: 50,
       direction: -1,
     });
     const ledCount = this.devices[deviceType].ledCount;
