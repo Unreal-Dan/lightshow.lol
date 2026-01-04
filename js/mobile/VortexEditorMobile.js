@@ -235,6 +235,8 @@ export default class VortexEditorMobile {
       try {
         await this.vortexPort.requestDevice(async (status) => {
           if (status === 'connect') {
+            this.vortexPort.startReading();
+            await this.demoModeOnDevice();
             console.log('[Mobile] BLE connected and greeting received');
             await this.renderModeSource({ deviceType });
           } else if (status === 'disconnect') {
@@ -251,7 +253,28 @@ export default class VortexEditorMobile {
       }
     });
   }
-
+  async demoModeOnDevice() {
+    try {
+      let tries = 0;
+      // this is often used right after performing some operations and in
+      // practice it was found that the operation could take time and this
+      // could fire in another handler/thread and it would fail. By simply
+      // waiting for about a second it ensures the other operations can pass
+      // and then the mode is rendered afterward. A proper queue is needed.
+      while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
+        if (tries++ > 10) {
+          // failure
+          console.log("Failed to demo mode, waited 10 delays...");
+          return;
+        }
+        await this.sleep(100);
+      }
+      // demo the mode
+      await this.vortexPort.demoCurMode(this.lightshow.vortexLib, this.lightshow.vortex);
+    } catch (error) {
+      Notification.failure("Failed to demo mode (" + error + ")");
+    }
+  }
 
   detectMobile() {
     return true;
@@ -508,7 +531,7 @@ export default class VortexEditorMobile {
       Notification.failure("Please connect a device first");
       return;
     }
-    await this.vortexPort.listenVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    await this.vortexPort.listenVL(this.vortexLib, this.vortex);
   }
 
   async renderDuoReceive({ deviceType, step }) {
