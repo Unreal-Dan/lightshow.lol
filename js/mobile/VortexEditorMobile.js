@@ -255,7 +255,7 @@ export default class VortexEditorMobile {
       return {
         deviceImg: 'public/images/chromadeck-logo-square-512.png',
         deviceAlt: 'Chromadeck',
-        instructions: 'Ensure bluetooth is enabled. Switch the Chromadeck off and back on, then tap Connect and choose Vortex Chromadeck.',
+        instructions: 'Unplug the Chromadeck and switch it off and back on, then tap Connect and select the device.',
       };
     }
 
@@ -263,7 +263,7 @@ export default class VortexEditorMobile {
     return {
       deviceImg: 'public/images/spark-logo-square-512.png',
       deviceAlt: 'Spark',
-      instructions: 'Ensure bluetooth is enabled on your phone. Enter the Bluetooth menu on the Spark, then tap Connect and select Vortex Spark.',
+      instructions: 'Open the Bluetooth menu on the Spark, then tap Connect and select Vortex Spark.',
     };
   }
 
@@ -465,10 +465,10 @@ export default class VortexEditorMobile {
     Object.assign(this.lightshow, {
       tickRate: 3,
       trailSize: 300,
-      dotSize: 30,
-      blurFac: 3,
+      dotSize: 10,
+      blurFac: 1,
       circleRadius: 220,
-      spread: 120,
+      spread: 110,
       direction: -1,
     });
     const ledCount = this.devices[deviceType].ledCount;
