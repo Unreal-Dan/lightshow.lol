@@ -89,7 +89,6 @@
 }
 
 #mobile-app-root .m-tool-btn i {
-  font-size: 20px;
 }
 
 /* Bottom mode carousel */
@@ -127,7 +126,6 @@
 }
 
 #mobile-app-root .m-carousel-title {
-  font-size: 12px;
   color: rgba(255, 255, 255, 0.70);
   line-height: 1.1;
 }

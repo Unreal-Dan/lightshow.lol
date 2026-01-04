@@ -15,7 +15,7 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch; /* for momentum scrolling */
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 #mobile-app-root {
