@@ -236,7 +236,6 @@ export default class VortexEditorMobile {
         await this.vortexPort.requestDevice(async (status) => {
           if (status === 'connect') {
             this.vortexPort.startReading();
-            await this.demoModeOnDevice();
             console.log('[Mobile] BLE connected and greeting received');
             await this.renderModeSource({ deviceType });
           } else if (status === 'disconnect') {
