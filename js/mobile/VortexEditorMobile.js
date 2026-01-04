@@ -36,6 +36,8 @@ class MobileAppState {
 export default class VortexEditorMobile {
   constructor(vortexLib) {
     this.vortexLib = vortexLib;
+    this.vortex = new this.vortexLib.Vortex();
+    this.vortex.init();
     this.vortexPort = new VortexPort(this, true); // `true` enables BLE
     this.state = new MobileAppState();
     this.root = null;
@@ -305,10 +307,6 @@ export default class VortexEditorMobile {
 
     // Ensure vortex exists but DO NOT create modes
     if (!this.vortex) {
-      this.vortex = new this.vortexLib.Vortex();
-      this.vortex.init();
-      this.vortex.setLedCount(2);
-      this.vortexLib.RunTick(this.vortex);
     }
 
     const hasModes = this.vortex.numModes() > 0;
@@ -606,71 +604,11 @@ export default class VortexEditorMobile {
     });
 
     secondary.addEventListener('click', async () => {
-      const modeData = this.duoMakeFakeModeDataPlaceholder();
-      await this.duoImportModePlaceholder(modeData);
       await this.renderEditor({ deviceType });
     });
   }
 
-  async duoRequestChromadeckListenPlaceholder() {
-    // Later: BLE write to Chromadeck characteristic to start “listen for Duo”
-    console.log('[Mobile] (placeholder) Tell Chromadeck to listen for Duo...');
-    await new Promise((r) => setTimeout(r, 400));
-  }
-
-  async duoWaitForRelayedModePlaceholder() {
-    // Later: wait on BLE notifications from Chromadeck containing the relayed mode
-    console.log('[Mobile] (placeholder) Waiting for relayed mode...');
-    await new Promise((r) => setTimeout(r, 1200));
-    return this.duoMakeFakeModeDataPlaceholder();
-  }
-
-  duoMakeFakeModeDataPlaceholder() {
-    // Minimal “mode-like” placeholder. You’ll replace with real payload.
-    return {
-      num_leds: 2,
-      single_pats: [
-        { data: { pattern_id: 0, args: [0, 0, 0, 0], colorset: ['0xFF0000', '0x00FF00', '0x0000FF'] } },
-      ],
-    };
-  }
-
-  async duoImportModePlaceholder(modeData) {
-    // Create vortex if needed
-    if (!this.vortex) {
-      this.vortex = new this.vortexLib.Vortex();
-      this.vortex.init();
-      this.vortex.setLedCount(2);
-      this.vortexLib.RunTick(this.vortex);
-    }
-
-    // For now: just create a new empty mode and select it.
-    // Later: we’ll map modeData into patterns/colorsets like ModesPanel.finalizeModeImport does.
-    const before = this.vortex.numModes();
-    if (!this.vortex.addNewMode(false)) {
-      throw new Error('Failed to add new mode for import');
-    }
-    this.vortex.setCurMode(before, false);
-
-    const cur = this.vortex.engine().modes().curMode();
-    if (cur) cur.init();
-    this.vortex.engine().modes().saveCurMode();
-
-    console.log('[Mobile] (placeholder) Imported Duo mode:', modeData);
-  }
-
-
   async startNewModeAndEnterEditor(deviceType) {
-    // Create vortex once if needed
-    if (!this.vortex) {
-      this.vortex = new this.vortexLib.Vortex();
-      this.vortex.init();
-
-      // Duo editor = 2 LEDs (we can generalize later)
-      this.vortex.setLedCount(deviceType === 'duo' ? 2 : 1);
-      this.vortexLib.RunTick(this.vortex);
-    }
-
     const before = this.vortex.numModes();
     if (!this.vortex.addNewMode(false)) {
       console.log('[Mobile] Failed to add new mode');
