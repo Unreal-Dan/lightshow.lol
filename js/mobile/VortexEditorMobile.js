@@ -471,14 +471,22 @@ export default class VortexEditorMobile {
     });
   }
 
+  async listenVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.listenVL(this.lightshow.vortexLib, this.lightshow.vortex);
+  }
+
   async renderDuoReceive({ deviceType, step }) {
     // step 1: tell chromadeck to listen
     // step 2: wait for duo to transmit; chromadeck relays to phone
 
     const step1 = {
       stepNum: '1',
-      title: 'Put Chromadeck in Receive Mode',
-      body: 'Tap the button below. Your Chromadeck will start listening for a Duo transmission.',
+      title: 'Start Listening',
+      body: 'Tell the Chromadeck to start listening for a Duo mode transfer.',
       primaryLabel: 'Start Listening',
       secondaryLabel: 'Skip (debug)',
       secondaryDisplay: '',
@@ -486,8 +494,8 @@ export default class VortexEditorMobile {
 
     const step2 = {
       stepNum: '2',
-      title: 'Send from Duo',
-      body: 'Point your Duo at the Chromadeck and send the mode. When the Chromadeck relays it, we’ll continue.',
+      title: 'Waiting for mode...',
+      body: 'Hold the Duo above the Chromadeck while sending the mode.',
       primaryLabel: 'I sent it (wait)',
       secondaryLabel: 'Simulate Receive (debug)',
       secondaryDisplay: '',
@@ -513,9 +521,6 @@ export default class VortexEditorMobile {
         primary.textContent = 'Starting…';
 
         try {
-          // PLACEHOLDER: tell Chromadeck to listen for Duo transmit
-          await this.duoRequestChromadeckListenPlaceholder();
-
           // advance to step 2
           await this.renderDuoReceive({ deviceType, step: 2 });
         } finally {
@@ -536,12 +541,8 @@ export default class VortexEditorMobile {
       primary.textContent = 'Waiting…';
 
       try {
-        // PLACEHOLDER: wait for mode to arrive from Chromadeck relay
-        const modeData = await this.duoWaitForRelayedModePlaceholder();
-
-        // Apply the received mode into vortex (placeholder import)
-        await this.duoImportModePlaceholder(modeData);
-
+        // PLACEHOLDER: tell Chromadeck to listen for Duo transmit
+        await this.listenVL();
         // Continue to editor
         await this.renderEditor({ deviceType });
       } catch (err) {

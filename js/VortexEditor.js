@@ -658,6 +658,15 @@ export default class VortexEditor {
     await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
   }
 
+  async listenVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.listenVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    this.modesPanel.refreshModeList();
+  }
+
   async demoColorOnDevice(color) {
     try {
       if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {

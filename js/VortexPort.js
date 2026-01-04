@@ -407,6 +407,45 @@ export default class VortexPort {
     }
   }
 
+  async listenVL(vortexLib, vortex) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      throw new Error('Already transmitting: ' + this.isTransmitting);
+    }
+
+    console.log("Listening...");
+    if (this.debugLogging) console.log("listenVL Start");
+    this.isTransmitting = 'listenVL'; // Set the transmitting flag
+
+    try {
+      await this.cancelReading();
+      // send the Listen verb
+      await this.sendCommand(this.EDITOR_VERB_LISTEN_VL);
+      // expect the mode to come next
+      const rawVL = await this.readByteStream(vortexLib);
+      // then the ack should come
+      //await this.expectData(this.EDITOR_VERB_LISTEN_VL_ACK);
+      let stream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromRawData(rawVL, stream);
+      if (!stream.checkCRC()) {
+        throw new Error('Invalid CRC on received stream');
+      }
+      //vortex.clearModes();
+      const added = vortex.addNewMode(stream, true);
+      if (!added) {
+        throw new Error('Failed to add received mode');
+      }
+      if (this.debugLogging) console.log("listenVL Done");
+    } catch (error) {
+      console.error('Error during listenVL:', error);
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+    }
+  }
+
   async demoColor(vortexLib, vortex, color) {
     if (!this.isActive()) {
       throw new Error('Port not active');
