@@ -5,42 +5,69 @@
 #mobile-app-root #device-select-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh; /* use dynamic vh for mobile browser UI */
   overflow: hidden;
 }
 
+/* Two rows: header + cards area */
 #mobile-app-root #device-select-page .container-fluid {
   flex: 1 1 auto;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  height: 100%;
+  overflow: hidden;
+  padding: clamp(10px, 2vmin, 14px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: clamp(8px, 1.5vmin, 12px);
 }
 
-/* Card Layout */
+/* Kill bootstrap spacing that steals vertical space */
+#mobile-app-root #device-select-page .py-4 {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+#mobile-app-root #device-select-page .mb-4 {
+  margin-bottom: 0 !important;
+}
+
+/* Cards area: force-fit layout */
 #mobile-app-root .device-select-row {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  height: 100%;
+  margin: 0 !important;          /* remove Bootstrap row negative margins */
+  padding: 0 !important;
+
+  display: grid;
+  grid-template-columns: 1fr;     /* portrait: one column */
+  grid-template-rows: repeat(3, 1fr); /* 3 equal-height slots */
+  gap: clamp(8px, 1.5vmin, 12px);
+
+  align-items: stretch;
+  align-content: stretch;
 }
 
+/* Bootstrap column wrappers must not add padding/margins */
 #mobile-app-root .device-select-row > [class*="col-"] {
-  flex: 0 0 auto;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;                 /* so child can stretch */
+  min-height: 0;                 /* critical for grid overflow */
 }
 
-/* Device Card */
+/* Device Card: fill its slot */
 #mobile-app-root .mobile-device-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;                 /* critical for inner grid shrink */
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  padding: 14px;
+  border-radius: clamp(14px, 2.5vmin, 20px);
+  padding: clamp(10px, 2vmin, 14px);
   text-align: center;
   color: #fff;
-  display: block;
+  display: grid;
+  place-items: center;
   transition: transform 0.1s ease;
 }
 
@@ -54,18 +81,23 @@
   background: rgba(13, 110, 253, 0.12);
 }
 
-/* Inner Content */
+/* Inner Content: grid so icon area can shrink */
 #mobile-app-root .device-card-inner {
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: clamp(6px, 1.2vmin, 10px);
   align-items: center;
-  gap: 10px;
+  justify-items: center;
 }
 
+/* Icon wrap: scale with vmin so it doesn’t blow up on tall phones */
 #mobile-app-root .mobile-device-icon-wrap {
-  width: clamp(120px, 30vw, 160px);
-  height: clamp(120px, 30vw, 160px);
-  border-radius: 20px;
+  width: clamp(72px, 16vmin, 120px);
+  height: clamp(72px, 16vmin, 120px);
+  border-radius: clamp(14px, 2.5vmin, 20px);
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
@@ -79,27 +111,25 @@
   display: block;
 }
 
+/* Text: allow shrinking when needed */
 #mobile-app-root .device-card-label {
-  font-size: clamp(1.25rem, 1.4rem + 0.3vw, 1.75rem);
+  font-size: clamp(1.05rem, 1.1rem + 0.6vmin, 1.4rem);
   font-weight: 800;
+  line-height: 1.1;
 }
 
 #mobile-app-root .device-card-subtitle {
-  font-size: clamp(1rem, 1.05rem + 0.25vw, 1.25rem);
+  font-size: clamp(0.85rem, 0.9rem + 0.4vmin, 1.05rem);
   color: rgba(255, 255, 255, 0.7);
-  line-height: 1.2;
+  line-height: 1.15;
+  max-width: min(42ch, 100%);
 }
 
-/* Landscape Layout */
+/* Landscape: 3 columns, single row */
 @media (orientation: landscape) {
   #mobile-app-root .device-select-row {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  #mobile-app-root .device-select-row > [class*="col-"] {
-    width: 33.3333% !important;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr;
   }
 }
 

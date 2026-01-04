@@ -12,14 +12,13 @@ html, body {
   background: #0b0b0b;
   color: #fff;
   font-family: system-ui, sans-serif;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch; /* for momentum scrolling */
+  overflow: hidden;
   font-size: 1rem;
 }
 
 #mobile-app-root {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   width: 100%;
   background: #0b0b0b;
   color: #fff;
