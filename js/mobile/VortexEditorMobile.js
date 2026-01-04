@@ -11,7 +11,7 @@ import VortexPort from '../VortexPort.js';
 ----------------------------- */
 class MobileAppState {
   constructor() {
-    this.deviceType = null; // 'spark' | 'chromadeck' | 'duo'
+    this.deviceType = null; // 'Spark' | 'Chromadeck' | 'Duo'
     this.listeners = new Set();
   }
 
@@ -242,7 +242,7 @@ export default class VortexEditorMobile {
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     
     const ledCount = this.devices[deviceType].ledCount;
-    this.vortex.setLedCount(2);
+    this.lightshow.setLedCount(ledCount);
 
     await this.renderBleConnect({
       deviceType,
@@ -254,7 +254,7 @@ export default class VortexEditorMobile {
 
   getBleConnectCopy(deviceType) {
     // Duo and Chromadeck both connect to Chromadeck
-    if (deviceType === 'duo' || deviceType === 'chromadeck') {
+    if (deviceType === 'Duo' || deviceType === 'Chromadeck') {
       return {
         deviceImg: 'public/images/chromadeck-logo-square-512.png',
         deviceAlt: 'Chromadeck',
@@ -358,7 +358,7 @@ export default class VortexEditorMobile {
 
   async renderEditor({ deviceType }) {
     // Duo-first for now
-    if (deviceType !== 'duo') {
+    if (deviceType !== 'Duo') {
       const frag = await this.views.render('device-selected.html', { deviceType });
       this.root.innerHTML = '';
       this.root.appendChild(frag);
@@ -538,7 +538,7 @@ export default class VortexEditorMobile {
 
   async renderModeSource({ deviceType }) {
     const subtitle =
-      deviceType === 'duo'
+      deviceType === 'Duo'
       ? 'You’re connected to Chromadeck. Choose how to load or create Duo modes.'
       : 'Choose how you want to start.';
 
@@ -566,7 +566,7 @@ export default class VortexEditorMobile {
     loadBtn.addEventListener('click', async () => {
       console.log('[Mobile] Load Modes off Device (placeholder)');
       // duo pull mode flow:
-      if (deviceType === 'duo') {
+      if (deviceType === 'Duo') {
         await this.renderDuoReceive({ deviceType, step: 1 });
         return;
       }
@@ -633,6 +633,9 @@ export default class VortexEditorMobile {
         primary.textContent = 'Starting…';
 
         try {
+          // clear the modes
+          this.vortex.clearModes();
+          // listen for the mode from the duo
           await this.listenVL();
           // Continue to editor
           await this.renderEditor({ deviceType });
