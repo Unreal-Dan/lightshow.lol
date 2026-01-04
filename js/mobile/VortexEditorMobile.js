@@ -169,19 +169,19 @@ export default class VortexEditorMobile {
   async renderDeviceSelect() {
     const cards = [
       {
-        id: 'duo',
+        id: 'Duo',
         label: 'Duo',
         img: 'public/images/duo-logo-square-512.png',
         subtitle: 'Program your Duos via Chromadeck over Bluetooth',
       },
       {
-        id: 'spark',
+        id: 'Spark',
         label: 'Spark',
         img: 'public/images/spark-logo-square-512.png',
         subtitle: 'Program your Spark Orbit or Handles over Bluetooth',
       },
       {
-        id: 'chromadeck',
+        id: 'Chromadeck',
         label: 'Chromadeck',
         img: 'public/images/chromadeck-logo-square-512.png',
         subtitle: 'Program just the Chromadeck over Bluetooth',
@@ -241,7 +241,7 @@ export default class VortexEditorMobile {
 
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     
-    const ledCount = this.editor.devices[this.selectedDevice].ledCount;
+    const ledCount = this.devices[deviceType].ledCount;
     this.vortex.setLedCount(2);
 
     await this.renderBleConnect({
@@ -686,7 +686,7 @@ export default class VortexEditorMobile {
 
 
   getEditorLedCount(deviceType) {
-    if (deviceType === 'duo') return 2;
+    if (deviceType === 'Duo') return 2;
     return 1; // placeholder for now
   }
 
