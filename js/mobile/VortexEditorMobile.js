@@ -553,8 +553,11 @@ export default class VortexEditorMobile {
         primary.textContent = 'Starting…';
 
         try {
+          await this.listenVL();
+          // Continue to editor
+          await this.renderEditor({ deviceType });
           // advance to step 2
-          await this.renderDuoReceive({ deviceType, step: 2 });
+          //await this.renderDuoReceive({ deviceType, step: 2 });
         } finally {
           // (no-op) view was replaced
         }
@@ -573,10 +576,6 @@ export default class VortexEditorMobile {
       primary.textContent = 'Waiting…';
 
       try {
-        // PLACEHOLDER: tell Chromadeck to listen for Duo transmit
-        await this.listenVL();
-        // Continue to editor
-        await this.renderEditor({ deviceType });
       } catch (err) {
         console.error('[Mobile] Duo receive failed:', err);
         primary.disabled = false;
