@@ -590,84 +590,60 @@ export default class VortexEditorMobile {
     await this.vortexPort.listenVL(this.vortexLib, this.vortex);
   }
 
-  async renderDuoReceive({ deviceType, step }) {
-    // step 1: tell chromadeck to listen
-    // step 2: wait for duo to transmit; chromadeck relays to phone
+  async renderDuoReceive({ deviceType }) {
+    // bump token so any previous in-flight receive can't navigate after we leave
+    const token = ++this._duoRxToken;
 
-    const step1 = {
-      stepNum: '1',
-      title: 'Start Listening',
-      body: 'Tell the Chromadeck to start listening for a Duo mode transfer.',
-      primaryLabel: 'Start Listening',
-      secondaryLabel: 'Skip (debug)',
-      secondaryDisplay: '',
+    const copy = {
+      title: 'Waiting for Duo…',
+      body: 'Point the Duo at the Chromadeck buttons and send the mode. The Chromadeck is already listening.',
+      status: 'Starting…',
     };
 
-    const step2 = {
-      stepNum: '2',
-      title: 'Waiting for mode...',
-      body: 'Hold the Duo above the Chromadeck while sending the mode.',
-      primaryLabel: 'I sent it (wait)',
-      secondaryLabel: 'Simulate Receive (debug)',
-      secondaryDisplay: '',
-    };
-
-    const copy = step === 1 ? step1 : step2;
-
-    const frag = await this.views.render('duo-mode-receive.html', copy);
+    const frag = await this.views.render('duo-receive.html', copy);
     this.root.innerHTML = '';
     this.root.appendChild(frag);
 
     const backBtn = this.root.querySelector('#back-btn');
+    if (!backBtn) throw new Error('duo-receive.html is missing #back-btn');
+
     backBtn.addEventListener('click', async () => {
+      // invalidate this receive flow
+      this._duoRxToken++;
       await this.renderModeSource({ deviceType });
     });
 
-    const primary = this.root.querySelector('#duo-rx-primary');
-    const secondary = this.root.querySelector('#duo-rx-secondary');
+    const statusEl = this.root.querySelector('#duo-rx-status');
+    const statusTextEl = this.root.querySelector('#duo-rx-status-text');
+    const bodyEl = this.root.querySelector('#duo-rx-body');
 
-    if (step === 1) {
-      primary.addEventListener('click', async () => {
-        primary.disabled = true;
-        primary.textContent = 'Starting…';
+    // allow the DOM to paint before we block on BLE
+    await this.nextFrame();
+    await this.nextFrame();
 
-        try {
-          // clear the modes
-          this.vortex.clearModes();
-          // listen for the mode from the duo
-          await this.listenVL();
-          // Continue to editor
-          await this.renderEditor({ deviceType });
-          // advance to step 2
-          //await this.renderDuoReceive({ deviceType, step: 2 });
-        } finally {
-          // (no-op) view was replaced
-        }
-      });
+    try {
+      if (token !== this._duoRxToken) return;
 
-      secondary.addEventListener('click', async () => {
-        await this.renderDuoReceive({ deviceType, step: 2 });
-      });
+      if (statusTextEl) statusTextEl.textContent = 'Listening…';
 
-      return;
-    }
+      // clear existing modes and immediately start listening
+      this.vortex.clearModes();
 
-    // step 2
-    primary.addEventListener('click', async () => {
-      primary.disabled = true;
-      primary.textContent = 'Waiting…';
+      await this.listenVL();
 
-      try {
-      } catch (err) {
-        console.error('[Mobile] Duo receive failed:', err);
-        primary.disabled = false;
-        primary.textContent = 'I sent it (wait)';
-      }
-    });
+      if (token !== this._duoRxToken) return;
 
-    secondary.addEventListener('click', async () => {
+      if (statusTextEl) statusTextEl.textContent = 'Received. Opening editor…';
       await this.renderEditor({ deviceType });
-    });
+    } catch (err) {
+      console.error('[Mobile] Duo receive failed:', err);
+
+      if (token !== this._duoRxToken) return;
+
+      if (statusEl) statusEl.classList.add('is-error');
+      if (statusTextEl) statusTextEl.textContent = 'Receive failed. Tap Back and try again.';
+      if (bodyEl) bodyEl.textContent = 'Make sure the Duo is close to the Chromadeck, then send again.';
+    }
   }
 
   async startNewModeAndEnterEditor(deviceType) {
