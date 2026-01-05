@@ -595,9 +595,6 @@ export default class VortexEditorMobile {
   }
 
   async renderDuoReceive({ deviceType }) {
-    // bump token so any previous in-flight receive can't navigate after we leave
-    const token = ++this._duoRxToken;
-
     const copy = {
       title: 'Waiting for Duo…',
       body: 'Point the Duo at the Chromadeck buttons and send the mode. The Chromadeck is already listening.',
@@ -613,7 +610,6 @@ export default class VortexEditorMobile {
 
     backBtn.addEventListener('click', async () => {
       // invalidate this receive flow
-      this._duoRxToken++;
       await this.renderModeSource({ deviceType });
     });
 
@@ -626,8 +622,6 @@ export default class VortexEditorMobile {
     await this.nextFrame();
 
     try {
-      if (token !== this._duoRxToken) return;
-
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
 
       // clear existing modes and immediately start listening
@@ -635,15 +629,10 @@ export default class VortexEditorMobile {
 
       await this.listenVL();
 
-      if (token !== this._duoRxToken) return;
-
       if (statusTextEl) statusTextEl.textContent = 'Received. Opening editor…';
       await this.renderEditor({ deviceType });
     } catch (err) {
       console.error('[Mobile] Duo receive failed:', err);
-
-      if (token !== this._duoRxToken) return;
-
       if (statusEl) statusEl.classList.add('is-error');
       if (statusTextEl) statusTextEl.textContent = 'Receive failed. Tap Back and try again.';
       if (bodyEl) bodyEl.textContent = 'Make sure the Duo is close to the Chromadeck, then send again.';
