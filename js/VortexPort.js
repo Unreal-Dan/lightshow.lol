@@ -112,6 +112,8 @@ export default class VortexPort {
         }
       } else {
         Notification.failure("BLE Connection Failed");
+        this.deviceCallback('failed');
+        return;
       }
     } else {
       try {
@@ -135,7 +137,7 @@ export default class VortexPort {
     await this.beginConnection();
   }
 
-  async beginConnection(){
+  async beginConnection() {
     if (!this.useBLE && !this.serialPort) {
       return;
     }

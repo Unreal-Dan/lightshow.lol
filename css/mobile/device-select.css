@@ -133,3 +133,19 @@
   }
 }
 
+#mobile-app-root .skip-to-editor-link {
+  text-align: center;
+  margin-top: clamp(10px, 2vmin, 20px);
+  font-size: clamp(1.2rem, 0.95rem + 0.4vmin, 1.4rem);
+  margin-bottom: clamp(10px, 2vmin, 20px);
+}
+
+#mobile-app-root .skip-to-editor-link a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+}
+
+#mobile-app-root .skip-to-editor-link a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+

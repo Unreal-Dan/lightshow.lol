@@ -211,6 +211,17 @@ export default class VortexEditorMobile {
     }
     cardFragments.forEach((frag) => mount.appendChild(frag));
 
+    const skipLink = document.createElement('div');
+    skipLink.className = 'skip-to-editor-link';
+    skipLink.innerHTML = `<a href="#" id="skip-to-editor">Skip to Editor <i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
+    this.root.querySelector('.container-fluid').appendChild(skipLink);
+
+    this.root.querySelector('#skip-to-editor').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await this.renderEditor({ deviceType: 'Duo' });
+    });
+
+
     // Wire up selection (tap immediately continues)
     this.root.querySelectorAll('[data-device]').forEach((cardEl) => {
       cardEl.addEventListener('click', async () => {
@@ -303,6 +314,8 @@ export default class VortexEditorMobile {
           } else if (status === 'waiting') {
             console.log('[Mobile] BLE connected, waiting for greeting...');
             // Optional loading spinner UI could go here
+          } else if (status === 'failed') {
+            await this.renderEditor({ deviceType });
           }
         });
       } catch (err) {
@@ -465,9 +478,9 @@ export default class VortexEditorMobile {
     Object.assign(this.lightshow, {
       tickRate: 3,
       trailSize: 300,
-      dotSize: 10,
+      dotSize: 15,
       blurFac: 1,
-      circleRadius: 120,
+      circleRadius: 180,
       spread: 50,
       direction: -1,
     });
