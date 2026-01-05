@@ -566,7 +566,7 @@ export default class VortexEditorMobile {
       console.log('[Mobile] Load Modes off Device (placeholder)');
       // duo pull mode flow:
       if (deviceType === 'Duo') {
-        await this.renderDuoReceive({ deviceType, step: 1 });
+        await this.renderDuoReceive({ deviceType });
         return;
       }
       // Later: BLE pull flow, then enter editor
@@ -588,6 +588,10 @@ export default class VortexEditorMobile {
       return;
     }
     await this.vortexPort.listenVL(this.vortexLib, this.vortex);
+  }
+
+  nextFrame() {
+    return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
   async renderDuoReceive({ deviceType }) {
