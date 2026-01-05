@@ -604,12 +604,12 @@ export default class VortexEditorMobile {
       status: 'Starting…',
     };
 
-    const frag = await this.views.render('duo-receive.html', copy);
+    const frag = await this.views.render('duo-mode-receive.html', copy);
     this.root.innerHTML = '';
     this.root.appendChild(frag);
 
     const backBtn = this.root.querySelector('#back-btn');
-    if (!backBtn) throw new Error('duo-receive.html is missing #back-btn');
+    if (!backBtn) throw new Error('duo-mode-receive.html is missing #back-btn');
 
     backBtn.addEventListener('click', async () => {
       // invalidate this receive flow
