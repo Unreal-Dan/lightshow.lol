@@ -618,8 +618,8 @@ export default class VortexEditorMobile {
     const bodyEl = this.root.querySelector('#duo-rx-body');
 
     // allow the DOM to paint before we block on BLE
-    await this.nextFrame();
-    await this.nextFrame();
+    //await this.nextFrame();
+    //await this.nextFrame();
 
     try {
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
