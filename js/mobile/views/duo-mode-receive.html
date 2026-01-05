@@ -1,34 +1,32 @@
-<!-- /js/mobile/views/duo-receive.html -->
+<!-- /js/mobile/views/duo-mode-receive.html -->
 <div class="mobile-fullscreen">
   <div class="mobile-fullscreen-inner duo-rx-inner">
-    <div class="text-center mb-2">
-      <h1 class="mobile-title mb-2">Load from Duo</h1>
-      <div class="mobile-subtitle text-secondary">
-        Step <span id="duo-rx-step-num">{{stepNum}}</span> of 2
-      </div>
+    <div class="text-center duo-rx-header">
+      <h1 class="mobile-title">Load from Duo</h1>
+      <div class="mobile-subtitle text-secondary">Listening for a mode…</div>
     </div>
 
     <div class="duo-rx-card">
       <div class="duo-rx-hero">
-        <div class="duo-rx-icon">
+        <div class="duo-rx-icon" aria-hidden="true">
           <i class="fa-brands fa-bluetooth-b"></i>
         </div>
 
         <div class="duo-rx-device">
-          <img src="public/images/chromadeck-logo-square-512.png" alt="Chromadeck" class="duo-rx-device-img" />
+          <img
+            src="public/images/chromadeck-logo-square-512.png"
+            alt="Chromadeck"
+            class="duo-rx-device-img"
+          />
         </div>
       </div>
 
       <div class="duo-rx-title" id="duo-rx-title">{{title}}</div>
       <div class="duo-rx-body text-secondary" id="duo-rx-body">{{body}}</div>
 
-      <div class="duo-rx-actions">
-        <button id="duo-rx-primary" class="btn btn-primary btn-lg w-100">
-          {{primaryLabel}}
-        </button>
-        <button id="duo-rx-secondary" class="btn btn-outline-light btn-lg w-100" style="display: {{secondaryDisplay}};">
-          {{secondaryLabel}}
-        </button>
+      <div class="duo-rx-status" id="duo-rx-status">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <div class="duo-rx-status-text" id="duo-rx-status-text">{{status}}</div>
       </div>
     </div>
 
@@ -37,4 +35,3 @@
     </div>
   </div>
 </div>
-

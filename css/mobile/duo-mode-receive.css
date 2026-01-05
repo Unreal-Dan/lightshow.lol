@@ -3,7 +3,13 @@
 ============================ */
 
 #mobile-app-root .duo-rx-inner {
-  gap: 14px;
+  gap: 16px;
+}
+
+/* Slightly more breathing room above title and below card */
+#mobile-app-root .duo-rx-header {
+  margin-top: 6px;
+  margin-bottom: 2px;
 }
 
 /* Card Container */
@@ -76,9 +82,26 @@
   color: rgba(255, 255, 255, 0.74);
 }
 
-/* Action Buttons */
-#mobile-app-root .duo-rx-actions {
-  display: grid;
-  gap: 10px;
+/* Status Row */
+#mobile-app-root .duo-rx-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+#mobile-app-root .duo-rx-status .spinner-border {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+#mobile-app-root .duo-rx-status-text {
+  font-size: clamp(0.9rem, 0.95rem + 0.2vw, 1.05rem);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+#mobile-app-root .duo-rx-status.is-error .spinner-border {
+  display: none;
 }
 
