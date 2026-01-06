@@ -264,7 +264,7 @@ export default class VortexEditorMobile {
             return {
                 deviceImg: 'public/images/chromadeck-logo-square-512.png',
                 deviceAlt: 'Chromadeck',
-                instructions: 'Unplug the Chromadeck and switch it off and back on, then tap Connect and select the device.',
+                instructions: 'Unplug the Chromadeck and switch it off and back on, then tap Connect below.',
             };
         }
 
@@ -605,7 +605,7 @@ export default class VortexEditorMobile {
     async renderDuoReceive({ deviceType }) {
         const copy = {
             title: 'Waiting for Duo…',
-            body: 'Point the Duo at the Chromadeck buttons and send the mode. The Chromadeck is already listening.',
+            body: 'Point the Duo at the Chromadeck\'s buttons to send the mode.  The Chromadeck is listening.',
             status: 'Starting…',
         };
 
