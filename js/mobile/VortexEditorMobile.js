@@ -323,6 +323,7 @@ export default class VortexEditorMobile {
             }
         });
     }
+
     async demoModeOnDevice() {
         try {
             let tries = 0;
@@ -660,6 +661,8 @@ export default class VortexEditorMobile {
         const cur = this.vortex.engine().modes().curMode();
         if (cur) cur.init();
         this.vortex.engine().modes().saveCurMode();
+
+        await this.demoModeOnDevice();
 
         await this.renderEditor({ deviceType });
     }
