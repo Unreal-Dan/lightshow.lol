@@ -170,19 +170,19 @@ export default class VortexEditorMobile {
                 id: 'Duo',
                 label: 'Duo',
                 img: 'public/images/duo-logo-square-512.png',
-                subtitle: 'Program your Duos via Chromadeck over Bluetooth',
+                //subtitle: 'Program your Duos via Chromadeck over Bluetooth',
             },
             {
                 id: 'Spark',
                 label: 'Spark',
                 img: 'public/images/spark-logo-square-512.png',
-                subtitle: 'Program your Spark Orbit or Handles over Bluetooth',
+                //subtitle: 'Program your Spark Orbit or Handles over Bluetooth',
             },
             {
                 id: 'Chromadeck',
                 label: 'Chromadeck',
                 img: 'public/images/chromadeck-logo-square-512.png',
-                subtitle: 'Program just the Chromadeck over Bluetooth',
+                //subtitle: 'Program just the Chromadeck over Bluetooth',
             },
         ];
 
@@ -193,7 +193,7 @@ export default class VortexEditorMobile {
                     id: c.id,
                     label: c.label,
                     img: c.img,
-                    subtitle: c.subtitle,
+                    //subtitle: c.subtitle,
                 })
             )
         );
@@ -313,7 +313,8 @@ export default class VortexEditorMobile {
                         console.log('[Mobile] BLE connected, waiting for greeting...');
                         // Optional loading spinner UI could go here
                     } else if (status === 'failed') {
-                        await this.renderEditor({ deviceType });
+                        await this.renderModeSource({ deviceType });
+                        //await this.renderEditor({ deviceType });
                     }
                 });
             } catch (err) {
@@ -446,15 +447,15 @@ export default class VortexEditorMobile {
                 });
             }
 
-            // Back still works
-            const backBtn = this.root.querySelector('#editor-back-btn');
-            if (backBtn) {
-                backBtn.addEventListener('click', async () => {
-                    //if (BLE.isBleConnected()) await BLE.disconnect();
-                    const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
-                    await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
-                });
-            }
+            //// Back still works
+            //const backBtn = this.root.querySelector('#editor-back-btn');
+            //if (backBtn) {
+            //    backBtn.addEventListener('click', async () => {
+            //        //if (BLE.isBleConnected()) await BLE.disconnect();
+            //        const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
+            //        await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
+            //    });
+            //}
 
             return;
         }
@@ -497,19 +498,19 @@ export default class VortexEditorMobile {
         window.addEventListener('resize', this._editorResizeHandler);
 
         // Back
-        const backBtn = this.root.querySelector('#editor-back-btn');
-        if (backBtn) {
-            backBtn.addEventListener('click', async () => {
-                if (this._editorResizeHandler) {
-                    window.removeEventListener('resize', this._editorResizeHandler);
-                    this._editorResizeHandler = null;
-                }
-                this.stopEditorLightshow();
+        //const backBtn = this.root.querySelector('#editor-back-btn');
+        //if (backBtn) {
+        //    backBtn.addEventListener('click', async () => {
+        //        if (this._editorResizeHandler) {
+        //            window.removeEventListener('resize', this._editorResizeHandler);
+        //            this._editorResizeHandler = null;
+        //        }
+        //        this.stopEditorLightshow();
 
-                const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
-                await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
-            });
-        }
+        //        const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
+        //        await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
+        //    });
+        //}
 
         // Carousel (placeholder: just cycles vortex current mode index)
         const rerender = async () => {
@@ -571,22 +572,22 @@ export default class VortexEditorMobile {
         const loadBtn = this.root.querySelector('#ms-load-device');
         if (!loadBtn) throw new Error('mode-source.html is missing #ms-load-device');
         loadBtn.addEventListener('click', async () => {
-            console.log('[Mobile] Load Modes off Device (placeholder)');
+            console.log('[Mobile] Load Modes off Device');
             // duo pull mode flow:
             if (deviceType === 'Duo') {
                 await this.renderDuoReceive({ deviceType });
                 return;
             }
             // Later: BLE pull flow, then enter editor
-            await this.renderEditor({ deviceType }); // placeholder: just enter editor
+            await this.renderEditor({ deviceType });
         });
 
         const browseBtn = this.root.querySelector('#ms-browse-community');
         if (!browseBtn) throw new Error('mode-source.html is missing #ms-browse-community');
         browseBtn.addEventListener('click', async () => {
-            console.log('[Mobile] Browse Community (placeholder)');
+            console.log('[Mobile] Browse Community');
             // Later: navigate to community browser page, import, then enter editor
-            await this.renderEditor({ deviceType }); // placeholder: just enter editor
+            await this.renderEditor({ deviceType });
         });
     }
 
@@ -666,7 +667,7 @@ export default class VortexEditorMobile {
 
     getEditorLedCount(deviceType) {
         if (deviceType === 'Duo') return 2;
-        return 1; // placeholder for now
+        return 1;
     }
 
     hasAnyModes() {

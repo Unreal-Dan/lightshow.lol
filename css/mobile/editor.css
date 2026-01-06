@@ -78,7 +78,7 @@
   height: 52px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  background: #000;
   color: rgba(255, 255, 255, 0.90);
   display: grid;
   place-items: center;
@@ -136,4 +136,3 @@
   color: rgba(255, 255, 255, 0.92);
   line-height: 1.15;
 }
-
