@@ -92,7 +92,7 @@
 
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto; /* icon slot, then label/subtitle */
-  gap: clamp(6px, 1.2vmin, 10px);
+  gap: clamp(0.5rem, 1.2vmin, 1.1rem);
 
   align-items: center;
   justify-items: center;
@@ -138,7 +138,7 @@
 
 /* Text: allow shrinking when needed */
 #mobile-app-root .device-card-label {
-  font-size: clamp(1.05rem, 1.1rem + 0.6vmin, 1.4rem);
+  font-size: clamp(1.5rem, 1.1rem + 0.6vmin, 1.9rem);
   font-weight: 800;
   line-height: 1.1;
 }
