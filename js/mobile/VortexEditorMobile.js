@@ -11,13 +11,7 @@ import VortexPort from '../VortexPort.js';
 ----------------------------- */
 class MobileAppState {
   constructor() {
-    this.deviceType = null; // 'Spark' | 'Chromadeck' | 'Duo'
     this.listeners = new Set();
-  }
-
-  setDeviceType(type) {
-    this.deviceType = type;
-    this.emit();
   }
 
   subscribe(cb) {
@@ -96,11 +90,15 @@ export default class VortexEditorMobile {
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
     this.vortexPort = new VortexPort(this, true); // `true` enables BLE
-    this.state = new MobileAppState();
+    this.deviceType = null;
     this.root = null;
 
     // Views live next to mobile JS: js/mobile/views/*.html
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
+  }
+
+  setDeviceType(type) {
+    this.deviceType = type;
   }
 
   async initialize() {
@@ -226,7 +224,7 @@ export default class VortexEditorMobile {
     this.root.querySelectorAll('[data-device]').forEach((cardEl) => {
       cardEl.addEventListener('click', async () => {
         const type = cardEl.dataset.device;
-        this.state.setDeviceType(type);
+        this.setDeviceType(type);
         this.updateSelectionUI();
         await this.onDeviceSelected(type);
       });
@@ -237,7 +235,7 @@ export default class VortexEditorMobile {
   }
 
   updateSelectionUI() {
-    const selected = this.state.deviceType;
+    const selected = this.deviceType;
 
     this.root.querySelectorAll('[data-device]').forEach((card) => {
       card.classList.toggle('is-selected', card.dataset.device === selected);

@@ -18,6 +18,7 @@
   display: grid;
   grid-template-rows: auto 1fr;
   gap: clamp(8px, 1.5vmin, 12px);
+  min-height: 0; /* critical for nested grid overflow */
 }
 
 /* Kill bootstrap spacing that steals vertical space */
@@ -33,6 +34,7 @@
 /* Cards area: force-fit layout */
 #mobile-app-root .device-select-row {
   height: 100%;
+  min-height: 0;
   margin: 0 !important;          /* remove Bootstrap row negative margins */
   padding: 0 !important;
 
@@ -51,6 +53,7 @@
   max-width: none !important;
   padding: 0 !important;
   margin: 0 !important;
+
   display: flex;                 /* so child can stretch */
   min-height: 0;                 /* critical for grid overflow */
 }
@@ -81,33 +84,55 @@
   background: rgba(13, 110, 253, 0.12);
 }
 
-/* Inner Content: grid so icon area can shrink */
+/* Inner Content: grid so icon area can shrink (without growing the card) */
 #mobile-app-root .device-card-inner {
   width: 100%;
   height: 100%;
   min-height: 0;
+
   display: grid;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: minmax(0, 1fr) auto auto; /* icon slot, then label/subtitle */
   gap: clamp(6px, 1.2vmin, 10px);
+
   align-items: center;
   justify-items: center;
 }
 
-/* Icon wrap: scale with vmin so it doesn’t blow up on tall phones */
-#mobile-app-root .mobile-device-icon-wrap {
-  width: clamp(72px, 16vmin, 120px);
-  height: clamp(72px, 16vmin, 120px);
-  border-radius: clamp(14px, 2.5vmin, 20px);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/* Icon slot: takes the flexible space */
+#mobile-app-root .mobile-device-icon-slot {
+  min-height: 0;
+  width: 100%;
   display: grid;
   place-items: center;
 }
 
+/* Icon square: fills whatever space the layout already provides, but never grows the card */
+#mobile-app-root .mobile-device-icon-wrap {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+
+  border-radius: clamp(14px, 2.5vmin, 28px);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+
+  flex: 0 0 auto; /* avoid flex shrink surprises if nested in flex somewhere */
+}
+
+/* Make the actual image occupy the square */
 #mobile-app-root .mobile-device-icon {
-  width: 80%;
-  height: 80%;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
+  padding: 8%;
   display: block;
 }
 
