@@ -105,3 +105,12 @@
   display: none;
 }
 
+/* Upside-down Duo icon inside the existing duo-rx-icon circle */
+#mobile-app-root .duo-rx-duo-icon {
+  width: 75%;
+  height: 75%;
+  object-fit: contain;
+  display: block;
+  transform: rotate(180deg);
+}
+

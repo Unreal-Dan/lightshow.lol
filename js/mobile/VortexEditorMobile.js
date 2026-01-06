@@ -272,7 +272,7 @@ export default class VortexEditorMobile {
     return {
       deviceImg: 'public/images/spark-logo-square-512.png',
       deviceAlt: 'Spark',
-      instructions: 'Open the Bluetooth menu on the Spark, then tap Connect and select Vortex Spark.',
+      instructions: 'Unplug the Spark and open the Bluetooth menu, then tap Connect below.',
     };
   }
 
@@ -611,8 +611,8 @@ export default class VortexEditorMobile {
 
   async renderDuoReceive({ deviceType }) {
     const copy = {
-      title: 'Waiting for Duo…',
-      body: 'Point the Duo at the Chromadeck\'s buttons to send the mode.  The Chromadeck is listening.',
+      title: 'Listening for Duo…',
+      body: 'Point the Duo at the Chromadeck\'s buttons and send the mode.  The Chromadeck is listening.',
       status: 'Starting…',
     };
 
@@ -650,7 +650,7 @@ export default class VortexEditorMobile {
       console.error('[Mobile] Duo receive failed:', err);
       if (statusEl) statusEl.classList.add('is-error');
       if (statusTextEl) statusTextEl.textContent = 'Receive failed. Tap Back and try again.';
-      if (bodyEl) bodyEl.textContent = 'Make sure the Duo is close to the Chromadeck, then send again.';
+      if (bodyEl) bodyEl.textContent = 'Point the Duo at the Chromadeck\'s buttons, then send again.';
     }
   }
 
