@@ -9,23 +9,17 @@ import SimpleViews from './SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
 
 const ASSETS = {
-  fontAwesomeCss: {
-    id: 'fa-css',
-    href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css',
+  styles: [
+    { id: 'fa-css', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css' },
+    { id: 'bootstrap-css', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' },
+    { id: 'mobile-styles-css', href: 'css/mobile/mobile-styles.css' },
+  ],
+  scripts: [
+    { id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }
+  ],
+  data: {
+    devices: 'js/devices.json',
   },
-  bootstrapCss: {
-    id: 'bootstrap-css',
-    href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css',
-  },
-  mobileCss: {
-    id: 'mobile-styles-css',
-    href: 'css/mobile/mobile-styles.css',
-  },
-  bootstrapJs: {
-    id: 'bootstrap-js',
-    src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js',
-  },
-  devicesJson: 'js/devices.json',
 };
 
 const DEVICE_CARDS = [
@@ -88,9 +82,28 @@ export default class VortexEditorMobile {
 
     document.body.innerHTML = '';
 
+    // load all css and js assets
     await this.loadAssets();
-    this.createRoot();
 
+    // create the root node
+    this.root = document.createElement('div');
+    this.root.id = 'mobile-app-root';
+    document.body.appendChild(this.root);
+
+    // create the dom interface
+    this.dom = new SimpleDom(this.root);
+
+    // load devices.json which contains data about each device
+    const devicesUrl = ASSETS.data.devices;
+    const res = await fetch(devicesUrl, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(
+        `Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`
+      );
+    }
+    this.devices = await res.json();
+
+    // go to the device selection screen
     await this.gotoDeviceSelect();
   }
 
@@ -102,20 +115,14 @@ export default class VortexEditorMobile {
      Asset helpers
   ----------------------------- */
   async loadAssets() {
-    this.loadStylesheet(ASSETS.fontAwesomeCss.id, ASSETS.fontAwesomeCss.href);
-    this.loadStylesheet(ASSETS.bootstrapCss.id, ASSETS.bootstrapCss.href);
-    this.loadStylesheet(ASSETS.mobileCss.id, ASSETS.mobileCss.href);
-
-    await this.loadScript(ASSETS.bootstrapJs.id, ASSETS.bootstrapJs.src);
-
-    const devicesUrl = ASSETS.devicesJson;
-    const res = await fetch(devicesUrl, { cache: 'no-store' });
-    if (!res.ok) {
-      throw new Error(
-        `Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`
-      );
+    // load all css assets
+    for (const s of ASSETS.styles) {
+      this.loadStylesheet(s.id, s.href);
     }
-    this.devices = await res.json();
+    // load all script assets
+    for (const s of ASSETS.scripts) {
+      await this.loadScript(s.id, s.src);
+    }
   }
 
   loadStylesheet(id, href) {
@@ -137,14 +144,6 @@ export default class VortexEditorMobile {
       script.onerror = reject;
       document.head.appendChild(script);
     });
-  }
-
-  createRoot() {
-    this.root = document.createElement('div');
-    this.root.id = 'mobile-app-root';
-    document.body.appendChild(this.root);
-
-    this.dom = new SimpleDom(this.root);
   }
 
   sleep(ms) {
