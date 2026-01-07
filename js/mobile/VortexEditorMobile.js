@@ -4,6 +4,7 @@ import VortexLib from '../VortexLib.js';
 import Lightshow from '../Lightshow.js';
 import SimpleViews from './SimpleViews.js';
 import VortexPort from '../VortexPort.js';
+import Notification from '../Notification.js';
 
 /* -----------------------------
    Mobile Editor Root
@@ -14,10 +15,13 @@ export default class VortexEditorMobile {
     this.vortexLib = vortexLib;
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
+
     this.vortexPort = new VortexPort(this, true); // `true` enables BLE
     this.deviceType = null;
     this.devices = null;
     this.root = null;
+    this.lightshow = null;
+    this._editorResizeHandler = null;
 
     // Views live next to mobile JS: js/mobile/views/*.html
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
@@ -60,9 +64,12 @@ export default class VortexEditorMobile {
     );
 
     // fetch devices json
-    const res = await fetch('js/devices.json', { cache: 'no-store' });
+    const devicesUrl = 'js/devices.json';
+    const res = await fetch(devicesUrl, { cache: 'no-store' });
     if (!res.ok) {
-      throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${url}`);
+      throw new Error(
+        `Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`
+      );
     }
     this.devices = await res.json();
   }
@@ -94,6 +101,10 @@ export default class VortexEditorMobile {
     document.body.appendChild(this.root);
   }
 
+  sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
   /* -----------------------------
      STEP 1: Device Selection
   ----------------------------- */
@@ -103,19 +114,16 @@ export default class VortexEditorMobile {
         id: 'Duo',
         label: 'Duo',
         img: 'public/images/duo-logo-square-512.png',
-        //subtitle: 'Program your Duos via Chromadeck over Bluetooth',
       },
       {
         id: 'Spark',
         label: 'Spark',
         img: 'public/images/spark-logo-square-512.png',
-        //subtitle: 'Program your Spark Orbit or Handles over Bluetooth',
       },
       {
         id: 'Chromadeck',
         label: 'Chromadeck',
         img: 'public/images/chromadeck-logo-square-512.png',
-        //subtitle: 'Program just the Chromadeck over Bluetooth',
       },
     ];
 
@@ -126,7 +134,6 @@ export default class VortexEditorMobile {
           id: c.id,
           label: c.label,
           img: c.img,
-          //subtitle: c.subtitle,
         })
       )
     );
@@ -145,13 +152,12 @@ export default class VortexEditorMobile {
     const skipLink = document.createElement('div');
     skipLink.className = 'skip-to-editor-link';
     skipLink.innerHTML = `<a href="#" id="skip-to-editor">Skip to Editor <i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
-    this.root.querySelector('.container-fluid').appendChild(skipLink);
+    this.root.querySelector('.container-fluid')?.appendChild(skipLink);
 
-    this.root.querySelector('#skip-to-editor').addEventListener('click', async (e) => {
+    this.root.querySelector('#skip-to-editor')?.addEventListener('click', async (e) => {
       e.preventDefault();
       await this.renderEditor({ deviceType: 'Duo' });
     });
-
 
     // Wire up selection (tap immediately continues)
     this.root.querySelectorAll('[data-device]').forEach((cardEl) => {
@@ -182,7 +188,7 @@ export default class VortexEditorMobile {
     console.log('[Mobile] selected device:', deviceType);
 
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
-    
+
     await this.renderBleConnect({
       deviceType,
       deviceImg,
@@ -201,7 +207,7 @@ export default class VortexEditorMobile {
       };
     }
 
-    // Spark connects to Spark (Orbit/Handles) — use your Spark Orbit icon
+    // Spark connects to Spark (Orbit/Handles)
     return {
       deviceImg: 'public/images/spark-logo-square-512.png',
       deviceAlt: 'Spark',
@@ -241,13 +247,11 @@ export default class VortexEditorMobile {
             await this.renderModeSource({ deviceType });
           } else if (status === 'disconnect') {
             console.warn('[Mobile] Device disconnected');
-            // Optionally handle disconnection here
           } else if (status === 'waiting') {
             console.log('[Mobile] BLE connected, waiting for greeting...');
-            // Optional loading spinner UI could go here
           } else if (status === 'failed') {
+            // You had this behavior already; leaving it.
             await this.renderModeSource({ deviceType });
-            //await this.renderEditor({ deviceType });
           }
         });
       } catch (err) {
@@ -260,23 +264,16 @@ export default class VortexEditorMobile {
   async demoModeOnDevice() {
     try {
       let tries = 0;
-      // this is often used right after performing some operations and in
-      // practice it was found that the operation could take time and this
-      // could fire in another handler/thread and it would fail. By simply
-      // waiting for about a second it ensures the other operations can pass
-      // and then the mode is rendered afterward. A proper queue is needed.
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
         if (tries++ > 10) {
-          // failure
-          console.log("Failed to demo mode, waited 10 delays...");
+          console.log('Failed to demo mode, waited 10 delays...');
           return;
         }
         await this.sleep(100);
       }
-      // demo the mode
       await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
     } catch (error) {
-      Notification.failure("Failed to demo mode (" + error + ")");
+      Notification.failure('Failed to demo mode (' + error + ')');
     }
   }
 
@@ -299,30 +296,92 @@ export default class VortexEditorMobile {
     return true;
   }
 
-  async renderEditor({ deviceType }) {
-    // Duo-first for now
-    if (deviceType !== 'Duo') {
-      const frag = await this.views.render('device-selected.html', { deviceType });
-      this.root.innerHTML = '';
-      this.root.appendChild(frag);
+  /* -----------------------------
+     Mobile Pull Flow (Spark/Chromadeck)
+  ----------------------------- */
+  async pullFromDevice() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure('Please connect a device first');
+      throw new Error('Device not connected');
+    }
+
+    // Prefer common VortexPort method names.
+    if (typeof this.vortexPort.pullModes === 'function') {
+      await this.vortexPort.pullModes(this.vortexLib, this.vortex);
+      return;
+    }
+    if (typeof this.vortexPort.pullFromDevice === 'function') {
+      await this.vortexPort.pullFromDevice(this.vortexLib, this.vortex);
+      return;
+    }
+    if (typeof this.vortexPort.pullAllModes === 'function') {
+      await this.vortexPort.pullAllModes(this.vortexLib, this.vortex);
       return;
     }
 
-    // Ensure vortex exists but DO NOT create modes
-    if (!this.vortex) {
-      return;
+    throw new Error('VortexPort has no pull-modes method (expected pullModes/pullFromDevice/pullAllModes)');
+  }
+
+  async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
+    const loadBtnId = source === 'editor-empty' ? '#m-load-from-device' : '#ms-load-device';
+    const newBtnId = source === 'editor-empty' ? '#m-start-new-mode' : '#ms-new-mode';
+    const browseBtnId = source === 'editor-empty' ? '#m-browse-community' : '#ms-browse-community';
+
+    const loadBtn = this.root.querySelector(loadBtnId);
+    const newBtn = this.root.querySelector(newBtnId);
+    const browseBtn = this.root.querySelector(browseBtnId);
+    const backBtn = this.root.querySelector('#back-btn');
+
+    const disableAll = (disabled) => {
+      if (loadBtn) loadBtn.disabled = disabled;
+      if (newBtn) newBtn.disabled = disabled;
+      if (browseBtn) browseBtn.disabled = disabled;
+      if (backBtn) backBtn.disabled = disabled;
+    };
+
+    const prevLoadHTML = loadBtn ? loadBtn.innerHTML : null;
+    try {
+      disableAll(true);
+      if (loadBtn) {
+        loadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
+      }
+
+      // Clear existing modes before pull (matches your Duo receive flow behavior).
+      this.vortex.clearModes();
+
+      await this.pullFromDevice();
+
+      if (this.vortex.numModes() > 0) {
+        this.vortex.setCurMode(0, false);
+      }
+
+      await this.renderEditor({ deviceType });
+    } catch (err) {
+      console.error('[Mobile] Pull from device failed:', err);
+      Notification.failure('Failed to load modes from device');
+      // Stay on current page, restore UI.
+    } finally {
+      if (loadBtn && prevLoadHTML != null) loadBtn.innerHTML = prevLoadHTML;
+      disableAll(false);
     }
+  }
+
+  async renderEditor({ deviceType }) {
+    // Ensure vortex exists but DO NOT create modes here
+    if (!this.vortex) return;
+
+    // Ensure we have a deviceType fallback
+    const dt = deviceType || this.deviceType || 'Duo';
 
     const hasModes = this.vortex.numModes() > 0;
 
-    // Simple labels
     const modeName = hasModes ? `Mode ${this.vortex.engine().modes().curModeIndex() + 1}` : 'No modes';
     const modeIndexLabel = hasModes
       ? `${this.vortex.engine().modes().curModeIndex() + 1} / ${this.vortex.numModes()}`
       : 'No modes';
 
     const frag = await this.views.render('editor.html', {
-      deviceType,
+      deviceType: dt,
       modeName,
       modeIndexLabel,
       emptyDisplay: hasModes ? 'none' : 'grid',
@@ -351,7 +410,6 @@ export default class VortexEditorMobile {
 
     // If we have no modes, do NOT start the lightshow yet
     if (!hasModes) {
-      // Wire the 3 primary actions
       const startNewBtn = this.root.querySelector('#m-start-new-mode');
       if (startNewBtn) {
         startNewBtn.addEventListener('click', async () => {
@@ -364,15 +422,27 @@ export default class VortexEditorMobile {
           const cur = this.vortex.engine().modes().curMode();
           if (cur) cur.init();
           this.vortex.engine().modes().saveCurMode();
-          await this.renderEditor({ deviceType });
+          await this.renderEditor({ deviceType: dt });
         });
       }
 
       const loadBtn = this.root.querySelector('#m-load-from-device');
       if (loadBtn) {
-        loadBtn.addEventListener('click', () => {
-          console.log('[Mobile] Get Mode from Duo');
+        // Duo: receive from Duo. Others: pull immediately and enter editor.
+        loadBtn.addEventListener('click', async () => {
+          if (dt === 'Duo') {
+            await this.renderDuoReceive({ deviceType: dt });
+          } else {
+            await this.pullFromDeviceAndEnterEditor(dt, { source: 'editor-empty' });
+          }
         });
+
+        // Optional: change label for Duo
+        if (dt === 'Duo') {
+          loadBtn.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Load from Duo`;
+        } else {
+          loadBtn.innerHTML = `<i class="fa-solid fa-upload"></i> Load modes from device`;
+        }
       }
 
       const browseBtn = this.root.querySelector('#m-browse-community');
@@ -381,16 +451,6 @@ export default class VortexEditorMobile {
           console.log('[Mobile] Browse Community');
         });
       }
-
-      //// Back still works
-      //const backBtn = this.root.querySelector('#editor-back-btn');
-      //if (backBtn) {
-      //  backBtn.addEventListener('click', async () => {
-      //    //if (BLE.isBleConnected()) await BLE.disconnect();
-      //    const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
-      //    await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
-      //  });
-      //}
 
       return;
     }
@@ -407,18 +467,38 @@ export default class VortexEditorMobile {
     // Fullscreen behavior
     this.lightshow.updateLayout(false);
 
-    // Duo rendering
-    this.lightshow.setDuoEditorMode(true);
+    const isDuo = dt === 'Duo';
+    this.lightshow.setDuoEditorMode(isDuo);
+
+    // Pull ledCount from devices.json when available
+    const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
+
+    // Shared defaults (then tweak for Duo)
     Object.assign(this.lightshow, {
       tickRate: 3,
-      trailSize: 300,
-      dotSize: 15,
+      trailSize: 260,
+      dotSize: 14,
       blurFac: 1,
-      circleRadius: 180,
+      circleRadius: 170,
       spread: 50,
       direction: -1,
     });
-    const ledCount = this.devices[deviceType].ledCount;
+
+    if (isDuo) {
+      Object.assign(this.lightshow, {
+        tickRate: 3,
+        trailSize: 300,
+        dotSize: 15,
+        circleRadius: 180,
+      });
+    } else {
+      Object.assign(this.lightshow, {
+        trailSize: 220,
+        dotSize: 13,
+        circleRadius: 160,
+      });
+    }
+
     this.lightshow.setLedCount(ledCount);
     this.lightshow.setShape('circle');
     this.lightshow.angle = 0;
@@ -435,25 +515,8 @@ export default class VortexEditorMobile {
     // demo the mode on the device
     await this.demoModeOnDevice();
 
-    // Back
-    //const backBtn = this.root.querySelector('#editor-back-btn');
-    //if (backBtn) {
-    //  backBtn.addEventListener('click', async () => {
-    //    if (this._editorResizeHandler) {
-    //      window.removeEventListener('resize', this._editorResizeHandler);
-    //      this._editorResizeHandler = null;
-    //    }
-    //    this.stopEditorLightshow();
-
-    //    const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
-    //    await this.renderBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
-    //  });
-    //}
-    //
-
-    // Carousel (placeholder: just cycles vortex current mode index)
     const rerender = async () => {
-      await this.renderEditor({ deviceType });
+      await this.renderEditor({ deviceType: dt });
     };
 
     const prev = this.root.querySelector('#mode-prev');
@@ -504,35 +567,42 @@ export default class VortexEditorMobile {
     const newBtn = this.root.querySelector('#ms-new-mode');
     if (!newBtn) throw new Error('mode-source.html is missing #ms-new-mode');
     newBtn.addEventListener('click', async () => {
-      // For now: create one mode locally and go to editor
       await this.startNewModeAndEnterEditor(deviceType);
     });
 
     const loadBtn = this.root.querySelector('#ms-load-device');
     if (!loadBtn) throw new Error('mode-source.html is missing #ms-load-device');
+
+    // Change the copy per device WITHOUT touching the template.
+    if (deviceType === 'Duo') {
+      loadBtn.innerHTML = `<i class="fa-solid fa-satellite-dish"></i> Load from Duo`;
+    } else {
+      loadBtn.innerHTML = `<i class="fa-solid fa-upload"></i> Load modes from device`;
+    }
+
     loadBtn.addEventListener('click', async () => {
-      console.log('[Mobile] Load Modes off Device');
-      // duo pull mode flow:
+      console.log('[Mobile] Load modes start:', deviceType);
+
       if (deviceType === 'Duo') {
         await this.renderDuoReceive({ deviceType });
         return;
       }
-      // Later: BLE pull flow, then enter editor
-      await this.renderEditor({ deviceType });
+
+      // Spark/Chromadeck: pull immediately and enter editor (no additional screen)
+      await this.pullFromDeviceAndEnterEditor(deviceType, { source: 'mode-source' });
     });
 
     const browseBtn = this.root.querySelector('#ms-browse-community');
     if (!browseBtn) throw new Error('mode-source.html is missing #ms-browse-community');
     browseBtn.addEventListener('click', async () => {
       console.log('[Mobile] Browse Community');
-      // Later: navigate to community browser page, import, then enter editor
       await this.renderEditor({ deviceType });
     });
   }
 
   async listenVL() {
     if (!this.vortexPort.isActive()) {
-      Notification.failure("Please connect a device first");
+      Notification.failure('Please connect a device first');
       return;
     }
     await this.vortexPort.listenVL(this.vortexLib, this.vortex);
@@ -545,7 +615,7 @@ export default class VortexEditorMobile {
   async renderDuoReceive({ deviceType }) {
     const copy = {
       title: 'Listening for Duo…',
-      body: 'Point the Duo at the Chromadeck\'s buttons and send the mode.  The Chromadeck is listening.',
+      body: "Point the Duo at the Chromadeck's buttons and send the mode.  The Chromadeck is listening.",
       status: 'Starting…',
     };
 
@@ -557,17 +627,12 @@ export default class VortexEditorMobile {
     if (!backBtn) throw new Error('duo-mode-receive.html is missing #back-btn');
 
     backBtn.addEventListener('click', async () => {
-      // invalidate this receive flow
       await this.renderModeSource({ deviceType });
     });
 
     const statusEl = this.root.querySelector('#duo-rx-status');
     const statusTextEl = this.root.querySelector('#duo-rx-status-text');
     const bodyEl = this.root.querySelector('#duo-rx-body');
-
-    // allow the DOM to paint before we block on BLE
-    //await this.nextFrame();
-    //await this.nextFrame();
 
     try {
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
@@ -583,7 +648,7 @@ export default class VortexEditorMobile {
       console.error('[Mobile] Duo receive failed:', err);
       if (statusEl) statusEl.classList.add('is-error');
       if (statusTextEl) statusTextEl.textContent = 'Receive failed. Tap Back and try again.';
-      if (bodyEl) bodyEl.textContent = 'Point the Duo at the Chromadeck\'s buttons, then send again.';
+      if (bodyEl) bodyEl.textContent = "Point the Duo at the Chromadeck's buttons, then send again.";
     }
   }
 
@@ -603,7 +668,6 @@ export default class VortexEditorMobile {
     await this.renderEditor({ deviceType });
   }
 
-
   getEditorLedCount(deviceType) {
     if (deviceType === 'Duo') return 2;
     return 1;
@@ -613,14 +677,14 @@ export default class VortexEditorMobile {
     return !!this.vortex && this.vortex.numModes() > 0;
   }
 
-
   stopEditorLightshow() {
     if (this.lightshow) {
-      try { this.lightshow.stop(); } catch {}
+      try {
+        this.lightshow.stop();
+      } catch {}
       this.lightshow = null;
     }
   }
-
 }
 
 /* -----------------------------
@@ -644,8 +708,12 @@ async function boot() {
   }
 
   // Otherwise wait for DOM (not full load of images/fonts/etc).
-  document.addEventListener('DOMContentLoaded', () => {
-    boot();
-  }, { once: true });
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      boot();
+    },
+    { once: true }
+  );
 })();
 
