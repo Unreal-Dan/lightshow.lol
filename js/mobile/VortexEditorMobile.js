@@ -4,93 +4,19 @@ import VortexLib from '../VortexLib.js';
 import Lightshow from '../Lightshow.js';
 import SimpleViews from './SimpleViews.js';
 import VortexPort from '../VortexPort.js';
-//import * as BLE from '../ble.js';
-
-/* -----------------------------
-   Mobile App State
------------------------------ */
-class MobileAppState {
-  constructor() {
-    this.listeners = new Set();
-  }
-
-  subscribe(cb) {
-    this.listeners.add(cb);
-    return () => this.listeners.delete(cb);
-  }
-
-  emit() {
-    for (const cb of this.listeners) cb(this);
-  }
-}
 
 /* -----------------------------
    Mobile Editor Root
 ----------------------------- */
 export default class VortexEditorMobile {
-  devices = {
-    'None': {
-      image: 'public/images/none-logo-square-512.png',
-      icon: 'public/images/none-logo-square-64.png',
-      iconBig: 'public/images/none-logo-square-512.png',
-      label: 'None',
-      ledCount: 1
-    },
-    'Orbit': {
-      image: 'public/images/orbit.png',
-      icon: 'public/images/orbit-logo-square-64.png',
-      iconBig: 'public/images/orbit-logo-square-512.png',
-      label: 'Orbit',
-      ledCount: 28
-    },
-    'Handle': {
-      image: 'public/images/handle.png',
-      icon: 'public/images/handle-logo-square-64.png',
-      iconBig: 'public/images/handle-logo-square-512.png',
-      label: 'Handle',
-      ledCount: 3
-    },
-    'Gloves': {
-      image: 'public/images/gloves.png',
-      icon: 'public/images/gloves-logo-square-64.png',
-      iconBig: 'public/images/gloves-logo-square-512.png',
-      label: 'Gloves',
-      ledCount: 10
-    },
-    'Chromadeck': {
-      image: 'public/images/chromadeck.png',
-      icon: 'public/images/chromadeck-logo-square-64.png',
-      iconBig: 'public/images/chromadeck-logo-square-512.png',
-      label: 'Chromadeck',
-      ledCount: 20
-    },
-    'Spark': {
-      image: 'public/images/spark.png',
-      icon: 'public/images/spark-logo-square-64.png',
-      iconBig: 'public/images/spark-logo-square-512.png',
-      label: 'Spark',
-      ledCount: 6,
-      // alternate spark image/icon/label for handle
-      altImage: 'public/images/spark-handle.png',
-      altIcon: 'public/images/spark-handle-logo-square-64.png',
-      altIconBig: 'public/images/spark-handle-logo-square-512.png',
-      altLabel: 'SparkHandle',
-    },
-    'Duo': {
-      image: 'public/images/duo.png',
-      icon: 'public/images/duo-logo-square-64.png',
-      iconBig: 'public/images/duo-logo-square-512.png',
-      label: 'Duo',
-      ledCount: 2
-    }
-  };
-
   constructor(vortexLib) {
+    // store vortexlib reference
     this.vortexLib = vortexLib;
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
     this.vortexPort = new VortexPort(this, true); // `true` enables BLE
     this.deviceType = null;
+    this.devices = null;
     this.root = null;
 
     // Views live next to mobile JS: js/mobile/views/*.html
@@ -103,13 +29,13 @@ export default class VortexEditorMobile {
 
   async initialize() {
     console.log('[VortexEditorMobile] initialize');
-
     // MOBILE MUST OWN THE PAGE (structure only; no styling here)
     document.body.innerHTML = '';
-
+    // load dependencies
     await this.loadAssets();
-
+    // create root panel
     this.createRoot();
+    // render the device selection page
     await this.renderDeviceSelect();
   }
 
@@ -132,6 +58,13 @@ export default class VortexEditorMobile {
       'bootstrap-js',
       'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js'
     );
+
+    // fetch devices json
+    const res = await fetch('js/devices.json', { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${url}`);
+    }
+    this.devices = await res.json();
   }
 
   loadStylesheet(id, href) {
