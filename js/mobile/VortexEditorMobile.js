@@ -299,29 +299,6 @@ export default class VortexEditorMobile {
   /* -----------------------------
      Mobile Pull Flow (Spark/Chromadeck)
   ----------------------------- */
-  async pullFromDevice() {
-    if (!this.vortexPort.isActive()) {
-      Notification.failure('Please connect a device first');
-      throw new Error('Device not connected');
-    }
-
-    // Prefer common VortexPort method names.
-    if (typeof this.vortexPort.pullModes === 'function') {
-      await this.vortexPort.pullModes(this.vortexLib, this.vortex);
-      return;
-    }
-    if (typeof this.vortexPort.pullFromDevice === 'function') {
-      await this.vortexPort.pullFromDevice(this.vortexLib, this.vortex);
-      return;
-    }
-    if (typeof this.vortexPort.pullAllModes === 'function') {
-      await this.vortexPort.pullAllModes(this.vortexLib, this.vortex);
-      return;
-    }
-
-    throw new Error('VortexPort has no pull-modes method (expected pullModes/pullFromDevice/pullAllModes)');
-  }
-
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
     const loadBtnId = source === 'editor-empty' ? '#m-load-from-device' : '#ms-load-device';
     const newBtnId = source === 'editor-empty' ? '#m-start-new-mode' : '#ms-new-mode';
@@ -349,7 +326,7 @@ export default class VortexEditorMobile {
       // Clear existing modes before pull (matches your Duo receive flow behavior).
       this.vortex.clearModes();
 
-      await this.pullFromDevice();
+      await this.vortexPort.pullFromDevice(this.lightshow.vortexLib, this.lightshow.vortex);
 
       if (this.vortex.numModes() > 0) {
         this.vortex.setCurMode(0, false);
