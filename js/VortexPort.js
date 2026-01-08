@@ -713,7 +713,7 @@ export default class VortexPort {
       const modeBufs = new Array(numModes);
 
       for (let i = 0; i < numModes; ++i) {
-        reportFast({ phase: 'pulling', index: i + 1, total: numModes });
+        reportFast({ phase: 'pulling', index: i, total: numModes });
 
         const modeBuf = await this.readByteStream(vortexLib);
         // ACK as soon as possible (no extra work before this await)
