@@ -427,14 +427,6 @@ export default class VortexEditorMobile {
               );
               return;
             }
-            if (p.phase === 'pulled') {
-              const i = Number(p.index ?? 0) + 1;
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Pulled mode ${i} / ${total}…`
-              );
-              return;
-            }
             if (p.phase === 'finalizing') {
               const total = Number(p.total ?? 0);
               setBusyHtml(
