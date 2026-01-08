@@ -161,9 +161,6 @@ export default class ColorPicker {
     return !!(this.root && this.root.classList.contains('is-open'));
   }
 
-  /* ---------------------------------
-     Public open: Effects panel
-  --------------------------------- */
   async openEffects({
     title = 'Effects',
     ledCount = 2,
@@ -247,9 +244,6 @@ export default class ColorPicker {
     this._syncEffectsUI();
   }
 
-  /* -----------------------------
-     Conversion helpers (WASM-backed)
-  ----------------------------- */
   rgbToHsv(r, g, b) {
     const RGBCol = new this.vortexLib.RGBColor(r & 0xff, g & 0xff, b & 0xff);
     const HSVCol = this.vortexLib.rgb_to_hsv_generic(RGBCol);
@@ -266,7 +260,6 @@ export default class ColorPicker {
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
-  // Defer backend work so the browser can paint optimistic UI immediately.
   _defer(fn) {
     setTimeout(() => {
       Promise.resolve()
@@ -341,13 +334,9 @@ export default class ColorPicker {
     });
   }
 
-  /* -----------------------------
-     Fast close (don’t block on onDone)
-  ----------------------------- */
   _fastDone() {
     if (!this.root) return;
 
-    // hide immediately
     this.root.classList.remove('is-open');
     this.root.style.pointerEvents = 'none';
 
@@ -365,9 +354,6 @@ export default class ColorPicker {
     }
   }
 
-  /* -----------------------------
-     Long press delete (arm -> delete on release)
-  ----------------------------- */
   _cancelLongPress() {
     if (this._lpTimer) {
       clearTimeout(this._lpTimer);
@@ -388,13 +374,11 @@ export default class ColorPicker {
     this._startX = e.clientX;
     this._startY = e.clientY;
 
-    // capture the element the user ACTUALLY pressed (touch can retarget on pointerup)
     const sheet = this.dom.$('.m-color-picker-sheet');
     this._tapOnBackdrop = !!(sheet && !sheet.contains(e.target));
     this._tapTargetEl =
       e.target?.closest?.('[data-act],[data-role="led"],[data-role="cube"]') || null;
 
-    // only arm delete for actual color cubes
     const cube = e.target?.closest?.('[data-role="cube"][data-kind="color"]');
     if (!cube) {
       this._cancelLongPress();
@@ -439,7 +423,6 @@ export default class ColorPicker {
     this._lastPointerUpAt = Date.now();
     this._squelchClickUntil = this._lastPointerUpAt + 450;
 
-    // if armed, delete on release and swallow tap
     if (this._lpArmed && this.cb.onColorsetDelete && this._lpIdx >= 0) {
       try {
         e.preventDefault();
@@ -447,18 +430,14 @@ export default class ColorPicker {
       } catch {}
 
       const idx = this._lpIdx;
-      const cubeEl = this._lpCubeEl;
 
-      // clear tap tracking
       this._tapTargetEl = null;
       this._tapOnBackdrop = false;
 
       this._cancelLongPress();
 
-      if (cubeEl) {
-        cubeEl.classList.add('is-deleting');
-        cubeEl.style.opacity = '0.55';
-      }
+      // Optimistic UI only: do NOT store a colorset model here.
+      this._optimisticDeleteFromDom(idx);
 
       this._defer(async () => {
         const next = await this.cb.onColorsetDelete(idx);
@@ -468,17 +447,14 @@ export default class ColorPicker {
       return;
     }
 
-    // not armed; cancel any pending timer
     if (this._lpTimer) this._cancelLongPress();
 
-    // moved/scrolling => not a tap
     if (this._moved) {
       this._tapTargetEl = null;
       this._tapOnBackdrop = false;
       return;
     }
 
-    // if press started on backdrop, close even if pointerup retargets
     if (this._tapOnBackdrop) {
       this._tapTargetEl = null;
       this._tapOnBackdrop = false;
@@ -490,7 +466,6 @@ export default class ColorPicker {
       return;
     }
 
-    // use the element from pointerdown (fixes touch retargeting)
     const t =
       (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) ||
       e.target;
@@ -514,7 +489,6 @@ export default class ColorPicker {
   }
 
   async _onClick(e) {
-    // squelch synthetic click after pointer sequences
     if (Date.now() < this._squelchClickUntil) {
       try {
         e.preventDefault();
@@ -527,9 +501,6 @@ export default class ColorPicker {
     await this._handleTapTarget(e);
   }
 
-  /* -----------------------------
-     Tap routing (instant UI, async backend)
-  ----------------------------- */
   _selectCubeUI(idx) {
     this.ctx.selectedColorIndex = idx;
     this.ctx.pickerEnabled = idx != null;
@@ -557,12 +528,10 @@ export default class ColorPicker {
   _extractHexFromCube(cubeEl) {
     if (!cubeEl) return null;
 
-    // 1) Try inline styles first (sometimes still "#RRGGBB")
     const inline = String(cubeEl.style.background || cubeEl.style.backgroundColor || '').trim();
     let m = inline.match(/#([0-9a-fA-F]{6})/);
     if (m) return `#${m[1].toUpperCase()}`;
 
-    // 2) Fall back to computed color (usually "rgb(...)" / "rgba(...)")
     let bg = '';
     try {
       bg = String(getComputedStyle(cubeEl).backgroundColor || '').trim();
@@ -582,6 +551,61 @@ export default class ColorPicker {
     return this._rgbToHex(r, g, b);
   }
 
+  _snapshotColorsFromDom() {
+    const cubes = this.dom
+      .all('[data-role="cube"][data-kind="color"]')
+      .slice()
+      .sort((a, b) => (Number(a.dataset.index ?? 0) | 0) - (Number(b.dataset.index ?? 0) | 0));
+
+    const out = [];
+    for (const c of cubes) {
+      const hx = this._extractHexFromCube(c) || '#000000';
+      out.push(hx);
+      if (out.length >= 8) break;
+    }
+    return out;
+  }
+
+  _optimisticDeleteFromDom(deleteIdx) {
+    const colors = this._snapshotColorsFromDom();
+    const idx = deleteIdx | 0;
+    if (idx < 0 || idx >= colors.length) return false;
+
+    colors.splice(idx, 1);
+
+    const prevSel = this.ctx.selectedColorIndex == null ? null : (this.ctx.selectedColorIndex | 0);
+    let nextSel = prevSel;
+
+    if (prevSel == null) {
+      nextSel = null;
+    } else if (prevSel === idx) {
+      nextSel = colors.length ? Math.min(idx, colors.length - 1) : null;
+    } else if (prevSel > idx) {
+      nextSel = prevSel - 1;
+    } else {
+      nextSel = prevSel;
+      if (colors.length === 0) nextSel = null;
+      else if (nextSel >= colors.length) nextSel = colors.length - 1;
+    }
+
+    this.ctx.selectedColorIndex = nextSel;
+    this.ctx.pickerEnabled = nextSel != null;
+
+    this.ctx.colorsetHtml = this._buildColorsetHtml(colors, this.ctx.selectedColorIndex);
+
+    const row = this.dom.$('[data-role="colorset-row"]');
+    if (row) row.innerHTML = this.ctx.colorsetHtml;
+
+    this._syncEffectsUI();
+
+    if (this.ctx.selectedColorIndex != null) {
+      const hx = colors[this.ctx.selectedColorIndex | 0];
+      if (hx) this._seedPickerFromHex(hx);
+    }
+
+    return true;
+  }
+
   _optimisticAddFromPlus(plusBtn) {
     const row = this.dom.$('[data-role="colorset-row"]');
     if (!row || !plusBtn) return null;
@@ -590,7 +614,6 @@ export default class ColorPicker {
     const newIdx = colorBtns.length | 0;
     if (newIdx < 0 || newIdx >= 8) return null;
 
-    // convert the + button into a real color cube (red)
     plusBtn.classList.remove('is-add', 'is-busy');
     plusBtn.classList.add('is-selected');
     plusBtn.textContent = '';
@@ -598,7 +621,6 @@ export default class ColorPicker {
     plusBtn.dataset.index = String(newIdx);
     plusBtn.style.background = '#FF0000';
 
-    // find next empty to become the next +
     const empties = this.dom.all('[data-role="cube"][data-kind="empty"]');
     const nextEmpty = empties.length ? empties[0] : null;
     if (nextEmpty) {
@@ -609,12 +631,9 @@ export default class ColorPicker {
       add.dataset.kind = 'add';
       add.dataset.index = String(newIdx + 1);
       add.textContent = '+';
-
-      // replace the empty with the add button
       nextEmpty.replaceWith(add);
     }
 
-    // clear selection on others
     this.dom.all('[data-role="cube"][data-kind="color"]').forEach((b) => {
       const i = Number(b.dataset.index ?? -1);
       b.classList.toggle('is-selected', i === newIdx);
@@ -640,7 +659,6 @@ export default class ColorPicker {
 
     const sheet = this.dom.$('.m-color-picker-sheet');
 
-    // Backdrop tap closes
     if (sheet && !sheet.contains(t)) {
       try {
         e.preventDefault();
@@ -682,12 +700,8 @@ export default class ColorPicker {
 
         const idx = this.ctx.selectedColorIndex | 0;
 
-        // light feedback immediately
-        const cubeEl = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${idx}"]`);
-        if (cubeEl) {
-          cubeEl.classList.add('is-deleting');
-          cubeEl.style.opacity = '0.55';
-        }
+        // Optimistic UI only (immediate disappear / shift)
+        this._optimisticDeleteFromDom(idx);
 
         this._defer(async () => {
           const next = await this.cb.onColorsetDelete(idx);
@@ -709,7 +723,6 @@ export default class ColorPicker {
 
       const led = Number(ledBtn.dataset.led ?? 0) | 0;
 
-      // optimistic UI
       this.dom.all('[data-role="led"]').forEach((b) => b.classList.remove('is-active'));
       ledBtn.classList.add('is-active');
 
@@ -734,7 +747,6 @@ export default class ColorPicker {
       const idx = Number(cube.dataset.index ?? -1) | 0;
 
       if (kind === 'add') {
-        // instant UI + async backend
         cube.classList.add('is-busy');
 
         const newIdx = this._optimisticAddFromPlus(cube);
@@ -749,16 +761,13 @@ export default class ColorPicker {
       }
 
       if (kind === 'color') {
-        // instant selection outline movement
         this._selectCubeUI(idx);
 
-        // seed picker immediately from cube background (handles rgb(...) as well)
         const hex = this._extractHexFromCube(cube);
         if (hex) this._seedPickerFromHex(hex);
 
         if (!this.cb.onColorsetSelect) return;
 
-        // async ctx sync (don’t block paint)
         this._defer(async () => {
           const next = await this.cb.onColorsetSelect(idx);
           await this._applyCtx(next, { keepPickerSeed: true });
@@ -771,9 +780,6 @@ export default class ColorPicker {
     }
   }
 
-  /* -----------------------------
-     Per-render bindings (controls that need it)
-  ----------------------------- */
   _bindPerRender() {
     const patSel = this.dom.$('[data-role="pattern"]');
     if (patSel) {
