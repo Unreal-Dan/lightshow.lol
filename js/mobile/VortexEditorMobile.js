@@ -427,19 +427,11 @@ export default class VortexEditorMobile {
               );
               return;
             }
-            if (p.phase === 'adding') {
+            if (p.phase === 'pulled') {
               const i = Number(p.index ?? 0) + 1;
               const total = Number(p.total ?? 0);
               setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Adding mode ${i} / ${total}…`
-              );
-              return;
-            }
-            if (p.phase === 'acknowledging') {
-              const i = Number(p.index ?? 0) + 1;
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Acknowledging mode ${i} / ${total}…`
+                `<i class="fa-solid fa-spinner fa-spin"></i> Pulled mode ${i} / ${total}…`
               );
               return;
             }

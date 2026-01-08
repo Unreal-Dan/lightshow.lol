@@ -663,82 +663,86 @@ export default class VortexPort {
     }
   }
 
-  async pullEachFromDevice(vortexLib, vortex, onProgress = null) {
-    if (!this.isActive()) {
-      throw new Error('Port not active');
-    }
-    if (this.isTransmitting) {
-      throw new Error('Already transmitting:' + this.isTransmitting);
-    }
 
-    const report = (info) => {
-      if (typeof onProgress === 'function') {
-        try {
-          onProgress(info);
-        } catch (_) {}
-      }
+  async pullEachFromDevice(vortexLib, vortex, onProgress = null) {
+    if (!this.isActive()) throw new Error('Port not active');
+    if (this.isTransmitting) throw new Error('Already transmitting:' + this.isTransmitting);
+
+    // Fast/non-blocking progress: only keep the latest update and paint it later.
+    // This avoids doing any real work between readByteStream() and ACK.
+    let pending = null;
+    let scheduled = false;
+
+    const reportFast = (info) => {
+      if (typeof onProgress !== 'function') return;
+      pending = info;
+      if (scheduled) return;
+      scheduled = true;
+
+      const sched =
+        typeof requestAnimationFrame === 'function'
+        ? (fn) => requestAnimationFrame(fn)
+        : (fn) => setTimeout(fn, 0);
+
+      sched(() => {
+        scheduled = false;
+        const p = pending;
+        pending = null;
+        try { onProgress(p); } catch (_) {}
+      });
     };
 
-    if (this.debugLogging) console.log("pullEachFromDevice Start");
+    if (this.debugLogging) console.log('pullEachFromDevice Start');
     this.isTransmitting = 'pullEachFromDevice';
 
     try {
       await this.cancelReading();
 
-      report({ phase: 'start' });
-
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
 
       const numModesBuf = await this.readByteStream(vortexLib);
-      let numModesStream = new vortexLib.ByteStream();
-      vortexLib.createByteStreamFromRawData(numModesBuf, numModesStream);
+      const numModes = (numModesBuf['12'] | 0);
 
-      // header is 12 bytes so 13th byte is the one data byte
-      const numModes = numModesBuf['12'] | 0;
-
-      report({ phase: 'count', total: numModes });
+      reportFast({ phase: 'count', total: numModes });
 
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
 
       vortex.clearModes();
 
-      // Pipeline: ACK immediately so the device can send the next mode,
-      // while we add the previous mode on a separate promise chain.
-      let addChain = Promise.resolve();
+      // Max throughput: read+ACK loop first, then add modes afterward.
+      const modeBufs = new Array(numModes);
 
       for (let i = 0; i < numModes; ++i) {
-        report({ phase: 'pulling', index: i, total: numModes });
+        reportFast({ phase: 'pulling', index: i + 1, total: numModes });
 
         const modeBuf = await this.readByteStream(vortexLib);
 
-        // ACK ASAP to allow the device to continue streaming the next mode
-        report({ phase: 'acknowledging', index: i + 1, total: numModes });
+        // "pulled" means "we got the bytes" (emitted immediately after read)
+        reportFast({ phase: 'pulled', index: i + 1, total: numModes });
+
+        // ACK as soon as possible (no extra work before this await)
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
 
-        // Queue the add work (kept in-order) while the loop continues pulling
-        addChain = addChain.then(() => {
-          //report({ phase: 'adding', index: i, total: numModes });
-
-          const modeStream = new vortexLib.ByteStream();
-          vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
-          vortex.addNewMode(modeStream, true);
-
-          //report({ phase: 'added', index: i + 1, total: numModes });
-        });
+        modeBufs[i] = modeBuf;
       }
 
-      // Device "done" can arrive while we're still adding; wait for both.
-      const donePromise = this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
-      await Promise.all([donePromise, addChain]);
+      await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
 
-      report({ phase: 'done', total: numModes });
+      // Add modes after the device is fully done sending (keeps read+ACK loop hottest)
+      for (let i = 0; i < numModes; ++i) {
+        const modeStream = new vortexLib.ByteStream();
+        vortexLib.createByteStreamFromRawData(modeBufs[i], modeStream);
+        vortex.addNewMode(modeStream, true);
+      }
+
+      reportFast({ phase: 'done', total: numModes });
     } catch (error) {
-      report({ phase: 'error', error });
+      reportFast({ phase: 'error', error });
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
       this.isTransmitting = null;
-      if (this.debugLogging) console.log("pullEachFromDevice End");
+      if (this.debugLogging) console.log('pullEachFromDevice End');
     }
   }
 
