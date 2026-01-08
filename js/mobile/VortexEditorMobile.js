@@ -408,9 +408,10 @@ export default class VortexEditorMobile {
           this.vortex.clearModes();
 
           await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
-            if (!p || typeof p !== 'object') return;
+            if (!p || typeof p !== 'object') {
+              return;
+            }
 
-            // p: { phase, index, total, ... }
             if (p.phase === 'count') {
               const total = Number(p.total ?? 0);
               setBusyHtml(
@@ -418,25 +419,30 @@ export default class VortexEditorMobile {
               );
               return;
             }
-
             if (p.phase === 'pulling') {
-              const i = Number(p.index ?? 0) + 1; // 1-based for humans
+              const i = Number(p.index ?? 0) + 1;
               const total = Number(p.total ?? 0);
               setBusyHtml(
                 `<i class="fa-solid fa-spinner fa-spin"></i> Pulling mode ${i} / ${total}…`
               );
               return;
             }
-
-            if (p.phase === 'pulled') {
-              const i = Number(p.index ?? 0); // already 1-based in pullEachFromDevice
+            if (p.phase === 'adding') {
+              const i = Number(p.index ?? 0) + 1;
               const total = Number(p.total ?? 0);
               setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Loaded mode ${i} / ${total}…`
+                `<i class="fa-solid fa-spinner fa-spin"></i> Adding mode ${i} / ${total}…`
               );
               return;
             }
-
+            if (p.phase === 'acknowledging') {
+              const i = Number(p.index ?? 0) + 1;
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Acknowledging mode ${i} / ${total}…`
+              );
+              return;
+            }
             if (p.phase === 'done') {
               const total = Number(p.total ?? 0);
               setBusyHtml(
