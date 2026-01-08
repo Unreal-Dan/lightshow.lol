@@ -674,7 +674,6 @@ export default class VortexPort {
     const report = (info) => {
       if (typeof onProgress === 'function') {
         try {
-          console.log("[Report] " + info);
           onProgress(info);
         } catch (_) {}
       }
@@ -695,7 +694,7 @@ export default class VortexPort {
       vortexLib.createByteStreamFromRawData(numModesBuf, numModesStream);
 
       // header is 12 bytes so 13th byte is the one data byte
-      let numModes = numModesBuf['12'];
+      const numModes = numModesBuf['12'] | 0;
 
       report({ phase: 'count', total: numModes });
 
@@ -703,23 +702,34 @@ export default class VortexPort {
 
       vortex.clearModes();
 
+      // Pipeline: ACK immediately so the device can send the next mode,
+      // while we add the previous mode on a separate promise chain.
+      let addChain = Promise.resolve();
+
       for (let i = 0; i < numModes; ++i) {
         report({ phase: 'pulling', index: i, total: numModes });
 
         const modeBuf = await this.readByteStream(vortexLib);
-        
-        report({ phase: 'adding', index: i, total: numModes });
 
-        let modeStream = new vortexLib.ByteStream();
-        vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
-        vortex.addNewMode(modeStream, true);
-
+        // ACK ASAP to allow the device to continue streaming the next mode
         report({ phase: 'acknowledging', index: i + 1, total: numModes });
-
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+
+        // Queue the add work (kept in-order) while the loop continues pulling
+        addChain = addChain.then(() => {
+          //report({ phase: 'adding', index: i, total: numModes });
+
+          const modeStream = new vortexLib.ByteStream();
+          vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
+          vortex.addNewMode(modeStream, true);
+
+          //report({ phase: 'added', index: i + 1, total: numModes });
+        });
       }
 
-      await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+      // Device "done" can arrive while we're still adding; wait for both.
+      const donePromise = this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+      await Promise.all([donePromise, addChain]);
 
       report({ phase: 'done', total: numModes });
     } catch (error) {
