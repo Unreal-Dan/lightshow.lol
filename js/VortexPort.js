@@ -716,15 +716,13 @@ export default class VortexPort {
         reportFast({ phase: 'pulling', index: i + 1, total: numModes });
 
         const modeBuf = await this.readByteStream(vortexLib);
-
-        // "pulled" means "we got the bytes" (emitted immediately after read)
-        reportFast({ phase: 'pulled', index: i + 1, total: numModes });
-
         // ACK as soon as possible (no extra work before this await)
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
 
         modeBufs[i] = modeBuf;
       }
+
+      reportFast({ phase: 'finalizing', total: numModes });
 
       await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
 

@@ -435,10 +435,16 @@ export default class VortexEditorMobile {
               );
               return;
             }
-            if (p.phase === 'done') {
+            if (p.phase === 'finalizing') {
               const total = Number(p.total ?? 0);
               setBusyHtml(
                 `<i class="fa-solid fa-spinner fa-spin"></i> Finalizing… (${total} modes)`
+              );
+            }
+            if (p.phase === 'done') {
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Done (${total} modes)`
               );
             }
           });
