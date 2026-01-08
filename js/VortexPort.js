@@ -663,45 +663,71 @@ export default class VortexPort {
     }
   }
 
-  async pullEachFromDevice(vortexLib, vortex) {
+  async pullEachFromDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
+
+    const report = (info) => {
+      if (typeof onProgress === 'function') {
+        try { onProgress(info); } catch (_) {}
+      }
+    };
+
     if (this.debugLogging) console.log("pullEachFromDevice Start");
-    this.isTransmitting = 'pullEachFromDevice'; // Set the transmitting flag
+    this.isTransmitting = 'pullEachFromDevice';
+
     try {
-      // Unserialize the stream of data
       await this.cancelReading();
+
+      report({ phase: 'start' });
+
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
+
       const numModesBuf = await this.readByteStream(vortexLib);
       let numModesStream = new vortexLib.ByteStream();
       vortexLib.createByteStreamFromRawData(numModesBuf, numModesStream);
-      // this is quite dumb, idk I guess header is 12 bytes so 13th byte is the one data byte
+
+      // header is 12 bytes so 13th byte is the one data byte
       let numModes = numModesBuf['12'];
+
+      report({ phase: 'count', total: numModes });
+
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+
       vortex.clearModes();
+
       for (let i = 0; i < numModes; ++i) {
+        report({ phase: 'pulling', index: i, total: numModes });
+
         const modeBuf = await this.readByteStream(vortexLib);
-        // Call the Wasm function
+
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
         vortex.addNewMode(modeStream, true);
+
+        report({ phase: 'pulled', index: i + 1, total: numModes });
+
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
       }
+
       await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+
+      report({ phase: 'done', total: numModes });
     } catch (error) {
+      report({ phase: 'error', error });
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = null; // Reset the transmitting flag
+      this.isTransmitting = null;
       if (this.debugLogging) console.log("pullEachFromDevice End");
     }
   }
 
-  async pullFromDevice(vortexLib, vortex) {
+  async pullFromDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
@@ -710,7 +736,7 @@ export default class VortexPort {
     }
     // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
-      return await this.pullEachFromDevice(vortexLib, vortex);
+      return await this.pullEachFromDevice(vortexLib, vortex, onProgress);
     }
     if (this.debugLogging) console.log("pullFromDevice Start");
     this.isTransmitting = 'pullFromDevice'; // Set the transmitting flag

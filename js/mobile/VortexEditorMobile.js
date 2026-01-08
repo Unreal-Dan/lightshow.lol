@@ -384,23 +384,66 @@ export default class VortexEditorMobile {
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
     const sel =
       source === 'editor-empty'
-        ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
-        : { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' };
+      ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
+      : { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' };
 
     const loadBtn = this.dom.$(sel.load);
     const newBtn = this.dom.$(sel.newm);
     const browseBtn = this.dom.$(sel.browse);
     const backBtn = this.dom.$('#back-btn');
 
-    const busyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
+    const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
+
+    // small helper so we can update the busy label with progress
+    const setBusyHtml = (html) => {
+      if (!loadBtn) return;
+      loadBtn.innerHTML = html;
+    };
 
     await this.dom.busy(
       loadBtn,
-      busyHtml,
+      baseBusyHtml,
       async () => {
         try {
           this.vortex.clearModes();
-          await this.vortexPort.pullFromDevice(this.vortexLib, this.vortex);
+
+          await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
+            if (!p || typeof p !== 'object') return;
+
+            // p: { phase, index, total, ... }
+            if (p.phase === 'count') {
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes… (0 / ${total})`
+              );
+              return;
+            }
+
+            if (p.phase === 'pulling') {
+              const i = Number(p.index ?? 0) + 1; // 1-based for humans
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Pulling mode ${i} / ${total}…`
+              );
+              return;
+            }
+
+            if (p.phase === 'pulled') {
+              const i = Number(p.index ?? 0); // already 1-based in pullEachFromDevice
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Loaded mode ${i} / ${total}…`
+              );
+              return;
+            }
+
+            if (p.phase === 'done') {
+              const total = Number(p.total ?? 0);
+              setBusyHtml(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Finalizing… (${total} modes)`
+              );
+            }
+          });
 
           if (this.vortex.numModes() > 0) {
             this.vortex.setCurMode(0, false);
