@@ -411,40 +411,23 @@ export default class VortexEditorMobile {
             if (!p || typeof p !== 'object') {
               return;
             }
-
+            const total = Number(p.total ?? 0);
+            const i = Number(p.index ?? 0) + 1;
+            let str = ` Loading modes…`;
             if (p.phase === 'count') {
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes… (0 / ${total})`
-              );
-              return;
+              str = ` Loading modes… (0 / ${total})`;
+            } else if (p.phase === 'pulling') {
+              str = ` Pulling mode ${i} / ${total}…`;
+            } else if (p.phase === 'finalizing') {
+              str = ` Finalizing… (${total} modes)`;
+            } else if (p.phase === 'done') {
+              str = ` Done (${total} modes)`;
             }
-            if (p.phase === 'pulling') {
-              const i = Number(p.index ?? 0) + 1;
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Pulling mode ${i} / ${total}…`
-              );
-              return;
-            }
-            if (p.phase === 'finalizing') {
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Finalizing… (${total} modes)`
-              );
-            }
-            if (p.phase === 'done') {
-              const total = Number(p.total ?? 0);
-              setBusyHtml(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Done (${total} modes)`
-              );
-            }
+            setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
           });
-
           if (this.vortex.numModes() > 0) {
             this.vortex.setCurMode(0, false);
           }
-
           await this.gotoEditor({ deviceType });
         } catch (err) {
           console.error('[Mobile] Pull from device failed:', err);
