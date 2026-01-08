@@ -673,7 +673,10 @@ export default class VortexPort {
 
     const report = (info) => {
       if (typeof onProgress === 'function') {
-        try { onProgress(info); } catch (_) {}
+        try {
+          console.log("[Report] " + info);
+          onProgress(info);
+        } catch (_) {}
       }
     };
 
