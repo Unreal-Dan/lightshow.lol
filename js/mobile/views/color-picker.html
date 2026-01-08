@@ -1,0 +1,94 @@
+<!-- js/mobile/views/color-picker.html -->
+<div class="m-color-picker-sheet">
+  <div class="m-color-picker-header">
+    <div class="m-color-picker-title">Color</div>
+    <div class="m-color-picker-actions">
+      <button type="button" class="m-cp-btn m-cp-btn-off" data-act="off">Off</button>
+      <button type="button" class="m-cp-btn m-cp-btn-del" data-act="delete" {{deleteDisabled}}>Delete</button>
+      <button type="button" class="m-cp-btn m-cp-btn-done" data-act="done">Done</button>
+    </div>
+  </div>
+
+  <div class="m-color-picker-grid">
+    <div class="m-cp-sv">
+      <div class="m-cp-label">Saturation × Brightness</div>
+      <div
+        class="m-cp-svbox"
+        data-role="svbox"
+        style="background:
+          linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0)),
+          linear-gradient(to right, rgba(255,255,255,1), hsla({{hueDeg}}, 100%, 50%, 1));"
+      >
+        <div class="m-cp-svsel" data-role="svsel"></div>
+      </div>
+    </div>
+
+    <div class="m-cp-hue">
+      <div class="m-cp-label">Hue</div>
+      <div class="m-cp-hueslider" data-role="hueslider">
+        <div class="m-cp-huesel" data-role="huesel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="m-cp-row">
+    <div class="m-cp-preview">
+      <div class="m-cp-preview-swatch" data-role="swatch"></div>
+      <div class="m-cp-preview-hex">
+        <label>Hex</label>
+        <input
+          type="text"
+          data-role="hex"
+          value="{{hex}}"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          inputmode="text"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div class="m-cp-sliders">
+    <div class="m-cp-slider">
+      <div class="m-cp-slider-head">
+        <span>Red</span>
+        <input type="number" min="0" max="255" data-role="rin" value="{{r}}" inputmode="numeric" />
+      </div>
+      <input type="range" min="0" max="255" data-role="r" value="{{r}}" />
+    </div>
+
+    <div class="m-cp-slider">
+      <div class="m-cp-slider-head">
+        <span>Green</span>
+        <input type="number" min="0" max="255" data-role="gin" value="{{g}}" inputmode="numeric" />
+      </div>
+      <input type="range" min="0" max="255" data-role="g" value="{{g}}" />
+    </div>
+
+    <div class="m-cp-slider">
+      <div class="m-cp-slider-head">
+        <span>Blue</span>
+        <input type="number" min="0" max="255" data-role="bin" value="{{b}}" inputmode="numeric" />
+      </div>
+      <input type="range" min="0" max="255" data-role="b" value="{{b}}" />
+    </div>
+
+    <div class="m-cp-hsv-row">
+      <div class="m-cp-hsv">
+        <label>Hue</label>
+        <input type="number" min="0" max="255" data-role="hin" value="{{h}}" inputmode="numeric" />
+      </div>
+
+      <div class="m-cp-hsv">
+        <label>Sat</label>
+        <input type="number" min="0" max="255" data-role="sin" value="{{s}}" inputmode="numeric" />
+      </div>
+
+      <div class="m-cp-hsv">
+        <label>Val</label>
+        <input type="number" min="0" max="255" data-role="vin" value="{{v}}" inputmode="numeric" />
+      </div>
+    </div>
+  </div>
+</div>

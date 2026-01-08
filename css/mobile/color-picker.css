@@ -1,0 +1,342 @@
+/* css/mobile/color-picker.css */
+
+/* IMPORTANT:
+   These selectors work whether the picker is inside #mobile-app-root OR portaled to <body>.
+*/
+
+#mobile-app-root .m-color-picker,
+.m-color-picker {
+  display: none;
+}
+
+#mobile-app-root .m-color-picker.is-open,
+.m-color-picker.is-open {
+  display: block;
+  position: fixed;
+  inset: 0;
+  transform: none;
+  z-index: 999999;
+
+  background: rgba(0, 0, 0, 0.40);
+  backdrop-filter: blur(6px);
+
+  padding:
+    max(10px, env(safe-area-inset-top))
+    max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom))
+    max(10px, env(safe-area-inset-left));
+
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#mobile-app-root .m-color-picker-sheet,
+.m-color-picker-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  width: min(620px, calc(100vw - 20px));
+  max-height: min(86dvh, calc(100vh - 20px));
+
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 12px;
+
+  border-radius: 16px;
+  background: rgba(10, 10, 10, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 18px 64px rgba(0, 0, 0, 0.70),
+    0 2px 0 rgba(255, 255, 255, 0.06) inset;
+
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#mobile-app-root .m-color-picker-header,
+.m-color-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  position: sticky;
+  top: 0;
+
+  padding-top: 2px;
+  padding-bottom: 8px;
+
+  background: rgba(10, 10, 10, 0.94);
+  backdrop-filter: blur(10px);
+  z-index: 2;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-color-picker-title,
+.m-color-picker-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+#mobile-app-root .m-color-picker-actions,
+.m-color-picker-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-btn,
+.m-cp-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#mobile-app-root .m-cp-btn:disabled,
+.m-cp-btn:disabled {
+  opacity: 0.5;
+}
+
+#mobile-app-root .m-color-picker-grid,
+.m-color-picker-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 12px;
+  align-items: start;
+}
+
+#mobile-app-root .m-cp-label,
+.m-cp-label {
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-svbox,
+.m-cp-svbox {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-height: min(42dvh, 320px);
+
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  position: relative;
+  overflow: hidden;
+
+  touch-action: none;
+}
+
+#mobile-app-root .m-cp-svsel,
+.m-cp-svsel {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55);
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+#mobile-app-root .m-cp-hueslider,
+.m-cp-hueslider {
+  width: 40px;
+  height: min(42dvh, 320px);
+
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+    to bottom,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+  position: relative;
+  overflow: hidden;
+
+  touch-action: none;
+}
+
+#mobile-app-root .m-cp-huesel,
+.m-cp-huesel {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px);
+}
+
+#mobile-app-root .m-cp-row,
+.m-cp-row {
+  margin-top: 10px;
+}
+
+#mobile-app-root .m-cp-preview,
+.m-cp-preview {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-preview-swatch,
+.m-cp-preview-swatch {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #000;
+}
+
+#mobile-app-root .m-cp-preview-hex label,
+.m-cp-preview-hex label {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-preview-hex input,
+.m-cp-preview-hex input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 9px 10px;
+  font-size: 0.95rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+#mobile-app-root .m-cp-sliders,
+.m-cp-sliders {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+#mobile-app-root .m-cp-slider,
+.m-cp-slider {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.20);
+  border-radius: 14px;
+  padding: 10px 10px 12px 10px;
+}
+
+#mobile-app-root .m-cp-slider-head,
+.m-cp-slider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+#mobile-app-root .m-cp-slider-head span,
+.m-cp-slider-head span {
+  font-weight: 800;
+}
+
+#mobile-app-root .m-cp-slider-head input,
+.m-cp-slider-head input {
+  width: 86px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 7px 9px;
+  font-size: 0.9rem;
+}
+
+#mobile-app-root .m-cp-slider input[type="range"],
+.m-cp-slider input[type="range"] {
+  width: 100%;
+}
+
+#mobile-app-root .m-cp-hsv-row,
+.m-cp-hsv-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#mobile-app-root .m-cp-hsv,
+.m-cp-hsv {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.20);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+#mobile-app-root .m-cp-hsv label,
+.m-cp-hsv label {
+  display: block;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-hsv input,
+.m-cp-hsv input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 9px 10px;
+  font-size: 0.95rem;
+}
+
+@media (min-width: 520px) {
+  #mobile-app-root .m-cp-sliders,
+  .m-cp-sliders {
+    grid-template-columns: 1fr 1fr;
+  }
+  #mobile-app-root .m-cp-hsv-row,
+  .m-cp-hsv-row {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-height: 560px) {
+  #mobile-app-root .m-cp-svbox,
+  .m-cp-svbox {
+    aspect-ratio: 4 / 3;
+    max-height: min(36dvh, 240px);
+  }
+
+  #mobile-app-root .m-cp-hueslider,
+  .m-cp-hueslider {
+    height: min(36dvh, 240px);
+  }
+}
+
+@media (max-width: 360px) {
+  #mobile-app-root .m-cp-btn,
+  .m-cp-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+  #mobile-app-root .m-color-picker-sheet,
+  .m-color-picker-sheet {
+    padding: 10px;
+  }
+}
+
