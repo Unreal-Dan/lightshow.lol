@@ -14,7 +14,6 @@ const ASSETS = {
     { id: 'fa-css', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css' },
     { id: 'bootstrap-css', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' },
     { id: 'mobile-styles-css', href: 'css/mobile/mobile-styles.css' },
-    { id: 'mobile-color-picker-css', href: 'css/mobile/color-picker.css' },
   ],
   scripts: [
     { id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }
@@ -37,11 +36,10 @@ export default class VortexEditorMobile {
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
 
-    // Cache these to avoid repeated wasm allocations
     this._engine = null;
     this._modes = null;
 
-    this.vortexPort = new VortexPort(this, true); // BLE enabled
+    this.vortexPort = new VortexPort(this, true);
 
     this.deviceType = null;
     this.devices = null;
@@ -60,7 +58,6 @@ export default class VortexEditorMobile {
       basePath: 'js/mobile/views/',
     });
 
-    // effects state
     this._fxLed = 0;
     this._fxSelectedColor = null;
 
@@ -68,21 +65,12 @@ export default class VortexEditorMobile {
     this._fxDemoTimer = null;
   }
 
-  /* -----------------------------
-     Public-ish API (used by VortexPort)
-  ----------------------------- */
-  detectMobile() {
-    return true;
-  }
-
-  isBLESupported() {
-    return true;
-  }
+  detectMobile() { return true; }
+  isBLESupported() { return true; }
 
   isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
     const currentParts = currentVersion.split('.').map(Number);
     const targetParts = targetVersion.split('.').map(Number);
-
     for (let i = 0; i < targetParts.length; i++) {
       if ((currentParts[i] ?? 0) > (targetParts[i] ?? 0)) return true;
       if ((currentParts[i] ?? 0) < (targetParts[i] ?? 0)) return false;
@@ -90,14 +78,9 @@ export default class VortexEditorMobile {
     return true;
   }
 
-  /* -----------------------------
-     Boot
-  ----------------------------- */
   async initialize() {
     console.log('[VortexEditorMobile] initialize');
-
     document.body.innerHTML = '';
-
     await this.loadAssets();
 
     this.root = document.createElement('div');
@@ -109,32 +92,20 @@ export default class VortexEditorMobile {
     const devicesUrl = ASSETS.data.devices;
     const res = await fetch(devicesUrl, { cache: 'no-store' });
     if (!res.ok) {
-      throw new Error(
-        `Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`
-      );
+      throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`);
     }
     this.devices = await res.json();
 
-    // mount effects panel once (portals to body)
     this.effectsPanel.mount(document.body);
 
     await this.gotoDeviceSelect();
   }
 
-  setDeviceType(type) {
-    this.deviceType = type;
-  }
+  setDeviceType(type) { this.deviceType = type; }
 
-  /* -----------------------------
-     Asset helpers
-  ----------------------------- */
   async loadAssets() {
-    for (const s of ASSETS.styles) {
-      this.loadStylesheet(s.id, s.href);
-    }
-    for (const s of ASSETS.scripts) {
-      await this.loadScript(s.id, s.src);
-    }
+    for (const s of ASSETS.styles) this.loadStylesheet(s.id, s.href);
+    for (const s of ASSETS.scripts) await this.loadScript(s.id, s.src);
   }
 
   loadStylesheet(id, href) {
@@ -158,15 +129,11 @@ export default class VortexEditorMobile {
     });
   }
 
-  sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
+  sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
   stopEditorLightshow() {
     if (!this.lightshow) return;
-    try {
-      this.lightshow.stop();
-    } catch {}
+    try { this.lightshow.stop(); } catch {}
     this.lightshow = null;
   }
 
@@ -192,15 +159,11 @@ export default class VortexEditorMobile {
   }
 
   loadActionLabel(deviceType) {
-    if (deviceType === 'Duo') {
-      return `<i class="fa-solid fa-satellite-dish"></i> Load from Duo`;
-    }
+    if (deviceType === 'Duo') return `<i class="fa-solid fa-satellite-dish"></i> Load from Duo`;
     return `<i class="fa-solid fa-upload"></i> Load modes from device`;
   }
 
-  selectedDeviceType(fallback = 'Duo') {
-    return this.deviceType || fallback;
-  }
+  selectedDeviceType(fallback = 'Duo') { return this.deviceType || fallback; }
 
   updateDeviceSelectUI() {
     const selected = this.deviceType;
@@ -209,23 +172,17 @@ export default class VortexEditorMobile {
     });
   }
 
-  /* -----------------------------
-     Navigation
-  ----------------------------- */
   async gotoDeviceSelect() {
+      return await this.gotoEditor({ deviceType: 'Duo' });
+
     const cardFragments = await Promise.all(
-      DEVICE_CARDS.map((c) =>
-        this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img })
-      )
+      DEVICE_CARDS.map((c) => this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img }))
     );
 
     const containerFrag = await this.views.render('device-select.html', {});
     this.dom.set(containerFrag);
 
-    const mount = this.dom.must(
-      '#device-cards-mount',
-      'device-select.html is missing #device-cards-mount'
-    );
+    const mount = this.dom.must('#device-cards-mount', 'device-select.html is missing #device-cards-mount');
     cardFragments.forEach((frag) => mount.appendChild(frag));
 
     const skipLink = document.createElement('div');
@@ -235,13 +192,9 @@ export default class VortexEditorMobile {
       `<i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
     this.dom.$('.container-fluid')?.appendChild(skipLink);
 
-    this.dom.onClick(
-      '#skip-to-editor',
-      async () => {
-        await this.gotoEditor({ deviceType: 'Duo' });
-      },
-      { preventDefault: true }
-    );
+    this.dom.onClick('#skip-to-editor', async () => {
+      await this.gotoEditor({ deviceType: 'Duo' });
+    }, { preventDefault: true });
 
     this.dom.all('[data-device]').forEach((cardEl) => {
       cardEl.addEventListener('click', async () => {
@@ -262,23 +215,12 @@ export default class VortexEditorMobile {
   }
 
   async gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions }) {
-    const frag = await this.views.render('ble-connect.html', {
-      deviceType,
-      deviceImg,
-      deviceAlt,
-      instructions,
-    });
-
+    const frag = await this.views.render('ble-connect.html', { deviceType, deviceImg, deviceAlt, instructions });
     this.dom.set(frag);
 
-    this.dom.onClick('#back-btn', async () => {
-      await this.gotoDeviceSelect();
-    });
+    this.dom.onClick('#back-btn', async () => { await this.gotoDeviceSelect(); });
 
-    const connectBtn = this.dom.must(
-      '#ble-connect-btn',
-      'ble-connect.html is missing #ble-connect-btn'
-    );
+    const connectBtn = this.dom.must('#ble-connect-btn', 'ble-connect.html is missing #ble-connect-btn');
 
     let completed = false;
     this.dom.onClick(connectBtn, async () => {
@@ -302,15 +244,8 @@ export default class VortexEditorMobile {
                 return;
               }
 
-              if (status === 'waiting') {
-                console.log('[Mobile] BLE connected, waiting for greeting...');
-                return;
-              }
-
-              if (status === 'disconnect') {
-                console.warn('[Mobile] Device disconnected');
-                return;
-              }
+              if (status === 'waiting') return;
+              if (status === 'disconnect') return;
 
               if (status === 'failed') {
                 completed = true;
@@ -335,24 +270,16 @@ export default class VortexEditorMobile {
       await this.gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
     });
 
-    this.dom.onClick('#ms-new-mode', async () => {
-      await this.startNewModeAndEnterEditor(deviceType);
-    });
+    this.dom.onClick('#ms-new-mode', async () => { await this.startNewModeAndEnterEditor(deviceType); });
 
-    const loadBtn = this.dom.must(
-      '#ms-load-device',
-      'mode-source.html is missing #ms-load-device'
-    );
+    const loadBtn = this.dom.must('#ms-load-device', 'mode-source.html is missing #ms-load-device');
     loadBtn.innerHTML = this.loadActionLabel(deviceType);
 
     this.dom.onClick(loadBtn, async () => {
-      console.log('[Mobile] Load modes start:', deviceType);
-
       if (deviceType === 'Duo') {
         await this.gotoDuoReceive({ deviceType });
         return;
       }
-
       await this.pullFromDeviceAndEnterEditor(deviceType, { source: 'mode-source' });
     });
 
@@ -362,9 +289,6 @@ export default class VortexEditorMobile {
     });
   }
 
-  /* -----------------------------
-     Device interaction flows
-  ----------------------------- */
   async listenVL() {
     if (!this.vortexPort.isActive()) {
       Notification.failure('Please connect a device first');
@@ -377,10 +301,7 @@ export default class VortexEditorMobile {
     try {
       let tries = 0;
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
-        if (tries++ > 10) {
-          console.log('Failed to demo mode, waited 10 delays...');
-          return;
-        }
+        if (tries++ > 10) return;
         await this.sleep(100);
       }
       await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
@@ -401,11 +322,7 @@ export default class VortexEditorMobile {
     const backBtn = this.dom.$('#back-btn');
 
     const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
-
-    const setBusyHtml = (html) => {
-      if (!loadBtn) return;
-      loadBtn.innerHTML = html;
-    };
+    const setBusyHtml = (html) => { if (loadBtn) loadBtn.innerHTML = html; };
 
     await this.dom.busy(
       loadBtn,
@@ -426,9 +343,7 @@ export default class VortexEditorMobile {
             setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
           });
 
-          if (this.vortex.numModes() > 0) {
-            this.vortex.setCurMode(0, false);
-          }
+          if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
           await this.gotoEditor({ deviceType });
         } catch (err) {
           console.error('[Mobile] Pull from device failed:', err);
@@ -441,10 +356,7 @@ export default class VortexEditorMobile {
 
   async startNewModeAndEnterEditor(deviceType) {
     const before = this.vortex.numModes();
-    if (!this.vortex.addNewMode(false)) {
-      console.log('[Mobile] Failed to add new mode');
-      return;
-    }
+    if (!this.vortex.addNewMode(false)) return;
 
     this.vortex.setCurMode(before, false);
     const cur = this._getCurMode();
@@ -454,9 +366,6 @@ export default class VortexEditorMobile {
     await this.gotoEditor({ deviceType });
   }
 
-  /* -----------------------------
-     Duo receive flow
-  ----------------------------- */
   async gotoDuoReceive({ deviceType }) {
     const copy = {
       title: 'Listening for Duo…',
@@ -467,9 +376,7 @@ export default class VortexEditorMobile {
     const frag = await this.views.render('duo-mode-receive.html', copy);
     this.dom.set(frag);
 
-    this.dom.onClick('#back-btn', async () => {
-      await this.gotoModeSource({ deviceType });
-    });
+    this.dom.onClick('#back-btn', async () => { await this.gotoModeSource({ deviceType }); });
 
     const statusEl = this.dom.$('#duo-rx-status');
     const statusTextEl = this.dom.$('#duo-rx-status-text');
@@ -477,10 +384,8 @@ export default class VortexEditorMobile {
 
     try {
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
-
       this.vortex.clearModes();
       await this.listenVL();
-
       if (statusTextEl) statusTextEl.textContent = 'Received. Opening editor…';
       await this.gotoEditor({ deviceType });
     } catch (err) {
@@ -491,19 +396,13 @@ export default class VortexEditorMobile {
     }
   }
 
-  /* -----------------------------
-     Editor
-  ----------------------------- */
   async gotoEditor({ deviceType }) {
     if (!this.vortex) return;
 
     const dt = deviceType || this.selectedDeviceType('Duo');
     const hasModes = this.vortex.numModes() > 0;
 
-    const modeName = hasModes
-      ? `Mode ${this._getModes().curModeIndex() + 1}`
-      : 'No modes';
-
+    const modeName = hasModes ? `Mode ${this._getModes().curModeIndex() + 1}` : 'No modes';
     const modeIndexLabel = hasModes
       ? `${this._getModes().curModeIndex() + 1} / ${this.vortex.numModes()}`
       : 'No modes';
@@ -530,10 +429,7 @@ export default class VortexEditorMobile {
     this.stopEditorLightshow();
     this.clearEditorResizeHandler();
 
-    // close effects if navigating
-    if (this.effectsPanel.isOpen()) {
-      this.effectsPanel.close();
-    }
+    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
 
     if (!hasModes) {
       await this.bindEmptyEditorActions(dt);
@@ -550,10 +446,7 @@ export default class VortexEditorMobile {
   async bindEmptyEditorActions(dt) {
     this.dom.onClick('#m-start-new-mode', async () => {
       const before = this.vortex.numModes();
-      if (!this.vortex.addNewMode(false)) {
-        console.log('[Mobile] Failed to add new mode');
-        return;
-      }
+      if (!this.vortex.addNewMode(false)) return;
       this.vortex.setCurMode(before, false);
       const cur = this._getCurMode();
       if (cur) cur.init();
@@ -564,26 +457,17 @@ export default class VortexEditorMobile {
     const loadBtn = this.dom.$('#m-load-from-device');
     if (loadBtn) {
       loadBtn.innerHTML = this.loadActionLabel(dt);
-
       this.dom.onClick(loadBtn, async () => {
-        if (dt === 'Duo') {
-          await this.gotoDuoReceive({ deviceType: dt });
-        } else {
-          await this.pullFromDeviceAndEnterEditor(dt, { source: 'editor-empty' });
-        }
+        if (dt === 'Duo') await this.gotoDuoReceive({ deviceType: dt });
+        else await this.pullFromDeviceAndEnterEditor(dt, { source: 'editor-empty' });
       });
     }
 
-    this.dom.onClick('#m-browse-community', async () => {
-      console.log('[Mobile] Browse Community');
-    });
+    this.dom.onClick('#m-browse-community', async () => { console.log('[Mobile] Browse Community'); });
   }
 
   async startEditorLightshow(dt) {
-    const canvas = this.dom.must(
-      '#mobile-lightshow-canvas',
-      'editor.html is missing #mobile-lightshow-canvas'
-    );
+    const canvas = this.dom.must('#mobile-lightshow-canvas', 'editor.html is missing #mobile-lightshow-canvas');
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -621,9 +505,7 @@ export default class VortexEditorMobile {
   }
 
   bindEditorModeNav(dt) {
-    const rerender = async () => {
-      await this.gotoEditor({ deviceType: dt });
-    };
+    const rerender = async () => { await this.gotoEditor({ deviceType: dt }); };
 
     const prev = this.dom.$('#mode-prev');
     const next = this.dom.$('#mode-next');
@@ -650,34 +532,53 @@ export default class VortexEditorMobile {
   }
 
   bindEditorTools(dt) {
-    const isDisabled = this.dom.$('.m-editor-tools')?.classList.contains('m-editor-disabled');
+    const toolsEl = this.dom.$('.m-editor-tools');
 
-    // Use pointerdown to avoid "hover opens" feel on mobile.
-    this.dom.all('[data-tool]').forEach((btn) => {
-      btn.addEventListener('pointerdown', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleTool = async (btn, e) => {
+      try {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+      } catch {}
 
-        if (isDisabled) return;
+      const isDisabled = !!toolsEl?.classList.contains('m-editor-disabled');
+      if (isDisabled) return;
 
-        const tool = String(btn.dataset.tool || '');
-        if (tool === 'effects') {
-          if (this.effectsPanel.isOpen()) {
-            this.effectsPanel.close();
-          } else {
-            await this.openEffectsPanel(dt);
-          }
-          return;
+      const tool = String(btn.dataset.tool || '');
+      if (tool === 'effects') {
+        if (this.effectsPanel.isOpen()) {
+          this.effectsPanel.close();
+        } else {
+          await this.openEffectsPanel(dt);
         }
+        return;
+      }
 
-        console.log('[Mobile Editor] tool:', tool);
-      });
+      console.log('[Mobile Editor] tool:', tool);
+    };
+
+    this.dom.all('[data-tool]').forEach((btn) => {
+      // Remove any possible click delay path; pointerup is the tap.
+      btn.addEventListener(
+        'pointerup',
+        async (e) => {
+          // ignore mouse; desktop clicking can still go through click if you want
+          if (e && e.pointerType === 'mouse') return;
+          await handleTool(btn, e);
+        },
+        { passive: false }
+      );
+
+      // Fallback for browsers without pointer events (rare)
+      btn.addEventListener(
+        'click',
+        async (e) => {
+          await handleTool(btn, e);
+        },
+        { passive: false }
+      );
     });
   }
 
-  /* -----------------------------
-     Engine/modes caching
-  ----------------------------- */
   _getEngine() {
     if (!this._engine) this._engine = this.vortex.engine();
     return this._engine;
@@ -692,9 +593,6 @@ export default class VortexEditorMobile {
     return this._getModes().curMode();
   }
 
-  /* -----------------------------
-     Effects panel data + apply
-  ----------------------------- */
   _clearFxFinalize() {
     if (this._fxFinalizeTimer) {
       clearTimeout(this._fxFinalizeTimer);
@@ -749,6 +647,15 @@ export default class VortexEditorMobile {
     return this.devices?.[dt]?.ledCount ? Math.min(2, this.devices[dt].ledCount) : 1;
   }
 
+  _escape(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
   _patternOptionsHtml({ allowMulti }) {
     const patternEnum = this.vortexLib.PatternID;
 
@@ -788,22 +695,15 @@ export default class VortexEditorMobile {
       else strobe.push(opt);
     }
 
-    const mk = (label, arr) => (arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '');
+    const mk = (label, arr) =>
+      arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '';
+
     return (
       mk('Strobe Patterns', strobe) +
       mk('Blend Patterns', blend) +
       mk('Solid Patterns', solid) +
       (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
     );
-  }
-
-  _escape(str) {
-    return String(str)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
   }
 
   _getColorsetHexes(cur, led) {
@@ -819,11 +719,7 @@ export default class VortexEditorMobile {
   }
 
   _getPatternValue(cur, led) {
-    try {
-      return cur.getPatternID(led).value | 0;
-    } catch {
-      return -1;
-    }
+    try { return cur.getPatternID(led).value | 0; } catch { return -1; }
   }
 
   async openEffectsPanel(dt) {
@@ -838,11 +734,8 @@ export default class VortexEditorMobile {
     const colors = this._getColorsetHexes(cur, this._fxLed);
     const patternValue = this._getPatternValue(cur, this._fxLed);
 
-    if (this._fxSelectedColor == null) {
-      this._fxSelectedColor = colors.length ? 0 : null;
-    } else if (this._fxSelectedColor >= colors.length) {
-      this._fxSelectedColor = colors.length ? colors.length - 1 : null;
-    }
+    if (this._fxSelectedColor == null) this._fxSelectedColor = colors.length ? 0 : null;
+    else if (this._fxSelectedColor >= colors.length) this._fxSelectedColor = colors.length ? colors.length - 1 : null;
 
     const rgb =
       this._fxSelectedColor != null && colors[this._fxSelectedColor]
@@ -873,9 +766,7 @@ export default class VortexEditorMobile {
         this.effectsPanel.close();
       },
 
-      onOff: () => {
-        // Off just means set selected color to black; actual apply happens via onColorChange emit
-      },
+      onOff: () => {},
 
       onLedChange: async (newLed) => {
         const cur2 = this._getCurMode();
@@ -886,11 +777,8 @@ export default class VortexEditorMobile {
         const colors2 = this._getColorsetHexes(cur2, this._fxLed);
         const pat2 = this._getPatternValue(cur2, this._fxLed);
 
-        if (this._fxSelectedColor == null) {
-          this._fxSelectedColor = colors2.length ? 0 : null;
-        } else if (this._fxSelectedColor >= colors2.length) {
-          this._fxSelectedColor = colors2.length ? colors2.length - 1 : null;
-        }
+        if (this._fxSelectedColor == null) this._fxSelectedColor = colors2.length ? 0 : null;
+        else if (this._fxSelectedColor >= colors2.length) this._fxSelectedColor = colors2.length ? colors2.length - 1 : null;
 
         const rgb2 =
           this._fxSelectedColor != null && colors2[this._fxSelectedColor]
@@ -1033,7 +921,6 @@ export default class VortexEditorMobile {
 
         const set = cur2.getColorset(this._fxLed);
         if (!set) return;
-
         if (idx < 0 || idx >= set.numColors()) return;
 
         const { r, g, b } = this._hexToRgb(hex);
@@ -1074,12 +961,6 @@ async function boot() {
     return;
   }
 
-  document.addEventListener(
-    'DOMContentLoaded',
-    () => {
-      boot();
-    },
-    { once: true }
-  );
+  document.addEventListener('DOMContentLoaded', () => { boot(); }, { once: true });
 })();
 

@@ -12,9 +12,7 @@
   display: block;
   position: fixed;
   inset: 0;
-  transform: none;
   z-index: 999999;
-
   background: rgba(0, 0, 0, 0.40);
   backdrop-filter: blur(6px);
 
@@ -34,12 +32,12 @@
   top: 50%;
   transform: translate(-50%, -50%);
 
-  width: min(680px, calc(100vw - 20px));
-  max-height: min(88dvh, calc(100vh - 20px));
+  width: min(720px, calc(100vw - 20px));
+  max-height: min(90dvh, calc(100vh - 20px));
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 
-  padding: 12px;
+  padding: 14px;
 
   border-radius: 16px;
   background: rgba(10, 10, 10, 0.94);
@@ -48,6 +46,8 @@
   box-shadow:
     0 18px 64px rgba(0, 0, 0, 0.70),
     0 2px 0 rgba(255, 255, 255, 0.06) inset;
+
+  font-size: 16px;
 }
 
 /* Header */
@@ -57,13 +57,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
 
   position: sticky;
   top: 0;
 
-  padding-top: 2px;
-  padding-bottom: 8px;
+  margin: -2px 0 10px 0;
+  padding: 4px 0 10px 0;
 
   background: rgba(10, 10, 10, 0.94);
   backdrop-filter: blur(10px);
@@ -74,7 +73,7 @@
 
 #mobile-app-root .m-color-picker-title,
 .m-color-picker-title {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
@@ -91,9 +90,9 @@
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
   border-radius: 10px;
-  padding: 7px 10px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  padding: 8px 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
   white-space: nowrap;
 }
 
@@ -116,8 +115,8 @@
 
 #mobile-app-root .m-cp-ledbtn,
 .m-cp-ledbtn {
-  width: 42px;
-  height: 36px;
+  width: 44px;
+  height: 38px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
@@ -130,7 +129,7 @@
 
 #mobile-app-root .m-cp-ledbtn i,
 .m-cp-ledbtn i {
-  font-size: 1.05rem;
+  font-size: 1.15rem;
 }
 
 #mobile-app-root .m-cp-ledbtn.is-active,
@@ -149,19 +148,27 @@
 #mobile-app-root .m-cp-pattern select,
 .m-cp-pattern select {
   width: 100%;
-  height: 36px;
+  height: 38px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.35);
   color: inherit;
-  padding: 6px 10px;
-  font-size: 0.92rem;
+  padding: 7px 10px;
+  font-size: 0.98rem;
 }
 
-/* Colorset row (INSIDE the panel) */
+/* Labels */
+#mobile-app-root .m-cp-label,
+.m-cp-label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
+}
+
+/* Colorset row */
 #mobile-app-root .m-cp-colorset,
 .m-cp-colorset {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 #mobile-app-root .m-cp-colorset-row,
@@ -170,11 +177,13 @@
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
+/* Normalize cube sizing for BOTH div + button cubes */
 #mobile-app-root .m-color-cube,
 .m-color-cube {
+  box-sizing: border-box;
   aspect-ratio: 1 / 1;
   width: 100%;
   border-radius: 12px;
@@ -187,36 +196,54 @@
   padding: 0;
 }
 
+/* Buttons can get weird intrinsic sizing; clamp them */
+#mobile-app-root .m-cp-colorset-row button.m-color-cube,
+.m-cp-colorset-row button.m-color-cube {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  line-height: 1;
+  background-clip: padding-box;
+}
+
 #mobile-app-root .m-color-cube.is-empty,
 .m-color-cube.is-empty {
-  opacity: 0.25;
+  opacity: 0.22;
 }
 
 #mobile-app-root .m-color-cube.is-add,
 .m-color-cube.is-add {
-  display: grid;
-  place-items: center;
-  font-size: 1.4rem;
-  font-weight: 800;
+  color: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+  font-weight: 900;
   background: rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-color-cube.is-add.is-busy,
+.m-color-cube.is-add.is-busy {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 #mobile-app-root .m-color-cube.is-selected,
 .m-color-cube.is-selected {
-  outline: 3px solid rgba(255, 255, 255, 0.60);
+  outline: 3px solid rgba(255, 255, 255, 0.70);
   outline-offset: 2px;
-}
-
-#mobile-app-root .m-cp-label,
-.m-cp-label {
-  font-size: 0.8rem;
-  opacity: 0.85;
 }
 
 #mobile-app-root .m-cp-hint,
 .m-cp-hint {
   margin-top: 10px;
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   opacity: 0.85;
   display: none;
 }
@@ -227,26 +254,38 @@
   opacity: 0.35;
   pointer-events: none;
 }
-#mobile-app-root .m-cp-body.is-disabled + .m-cp-hint,
-.m-cp-body.is-disabled + .m-cp-hint {
-  display: block;
-}
 
 /* Picker layout */
 #mobile-app-root .m-color-picker-grid,
 .m-color-picker-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
+  grid-template-columns: minmax(0, 1fr) 44px;
   gap: 12px;
-  align-items: start;
-  margin-top: 10px;
+  align-items: stretch; /* IMPORTANT: row height follows SV box; hue stretches */
+  margin-top: 12px;
+}
+
+#mobile-app-root .m-cp-sv,
+.m-cp-sv,
+#mobile-app-root .m-cp-hue,
+.m-cp-hue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+#mobile-app-root .m-cp-sv .m-cp-label,
+.m-cp-sv .m-cp-label,
+#mobile-app-root .m-cp-hue .m-cp-label,
+.m-cp-hue .m-cp-label {
+  text-align: center; /* center labels over controls */
 }
 
 #mobile-app-root .m-cp-svbox,
 .m-cp-svbox {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: min(42dvh, 320px);
+  aspect-ratio: 1 / 1;   /* this defines the shared row height */
   border-radius: 14px;
   border: 1px solid #282828;
   position: relative;
@@ -267,11 +306,11 @@
 
 #mobile-app-root .m-cp-hueslider,
 .m-cp-hueslider {
-  width: 40px;
-  height: min(42dvh, 320px);
-
+  width: 44px;
+  flex: 1 1 auto;     /* IMPORTANT: matches svbox height (grid row height) */
+  min-height: 0;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid #242424;
   background: linear-gradient(
     to bottom,
     #ff0000,
@@ -298,23 +337,24 @@
   transform: translateY(-2px);
 }
 
+/* Preview */
 #mobile-app-root .m-cp-row,
 .m-cp-row {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 #mobile-app-root .m-cp-preview,
 .m-cp-preview {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
 }
 
 #mobile-app-root .m-cp-preview-swatch,
 .m-cp-preview-swatch {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: #000;
@@ -323,8 +363,9 @@
 #mobile-app-root .m-cp-preview-hex label,
 .m-cp-preview-hex label {
   display: block;
-  font-size: 0.8rem;
-  opacity: 0.85;
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
   margin-bottom: 6px;
 }
 
@@ -335,14 +376,15 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.35);
   color: inherit;
-  padding: 9px 10px;
-  font-size: 0.95rem;
+  padding: 10px 10px;
+  font-size: 1rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+/* Sliders */
 #mobile-app-root .m-cp-sliders,
 .m-cp-sliders {
-  margin-top: 10px;
+  margin-top: 12px;
   display: grid;
   gap: 10px;
 }
@@ -366,18 +408,19 @@
 
 #mobile-app-root .m-cp-slider-head span,
 .m-cp-slider-head span {
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 1rem;
 }
 
 #mobile-app-root .m-cp-slider-head input,
 .m-cp-slider-head input {
-  width: 86px;
+  width: 92px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.35);
   color: inherit;
   padding: 7px 9px;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 #mobile-app-root .m-cp-slider input[type="range"],
@@ -403,8 +446,9 @@
 #mobile-app-root .m-cp-hsv label,
 .m-cp-hsv label {
   display: block;
-  font-size: 0.8rem;
-  opacity: 0.85;
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
   margin-bottom: 6px;
 }
 
@@ -415,8 +459,8 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.35);
   color: inherit;
-  padding: 9px 10px;
-  font-size: 0.95rem;
+  padding: 10px 10px;
+  font-size: 1rem;
 }
 
 @media (min-width: 520px) {
@@ -431,15 +475,28 @@
 }
 
 @media (max-height: 560px) {
+  #mobile-app-root .m-color-picker-sheet,
+  .m-color-picker-sheet {
+    max-height: min(92dvh, calc(100vh - 12px));
+  }
+
   #mobile-app-root .m-cp-svbox,
   .m-cp-svbox {
     aspect-ratio: 4 / 3;
-    max-height: min(36dvh, 240px);
   }
+}
 
-  #mobile-app-root .m-cp-hueslider,
-  .m-cp-hueslider {
-    height: min(36dvh, 240px);
-  }
+/* Long-press delete "armed" state */
+#mobile-app-root .m-color-cube.is-delete-armed,
+.m-color-cube.is-delete-armed {
+  animation: m-cube-delete-flash 0.55s ease-in-out infinite;
+  outline: 3px solid rgba(255, 60, 60, 0.95);
+  outline-offset: 2px;
+}
+
+@keyframes m-cube-delete-flash {
+  0%   { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
+  50%  { box-shadow: 0 0 0 4px rgba(255,60,60,0.35); }
+  100% { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
 }
 

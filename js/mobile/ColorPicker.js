@@ -11,10 +11,8 @@ export default class ColorPicker {
     this.root = null;
     this.dom = null;
 
-    // callbacks from host (editor)
     this.onDone = null;
 
-    // effects context + callbacks
     this.ctx = {
       title: 'Effects',
       ledCount: 2,
@@ -27,16 +25,15 @@ export default class ColorPicker {
     };
 
     this.cb = {
-      onLedChange: null,        // async (ledIndex) => newCtx
-      onPatternChange: null,    // async (patternValue) => newCtx
-      onColorsetSelect: null,   // async (colorIndex) => newCtx
-      onColorsetAdd: null,      // async () => newCtx
-      onColorsetDelete: null,   // async (colorIndex) => newCtx
-      onColorChange: null,      // (colorIndex, hex, isDragging) => void
-      onOff: null,              // () => void
+      onLedChange: null,
+      onPatternChange: null,
+      onColorsetSelect: null,
+      onColorsetAdd: null,
+      onColorsetDelete: null,
+      onColorChange: null,
+      onOff: null,
     };
 
-    // internal picker state
     this.state = { r: 255, g: 0, b: 0, h: 0, s: 255, v: 255 };
     this._prevent = false;
 
@@ -45,14 +42,38 @@ export default class ColorPicker {
     this._svRect = null;
     this._hueRect = null;
 
-    // throttling
     this._throttleMs = 16;
     this._lastEmitAt = 0;
     this._pendingEmit = null;
     this._pendingTimer = 0;
 
     this._boundKeydown = null;
-    this._ignoreClickUntil = 0;
+
+    // tap / pointer state
+    this._squelchClickUntil = 0;
+    this._lastPointerUpAt = 0;
+    this._moved = false;
+    this._startX = 0;
+    this._startY = 0;
+
+    // long-press delete (arm -> delete on release)
+    this._lpTimer = 0;
+    this._lpIdx = -1;
+    this._lpCubeEl = null;
+    this._lpArmed = false;
+
+    // bound handlers (installed once)
+    this._delegatedInstalled = false;
+    this._onPointerDown = this._onPointerDown.bind(this);
+    this._onPointerMove = this._onPointerMove.bind(this);
+    this._onPointerUp = this._onPointerUp.bind(this);
+    this._onClick = this._onClick.bind(this);
+    this._onResize = this._onResize.bind(this);
+
+    // tap target tracking (touch retargeting fix)
+    this._tapTargetEl = null;
+    this._tapOnBackdrop = false;
+
   }
 
   async preload() {
@@ -61,8 +82,7 @@ export default class ColorPicker {
     this._preloaded = true;
   }
 
-  mount(_containerIgnored) {
-    // Portal to <body> so fixed overlay isn't trapped by transformed parents.
+  mount() {
     if (this.root && this.root.parentElement === document.body) return;
 
     if (this.root && this.root.parentElement) {
@@ -74,6 +94,21 @@ export default class ColorPicker {
     document.body.appendChild(this.root);
 
     this.dom = new SimpleDom(this.root);
+
+    if (!this._delegatedInstalled) {
+      this._delegatedInstalled = true;
+
+      this.root.addEventListener('pointerdown', this._onPointerDown, { passive: false });
+      this.root.addEventListener('pointermove', this._onPointerMove, { passive: true });
+      this.root.addEventListener('pointerup', this._onPointerUp, { passive: false });
+      this.root.addEventListener('pointercancel', this._onPointerUp, { passive: false });
+
+      // click fallback (mouse / non-pointer browsers). We squelch after pointer sequences.
+      this.root.addEventListener('click', this._onClick, { passive: false });
+
+      window.addEventListener('resize', this._onResize, { passive: true });
+    }
+
     this.preload().catch(() => {});
   }
 
@@ -87,6 +122,8 @@ export default class ColorPicker {
     this._svRect = null;
     this._hueRect = null;
 
+    this._cancelLongPress();
+
     if (this._boundKeydown) {
       document.removeEventListener('keydown', this._boundKeydown);
       this._boundKeydown = null;
@@ -95,6 +132,7 @@ export default class ColorPicker {
     if (this.root) {
       this.root.innerHTML = '';
       this.root.classList.remove('is-open');
+      this.root.style.pointerEvents = '';
     }
 
     this.onDone = null;
@@ -161,7 +199,7 @@ export default class ColorPicker {
     this.cb.onOff = typeof onOff === 'function' ? onOff : null;
 
     const lc = Math.max(0, ledCount | 0);
-    const li = Math.max(0, Math.min(lc - 1, ledIndex | 0));
+    const li = Math.max(0, Math.min(Math.max(0, lc - 1), ledIndex | 0));
 
     this.ctx.title = String(title || 'Effects');
     this.ctx.ledCount = lc;
@@ -173,8 +211,6 @@ export default class ColorPicker {
       selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
 
     this.ctx.colorsetHtml = this._buildColorsetHtml(colors, this.ctx.selectedColorIndex);
-
-    // enable picker only if a color is selected
     this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
 
     // seed picker color
@@ -195,7 +231,16 @@ export default class ColorPicker {
     this.root.classList.add('is-open');
 
     await this._render();
-    this._bind();
+    this._bindPerRender();
+
+    if (!this._boundKeydown) {
+      this._boundKeydown = (e) => {
+        if (e.key === 'Escape') {
+          this._fastDone();
+        }
+      };
+      document.addEventListener('keydown', this._boundKeydown);
+    }
 
     await this._nextFrame();
     this._cacheRects();
@@ -235,17 +280,12 @@ export default class ColorPicker {
 
     const frag = await this.views.render('color-picker.html', {
       title: this.ctx.title,
-
       led0Active,
       led1Active,
       showLed1,
-
       patternOptions: this.ctx.patternOptionsHtml,
-
       colorsetHtml: this.ctx.colorsetHtml,
-
       pickerDisabledClass,
-
       r,
       g,
       b,
@@ -260,6 +300,13 @@ export default class ColorPicker {
     this.root.appendChild(frag);
 
     this.dom = new SimpleDom(this.root);
+  }
+
+  _onResize() {
+    if (!this.root || !this.root.classList.contains('is-open')) return;
+    this._cacheRects();
+    this._syncUI(true);
+    this._syncEffectsUI();
   }
 
   _cacheRects() {
@@ -286,127 +333,446 @@ export default class ColorPicker {
     });
   }
 
-  _bind() {
-    // Backdrop click closes
-    this.root.addEventListener('pointerdown', (e) => {
-      const sheet = this.dom.$('.m-color-picker-sheet');
-      if (sheet && !sheet.contains(e.target)) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.onDone) this.onDone();
+  /* -----------------------------
+     Fast close (don’t block on onDone)
+  ----------------------------- */
+  _fastDone() {
+    if (!this.root) return;
+
+    // hide immediately
+    this.root.classList.remove('is-open');
+    this.root.style.pointerEvents = 'none';
+
+    requestAnimationFrame(() => {
+      if (!this.root) return;
+      if (!this.root.classList.contains('is-open')) {
+        this.root.innerHTML = '';
       }
+      this.root.style.pointerEvents = '';
     });
 
-    // Esc closes
-    if (!this._boundKeydown) {
-      this._boundKeydown = (e) => {
-        if (e.key === 'Escape') {
-          if (this.onDone) this.onDone();
-        }
-      };
-      document.addEventListener('keydown', this._boundKeydown);
+    const fn = this.onDone;
+    if (typeof fn === 'function') {
+      Promise.resolve()
+        .then(() => fn())
+        .catch(() => {});
+    }
+  }
+
+  /* -----------------------------
+     Long press delete (arm -> delete on release)
+  ----------------------------- */
+  _cancelLongPress() {
+    if (this._lpTimer) {
+      clearTimeout(this._lpTimer);
+      this._lpTimer = 0;
+    }
+    if (this._lpCubeEl) {
+      this._lpCubeEl.classList.remove('is-delete-armed');
+    }
+    this._lpIdx = -1;
+    this._lpCubeEl = null;
+    this._lpArmed = false;
+  }
+
+  _onPointerDown(e) {
+    if (!this.root || !this.root.classList.contains('is-open')) return;
+
+    this._moved = false;
+    this._startX = e.clientX;
+    this._startY = e.clientY;
+
+    // capture the element the user ACTUALLY pressed (touch can retarget on pointerup)
+    const sheet = this.dom.$('.m-color-picker-sheet');
+    this._tapOnBackdrop = !!(sheet && !sheet.contains(e.target));
+    this._tapTargetEl =
+      e.target?.closest?.('[data-act],[data-role="led"],[data-role="cube"]') || null;
+
+    // only arm delete for actual color cubes
+    const cube = e.target?.closest?.('[data-role="cube"][data-kind="color"]');
+    if (!cube) {
+      this._cancelLongPress();
+      return;
     }
 
-    // Header buttons
-    this.dom.all('[data-act]').forEach((btn) => {
-      btn.addEventListener('click', async (e) => {
-        const now = performance.now();
-        if (now < this._ignoreClickUntil) {
-          e.preventDefault();
-          e.stopPropagation();
-          return;
-        }
-        const act = btn.dataset.act;
-        if (act === 'done') {
-          if (this.onDone) await this.onDone();
-          return;
-        }
-      });
-    });
+    const idx = Number(cube.dataset.index ?? -1) | 0;
+    if (idx < 0) return;
 
-    // LED selector
-    this.dom.all('[data-role="led"]').forEach((btn) => {
-      btn.addEventListener('pointerdown', async (e) => {
+    this._cancelLongPress();
+
+    this._lpIdx = idx;
+    this._lpCubeEl = cube;
+    this._lpArmed = false;
+
+    this._lpTimer = setTimeout(() => {
+      this._lpTimer = 0;
+      if (!this._lpCubeEl) return;
+      this._lpArmed = true;
+      this._lpCubeEl.classList.add('is-delete-armed');
+    }, 420);
+  }
+
+  _onPointerMove(e) {
+    if (!this.root || !this.root.classList.contains('is-open')) return;
+    if (this._moved) return;
+
+    const dx = Math.abs((e.clientX ?? this._startX) - this._startX);
+    const dy = Math.abs((e.clientY ?? this._startY) - this._startY);
+
+    if (dx > 8 || dy > 8) {
+      this._moved = true;
+      this._tapTargetEl = null;
+      this._tapOnBackdrop = false;
+      this._cancelLongPress();
+    }
+  }
+
+  async _onPointerUp(e) {
+    if (!this.root || !this.root.classList.contains('is-open')) return;
+
+    this._lastPointerUpAt = Date.now();
+    this._squelchClickUntil = this._lastPointerUpAt + 450;
+
+    // if armed, delete on release and swallow tap
+    if (this._lpArmed && this.cb.onColorsetDelete && this._lpIdx >= 0) {
+      try {
         e.preventDefault();
         e.stopPropagation();
-        this._ignoreClickUntil = performance.now() + 250;
+      } catch {}
 
-        const led = Number(btn.dataset.led ?? 0) | 0;
-        if (!this.cb.onLedChange) return;
+      const idx = this._lpIdx;
+      const cubeEl = this._lpCubeEl;
 
-        const next = await this.cb.onLedChange(led);
-        await this._applyCtx(next);
-      });
+      // clear tap tracking
+      this._tapTargetEl = null;
+      this._tapOnBackdrop = false;
+
+      this._cancelLongPress();
+
+      if (cubeEl) cubeEl.style.opacity = '0.55';
+
+      Promise.resolve()
+        .then(async () => {
+          const next = await this.cb.onColorsetDelete(idx);
+          await this._applyCtx(next);
+        })
+        .catch(() => {});
+
+      return;
+    }
+
+    // not armed; cancel any pending timer
+    if (this._lpTimer) this._cancelLongPress();
+
+    // moved/scrolling => not a tap
+    if (this._moved) {
+      this._tapTargetEl = null;
+      this._tapOnBackdrop = false;
+      return;
+    }
+
+    // if press started on backdrop, close even if pointerup retargets
+    if (this._tapOnBackdrop) {
+      this._tapTargetEl = null;
+      this._tapOnBackdrop = false;
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+      this._fastDone();
+      return;
+    }
+
+    // use the element from pointerdown (fixes touch retargeting)
+    const t =
+      (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) ||
+      e.target;
+
+    this._tapTargetEl = null;
+    this._tapOnBackdrop = false;
+
+    await this._handleTapTarget({
+      target: t,
+      preventDefault: () => {
+        try { e.preventDefault(); } catch {}
+      },
+      stopPropagation: () => {
+        try { e.stopPropagation(); } catch {}
+      },
+    });
+  }
+
+  async _onClick(e) {
+    // squelch synthetic click after pointer sequences
+    if (Date.now() < this._squelchClickUntil) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+      return;
+    }
+
+    if (!this.root || !this.root.classList.contains('is-open')) return;
+    await this._handleTapTarget(e);
+  }
+
+  /* -----------------------------
+     Tap routing (instant UI, async backend)
+  ----------------------------- */
+  _selectCubeUI(idx) {
+    this.ctx.selectedColorIndex = idx;
+    this.ctx.pickerEnabled = idx != null;
+
+    this.dom.all('[data-role="cube"][data-kind="color"]').forEach((cube) => {
+      const i = Number(cube.dataset.index ?? -1);
+      cube.classList.toggle('is-selected', i === idx);
     });
 
-    // Pattern dropdown
+    const body = this.dom.$('.m-cp-body');
+    if (body) body.classList.toggle('is-disabled', !this.ctx.pickerEnabled);
+
+    const hint = this.dom.$('[data-role="pick-hint"]');
+    if (hint) hint.style.display = this.ctx.pickerEnabled ? 'none' : 'block';
+  }
+
+  _seedPickerFromHex(hex) {
+    const { r, g, b } = this._hexToRGB(hex);
+    const hsv = this.rgbToHsv(r, g, b);
+    this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
+    this._cacheRects();
+    this._syncUI(true);
+  }
+
+  _optimisticAddFromPlus(plusBtn) {
+    const row = this.dom.$('[data-role="colorset-row"]');
+    if (!row || !plusBtn) return null;
+
+    const colorBtns = this.dom.all('[data-role="cube"][data-kind="color"]');
+    const newIdx = colorBtns.length | 0;
+    if (newIdx < 0 || newIdx >= 8) return null;
+
+    // convert the + button into a real color cube (red)
+    plusBtn.classList.remove('is-add', 'is-busy');
+    plusBtn.classList.add('is-selected');
+    plusBtn.textContent = '';
+    plusBtn.dataset.kind = 'color';
+    plusBtn.dataset.index = String(newIdx);
+    plusBtn.style.background = '#FF0000';
+
+    // find next empty to become the next +
+    const empties = this.dom.all('[data-role="cube"][data-kind="empty"]');
+    const nextEmpty = empties.length ? empties[0] : null;
+    if (nextEmpty) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'm-color-cube is-add';
+      add.dataset.role = 'cube';
+      add.dataset.kind = 'add';
+      add.dataset.index = String(newIdx + 1);
+      add.textContent = '+';
+
+      // replace the empty with the add button
+      nextEmpty.replaceWith(add);
+    }
+
+    // clear selection on others
+    this.dom.all('[data-role="cube"][data-kind="color"]').forEach((b) => {
+      const i = Number(b.dataset.index ?? -1);
+      b.classList.toggle('is-selected', i === newIdx);
+    });
+
+    this.ctx.selectedColorIndex = newIdx;
+    this.ctx.pickerEnabled = true;
+
+    const body = this.dom.$('.m-cp-body');
+    if (body) body.classList.remove('is-disabled');
+
+    const hint = this.dom.$('[data-role="pick-hint"]');
+    if (hint) hint.style.display = 'none';
+
+    this._seedPickerFromHex('#FF0000');
+
+    return newIdx;
+  }
+
+  async _handleTapTarget(e) {
+    const t = e?.target;
+    if (!t) return;
+
+    const sheet = this.dom.$('.m-color-picker-sheet');
+
+    // Backdrop tap closes
+    if (sheet && !sheet.contains(t)) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+      this._fastDone();
+      return;
+    }
+
+    const actBtn = t.closest?.('[data-act]');
+    if (actBtn) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+
+      const act = actBtn.dataset.act;
+
+      if (act === 'done') {
+        this._fastDone();
+        return;
+      }
+
+      if (act === 'off') {
+        if (!this.ctx.pickerEnabled) return;
+        if (this.cb.onOff) {
+          try {
+            this.cb.onOff();
+          } catch {}
+        }
+        this._setRGB(0, 0, 0, true);
+        this._emit(false, true);
+        return;
+      }
+
+      if (act === 'delete') {
+        if (!this.ctx.pickerEnabled) return;
+        if (!this.cb.onColorsetDelete || this.ctx.selectedColorIndex == null) return;
+
+        const idx = this.ctx.selectedColorIndex | 0;
+
+        // light feedback immediately
+        const cubeEl = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${idx}"]`);
+        if (cubeEl) cubeEl.style.opacity = '0.55';
+
+        Promise.resolve()
+          .then(async () => {
+            const next = await this.cb.onColorsetDelete(idx);
+            await this._applyCtx(next);
+          })
+          .catch(() => {});
+
+        return;
+      }
+
+      return;
+    }
+
+    const ledBtn = t.closest?.('[data-role="led"]');
+    if (ledBtn) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+
+      const led = Number(ledBtn.dataset.led ?? 0) | 0;
+
+      // optimistic UI
+      this.dom.all('[data-role="led"]').forEach((b) => b.classList.remove('is-active'));
+      ledBtn.classList.add('is-active');
+
+      if (!this.cb.onLedChange) return;
+
+      Promise.resolve()
+        .then(async () => {
+          const next = await this.cb.onLedChange(led);
+          await this._applyCtx(next);
+        })
+        .catch(() => {});
+
+      return;
+    }
+
+    const cube = t.closest?.('[data-role="cube"]');
+    if (cube) {
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
+
+      const kind = String(cube.dataset.kind || '');
+      const idx = Number(cube.dataset.index ?? -1) | 0;
+
+      if (kind === 'add') {
+        // instant UI + async backend
+        cube.classList.add('is-busy');
+
+        const newIdx = this._optimisticAddFromPlus(cube);
+        if (newIdx == null || !this.cb.onColorsetAdd) return;
+
+        Promise.resolve()
+          .then(async () => {
+            const next = await this.cb.onColorsetAdd();
+            await this._applyCtx(next);
+          })
+          .catch(() => {});
+
+        return;
+      }
+
+      if (kind === 'color') {
+        // instant selection outline movement
+        this._selectCubeUI(idx);
+
+        // seed picker immediately from cube background
+        const hex = String(cube.style.background || cube.style.backgroundColor || '').trim();
+        const m = hex.match(/#([0-9a-fA-F]{6})/);
+        if (m) this._seedPickerFromHex(`#${m[1]}`);
+
+        if (!this.cb.onColorsetSelect) return;
+
+        // async ctx sync (don’t block tap)
+        Promise.resolve()
+          .then(async () => {
+            const next = await this.cb.onColorsetSelect(idx);
+            await this._applyCtx(next, { keepPickerSeed: true });
+          })
+          .catch(() => {});
+
+        return;
+      }
+
+      return;
+    }
+  }
+
+  /* -----------------------------
+     Per-render bindings (controls that need it)
+  ----------------------------- */
+  _bindPerRender() {
     const patSel = this.dom.$('[data-role="pattern"]');
     if (patSel) {
-      patSel.addEventListener('change', async () => {
+      patSel.addEventListener('change', () => {
         const v = parseInt(String(patSel.value ?? '-1'), 10);
         this.ctx.patternValue = Number.isFinite(v) ? (v | 0) : -1;
 
         if (!this.cb.onPatternChange) return;
-        const next = await this.cb.onPatternChange(this.ctx.patternValue);
-        await this._applyCtx(next, { keepPickerSeed: true });
+
+        Promise.resolve()
+          .then(async () => {
+            const next = await this.cb.onPatternChange(this.ctx.patternValue);
+            await this._applyCtx(next, { keepPickerSeed: true });
+          })
+          .catch(() => {});
       });
     }
 
-    // Colorset cubes
-    this.dom.all('[data-role="cube"]').forEach((cube) => {
-      cube.addEventListener('pointerdown', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this._ignoreClickUntil = performance.now() + 250;
+    const pickerDisabled = () => !this.ctx.pickerEnabled;
 
-        const kind = String(cube.dataset.kind || '');
-        const idx = Number(cube.dataset.index ?? -1) | 0;
-
-        if (kind === 'add') {
-          if (!this.cb.onColorsetAdd) return;
-          const next = await this.cb.onColorsetAdd();
-          await this._applyCtx(next);
-          return;
-        }
-
-        if (kind === 'color') {
-          if (!this.cb.onColorsetSelect) return;
-          const next = await this.cb.onColorsetSelect(idx);
-          await this._applyCtx(next);
-          return;
-        }
-      });
-    });
-
-    // Picker controls
     const svBox = this.dom.$('[data-role="svbox"]');
     const hueSlider = this.dom.$('[data-role="hueslider"]');
-
-    const rRange = this.dom.$('[data-role="r"]');
-    const gRange = this.dom.$('[data-role="g"]');
-    const bRange = this.dom.$('[data-role="b"]');
-
-    const rIn = this.dom.$('[data-role="rin"]');
-    const gIn = this.dom.$('[data-role="gin"]');
-    const bIn = this.dom.$('[data-role="bin"]');
-
-    const hIn = this.dom.$('[data-role="hin"]');
-    const sIn = this.dom.$('[data-role="sin"]');
-    const vIn = this.dom.$('[data-role="vin"]');
-
-    const hexIn = this.dom.$('[data-role="hex"]');
-
-    const pickerDisabled = () => !this.ctx.pickerEnabled;
 
     if (svBox) {
       svBox.addEventListener('pointerdown', (e) => {
         if (pickerDisabled()) return;
-
         e.preventDefault();
         e.stopPropagation();
-        this._cacheRects();
 
+        this._cacheRects();
         svBox.setPointerCapture(e.pointerId);
+
         this._handleSvPointer(e, true);
 
         const onMove = (ev) => this._handleSvPointer(ev, true);
@@ -427,12 +793,12 @@ export default class ColorPicker {
     if (hueSlider) {
       hueSlider.addEventListener('pointerdown', (e) => {
         if (pickerDisabled()) return;
-
         e.preventDefault();
         e.stopPropagation();
-        this._cacheRects();
 
+        this._cacheRects();
         hueSlider.setPointerCapture(e.pointerId);
+
         this._handleHuePointer(e, true);
 
         const onMove = (ev) => this._handleHuePointer(ev, true);
@@ -449,6 +815,20 @@ export default class ColorPicker {
         hueSlider.addEventListener('pointercancel', onUp, { once: true });
       });
     }
+
+    const rRange = this.dom.$('[data-role="r"]');
+    const gRange = this.dom.$('[data-role="g"]');
+    const bRange = this.dom.$('[data-role="b"]');
+
+    const rIn = this.dom.$('[data-role="rin"]');
+    const gIn = this.dom.$('[data-role="gin"]');
+    const bIn = this.dom.$('[data-role="bin"]');
+
+    const hIn = this.dom.$('[data-role="hin"]');
+    const sIn = this.dom.$('[data-role="sin"]');
+    const vIn = this.dom.$('[data-role="vin"]');
+
+    const hexIn = this.dom.$('[data-role="hex"]');
 
     const onRgbRange = (isDragging) => {
       if (pickerDisabled()) return;
@@ -517,13 +897,6 @@ export default class ColorPicker {
         this._emit(false, true);
       });
     }
-
-    window.addEventListener('resize', () => {
-      if (!this.root || !this.root.classList.contains('is-open')) return;
-      this._cacheRects();
-      this._syncUI(true);
-      this._syncEffectsUI();
-    });
   }
 
   async _applyCtx(next, { keepPickerSeed = false } = {}) {
@@ -532,7 +905,6 @@ export default class ColorPicker {
     if (Number.isFinite(next.ledCount)) this.ctx.ledCount = next.ledCount | 0;
     if (Number.isFinite(next.ledIndex)) this.ctx.ledIndex = next.ledIndex | 0;
     if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
-
     if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
 
     const newSelected =
@@ -561,7 +933,7 @@ export default class ColorPicker {
     }
 
     await this._render();
-    this._bind();
+    this._bindPerRender();
 
     await this._nextFrame();
     this._cacheRects();
@@ -692,9 +1064,7 @@ export default class ColorPicker {
       } catch {}
       this._lastEmitAt = now;
 
-      const cube = this.dom.$(
-        `[data-role="cube"][data-kind="color"][data-index="${idx}"]`
-      );
+      const cube = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${idx}"]`);
       if (cube) cube.style.background = hex;
 
       return;
@@ -707,9 +1077,7 @@ export default class ColorPicker {
         this.cb.onColorChange(idx, hex, true);
       } catch {}
 
-      const cube = this.dom.$(
-        `[data-role="cube"][data-kind="color"][data-index="${idx}"]`
-      );
+      const cube = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${idx}"]`);
       if (cube) cube.style.background = hex;
 
       return;
