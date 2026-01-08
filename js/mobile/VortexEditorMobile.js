@@ -173,7 +173,8 @@ export default class VortexEditorMobile {
   }
 
   async gotoDeviceSelect() {
-      return await this.gotoEditor({ deviceType: 'Duo' });
+    // skip to editor
+      //return await this.gotoEditor({ deviceType: 'Duo' });
 
     const cardFragments = await Promise.all(
       DEVICE_CARDS.map((c) => this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img }))

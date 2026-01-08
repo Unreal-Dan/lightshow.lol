@@ -73,7 +73,6 @@ export default class ColorPicker {
     // tap target tracking (touch retargeting fix)
     this._tapTargetEl = null;
     this._tapOnBackdrop = false;
-
   }
 
   async preload() {
@@ -267,6 +266,15 @@ export default class ColorPicker {
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
 
+  // Defer backend work so the browser can paint optimistic UI immediately.
+  _defer(fn) {
+    setTimeout(() => {
+      Promise.resolve()
+        .then(fn)
+        .catch(() => {});
+    }, 0);
+  }
+
   async _render() {
     const { r, g, b, h, s, v } = this.state;
     const hex = this._rgbToHex(r, g, b);
@@ -353,9 +361,7 @@ export default class ColorPicker {
 
     const fn = this.onDone;
     if (typeof fn === 'function') {
-      Promise.resolve()
-        .then(() => fn())
-        .catch(() => {});
+      this._defer(() => fn());
     }
   }
 
@@ -449,14 +455,15 @@ export default class ColorPicker {
 
       this._cancelLongPress();
 
-      if (cubeEl) cubeEl.style.opacity = '0.55';
+      if (cubeEl) {
+        cubeEl.classList.add('is-deleting');
+        cubeEl.style.opacity = '0.55';
+      }
 
-      Promise.resolve()
-        .then(async () => {
-          const next = await this.cb.onColorsetDelete(idx);
-          await this._applyCtx(next);
-        })
-        .catch(() => {});
+      this._defer(async () => {
+        const next = await this.cb.onColorsetDelete(idx);
+        await this._applyCtx(next);
+      });
 
       return;
     }
@@ -494,10 +501,14 @@ export default class ColorPicker {
     await this._handleTapTarget({
       target: t,
       preventDefault: () => {
-        try { e.preventDefault(); } catch {}
+        try {
+          e.preventDefault();
+        } catch {}
       },
       stopPropagation: () => {
-        try { e.stopPropagation(); } catch {}
+        try {
+          e.stopPropagation();
+        } catch {}
       },
     });
   }
@@ -541,6 +552,34 @@ export default class ColorPicker {
     this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
     this._cacheRects();
     this._syncUI(true);
+  }
+
+  _extractHexFromCube(cubeEl) {
+    if (!cubeEl) return null;
+
+    // 1) Try inline styles first (sometimes still "#RRGGBB")
+    const inline = String(cubeEl.style.background || cubeEl.style.backgroundColor || '').trim();
+    let m = inline.match(/#([0-9a-fA-F]{6})/);
+    if (m) return `#${m[1].toUpperCase()}`;
+
+    // 2) Fall back to computed color (usually "rgb(...)" / "rgba(...)")
+    let bg = '';
+    try {
+      bg = String(getComputedStyle(cubeEl).backgroundColor || '').trim();
+    } catch {
+      bg = '';
+    }
+
+    const m2 = bg.match(
+      /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*([0-9.]+))?\s*\)$/i
+    );
+    if (!m2) return null;
+
+    const r = this._clampByte(Math.round(parseFloat(m2[1])));
+    const g = this._clampByte(Math.round(parseFloat(m2[2])));
+    const b = this._clampByte(Math.round(parseFloat(m2[3])));
+
+    return this._rgbToHex(r, g, b);
   }
 
   _optimisticAddFromPlus(plusBtn) {
@@ -627,11 +666,11 @@ export default class ColorPicker {
 
       if (act === 'off') {
         if (!this.ctx.pickerEnabled) return;
+
         if (this.cb.onOff) {
-          try {
-            this.cb.onOff();
-          } catch {}
+          this._defer(() => this.cb.onOff());
         }
+
         this._setRGB(0, 0, 0, true);
         this._emit(false, true);
         return;
@@ -645,14 +684,15 @@ export default class ColorPicker {
 
         // light feedback immediately
         const cubeEl = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${idx}"]`);
-        if (cubeEl) cubeEl.style.opacity = '0.55';
+        if (cubeEl) {
+          cubeEl.classList.add('is-deleting');
+          cubeEl.style.opacity = '0.55';
+        }
 
-        Promise.resolve()
-          .then(async () => {
-            const next = await this.cb.onColorsetDelete(idx);
-            await this._applyCtx(next);
-          })
-          .catch(() => {});
+        this._defer(async () => {
+          const next = await this.cb.onColorsetDelete(idx);
+          await this._applyCtx(next);
+        });
 
         return;
       }
@@ -675,12 +715,10 @@ export default class ColorPicker {
 
       if (!this.cb.onLedChange) return;
 
-      Promise.resolve()
-        .then(async () => {
-          const next = await this.cb.onLedChange(led);
-          await this._applyCtx(next);
-        })
-        .catch(() => {});
+      this._defer(async () => {
+        const next = await this.cb.onLedChange(led);
+        await this._applyCtx(next);
+      });
 
       return;
     }
@@ -702,12 +740,10 @@ export default class ColorPicker {
         const newIdx = this._optimisticAddFromPlus(cube);
         if (newIdx == null || !this.cb.onColorsetAdd) return;
 
-        Promise.resolve()
-          .then(async () => {
-            const next = await this.cb.onColorsetAdd();
-            await this._applyCtx(next);
-          })
-          .catch(() => {});
+        this._defer(async () => {
+          const next = await this.cb.onColorsetAdd();
+          await this._applyCtx(next);
+        });
 
         return;
       }
@@ -716,20 +752,17 @@ export default class ColorPicker {
         // instant selection outline movement
         this._selectCubeUI(idx);
 
-        // seed picker immediately from cube background
-        const hex = String(cube.style.background || cube.style.backgroundColor || '').trim();
-        const m = hex.match(/#([0-9a-fA-F]{6})/);
-        if (m) this._seedPickerFromHex(`#${m[1]}`);
+        // seed picker immediately from cube background (handles rgb(...) as well)
+        const hex = this._extractHexFromCube(cube);
+        if (hex) this._seedPickerFromHex(hex);
 
         if (!this.cb.onColorsetSelect) return;
 
-        // async ctx sync (don’t block tap)
-        Promise.resolve()
-          .then(async () => {
-            const next = await this.cb.onColorsetSelect(idx);
-            await this._applyCtx(next, { keepPickerSeed: true });
-          })
-          .catch(() => {});
+        // async ctx sync (don’t block paint)
+        this._defer(async () => {
+          const next = await this.cb.onColorsetSelect(idx);
+          await this._applyCtx(next, { keepPickerSeed: true });
+        });
 
         return;
       }
@@ -750,12 +783,10 @@ export default class ColorPicker {
 
         if (!this.cb.onPatternChange) return;
 
-        Promise.resolve()
-          .then(async () => {
-            const next = await this.cb.onPatternChange(this.ctx.patternValue);
-            await this._applyCtx(next, { keepPickerSeed: true });
-          })
-          .catch(() => {});
+        this._defer(async () => {
+          const next = await this.cb.onPatternChange(this.ctx.patternValue);
+          await this._applyCtx(next, { keepPickerSeed: true });
+        });
       });
     }
 
