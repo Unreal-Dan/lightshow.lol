@@ -1,8 +1,6 @@
 /* css/mobile/color-picker.css */
 
-/* IMPORTANT:
-   These selectors work whether the picker is inside #mobile-app-root OR portaled to <body>.
-*/
+/* Works whether the picker is inside #mobile-app-root OR portaled to <body>. */
 
 #mobile-app-root .m-color-picker,
 .m-color-picker {
@@ -27,8 +25,6 @@
     max(10px, env(safe-area-inset-left));
 
   overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 #mobile-app-root .m-color-picker-sheet,
@@ -38,9 +34,8 @@
   top: 50%;
   transform: translate(-50%, -50%);
 
-  width: min(620px, calc(100vw - 20px));
-  max-height: min(86dvh, calc(100vh - 20px));
-
+  width: min(680px, calc(100vw - 20px));
+  max-height: min(88dvh, calc(100vh - 20px));
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 
@@ -53,11 +48,9 @@
   box-shadow:
     0 18px 64px rgba(0, 0, 0, 0.70),
     0 2px 0 rgba(255, 255, 255, 0.06) inset;
-
-  user-select: text;
-  -webkit-user-select: text;
 }
 
+/* Header */
 #mobile-app-root .m-color-picker-header,
 .m-color-picker-header {
   display: flex;
@@ -104,24 +97,149 @@
   white-space: nowrap;
 }
 
-#mobile-app-root .m-cp-btn:disabled,
-.m-cp-btn:disabled {
-  opacity: 0.5;
+/* Top bar: LED + Pattern */
+#mobile-app-root .m-cp-topbar,
+.m-cp-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
 }
 
-#mobile-app-root .m-color-picker-grid,
-.m-color-picker-grid {
+#mobile-app-root .m-cp-leds,
+.m-cp-leds {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-ledbtn,
+.m-cp-ledbtn {
+  width: 42px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
-  gap: 12px;
-  align-items: start;
+  place-items: center;
+  opacity: 0.65;
+  padding: 0;
+}
+
+#mobile-app-root .m-cp-ledbtn i,
+.m-cp-ledbtn i {
+  font-size: 1.05rem;
+}
+
+#mobile-app-root .m-cp-ledbtn.is-active,
+.m-cp-ledbtn.is-active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.10);
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 2px;
+}
+
+#mobile-app-root .m-cp-ledbtn.hidden,
+.m-cp-ledbtn.hidden {
+  display: none;
+}
+
+#mobile-app-root .m-cp-pattern select,
+.m-cp-pattern select {
+  width: 100%;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 6px 10px;
+  font-size: 0.92rem;
+}
+
+/* Colorset row (INSIDE the panel) */
+#mobile-app-root .m-cp-colorset,
+.m-cp-colorset {
+  margin-top: 10px;
+}
+
+#mobile-app-root .m-cp-colorset-row,
+.m-cp-colorset-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+#mobile-app-root .m-color-cube,
+.m-color-cube {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  position: relative;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0;
+}
+
+#mobile-app-root .m-color-cube.is-empty,
+.m-color-cube.is-empty {
+  opacity: 0.25;
+}
+
+#mobile-app-root .m-color-cube.is-add,
+.m-color-cube.is-add {
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-color-cube.is-selected,
+.m-color-cube.is-selected {
+  outline: 3px solid rgba(255, 255, 255, 0.60);
+  outline-offset: 2px;
 }
 
 #mobile-app-root .m-cp-label,
 .m-cp-label {
   font-size: 0.8rem;
   opacity: 0.85;
-  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-hint,
+.m-cp-hint {
+  margin-top: 10px;
+  font-size: 0.88rem;
+  opacity: 0.85;
+  display: none;
+}
+
+/* Disable picker when no selected color */
+#mobile-app-root .m-cp-body.is-disabled,
+.m-cp-body.is-disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+#mobile-app-root .m-cp-body.is-disabled + .m-cp-hint,
+.m-cp-body.is-disabled + .m-cp-hint {
+  display: block;
+}
+
+/* Picker layout */
+#mobile-app-root .m-color-picker-grid,
+.m-color-picker-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 12px;
+  align-items: start;
+  margin-top: 10px;
 }
 
 #mobile-app-root .m-cp-svbox,
@@ -129,12 +247,10 @@
   width: 100%;
   aspect-ratio: 1 / 1;
   max-height: min(42dvh, 320px);
-
   border-radius: 14px;
-  border: 1px solid rgb(40, 40, 40);
+  border: 1px solid #282828;
   position: relative;
   overflow: hidden;
-
   touch-action: none;
 }
 
@@ -168,7 +284,6 @@
   );
   position: relative;
   overflow: hidden;
-
   touch-action: none;
 }
 
@@ -325,18 +440,6 @@
   #mobile-app-root .m-cp-hueslider,
   .m-cp-hueslider {
     height: min(36dvh, 240px);
-  }
-}
-
-@media (max-width: 360px) {
-  #mobile-app-root .m-cp-btn,
-  .m-cp-btn {
-    padding: 6px 8px;
-    font-size: 0.8rem;
-  }
-  #mobile-app-root .m-color-picker-sheet,
-  .m-color-picker-sheet {
-    padding: 10px;
   }
 }
 

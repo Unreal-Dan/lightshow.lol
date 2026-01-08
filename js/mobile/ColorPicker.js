@@ -6,18 +6,37 @@ import SimpleDom from './SimpleDom.js';
 export default class ColorPicker {
   constructor({ vortexLib, views = null, basePath = 'js/mobile/views/' }) {
     this.vortexLib = vortexLib;
-
     this.views = views || new SimpleViews({ basePath });
 
     this.root = null;
     this.dom = null;
 
-    this.onChange = null;
+    // callbacks from host (editor)
     this.onDone = null;
-    this.onDelete = null;
 
-    this.selectedIndex = 0;
+    // effects context + callbacks
+    this.ctx = {
+      title: 'Effects',
+      ledCount: 2,
+      ledIndex: 0,
+      patternValue: -1,
+      patternOptionsHtml: '',
+      colorsetHtml: '',
+      selectedColorIndex: null,
+      pickerEnabled: false,
+    };
 
+    this.cb = {
+      onLedChange: null,        // async (ledIndex) => newCtx
+      onPatternChange: null,    // async (patternValue) => newCtx
+      onColorsetSelect: null,   // async (colorIndex) => newCtx
+      onColorsetAdd: null,      // async () => newCtx
+      onColorsetDelete: null,   // async (colorIndex) => newCtx
+      onColorChange: null,      // (colorIndex, hex, isDragging) => void
+      onOff: null,              // () => void
+    };
+
+    // internal picker state
     this.state = { r: 255, g: 0, b: 0, h: 0, s: 255, v: 255 };
     this._prevent = false;
 
@@ -26,12 +45,14 @@ export default class ColorPicker {
     this._svRect = null;
     this._hueRect = null;
 
+    // throttling
     this._throttleMs = 16;
     this._lastEmitAt = 0;
     this._pendingEmit = null;
     this._pendingTimer = 0;
 
     this._boundKeydown = null;
+    this._ignoreClickUntil = 0;
   }
 
   async preload() {
@@ -41,7 +62,7 @@ export default class ColorPicker {
   }
 
   mount(_containerIgnored) {
-    // Portal to <body> so fixed overlay is never trapped by transformed parents.
+    // Portal to <body> so fixed overlay isn't trapped by transformed parents.
     if (this.root && this.root.parentElement === document.body) return;
 
     if (this.root && this.root.parentElement) {
@@ -53,7 +74,6 @@ export default class ColorPicker {
     document.body.appendChild(this.root);
 
     this.dom = new SimpleDom(this.root);
-
     this.preload().catch(() => {});
   }
 
@@ -77,24 +97,97 @@ export default class ColorPicker {
       this.root.classList.remove('is-open');
     }
 
-    this.onChange = null;
     this.onDone = null;
-    this.onDelete = null;
+    this.cb = {
+      onLedChange: null,
+      onPatternChange: null,
+      onColorsetSelect: null,
+      onColorsetAdd: null,
+      onColorsetDelete: null,
+      onColorChange: null,
+      onOff: null,
+    };
+
+    this.ctx = {
+      title: 'Effects',
+      ledCount: 2,
+      ledIndex: 0,
+      patternValue: -1,
+      patternOptionsHtml: '',
+      colorsetHtml: '',
+      selectedColorIndex: null,
+      pickerEnabled: false,
+    };
   }
 
-  async open({ index, rgb, onChange, onDone, onDelete }) {
+  isOpen() {
+    return !!(this.root && this.root.classList.contains('is-open'));
+  }
+
+  /* ---------------------------------
+     Public open: Effects panel
+  --------------------------------- */
+  async openEffects({
+    title = 'Effects',
+    ledCount = 2,
+    ledIndex = 0,
+    patternValue = -1,
+    patternOptionsHtml = '',
+    colors = [],
+    selectedColorIndex = null,
+    rgb = null,
+
+    onDone = null,
+    onLedChange = null,
+    onPatternChange = null,
+    onColorsetSelect = null,
+    onColorsetAdd = null,
+    onColorsetDelete = null,
+    onColorChange = null,
+    onOff = null,
+  }) {
     if (!this.root || !this.dom) return;
 
     await this.preload();
 
-    this.selectedIndex = index | 0;
-    this.onChange = typeof onChange === 'function' ? onChange : null;
     this.onDone = typeof onDone === 'function' ? onDone : null;
-    this.onDelete = typeof onDelete === 'function' ? onDelete : null;
 
-    const r = this._clampByte(rgb?.r ?? 255);
-    const g = this._clampByte(rgb?.g ?? 0);
-    const b = this._clampByte(rgb?.b ?? 0);
+    this.cb.onLedChange = typeof onLedChange === 'function' ? onLedChange : null;
+    this.cb.onPatternChange = typeof onPatternChange === 'function' ? onPatternChange : null;
+    this.cb.onColorsetSelect = typeof onColorsetSelect === 'function' ? onColorsetSelect : null;
+    this.cb.onColorsetAdd = typeof onColorsetAdd === 'function' ? onColorsetAdd : null;
+    this.cb.onColorsetDelete = typeof onColorsetDelete === 'function' ? onColorsetDelete : null;
+    this.cb.onColorChange = typeof onColorChange === 'function' ? onColorChange : null;
+    this.cb.onOff = typeof onOff === 'function' ? onOff : null;
+
+    const lc = Math.max(0, ledCount | 0);
+    const li = Math.max(0, Math.min(lc - 1, ledIndex | 0));
+
+    this.ctx.title = String(title || 'Effects');
+    this.ctx.ledCount = lc;
+    this.ctx.ledIndex = li;
+    this.ctx.patternValue = Number.isFinite(patternValue) ? (patternValue | 0) : -1;
+    this.ctx.patternOptionsHtml = String(patternOptionsHtml || '');
+
+    this.ctx.selectedColorIndex =
+      selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
+
+    this.ctx.colorsetHtml = this._buildColorsetHtml(colors, this.ctx.selectedColorIndex);
+
+    // enable picker only if a color is selected
+    this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
+
+    // seed picker color
+    let seed = rgb;
+    if (!seed && Array.isArray(colors) && this.ctx.selectedColorIndex != null) {
+      const hx = colors[this.ctx.selectedColorIndex];
+      if (hx) seed = this._hexToRGB(hx);
+    }
+    if (!seed) seed = { r: 255, g: 0, b: 0 };
+
+    const r = this._clampByte(seed?.r ?? 255);
+    const g = this._clampByte(seed?.g ?? 0);
+    const b = this._clampByte(seed?.b ?? 0);
 
     const hsv = this.rgbToHsv(r, g, b);
     this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
@@ -106,7 +199,8 @@ export default class ColorPicker {
 
     await this._nextFrame();
     this._cacheRects();
-    this._syncUI(true); // do not emit on open
+    this._syncUI(true);
+    this._syncEffectsUI();
   }
 
   /* -----------------------------
@@ -124,9 +218,6 @@ export default class ColorPicker {
     return { r: RGBCol.red & 0xff, g: RGBCol.green & 0xff, b: RGBCol.blue & 0xff };
   }
 
-  /* -----------------------------
-     Render
-  ----------------------------- */
   async _nextFrame() {
     return new Promise((r) => requestAnimationFrame(() => r()));
   }
@@ -136,7 +227,25 @@ export default class ColorPicker {
     const hex = this._rgbToHex(r, g, b);
     const hueDeg = String((h / 255) * 360);
 
+    const led0Active = this.ctx.ledIndex === 0 ? 'is-active' : '';
+    const led1Active = this.ctx.ledIndex === 1 ? 'is-active' : '';
+    const showLed1 = this.ctx.ledCount >= 2 ? '' : 'hidden';
+
+    const pickerDisabledClass = this.ctx.pickerEnabled ? '' : 'is-disabled';
+
     const frag = await this.views.render('color-picker.html', {
+      title: this.ctx.title,
+
+      led0Active,
+      led1Active,
+      showLed1,
+
+      patternOptions: this.ctx.patternOptionsHtml,
+
+      colorsetHtml: this.ctx.colorsetHtml,
+
+      pickerDisabledClass,
+
       r,
       g,
       b,
@@ -145,7 +254,6 @@ export default class ColorPicker {
       v,
       hex,
       hueDeg,
-      deleteDisabled: this.onDelete ? '' : 'disabled',
     });
 
     this.root.innerHTML = '';
@@ -161,9 +269,23 @@ export default class ColorPicker {
     this._hueRect = hueSlider ? hueSlider.getBoundingClientRect() : null;
   }
 
-  /* -----------------------------
-     Bind
-  ----------------------------- */
+  _syncEffectsUI() {
+    const patSel = this.dom.$('[data-role="pattern"]');
+    if (patSel) patSel.value = String(this.ctx.patternValue ?? -1);
+
+    const body = this.dom.$('.m-cp-body');
+    if (body) body.classList.toggle('is-disabled', !this.ctx.pickerEnabled);
+
+    const hint = this.dom.$('[data-role="pick-hint"]');
+    if (hint) hint.style.display = this.ctx.pickerEnabled ? 'none' : 'block';
+
+    this.dom.all('[data-role="cube"][data-kind="color"]').forEach((cube) => {
+      const idx = Number(cube.dataset.index ?? -1);
+      const sel = this.ctx.selectedColorIndex != null && idx === this.ctx.selectedColorIndex;
+      cube.classList.toggle('is-selected', !!sel);
+    });
+  }
+
   _bind() {
     // Backdrop click closes
     this.root.addEventListener('pointerdown', (e) => {
@@ -185,6 +307,78 @@ export default class ColorPicker {
       document.addEventListener('keydown', this._boundKeydown);
     }
 
+    // Header buttons
+    this.dom.all('[data-act]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const now = performance.now();
+        if (now < this._ignoreClickUntil) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+        const act = btn.dataset.act;
+        if (act === 'done') {
+          if (this.onDone) await this.onDone();
+          return;
+        }
+      });
+    });
+
+    // LED selector
+    this.dom.all('[data-role="led"]').forEach((btn) => {
+      btn.addEventListener('pointerdown', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this._ignoreClickUntil = performance.now() + 250;
+
+        const led = Number(btn.dataset.led ?? 0) | 0;
+        if (!this.cb.onLedChange) return;
+
+        const next = await this.cb.onLedChange(led);
+        await this._applyCtx(next);
+      });
+    });
+
+    // Pattern dropdown
+    const patSel = this.dom.$('[data-role="pattern"]');
+    if (patSel) {
+      patSel.addEventListener('change', async () => {
+        const v = parseInt(String(patSel.value ?? '-1'), 10);
+        this.ctx.patternValue = Number.isFinite(v) ? (v | 0) : -1;
+
+        if (!this.cb.onPatternChange) return;
+        const next = await this.cb.onPatternChange(this.ctx.patternValue);
+        await this._applyCtx(next, { keepPickerSeed: true });
+      });
+    }
+
+    // Colorset cubes
+    this.dom.all('[data-role="cube"]').forEach((cube) => {
+      cube.addEventListener('pointerdown', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this._ignoreClickUntil = performance.now() + 250;
+
+        const kind = String(cube.dataset.kind || '');
+        const idx = Number(cube.dataset.index ?? -1) | 0;
+
+        if (kind === 'add') {
+          if (!this.cb.onColorsetAdd) return;
+          const next = await this.cb.onColorsetAdd();
+          await this._applyCtx(next);
+          return;
+        }
+
+        if (kind === 'color') {
+          if (!this.cb.onColorsetSelect) return;
+          const next = await this.cb.onColorsetSelect(idx);
+          await this._applyCtx(next);
+          return;
+        }
+      });
+    });
+
+    // Picker controls
     const svBox = this.dom.$('[data-role="svbox"]');
     const hueSlider = this.dom.$('[data-role="hueslider"]');
 
@@ -202,27 +396,12 @@ export default class ColorPicker {
 
     const hexIn = this.dom.$('[data-role="hex"]');
 
-    this.dom.all('[data-act]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const act = btn.dataset.act;
-        if (act === 'done') {
-          if (this.onDone) await this.onDone();
-          return;
-        }
-        if (act === 'delete') {
-          if (this.onDelete) await this.onDelete();
-          return;
-        }
-        if (act === 'off') {
-          this._setRGB(0, 0, 0, true);
-          this._emit(false, true);
-          return;
-        }
-      });
-    });
+    const pickerDisabled = () => !this.ctx.pickerEnabled;
 
     if (svBox) {
       svBox.addEventListener('pointerdown', (e) => {
+        if (pickerDisabled()) return;
+
         e.preventDefault();
         e.stopPropagation();
         this._cacheRects();
@@ -247,6 +426,8 @@ export default class ColorPicker {
 
     if (hueSlider) {
       hueSlider.addEventListener('pointerdown', (e) => {
+        if (pickerDisabled()) return;
+
         e.preventDefault();
         e.stopPropagation();
         this._cacheRects();
@@ -270,6 +451,7 @@ export default class ColorPicker {
     }
 
     const onRgbRange = (isDragging) => {
+      if (pickerDisabled()) return;
       const r = this._clampByte(parseInt(rRange?.value ?? '0', 10));
       const g = this._clampByte(parseInt(gRange?.value ?? '0', 10));
       const b = this._clampByte(parseInt(bRange?.value ?? '0', 10));
@@ -291,6 +473,7 @@ export default class ColorPicker {
     }
 
     const onRgbNum = () => {
+      if (pickerDisabled()) return;
       const r = this._clampByte(parseInt(rIn?.value ?? '0', 10));
       const g = this._clampByte(parseInt(gIn?.value ?? '0', 10));
       const b = this._clampByte(parseInt(bIn?.value ?? '0', 10));
@@ -303,6 +486,7 @@ export default class ColorPicker {
     if (bIn) bIn.addEventListener('input', onRgbNum);
 
     const onHsvNum = () => {
+      if (pickerDisabled()) return;
       const h = this._clampByte(parseInt(hIn?.value ?? '0', 10));
       const s = this._clampByte(parseInt(sIn?.value ?? '0', 10));
       const v = this._clampByte(parseInt(vIn?.value ?? '0', 10));
@@ -319,6 +503,7 @@ export default class ColorPicker {
 
     if (hexIn) {
       hexIn.addEventListener('input', () => {
+        if (pickerDisabled()) return;
         const txt = String(hexIn.value || '').trim();
         const m = txt.match(/^#?([0-9a-fA-F]{6})$/);
         if (!m) return;
@@ -337,7 +522,51 @@ export default class ColorPicker {
       if (!this.root || !this.root.classList.contains('is-open')) return;
       this._cacheRects();
       this._syncUI(true);
+      this._syncEffectsUI();
     });
+  }
+
+  async _applyCtx(next, { keepPickerSeed = false } = {}) {
+    if (!next || typeof next !== 'object') return;
+
+    if (Number.isFinite(next.ledCount)) this.ctx.ledCount = next.ledCount | 0;
+    if (Number.isFinite(next.ledIndex)) this.ctx.ledIndex = next.ledIndex | 0;
+    if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
+
+    if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
+
+    const newSelected =
+      next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
+    this.ctx.selectedColorIndex = newSelected;
+
+    if (Array.isArray(next.colors)) {
+      this.ctx.colorsetHtml = this._buildColorsetHtml(next.colors, this.ctx.selectedColorIndex);
+    }
+
+    this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
+
+    if (!keepPickerSeed) {
+      let seed = next.rgb || null;
+      if (!seed && Array.isArray(next.colors) && this.ctx.selectedColorIndex != null) {
+        const hx = next.colors[this.ctx.selectedColorIndex];
+        if (hx) seed = this._hexToRGB(hx);
+      }
+      if (seed) {
+        const r = this._clampByte(seed.r);
+        const g = this._clampByte(seed.g);
+        const b = this._clampByte(seed.b);
+        const hsv = this.rgbToHsv(r, g, b);
+        this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
+      }
+    }
+
+    await this._render();
+    this._bind();
+
+    await this._nextFrame();
+    this._cacheRects();
+    this._syncUI(true);
+    this._syncEffectsUI();
   }
 
   _handleHuePointer(e, isDragging) {
@@ -447,18 +676,27 @@ export default class ColorPicker {
   }
 
   _emit(isDragging, immediate) {
-    if (!this.onChange) return;
+    if (!this.ctx.pickerEnabled) return;
+    if (!this.cb.onColorChange) return;
+    if (this.ctx.selectedColorIndex == null) return;
 
     const { r, g, b } = this.state;
     const hex = this._rgbToHex(r, g, b);
+    const idx = this.ctx.selectedColorIndex | 0;
 
     const now = performance.now ? performance.now() : Date.now();
 
     if (immediate || !isDragging) {
       try {
-        this.onChange(this.selectedIndex, hex, !!isDragging);
+        this.cb.onColorChange(idx, hex, !!isDragging);
       } catch {}
       this._lastEmitAt = now;
+
+      const cube = this.dom.$(
+        `[data-role="cube"][data-kind="color"][data-index="${idx}"]`
+      );
+      if (cube) cube.style.background = hex;
+
       return;
     }
 
@@ -466,12 +704,18 @@ export default class ColorPicker {
     if (dt >= this._throttleMs) {
       this._lastEmitAt = now;
       try {
-        this.onChange(this.selectedIndex, hex, true);
+        this.cb.onColorChange(idx, hex, true);
       } catch {}
+
+      const cube = this.dom.$(
+        `[data-role="cube"][data-kind="color"][data-index="${idx}"]`
+      );
+      if (cube) cube.style.background = hex;
+
       return;
     }
 
-    this._pendingEmit = { idx: this.selectedIndex, hex };
+    this._pendingEmit = { idx, hex };
     if (!this._pendingTimer) {
       const wait = Math.max(0, this._throttleMs - dt);
       this._pendingTimer = setTimeout(() => {
@@ -481,10 +725,48 @@ export default class ColorPicker {
         this._pendingEmit = null;
         this._lastEmitAt = performance.now ? performance.now() : Date.now();
         try {
-          this.onChange(payload.idx, payload.hex, true);
+          this.cb.onColorChange(payload.idx, payload.hex, true);
         } catch {}
+
+        const cube = this.dom.$(
+          `[data-role="cube"][data-kind="color"][data-index="${payload.idx}"]`
+        );
+        if (cube) cube.style.background = payload.hex;
       }, wait);
     }
+  }
+
+  _buildColorsetHtml(colors, selectedIdx) {
+    const safe = Array.isArray(colors) ? colors : [];
+    const num = safe.length;
+    const parts = [];
+
+    for (let i = 0; i < 8; i++) {
+      if (i < num) {
+        const hex = String(safe[i] || '#000000');
+        const sel = selectedIdx != null && i === selectedIdx ? ' is-selected' : '';
+        parts.push(
+          `<button type="button" class="m-color-cube${sel}" data-role="cube" data-kind="color" data-index="${i}" style="background:${hex};" aria-label="Color ${i + 1}"></button>`
+        );
+      } else if (i === num && num < 8) {
+        parts.push(
+          `<button type="button" class="m-color-cube is-add" data-role="cube" data-kind="add" data-index="${i}" aria-label="Add color">+</button>`
+        );
+      } else {
+        parts.push(
+          `<div class="m-color-cube is-empty" data-role="cube" data-kind="empty" data-index="${i}"></div>`
+        );
+      }
+    }
+
+    return parts.join('');
+  }
+
+  _hexToRGB(hexValue) {
+    const m = String(hexValue || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) return { r: 0, g: 0, b: 0 };
+    const val = parseInt(m[1], 16) >>> 0;
+    return { r: (val >> 16) & 255, g: (val >> 8) & 255, b: val & 255 };
   }
 
   _rgbToHex(r, g, b) {

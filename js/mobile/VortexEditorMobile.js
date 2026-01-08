@@ -14,6 +14,7 @@ const ASSETS = {
     { id: 'fa-css', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css' },
     { id: 'bootstrap-css', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' },
     { id: 'mobile-styles-css', href: 'css/mobile/mobile-styles.css' },
+    { id: 'mobile-color-picker-css', href: 'css/mobile/color-picker.css' },
   ],
   scripts: [
     { id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }
@@ -29,9 +30,6 @@ const DEVICE_CARDS = [
   { id: 'Chromadeck', label: 'Chromadeck', img: 'public/images/chromadeck-logo-square-512.png' },
 ];
 
-/* -----------------------------
-   Mobile Editor Root
------------------------------ */
 export default class VortexEditorMobile {
   constructor(vortexLib) {
     this.vortexLib = vortexLib;
@@ -54,26 +52,20 @@ export default class VortexEditorMobile {
     this.lightshow = null;
     this._editorResizeHandler = null;
 
-    // Colorset + picker state (mobile)
-    this._mColorsetSelectedIndex = null;
-    this._mColorPickerOpen = false;
-
-    this._mLed = 0;
-    this._mActiveSet = null;
-
-    this._mColorRowEl = null;
-    this._mColorCubes = null;
-
-    this._mDemoTimer = null;
-    this._mFinalizeTimer = null;
-
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
 
-    this._mColorPicker = new ColorPicker({
+    this.effectsPanel = new ColorPicker({
       vortexLib: this.vortexLib,
       views: this.views,
       basePath: 'js/mobile/views/',
     });
+
+    // effects state
+    this._fxLed = 0;
+    this._fxSelectedColor = null;
+
+    this._fxFinalizeTimer = null;
+    this._fxDemoTimer = null;
   }
 
   /* -----------------------------
@@ -122,6 +114,9 @@ export default class VortexEditorMobile {
       );
     }
     this.devices = await res.json();
+
+    // mount effects panel once (portals to body)
+    this.effectsPanel.mount(document.body);
 
     await this.gotoDeviceSelect();
   }
@@ -535,15 +530,10 @@ export default class VortexEditorMobile {
     this.stopEditorLightshow();
     this.clearEditorResizeHandler();
 
-    // reset picker state on each editor navigation
-    this._mColorPickerOpen = false;
-    this._mColorsetSelectedIndex = null;
-    this._mActiveSet = null;
-    this._mColorRowEl = null;
-    this._mColorCubes = null;
-    this._clearDemoTimer();
-    this._clearFinalizeTimer();
-    this._mColorPicker.close();
+    // close effects if navigating
+    if (this.effectsPanel.isOpen()) {
+      this.effectsPanel.close();
+    }
 
     if (!hasModes) {
       await this.bindEmptyEditorActions(dt);
@@ -554,9 +544,7 @@ export default class VortexEditorMobile {
     await this.demoModeOnDevice();
 
     this.bindEditorModeNav(dt);
-    this.bindEditorTools();
-
-    this.bindEditorColorset();
+    this.bindEditorTools(dt);
   }
 
   async bindEmptyEditorActions(dt) {
@@ -661,10 +649,28 @@ export default class VortexEditorMobile {
     }
   }
 
-  bindEditorTools() {
+  bindEditorTools(dt) {
+    const isDisabled = this.dom.$('.m-editor-tools')?.classList.contains('m-editor-disabled');
+
+    // Use pointerdown to avoid "hover opens" feel on mobile.
     this.dom.all('[data-tool]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        console.log('[Mobile Editor] tool:', btn.dataset.tool);
+      btn.addEventListener('pointerdown', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isDisabled) return;
+
+        const tool = String(btn.dataset.tool || '');
+        if (tool === 'effects') {
+          if (this.effectsPanel.isOpen()) {
+            this.effectsPanel.close();
+          } else {
+            await this.openEffectsPanel(dt);
+          }
+          return;
+        }
+
+        console.log('[Mobile Editor] tool:', tool);
       });
     });
   }
@@ -673,16 +679,12 @@ export default class VortexEditorMobile {
      Engine/modes caching
   ----------------------------- */
   _getEngine() {
-    if (!this._engine) {
-      this._engine = this.vortex.engine();
-    }
+    if (!this._engine) this._engine = this.vortex.engine();
     return this._engine;
   }
 
   _getModes() {
-    if (!this._modes) {
-      this._modes = this._getEngine().modes();
-    }
+    if (!this._modes) this._modes = this._getEngine().modes();
     return this._modes;
   }
 
@@ -691,101 +693,41 @@ export default class VortexEditorMobile {
   }
 
   /* -----------------------------
-     Colorset + picker (mobile)
+     Effects panel data + apply
   ----------------------------- */
-  _clearDemoTimer() {
-    if (this._mDemoTimer) {
-      clearTimeout(this._mDemoTimer);
-      this._mDemoTimer = null;
+  _clearFxFinalize() {
+    if (this._fxFinalizeTimer) {
+      clearTimeout(this._fxFinalizeTimer);
+      this._fxFinalizeTimer = null;
     }
   }
 
-  _scheduleDemo(ms = 140) {
-    this._clearDemoTimer();
-    this._mDemoTimer = setTimeout(() => {
-      this._mDemoTimer = null;
+  _scheduleFxFinalize(ms = 140) {
+    this._clearFxFinalize();
+    this._fxFinalizeTimer = setTimeout(() => {
+      this._fxFinalizeTimer = null;
+      const cur = this._getCurMode();
+      if (!cur) return;
+      try {
+        cur.init();
+        this._getModes().saveCurMode();
+      } catch {}
+    }, ms);
+  }
+
+  _clearFxDemo() {
+    if (this._fxDemoTimer) {
+      clearTimeout(this._fxDemoTimer);
+      this._fxDemoTimer = null;
+    }
+  }
+
+  _scheduleFxDemo(ms = 70) {
+    this._clearFxDemo();
+    this._fxDemoTimer = setTimeout(() => {
+      this._fxDemoTimer = null;
       this.demoModeOnDevice();
     }, ms);
-  }
-
-  _clearFinalizeTimer() {
-    if (this._mFinalizeTimer) {
-      clearTimeout(this._mFinalizeTimer);
-      this._mFinalizeTimer = null;
-    }
-  }
-
-  _scheduleFinalize(ms = 80) {
-    this._clearFinalizeTimer();
-    this._mFinalizeTimer = setTimeout(() => {
-      this._mFinalizeTimer = null;
-      this._finalizeCurMode();
-    }, ms);
-  }
-
-  _finalizeCurMode() {
-    const cur = this._getCurMode();
-    if (!cur) return;
-    cur.init();
-    this._getModes().saveCurMode();
-  }
-
-  _ensureColorsetMounts() {
-    const tools = this.dom.$('.m-editor-tools');
-    if (!tools) return null;
-
-    let block = this.dom.$('#m-editor-colorset-block');
-    if (!block) {
-      block = document.createElement('div');
-      block.id = 'm-editor-colorset-block';
-      block.className = 'm-editor-colorset-block';
-
-      block.innerHTML = `
-        <div class="m-colorset-title">
-          <div class="m-colorset-label">Colors</div>
-          <div class="m-colorset-hint">Tap to edit</div>
-        </div>
-        <div id="m-colorset-row" class="m-colorset-row"></div>
-        <div id="m-color-picker-mount"></div>
-      `;
-
-      tools.insertBefore(block, tools.firstChild);
-    }
-
-    const row = this.dom.$('#m-colorset-row');
-    const pickerMount = this.dom.$('#m-color-picker-mount');
-
-    if (row) this._mColorRowEl = row;
-    if (pickerMount) this._mColorPicker.mount(pickerMount);
-
-    return block;
-  }
-
-  _getColorset() {
-    const cur = this._getCurMode();
-    if (!cur) return null;
-    return cur.getColorset(this._mLed);
-  }
-
-  _applyColorset(set, { finalize = false } = {}) {
-    const cur = this._getCurMode();
-    if (!cur || !set) return false;
-
-    cur.setColorset(set, this._mLed);
-
-    if (finalize) {
-      cur.init();
-      this._getModes().saveCurMode();
-    }
-
-    return true;
-  }
-
-  _hexToRGB(hexValue) {
-    const m = String(hexValue || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
-    if (!m) return { r: 0, g: 0, b: 0 };
-    const val = parseInt(m[1], 16) >>> 0;
-    return { r: (val >> 16) & 255, g: (val >> 8) & 255, b: val & 255 };
   }
 
   _rgbToHex(r, g, b) {
@@ -795,186 +737,319 @@ export default class VortexEditorMobile {
     return `#${((1 << 24) | (rr << 16) | (gg << 8) | bb).toString(16).slice(1).toUpperCase()}`;
   }
 
-  bindEditorColorset() {
-    const block = this._ensureColorsetMounts();
-    if (!block || !this._mColorRowEl) return;
-
-    const set = this._getColorset();
-    if (!set) return;
-
-    if (this._mColorsetSelectedIndex == null) {
-      this._mColorsetSelectedIndex = set.numColors() > 0 ? 0 : null;
-    }
-
-    this._renderColorsetRow();
+  _hexToRgb(hex) {
+    const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) return { r: 255, g: 0, b: 0 };
+    const v = parseInt(m[1], 16) >>> 0;
+    return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
   }
 
-  _renderColorsetRow() {
-    const row = this._mColorRowEl;
-    if (!row) return;
+  _getLedCountForDevice(dt) {
+    if (dt === 'Duo') return 2;
+    return this.devices?.[dt]?.ledCount ? Math.min(2, this.devices[dt].ledCount) : 1;
+  }
 
-    const set = this._getColorset();
-    if (!set) return;
+  _patternOptionsHtml({ allowMulti }) {
+    const patternEnum = this.vortexLib.PatternID;
 
-    const num = set.numColors();
+    const strobe = [];
+    const blend = [];
+    const solid = [];
+    const multi = [];
 
-    row.innerHTML = '';
-    this._mColorCubes = new Array(8).fill(null);
+    for (let k in patternEnum) {
+      if (!Object.prototype.hasOwnProperty.call(patternEnum, k)) continue;
+      if (k === 'values' || k === 'argCount') continue;
 
-    // If current selected index is out of range, clamp
-    if (this._mColorsetSelectedIndex != null) {
-      if (num <= 0) this._mColorsetSelectedIndex = null;
-      else if (this._mColorsetSelectedIndex >= num) this._mColorsetSelectedIndex = num - 1;
-      else if (this._mColorsetSelectedIndex < 0) this._mColorsetSelectedIndex = 0;
-    }
+      const pat = patternEnum[k];
+      if (!pat) continue;
+      if (pat === patternEnum.PATTERN_NONE || pat === patternEnum.PATTERN_COUNT) continue;
 
-    for (let i = 0; i < 8; i++) {
-      const cube = document.createElement('div');
-      cube.className = 'm-color-cube';
-      cube.dataset.index = String(i);
-      this._mColorCubes[i] = cube;
-
-      if (i < num) {
-        const col = set.get(i);
-        const hex = this._rgbToHex(col.red, col.green, col.blue);
-        cube.style.background = hex;
-
-        if (i === this._mColorsetSelectedIndex) cube.classList.add('is-selected');
-
-        const badge = document.createElement('div');
-        badge.className = 'm-color-badge';
-        badge.textContent = String(i + 1);
-        cube.appendChild(badge);
-
-        cube.addEventListener('click', async () => {
-          this._mColorsetSelectedIndex = i;
-          this._selectCube(i);
-          this._openPicker(i);
-        });
-      } else if (i === num && num < 8) {
-        cube.classList.add('is-add');
-        cube.textContent = '+';
-        cube.addEventListener('click', async () => {
-          const ok = this._addColor();
-          if (!ok) return;
-
-          const s2 = this._getColorset();
-          const n2 = s2 ? s2.numColors() : 0;
-          const idx = Math.max(0, n2 - 1);
-
-          this._mColorsetSelectedIndex = idx;
-          this._renderColorsetRow();
-          this._openPicker(idx);
-
-          this._scheduleDemo(80);
-        });
-      } else {
-        cube.classList.add('is-empty');
+      let label = '';
+      try {
+        label = this.vortex.patternToString(pat);
+        if (label.startsWith('complementary')) label = 'comp. ' + label.slice(14);
+      } catch {
+        label = k;
       }
 
-      row.appendChild(cube);
+      const val = pat.value ?? -1;
+      const opt = `<option value="${val}">${this._escape(label)}</option>`;
+
+      const isSingle = !!this.vortexLib.isSingleLedPatternID?.(pat);
+
+      if (!isSingle) {
+        if (allowMulti) multi.push(opt);
+        continue;
+      }
+
+      if (label.includes('blend')) blend.push(opt);
+      else if (label.includes('solid')) solid.push(opt);
+      else strobe.push(opt);
     }
+
+    const mk = (label, arr) => (arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '');
+    return (
+      mk('Strobe Patterns', strobe) +
+      mk('Blend Patterns', blend) +
+      mk('Solid Patterns', solid) +
+      (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
+    );
   }
 
-  _selectCube(index) {
-    if (!this._mColorCubes) return;
-    for (let i = 0; i < this._mColorCubes.length; i++) {
-      const el = this._mColorCubes[i];
-      if (!el) continue;
-      el.classList.toggle('is-selected', i === index);
-    }
+  _escape(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
-  _addColor() {
-    const set = this._getColorset();
-    if (!set) return false;
-    if (set.numColors() >= 8) return false;
-
-    set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
-    const ok = this._applyColorset(set, { finalize: true });
-    return !!ok;
-  }
-
-  _deleteColor(index) {
-    const set = this._getColorset();
-    if (!set) return false;
-    if (index < 0 || index >= set.numColors()) return false;
-
-    set.removeColor(index);
-
-    const ok = this._applyColorset(set, { finalize: true });
-    if (!ok) return false;
-
+  _getColorsetHexes(cur, led) {
+    const set = cur.getColorset(led);
+    const out = [];
+    if (!set) return out;
     const n = set.numColors();
-    if (n <= 0) {
-      this._mColorsetSelectedIndex = null;
-      this._mColorPickerOpen = false;
-      this._mActiveSet = null;
-      this._mColorPicker.close();
-      this._renderColorsetRow();
-      this._scheduleDemo(80);
-      return true;
+    for (let i = 0; i < n; i++) {
+      const c = set.get(i);
+      out.push(this._rgbToHex(c.red, c.green, c.blue));
     }
-
-    this._mColorsetSelectedIndex = Math.min(index, n - 1);
-    this._renderColorsetRow();
-    this._selectCube(this._mColorsetSelectedIndex);
-    this._scheduleDemo(80);
-    return true;
+    return out;
   }
 
-  _openPicker(index) {
-    const set = this._getColorset();
-    if (!set) return;
+  _getPatternValue(cur, led) {
+    try {
+      return cur.getPatternID(led).value | 0;
+    } catch {
+      return -1;
+    }
+  }
 
-    if (index < 0 || index >= set.numColors()) return;
+  async openEffectsPanel(dt) {
+    const cur = this._getCurMode();
+    if (!cur) return;
 
-    this._mColorPickerOpen = true;
-    this._mActiveSet = set;
+    const ledCount = this._getLedCountForDevice(dt);
+    this._fxLed = Math.max(0, Math.min(ledCount - 1, this._fxLed | 0));
 
-    const col = set.get(index);
-    const rgb = { r: col.red & 255, g: col.green & 255, b: col.blue & 255 };
+    const allowMulti = dt !== 'Duo' && dt !== 'None';
 
-    this._mColorPicker.open({
-      index,
+    const colors = this._getColorsetHexes(cur, this._fxLed);
+    const patternValue = this._getPatternValue(cur, this._fxLed);
+
+    if (this._fxSelectedColor == null) {
+      this._fxSelectedColor = colors.length ? 0 : null;
+    } else if (this._fxSelectedColor >= colors.length) {
+      this._fxSelectedColor = colors.length ? colors.length - 1 : null;
+    }
+
+    const rgb =
+      this._fxSelectedColor != null && colors[this._fxSelectedColor]
+        ? this._hexToRgb(colors[this._fxSelectedColor])
+        : null;
+
+    await this.effectsPanel.openEffects({
+      title: 'Effects',
+      ledCount,
+      ledIndex: this._fxLed,
+      patternValue,
+      patternOptionsHtml: this._patternOptionsHtml({ allowMulti }),
+      colors,
+      selectedColorIndex: this._fxSelectedColor,
       rgb,
-      onChange: (idx, hex, isDragging) => {
-        if (!this._mActiveSet) return;
-        if (idx < 0 || idx >= this._mActiveSet.numColors()) return;
 
-        const { r, g, b } = this._hexToRGB(hex);
-        const newCol = new this.vortexLib.RGBColor(r, g, b);
-
-        // Update in-memory set
-        this._mActiveSet.set(idx, newCol);
-
-        // During drag: only setColorset (no init/save) to avoid heap growth
-        // On release: finalize (init + save)
-        this._applyColorset(this._mActiveSet, { finalize: !isDragging });
-
-        // Update cube background without re-rendering the whole row
-        const cube = this._mColorCubes?.[idx];
-        if (cube) cube.style.background = this._rgbToHex(r, g, b);
-
-        this._mColorsetSelectedIndex = idx;
-        this._selectCube(idx);
-
-        // Finalize scheduling: if user is still dragging, delay; on release, do a quick demo
-        if (isDragging) {
-          this._scheduleFinalize(120);
-        } else {
-          this._clearFinalizeTimer();
-          this._scheduleDemo(70);
-        }
-      },
-      onDelete: async () => {
-        this._deleteColor(index);
-      },
       onDone: async () => {
-        this._mColorPickerOpen = false;
-        this._mActiveSet = null;
-        this._mColorPicker.close();
-        this._scheduleDemo(60);
+        this._clearFxFinalize();
+        this._clearFxDemo();
+        try {
+          const cur2 = this._getCurMode();
+          if (cur2) {
+            cur2.init();
+            this._getModes().saveCurMode();
+          }
+        } catch {}
+        await this.demoModeOnDevice();
+        this.effectsPanel.close();
+      },
+
+      onOff: () => {
+        // Off just means set selected color to black; actual apply happens via onColorChange emit
+      },
+
+      onLedChange: async (newLed) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
+
+        this._fxLed = Math.max(0, Math.min(ledCount - 1, newLed | 0));
+
+        const colors2 = this._getColorsetHexes(cur2, this._fxLed);
+        const pat2 = this._getPatternValue(cur2, this._fxLed);
+
+        if (this._fxSelectedColor == null) {
+          this._fxSelectedColor = colors2.length ? 0 : null;
+        } else if (this._fxSelectedColor >= colors2.length) {
+          this._fxSelectedColor = colors2.length ? colors2.length - 1 : null;
+        }
+
+        const rgb2 =
+          this._fxSelectedColor != null && colors2[this._fxSelectedColor]
+            ? this._hexToRgb(colors2[this._fxSelectedColor])
+            : null;
+
+        return {
+          ledCount,
+          ledIndex: this._fxLed,
+          patternValue: pat2,
+          colors: colors2,
+          selectedColorIndex: this._fxSelectedColor,
+          rgb: rgb2,
+        };
+      },
+
+      onPatternChange: async (patValue) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
+
+        const patID = this.vortexLib.PatternID?.values?.[patValue] || null;
+        if (!patID) return null;
+
+        try {
+          const set = cur2.getColorset(this._fxLed);
+          cur2.setPattern(patID, this._fxLed, null, null);
+          if (set) cur2.setColorset(set, this._fxLed);
+          cur2.init();
+          this._getModes().saveCurMode();
+        } catch {}
+
+        await this.demoModeOnDevice();
+
+        return {
+          ledCount,
+          ledIndex: this._fxLed,
+          patternValue: patValue | 0,
+          colors: this._getColorsetHexes(cur2, this._fxLed),
+          selectedColorIndex: this._fxSelectedColor,
+        };
+      },
+
+      onColorsetAdd: async () => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
+
+        const set = cur2.getColorset(this._fxLed);
+        if (!set) return null;
+        if (set.numColors() >= 8) return null;
+
+        set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
+        cur2.setColorset(set, this._fxLed);
+
+        try {
+          cur2.init();
+          this._getModes().saveCurMode();
+        } catch {}
+
+        await this.demoModeOnDevice();
+
+        const colors2 = this._getColorsetHexes(cur2, this._fxLed);
+        this._fxSelectedColor = Math.max(0, colors2.length - 1);
+
+        return {
+          ledCount,
+          ledIndex: this._fxLed,
+          patternValue: this._getPatternValue(cur2, this._fxLed),
+          colors: colors2,
+          selectedColorIndex: this._fxSelectedColor,
+          rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
+        };
+      },
+
+      onColorsetDelete: async (colorIndex) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
+
+        const set = cur2.getColorset(this._fxLed);
+        if (!set) return null;
+
+        const idx = colorIndex | 0;
+        if (idx < 0 || idx >= set.numColors()) return null;
+
+        set.removeColor(idx);
+        cur2.setColorset(set, this._fxLed);
+
+        try {
+          cur2.init();
+          this._getModes().saveCurMode();
+        } catch {}
+
+        await this.demoModeOnDevice();
+
+        const colors2 = this._getColorsetHexes(cur2, this._fxLed);
+        if (colors2.length <= 0) {
+          this._fxSelectedColor = null;
+          return {
+            ledCount,
+            ledIndex: this._fxLed,
+            patternValue: this._getPatternValue(cur2, this._fxLed),
+            colors: colors2,
+            selectedColorIndex: null,
+          };
+        }
+
+        this._fxSelectedColor = Math.min(idx, colors2.length - 1);
+        return {
+          ledCount,
+          ledIndex: this._fxLed,
+          patternValue: this._getPatternValue(cur2, this._fxLed),
+          colors: colors2,
+          selectedColorIndex: this._fxSelectedColor,
+          rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
+        };
+      },
+
+      onColorsetSelect: async (colorIndex) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
+
+        const colors2 = this._getColorsetHexes(cur2, this._fxLed);
+        const idx = colorIndex | 0;
+        if (idx < 0 || idx >= colors2.length) return null;
+
+        this._fxSelectedColor = idx;
+
+        return {
+          ledCount,
+          ledIndex: this._fxLed,
+          patternValue: this._getPatternValue(cur2, this._fxLed),
+          colors: colors2,
+          selectedColorIndex: this._fxSelectedColor,
+          rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
+        };
+      },
+
+      onColorChange: (idx, hex, isDragging) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return;
+
+        const set = cur2.getColorset(this._fxLed);
+        if (!set) return;
+
+        if (idx < 0 || idx >= set.numColors()) return;
+
+        const { r, g, b } = this._hexToRgb(hex);
+        set.set(idx, new this.vortexLib.RGBColor(r, g, b));
+        cur2.setColorset(set, this._fxLed);
+
+        if (isDragging) {
+          this._scheduleFxFinalize(140);
+        } else {
+          this._clearFxFinalize();
+          try {
+            cur2.init();
+            this._getModes().saveCurMode();
+          } catch {}
+          this._scheduleFxDemo(70);
+        }
       },
     });
   }
