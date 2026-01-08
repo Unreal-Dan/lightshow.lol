@@ -704,12 +704,14 @@ export default class VortexPort {
         report({ phase: 'pulling', index: i, total: numModes });
 
         const modeBuf = await this.readByteStream(vortexLib);
+        
+        report({ phase: 'adding', index: i, total: numModes });
 
         let modeStream = new vortexLib.ByteStream();
         vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
         vortex.addNewMode(modeStream, true);
 
-        report({ phase: 'pulled', index: i + 1, total: numModes });
+        report({ phase: 'acknowledging', index: i + 1, total: numModes });
 
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
       }
