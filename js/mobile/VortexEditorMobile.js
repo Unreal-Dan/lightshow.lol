@@ -63,6 +63,8 @@ export default class VortexEditorMobile {
 
     this._fxFinalizeTimer = null;
     this._fxDemoTimer = null;
+
+    this._transferModalEl = null;
   }
 
   detectMobile() { return true; }
@@ -532,6 +534,372 @@ export default class VortexEditorMobile {
     }
   }
 
+  // -----------------------------
+
+  _requireActivePort() {
+    if (!this.vortexPort?.isActive?.()) {
+      Notification.failure('Please connect a device first');
+      return false;
+    }
+    return true;
+  }
+
+  _callVortexPortMethod(names, ...args) {
+    const list = Array.isArray(names) ? names : [names];
+    for (const n of list) {
+      const fn = this.vortexPort?.[n];
+      if (typeof fn === 'function') return fn.apply(this.vortexPort, args);
+    }
+    const msg = `VortexPort missing method(s): ${list.join(', ')}`;
+    throw new Error(msg);
+  }
+
+  _ensureTransferModal() {
+    if (this._transferModalEl && document.body.contains(this._transferModalEl)) return this._transferModalEl;
+
+    const existing = document.getElementById('m-transfer-modal');
+    if (existing) {
+      this._transferModalEl = existing;
+      return existing;
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'm-transfer-modal';
+    modal.tabIndex = -1;
+    modal.setAttribute('aria-hidden', 'true');
+
+    modal.innerHTML = `
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="m-transfer-title">Device Transfer</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="text-secondary mb-2" id="m-transfer-subtitle" style="font-size: 0.95rem;">
+              Push or pull modes with the connected device.
+            </div>
+
+            <div class="d-grid gap-2">
+              <button id="m-transfer-pull" type="button" class="btn btn-primary">
+                <i class="fa-solid fa-download me-2"></i>
+                Pull
+              </button>
+
+              <button id="m-transfer-push" type="button" class="btn btn-secondary">
+                <i class="fa-solid fa-upload me-2"></i>
+                Push
+              </button>
+            </div>
+
+            <div class="text-secondary mt-3" id="m-transfer-footnote" style="font-size: 0.9rem; line-height: 1.25;">
+              Duo: Pull listens for a single mode (VLTransfer). Push sends the current mode (VLTransfer).
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    this._transferModalEl = modal;
+    return modal;
+  }
+
+  _configureTransferModalForDevice(dt) {
+    const modal = this._ensureTransferModal();
+
+    const titleEl = modal.querySelector('#m-transfer-title');
+    const subtitleEl = modal.querySelector('#m-transfer-subtitle');
+    const footEl = modal.querySelector('#m-transfer-footnote');
+    const pullBtn = modal.querySelector('#m-transfer-pull');
+    const pushBtn = modal.querySelector('#m-transfer-push');
+
+    if (titleEl) titleEl.textContent = dt === 'Duo' ? 'Duo Transfer' : 'Device Transfer';
+
+    if (subtitleEl) {
+      if (dt === 'Duo') subtitleEl.textContent = 'Transfer a single mode via VLTransfer.';
+      else subtitleEl.textContent = 'Pull modes from the device or push your current modes to it.';
+    }
+
+    if (footEl) {
+      if (dt === 'Duo') {
+        footEl.textContent = 'Pull listens for a single mode (VLTransfer). Push sends the current mode (VLTransfer).';
+      } else {
+        footEl.textContent = 'Pull replaces your current modes with the device modes. Push sends your current modes to the device.';
+      }
+    }
+
+    if (pullBtn) {
+      pullBtn.disabled = false;
+      pullBtn.innerHTML = `<i class="fa-solid fa-download me-2"></i> ${dt === 'Duo' ? 'Pull from Duo' : 'Pull from device'}`;
+    }
+
+    if (pushBtn) {
+      const hasModes = this.vortex?.numModes?.() > 0;
+      pushBtn.disabled = !hasModes;
+      pushBtn.innerHTML = `<i class="fa-solid fa-upload me-2"></i> ${dt === 'Duo' ? 'Push to Duo' : 'Push to device'}`;
+    }
+
+    if (modal.dataset.bound !== '1') {
+      modal.dataset.bound = '1';
+
+      const onPull = async (e) => {
+        try {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+        } catch {}
+
+        const dt2 = this.selectedDeviceType('Duo');
+        if (!this._requireActivePort()) return;
+
+        const pullBtn2 = modal.querySelector('#m-transfer-pull');
+        const pushBtn2 = modal.querySelector('#m-transfer-push');
+
+        await this.dom.busy(
+          pullBtn2,
+          `<i class="fa-solid fa-spinner fa-spin me-2"></i> Pulling…`,
+          async () => {
+            if (dt2 === 'Duo') {
+              await this._pullSingleModeFromDuoInEditor(pullBtn2, pushBtn2);
+            } else {
+              await this._pullModesFromDeviceInEditor(dt2, pullBtn2, pushBtn2);
+            }
+          },
+          { disable: [pushBtn2] }
+        );
+      };
+
+      const onPush = async (e) => {
+        try {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+        } catch {}
+
+        const dt2 = this.selectedDeviceType('Duo');
+        if (!this._requireActivePort()) return;
+
+        const pullBtn2 = modal.querySelector('#m-transfer-pull');
+        const pushBtn2 = modal.querySelector('#m-transfer-push');
+        if (!pushBtn2 || pushBtn2.disabled) return;
+
+        await this.dom.busy(
+          pushBtn2,
+          `<i class="fa-solid fa-spinner fa-spin me-2"></i> Pushing…`,
+          async () => {
+            if (dt2 === 'Duo') {
+              await this._pushSingleModeToDuoInEditor(pullBtn2, pushBtn2);
+            } else {
+              await this._pushModesToDeviceInEditor(dt2, pullBtn2, pushBtn2);
+            }
+          },
+          { disable: [pullBtn2] }
+        );
+      };
+
+      modal.querySelector('#m-transfer-pull')?.addEventListener('click', onPull, { passive: false });
+      modal.querySelector('#m-transfer-push')?.addEventListener('click', onPush, { passive: false });
+    }
+
+    return modal;
+  }
+
+  _showTransferModal(dt) {
+    const modalEl = this._configureTransferModalForDevice(dt);
+
+    if (!window.bootstrap || !window.bootstrap.Modal) {
+      Notification.failure('Bootstrap modal is unavailable');
+      return;
+    }
+
+    const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    inst.show();
+  }
+
+  async _hideTransferModal() {
+    const modalEl = this._ensureTransferModal();
+    if (!window.bootstrap || !window.bootstrap.Modal) return;
+    const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    inst.hide();
+  }
+
+  async _pullSingleModeFromDuoInEditor(pullBtn, pushBtn) {
+    try {
+      await this._hideTransferModal();
+
+      this.vortex.clearModes();
+
+      // VLTransfer pull: listen for one mode
+      await this.listenVL();
+
+      if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
+
+      await this.gotoEditor({ deviceType: 'Duo' });
+
+      // Optional: let the user know
+      if (Notification.success) Notification.success('Pulled mode from Duo');
+    } catch (err) {
+      console.error('[Mobile] Duo pull failed:', err);
+      Notification.failure('Failed to pull mode from Duo');
+      try {
+        // restore button labels on failure
+        this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
+      } catch {}
+    } finally {
+      try {
+        // re-enable push if we now have modes
+        const hasModes = this.vortex.numModes() > 0;
+        if (pushBtn) pushBtn.disabled = !hasModes;
+        if (pullBtn) pullBtn.disabled = false;
+      } catch {}
+    }
+  }
+
+  async _pushSingleModeToDuoInEditor(pullBtn, pushBtn) {
+    try {
+      const hasModes = this.vortex.numModes() > 0;
+      if (!hasModes) {
+        Notification.failure('No mode to push');
+        return;
+      }
+
+      // Make sure current mode is saved/initialized before transmit
+      try {
+        const cur = this._getCurMode();
+        if (cur) cur.init();
+        this._getModes().saveCurMode();
+      } catch {}
+
+      // VLTransfer push: transmit current mode
+      this._callVortexPortMethod(
+        ['transmitVL', 'transmitCurMode', 'transmitCurModeVL', 'sendVL', 'sendCurMode'],
+        this.vortexLib,
+        this.vortex,
+        (p) => {
+          try {
+            if (!p || typeof p !== 'object') return;
+            const phase = String(p.phase || '');
+            if (phase === 'sending') {
+              const pct = Number(p.pct ?? -1);
+              if (pushBtn) {
+                pushBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Sending${pct >= 0 ? `… ${Math.round(pct)}%` : '…'}`;
+              }
+            }
+          } catch {}
+        }
+      );
+
+      await this._hideTransferModal();
+
+      if (Notification.success) Notification.success('Pushed mode to Duo');
+    } catch (err) {
+      console.error('[Mobile] Duo push failed:', err);
+      Notification.failure('Failed to push mode to Duo');
+      try { this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
+    } finally {
+      try {
+        if (pullBtn) pullBtn.disabled = false;
+        if (pushBtn) pushBtn.disabled = !(this.vortex.numModes() > 0);
+      } catch {}
+    }
+  }
+
+  async _pullModesFromDeviceInEditor(dt, pullBtn, pushBtn) {
+    try {
+      await this._hideTransferModal();
+
+      this.vortex.clearModes();
+
+      await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
+        if (!p || typeof p !== 'object') return;
+        const total = Number(p.total ?? 0);
+        const i = Number(p.index ?? 0) + 1;
+
+        let str = `Pulling…`;
+        if (p.phase === 'count') str = `Counting… (0 / ${total})`;
+        else if (p.phase === 'pulling') str = `Pulling mode ${i} / ${total}…`;
+        else if (p.phase === 'finalizing') str = `Finalizing… (${total} modes)`;
+        else if (p.phase === 'done') str = `Done (${total} modes)`;
+
+        if (pullBtn) pullBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> ${str}`;
+      });
+
+      if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
+      await this.gotoEditor({ deviceType: dt });
+
+      if (Notification.success) Notification.success('Pulled modes from device');
+    } catch (err) {
+      console.error('[Mobile] Pull from device failed:', err);
+      Notification.failure('Failed to pull modes from device');
+      try { this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
+    } finally {
+      try {
+        if (pullBtn) pullBtn.disabled = false;
+        if (pushBtn) pushBtn.disabled = !(this.vortex.numModes() > 0);
+      } catch {}
+    }
+  }
+
+  async _pushModesToDeviceInEditor(dt, pullBtn, pushBtn) {
+    try {
+      const hasModes = this.vortex.numModes() > 0;
+      if (!hasModes) {
+        Notification.failure('No modes to push');
+        return;
+      }
+
+      // Make sure current mode is saved/initialized before transmit
+      try {
+        const cur = this._getCurMode();
+        if (cur) cur.init();
+        this._getModes().saveCurMode();
+      } catch {}
+
+      // Try a few likely VortexPort method names (extra args are safe in JS)
+      const pushFnNames = [
+        'pushEachToDevice',
+        'pushAllToDevice',
+        'pushModesToDevice',
+        'pushToDevice',
+      ];
+
+      this._callVortexPortMethod(
+        pushFnNames,
+        this.vortexLib,
+        this.vortex,
+        (p) => {
+          try {
+            if (!p || typeof p !== 'object') return;
+            const total = Number(p.total ?? 0);
+            const i = Number(p.index ?? 0) + 1;
+
+            let str = `Pushing…`;
+            if (p.phase === 'count') str = `Counting… (0 / ${total})`;
+            else if (p.phase === 'pushing') str = `Pushing mode ${i} / ${total}…`;
+            else if (p.phase === 'finalizing') str = `Finalizing… (${total} modes)`;
+            else if (p.phase === 'done') str = `Done (${total} modes)`;
+
+            if (pushBtn) pushBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> ${str}`;
+          } catch {}
+        }
+      );
+
+      await this._hideTransferModal();
+
+      if (Notification.success) Notification.success('Pushed modes to device');
+    } catch (err) {
+      console.error('[Mobile] Push to device failed:', err);
+      Notification.failure('Failed to push modes to device');
+      try { this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
+    } finally {
+      try {
+        if (pullBtn) pullBtn.disabled = false;
+        if (pushBtn) pushBtn.disabled = !(this.vortex.numModes() > 0);
+      } catch {}
+    }
+  }
+
   bindEditorTools(dt) {
     const toolsEl = this.dom.$('.m-editor-tools');
 
@@ -545,12 +913,20 @@ export default class VortexEditorMobile {
       if (isDisabled) return;
 
       const tool = String(btn.dataset.tool || '');
+
       if (tool === 'effects') {
         if (this.effectsPanel.isOpen()) {
           this.effectsPanel.close();
         } else {
           await this.openEffectsPanel(dt);
         }
+        return;
+      }
+
+      // NEW: transfer tool (push/pull modal)
+      if (tool === 'transfer') {
+        if (!this._requireActivePort()) return;
+        this._showTransferModal(dt);
         return;
       }
 
