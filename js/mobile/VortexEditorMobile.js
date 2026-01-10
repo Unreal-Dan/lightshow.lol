@@ -724,45 +724,134 @@ export default class VortexEditorMobile {
         return;
       }
 
+      if (!this._requireActivePort()) return;
+
+      // Save/init current mode before starting repeated transmit.
       try {
         const cur = this._getCurMode();
         if (cur) cur.init();
         this._getModes().saveCurMode();
       } catch {}
 
-      // Duo VLTransfer push: try common method names
-      this._callVortexPortMethod(
-        ['transmitVL', 'transmitCurMode', 'transmitCurModeVL', 'sendVL', 'sendCurMode'],
-        this.vortexLib,
-        this.vortex,
-        (p) => {
-          try {
-            if (!p || typeof p !== 'object') return;
-            const phase = String(p.phase || '');
-            if (phase === 'sending') {
-              const pct = Number(p.pct ?? -1);
-              if (pushBtn) {
-                pushBtn.innerHTML =
-                  `<i class="fa-solid fa-spinner fa-spin me-2"></i> Sending` +
-                  (pct >= 0 ? `… ${Math.round(pct)}%` : '…');
-              }
-            }
-          } catch {}
-        }
-      );
-
       await this._hideTransferModal();
 
-      if (Notification.success) Notification.success('Pushed mode to Duo');
+      // Go to the dedicated send page; keep sending until Done.
+      await this.gotoDuoSend({
+        deviceType: 'Duo',
+        backTarget: 'editor',
+      });
     } catch (err) {
       console.error('[Mobile] Duo push failed:', err);
-      Notification.failure('Failed to push mode to Duo');
-      try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
-    } finally {
+      Notification.failure('Failed to start sending to Duo');
+    }
+  }
+
+  async gotoDuoSend({ deviceType, backTarget = 'editor' } = {}) {
+    const dt = deviceType || this.selectedDeviceType('Duo');
+
+    // Stop editor rendering before swapping views.
+    this.stopEditorLightshow();
+    this.clearEditorResizeHandler();
+    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+
+    const copy = {
+      title: 'Sending to Duo…',
+      body:
+      'Put the Duo into Mode Sharing, then point the Chromadeck at the Duo button area until the mode starts playing on the Duo. ' +
+      'Keep it pointed while this screen is open.',
+      status: 'Starting…',
+    };
+
+    const frag = await this.views.render('duo-mode-send.html', copy);
+    this.dom.set(frag);
+
+    const statusEl = this.dom.$('#duo-tx-status');
+    const statusTextEl = this.dom.$('#duo-tx-status-text');
+
+    const doneBtn = this.dom.$('#done-btn');
+    if (doneBtn) {
+      doneBtn.addEventListener('click', async (e) => {
+        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+        this._stopDuoTransmitLoop();
+        if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
+        else await this.gotoModeSource({ deviceType: dt });
+      }, { passive: false });
+    }
+
+    // Start the repeated transmit loop.
+    this._startDuoTransmitLoop({
+      intervalMs: 900,
+      statusEl,
+      statusTextEl,
+    });
+  }
+
+  _startDuoTransmitLoop({ intervalMs = 900, statusEl = null, statusTextEl = null } = {}) {
+    this._stopDuoTransmitLoop();
+
+    this._duoTxLoopActive = true;
+    this._duoTxLoopTimer = null;
+
+    const setStatus = (txt) => {
+      if (statusTextEl) statusTextEl.textContent = txt;
+    };
+
+    const fail = (txt) => {
+      try { statusEl?.classList.add('is-error'); } catch {}
+      setStatus(txt);
+      this._stopDuoTransmitLoop();
+    };
+
+    const tick = async () => {
+      if (!this._duoTxLoopActive) return;
+
+      if (!this.vortexPort?.isActive?.()) {
+        fail('Not connected. Tap Done, reconnect, and try again.');
+        return;
+      }
+
+      // Don’t overlap transmissions.
+      if (this.vortexPort.isTransmitting) {
+        setStatus('Sending… keep pointing…');
+        this._duoTxLoopTimer = setTimeout(tick, 200);
+        return;
+      }
+
       try {
-        if (pullBtn) pullBtn.disabled = false;
-        if (pushBtn) pushBtn.disabled = !(this.vortex.numModes() > 0);
-      } catch {}
+        setStatus('Sending… keep pointing…');
+
+        // Try common VLTransfer push method names.
+        await this._callVortexPortMethod(
+          ['transmitVL', 'transmitCurMode', 'transmitCurModeVL', 'sendVL', 'sendCurMode'],
+          this.vortexLib,
+          this.vortex,
+          (p) => {
+            try {
+              if (!p || typeof p !== 'object') return;
+              const phase = String(p.phase || '');
+              if (phase) setStatus('Sending… keep pointing…');
+            } catch {}
+          }
+        );
+
+        if (!this._duoTxLoopActive) return;
+
+        setStatus('Sent. Keep pointing…');
+        this._duoTxLoopTimer = setTimeout(tick, intervalMs);
+      } catch (err) {
+        console.error('[Mobile] Duo transmit loop failed:', err);
+        fail('Send failed. Keep pointing and try again, or tap Done.');
+      }
+    };
+
+    tick();
+  }
+
+  _stopDuoTransmitLoop() {
+    this._duoTxLoopActive = false;
+    if (this._duoTxLoopTimer) {
+      clearTimeout(this._duoTxLoopTimer);
+      this._duoTxLoopTimer = null;
     }
   }
 
