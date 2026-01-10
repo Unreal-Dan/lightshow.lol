@@ -756,9 +756,7 @@ export default class VortexEditorMobile {
 
     const copy = {
       title: 'Sending to Duo…',
-      body:
-      'Put the Duo into Mode Sharing, then point the Chromadeck at the Duo button area until the mode starts playing on the Duo. ' +
-      'Keep it pointed while this screen is open.',
+      body: 'Enter ModeSharing on Duo and point the Chromadeck at the button area on the Duo to transfer the mode.',
       status: 'Starting…',
     };
 
@@ -780,7 +778,7 @@ export default class VortexEditorMobile {
 
     // Start the repeated transmit loop.
     this._startDuoTransmitLoop({
-      intervalMs: 900,
+      intervalMs: 500,
       statusEl,
       statusTextEl,
     });
@@ -813,7 +811,7 @@ export default class VortexEditorMobile {
       // Don’t overlap transmissions.
       if (this.vortexPort.isTransmitting) {
         setStatus('Sending… keep pointing…');
-        this._duoTxLoopTimer = setTimeout(tick, 200);
+        this._duoTxLoopTimer = setTimeout(tick, 100);
         return;
       }
 
