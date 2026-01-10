@@ -348,7 +348,7 @@ export default class VortexEditorMobile {
           if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
           await this.gotoEditor({ deviceType });
         } catch (err) {
-          console.error('[Mobile] Pull from device failed:', err);
+          console.error('[Mobile] Load from device failed:', err);
           Notification.failure('Failed to load modes from device');
         }
       },
@@ -368,28 +368,53 @@ export default class VortexEditorMobile {
     await this.gotoEditor({ deviceType });
   }
 
-  async gotoDuoReceive({ deviceType }) {
+  async gotoDuoReceive({ deviceType, preserveModes = false, backTarget = 'mode-source' } = {}) {
+    const dt = deviceType || this.selectedDeviceType('Duo');
+
+    // If we came from editor, kill the running render loop before swapping views.
+    this.stopEditorLightshow();
+    this.clearEditorResizeHandler();
+    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+
     const copy = {
-      title: 'Listening for Duo…',
-      body: "Point the Duo at the Chromadeck's buttons and send the mode.  The Chromadeck is listening.",
+      title: 'Load from Duo',
+      body: "Point the Duo at the Chromadeck's buttons and send the mode. The Chromadeck is listening.",
       status: 'Starting…',
     };
 
     const frag = await this.views.render('duo-mode-receive.html', copy);
     this.dom.set(frag);
 
-    this.dom.onClick('#back-btn', async () => { await this.gotoModeSource({ deviceType }); });
+    this.dom.onClick('#back-btn', async () => {
+      if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
+      else await this.gotoModeSource({ deviceType: dt });
+    });
 
     const statusEl = this.dom.$('#duo-rx-status');
     const statusTextEl = this.dom.$('#duo-rx-status-text');
     const bodyEl = this.dom.$('#duo-rx-body');
 
+    const beforeCount = this.vortex.numModes();
+
     try {
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
-      this.vortex.clearModes();
+
+      // IMPORTANT: only clear modes when we're doing the full "load from Duo" flow.
+      if (!preserveModes) this.vortex.clearModes();
+
       await this.listenVL();
+
+      const afterCount = this.vortex.numModes();
+
+      // If we preserved modes, select the newly received one (assumes it's appended).
+      if (preserveModes) {
+        if (afterCount > beforeCount) this.vortex.setCurMode(afterCount - 1, false);
+      } else {
+        if (afterCount > 0) this.vortex.setCurMode(0, false);
+      }
+
       if (statusTextEl) statusTextEl.textContent = 'Received. Opening editor…';
-      await this.gotoEditor({ deviceType });
+      await this.gotoEditor({ deviceType: dt });
     } catch (err) {
       console.error('[Mobile] Duo receive failed:', err);
       statusEl?.classList.add('is-error');
@@ -589,13 +614,13 @@ export default class VortexEditorMobile {
 
     if (pullBtn) {
       pullBtn.disabled = false;
-      pullBtn.innerHTML = `<i class="fa-solid fa-download me-2"></i> ${dt === 'Duo' ? 'Pull from Duo' : 'Pull from device'}`;
+      pullBtn.innerHTML = `<i class="fa-solid fa-download me-2"></i> ${dt === 'Duo' ? 'Load from Duo' : 'Load from device'}`;
     }
 
     if (pushBtn) {
       const hasModes = this.vortex?.numModes?.() > 0;
       pushBtn.disabled = !hasModes;
-      pushBtn.innerHTML = `<i class="fa-solid fa-upload me-2"></i> ${dt === 'Duo' ? 'Push to Duo' : 'Push to device'}`;
+      pushBtn.innerHTML = `<i class="fa-solid fa-upload me-2"></i> ${dt === 'Duo' ? 'Save to Duo' : 'Save to device'}`;
     }
 
     if (modal.dataset.bound !== '1') {
@@ -776,7 +801,7 @@ export default class VortexEditorMobile {
 
       if (Notification.success) Notification.success('Pulled modes from device');
     } catch (err) {
-      console.error('[Mobile] Pull from device failed:', err);
+      console.error('[Mobile] Load from device failed:', err);
       Notification.failure('Failed to pull modes from device');
       try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
     } finally {
@@ -833,7 +858,7 @@ export default class VortexEditorMobile {
 
       if (Notification.success) Notification.success('Pushed modes to device');
     } catch (err) {
-      console.error('[Mobile] Push to device failed:', err);
+      console.error('[Mobile] Save to device failed:', err);
       Notification.failure('Failed to push modes to device');
       try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
     } finally {
