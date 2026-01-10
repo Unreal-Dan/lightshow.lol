@@ -778,7 +778,7 @@ export default class VortexEditorMobile {
 
     // Start the repeated transmit loop.
     this._startDuoTransmitLoop({
-      intervalMs: 500,
+      intervalMs: 900,
       statusEl,
       statusTextEl,
     });
@@ -811,7 +811,7 @@ export default class VortexEditorMobile {
       // Don’t overlap transmissions.
       if (this.vortexPort.isTransmitting) {
         setStatus('Sending… keep pointing…');
-        this._duoTxLoopTimer = setTimeout(tick, 100);
+        this._duoTxLoopTimer = setTimeout(tick, 200);
         return;
       }
 
