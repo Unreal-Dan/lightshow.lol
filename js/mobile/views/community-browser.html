@@ -1,0 +1,49 @@
+<!-- /js/mobile/views/community-browser.html -->
+<div class="m-vcb">
+  <div class="m-vcb-header">
+    <button id="back-btn" class="btn btn-link m-vcb-back" aria-label="Back">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
+
+    <div class="m-vcb-title">Community Modes</div>
+
+    <button id="m-vcb-refresh" class="btn btn-link m-vcb-refresh" aria-label="Refresh">
+      <i class="fa-solid fa-rotate"></i>
+    </button>
+  </div>
+
+  <div class="m-vcb-controls">
+    <input
+      type="text"
+      id="m-vcb-search-box"
+      class="form-control m-vcb-search"
+      placeholder="Search modes..."
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+    />
+
+    <div id="m-vcb-filter-container" class="m-vcb-filter-container">
+      <!-- filter buttons injected -->
+    </div>
+  </div>
+
+  <div id="m-vcb-status" class="m-vcb-status" role="status" aria-live="polite"></div>
+
+  <div id="m-vcb-modes-container" class="m-vcb-modes-container">
+    <!-- mode rows injected -->
+  </div>
+
+  <div class="m-vcb-footer">
+    <button id="m-vcb-prev-btn" class="btn btn-outline-light m-vcb-page-btn" type="button">
+      Prev
+    </button>
+
+    <span id="m-vcb-page-label" class="m-vcb-page-label">Page 1 / ?</span>
+
+    <button id="m-vcb-next-btn" class="btn btn-outline-light m-vcb-page-btn" type="button">
+      Next
+    </button>
+  </div>
+</div>
+
