@@ -703,26 +703,16 @@ export default class VortexEditorMobile {
     try {
       await this._hideTransferModal();
 
-      this.vortex.clearModes();
-
-      // VLTransfer pull = listen for one mode
-      await this.listenVL();
-
-      if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
-
-      await this.gotoEditor({ deviceType: 'Duo' });
-
-      if (Notification.success) Notification.success('Pulled mode from Duo');
+      // Go to the dedicated pull-from-duo page and preserve current modes.
+      // Back goes back to editor.
+      await this.gotoDuoReceive({
+        deviceType: 'Duo',
+        preserveModes: true,
+        backTarget: 'editor',
+      });
     } catch (err) {
-      console.error('[Mobile] Duo pull failed:', err);
+      console.error('[Mobile] Duo pull (from editor) failed:', err);
       Notification.failure('Failed to pull mode from Duo');
-      try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
-    } finally {
-      try {
-        const hasModes = this.vortex.numModes() > 0;
-        if (pushBtn) pushBtn.disabled = !hasModes;
-        if (pullBtn) pullBtn.disabled = false;
-      } catch {}
     }
   }
 
