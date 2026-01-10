@@ -584,25 +584,8 @@ export default class VortexEditorMobile {
     const modal = await this._ensureTransferModal();
 
     const titleEl = modal.querySelector('#m-transfer-title');
-    const subtitleEl = modal.querySelector('#m-transfer-subtitle');
-    const footEl = modal.querySelector('#m-transfer-footnote');
     const pullBtn = modal.querySelector('#m-transfer-pull');
     const pushBtn = modal.querySelector('#m-transfer-push');
-
-    if (titleEl) titleEl.textContent = dt === 'Duo' ? 'Duo Transfer' : 'Device Transfer';
-
-    if (subtitleEl) {
-      if (dt === 'Duo') subtitleEl.textContent = 'Transfer a single mode via VLTransfer.';
-      else subtitleEl.textContent = 'Pull modes from the device or push your current modes to it.';
-    }
-
-    if (footEl) {
-      if (dt === 'Duo') {
-        footEl.textContent = 'Pull listens for a single mode (VLTransfer). Push sends the current mode (VLTransfer).';
-      } else {
-        footEl.textContent = 'Pull replaces your current modes with the device modes. Push sends your current modes to the device.';
-      }
-    }
 
     if (pullBtn) {
       pullBtn.disabled = false;
