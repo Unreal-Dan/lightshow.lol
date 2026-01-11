@@ -728,10 +728,11 @@ export default class VortexEditorMobile {
     }
   }
 
-  _bindModeSwipe(dt) {
+    _bindModeSwipe(dt) {
+    // Bind swipe to the CANVAS (or stage) — never the carousel/buttons.
     const swipeTarget =
-      this.dom.$('.m-editor-carousel') ||
       this.dom.$('#mobile-lightshow-canvas') ||
+      this.dom.$('.m-editor-stage') ||
       this.dom.$('#mobile-app-root');
 
     if (!swipeTarget) return;
@@ -748,12 +749,24 @@ export default class VortexEditorMobile {
       state.lastX = 0;
       state.lastY = 0;
       state.lockedAxis = null;
+      state.captured = false;
+    };
+
+    const isInteractiveTarget = (t) => {
+      const el = t && t.nodeType === 1 ? t : null;
+      if (!el) return false;
+      return !!el.closest?.(
+        'button, a, input, select, textarea, label, [role="button"], [data-tool], .m-carousel-btn, .m-tool-btn, .m-carousel-action-btn'
+      );
     };
 
     const onDown = (e) => {
       if (!e) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if ((this.vortex.numModes() | 0) <= 0) return;
+
+      // If the user started on an interactive control, never treat it as swipe.
+      if (isInteractiveTarget(e.target)) return;
 
       state.active = true;
       state.pointerId = e.pointerId;
@@ -762,8 +775,7 @@ export default class VortexEditorMobile {
       state.lastX = e.clientX;
       state.lastY = e.clientY;
       state.lockedAxis = null;
-
-      try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
+      state.captured = false;
     };
 
     const onMove = (e) => {
@@ -782,7 +794,12 @@ export default class VortexEditorMobile {
         if (adx > 8 || ady > 8) state.lockedAxis = adx > ady ? 'x' : 'y';
       }
 
+      // Only capture once we KNOW it's a horizontal swipe.
       if (state.lockedAxis === 'x') {
+        if (!state.captured) {
+          state.captured = true;
+          try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
+        }
         try { e.preventDefault?.(); } catch {}
       }
     };
@@ -797,10 +814,14 @@ export default class VortexEditorMobile {
       const adx = Math.abs(dx);
       const ady = Math.abs(dy);
 
+      const wasSwipe =
+        state.captured &&
+        adx >= 55 &&
+        adx >= ady * 1.3;
+
       reset();
 
-      if (adx < 55) return;
-      if (adx < ady * 1.3) return;
+      if (!wasSwipe) return;
 
       try { e.preventDefault?.(); } catch {}
 
@@ -813,6 +834,163 @@ export default class VortexEditorMobile {
     swipeTarget.addEventListener('pointerup', onUp, { passive: false });
     swipeTarget.addEventListener('pointercancel', () => reset(), { passive: true });
     swipeTarget.addEventListener('lostpointercapture', () => reset(), { passive: true });
+  }
+
+    _bindModeSwipe(dt) {
+    // Bind swipe to the CANVAS (or stage) — never the carousel/buttons.
+    const swipeTarget =
+      this.dom.$('#mobile-lightshow-canvas') ||
+      this.dom.$('.m-editor-stage') ||
+      this.dom.$('#mobile-app-root');
+
+    if (!swipeTarget) return;
+    if (swipeTarget.dataset.modeSwipeBound === '1') return;
+    swipeTarget.dataset.modeSwipeBound = '1';
+
+    const state = this._modeSwipe;
+
+    const reset = () => {
+      state.active = false;
+      state.pointerId = -1;
+      state.startX = 0;
+      state.startY = 0;
+      state.lastX = 0;
+      state.lastY = 0;
+      state.lockedAxis = null;
+      state.captured = false;
+    };
+
+    const isInteractiveTarget = (t) => {
+      const el = t && t.nodeType === 1 ? t : null;
+      if (!el) return false;
+      return !!el.closest?.(
+        'button, a, input, select, textarea, label, [role="button"], [data-tool], .m-carousel-btn, .m-tool-btn, .m-carousel-action-btn'
+      );
+    };
+
+    const onDown = (e) => {
+      if (!e) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if ((this.vortex.numModes() | 0) <= 0) return;
+
+      // If the user started on an interactive control, never treat it as swipe.
+      if (isInteractiveTarget(e.target)) return;
+
+      state.active = true;
+      state.pointerId = e.pointerId;
+      state.startX = e.clientX;
+      state.startY = e.clientY;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      state.lockedAxis = null;
+      state.captured = false;
+    };
+
+    const onMove = (e) => {
+      if (!state.active) return;
+      if (e.pointerId !== state.pointerId) return;
+
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+
+      const dx = state.lastX - state.startX;
+      const dy = state.lastY - state.startY;
+
+      if (!state.lockedAxis) {
+        const adx = Math.abs(dx);
+        const ady = Math.abs(dy);
+        if (adx > 8 || ady > 8) state.lockedAxis = adx > ady ? 'x' : 'y';
+      }
+
+      // Only capture once we KNOW it's a horizontal swipe.
+      if (state.lockedAxis === 'x') {
+        if (!state.captured) {
+          state.captured = true;
+          try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
+        }
+        try { e.preventDefault?.(); } catch {}
+      }
+    };
+
+    const onUp = async (e) => {
+      if (!state.active) return;
+      if (e.pointerId !== state.pointerId) return;
+
+      const dx = state.lastX - state.startX;
+      const dy = state.lastY - state.startY;
+
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      const wasSwipe =
+        state.captured &&
+        adx >= 55 &&
+        adx >= ady * 1.3;
+
+      reset();
+
+      if (!wasSwipe) return;
+
+      try { e.preventDefault?.(); } catch {}
+
+      if (dx < 0) await this._navigateMode(dt, +1);
+      else await this._navigateMode(dt, -1);
+    };
+
+    swipeTarget.addEventListener('pointerdown', onDown, { passive: true });
+    swipeTarget.addEventListener('pointermove', onMove, { passive: false });
+    swipeTarget.addEventListener('pointerup', onUp, { passive: false });
+    swipeTarget.addEventListener('pointercancel', () => reset(), { passive: true });
+    swipeTarget.addEventListener('lostpointercapture', () => reset(), { passive: true });
+  }
+
+  bindEditorModeNav(dt) {
+    this._ensureModeCrudButtonsExist();
+    this._bindModeSwipe(dt);
+
+    const prev = this.dom.$('#mode-prev');
+    const next = this.dom.$('#mode-next');
+    const addBtn = this.dom.$('#mode-add');
+    const delBtn = this.dom.$('#mode-delete');
+
+    const bindTap = (el, fn) => {
+      if (!el) return;
+
+      if (el._mBoundTap) return;
+      el._mBoundTap = true;
+
+      const fire = async (e) => {
+        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+
+        const now = Date.now();
+        if (el._mLastTapTs && (now - el._mLastTapTs) < 250) return;
+        el._mLastTapTs = now;
+
+        await fn(e);
+      };
+
+      el.addEventListener('pointerup', fire, { passive: false });
+      el.addEventListener('click', fire, { passive: false });
+    };
+
+    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
+    bindTap(next, async () => { await this._navigateMode(dt, +1); });
+    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
+    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
+
+    if (document.body && document.body.dataset.modeKeysBound !== '1') {
+      document.body.dataset.modeKeysBound = '1';
+      window.addEventListener(
+        'keydown',
+        async (e) => {
+          if (!e) return;
+          if ((this.vortex.numModes() | 0) <= 0) return;
+          if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
+          else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
+        },
+        { passive: true }
+      );
+    }
   }
 
   async _addModeInEditor(dt) {
@@ -872,49 +1050,6 @@ export default class VortexEditorMobile {
     Notification.success?.('Deleted mode');
     await this._restartLightshowAndDemo(dt);
     await this._afterModeChanged(dt, { finalize: false, demo: true });
-  }
-
-  bindEditorModeNav(dt) {
-    this._ensureModeCrudButtonsExist();
-    this._bindModeSwipe(dt);
-
-    const prev = this.dom.$('#mode-prev');
-    const next = this.dom.$('#mode-next');
-    const addBtn = this.dom.$('#mode-add');
-    const delBtn = this.dom.$('#mode-delete');
-
-    const bindTap = (el, fn) => {
-      if (!el) return;
-
-      // Remove any prior binding (in case editor view re-renders)
-      if (el._mBoundTap) return;
-      el._mBoundTap = true;
-
-      el.addEventListener(
-        'pointerup',
-        async (e) => {
-          try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-          await fn(e);
-        },
-        { passive: false }
-      );
-    };
-
-    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
-    bindTap(next, async () => { await this._navigateMode(dt, +1); });
-    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
-    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
-
-    // Desktop testing (optional)
-    if (document.body && document.body.dataset.modeKeysBound !== '1') {
-      document.body.dataset.modeKeysBound = '1';
-      window.addEventListener('keydown', async (e) => {
-        if (!e) return;
-        if ((this.vortex.numModes() | 0) <= 0) return;
-        if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
-        else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
-      }, { passive: true });
-    }
   }
 
   // -----------------------------
