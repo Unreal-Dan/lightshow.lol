@@ -146,7 +146,9 @@ export default class VortexEditorMobile {
     await this.gotoDeviceSelect();
   }
 
-  setDeviceType(type) { this.deviceType = type; }
+  setDeviceType(type) {
+    this.deviceType = type;
+  }
 
   async loadAssets() {
     for (const s of ASSETS.styles) this.loadStylesheet(s.id, s.href);
@@ -1007,18 +1009,19 @@ export default class VortexEditorMobile {
 
     const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
 
+
     Object.assign(this.lightshow, {
-      tickRate: 3,
-      trailSize: isDuo ? 300 : 220,
-      dotSize: isDuo ? 15 : 13,
+      tickRate: isDuo ? 3 : 1,
+      trailSize: isDuo ? 300 : 120,
+      dotSize: isDuo ? 15 : 5,
       blurFac: 1,
-      circleRadius: isDuo ? 180 : 160,
-      spread: 50,
+      circleRadius: isDuo ? 180 : 400,
+      spread: isDuo ? 50 : 150,
       direction: -1,
     });
 
     this.lightshow.setLedCount(ledCount);
-    this.lightshow.setShape('circle');
+    this.lightshow.setShape(dt === 'Spark' ? 'orbit' : 'circle');
     this.lightshow.angle = 0;
     this.lightshow.resetToCenter();
     this.lightshow.start();

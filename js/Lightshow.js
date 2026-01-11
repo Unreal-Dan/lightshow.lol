@@ -19,7 +19,12 @@ export default class Lightshow {
     this.trailSize = 100;
     this.spread = 15;
     this.angle = 0;
-    this.currentShape = 'circle'; // Default shape
+    // members for orbit visualization
+    this.orbitAngle = 0;
+    this.spinAngle = 0;
+    this.orbitSpinMul = -3.0;
+    // default shape
+    this.currentShape = 'circle';
     this.direction = 1;
     this.vortexLib = vortexLib;
     this.vortex = vortex;
@@ -273,8 +278,60 @@ export default class Lightshow {
     }
   }
 
+  feedOrbitPoints() {
+    const pivotX = this.canvas.width / 2;
+    const pivotY = this.canvas.height / 2;
 
+    // Reuse your "circleRadius" style scaling so the UI knob still matters.
+    // (Same idea as your feedCirclePoints baseRadius, just clamped.)
+    const minR = Math.min(pivotX, pivotY);
+    const ropeRadius = Math.max(40, minR - (500 - parseInt(this.circleRadius)));
+    const orbitRadius = Math.max(45, Math.min(ropeRadius * 0.22, minR * 0.28));
 
+    // Orbit (rope) speed is tied to your existing direction & tickRate.
+    // Puck spins faster (orbitSpinMul).
+    const orbitStep = 0.014 * this.direction;
+    const spinStep = orbitStep * this.orbitSpinMul;
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this.vortexLib.RunTick(this.vortex);
+      if (!leds) continue;
+
+      while (this.histories.length < leds.length) {
+        this.histories.push([]);
+      }
+
+      this.orbitAngle += orbitStep;
+      this.spinAngle += spinStep;
+
+      // Keep angles bounded
+      if (this.orbitAngle >= 2 * Math.PI) this.orbitAngle -= 2 * Math.PI;
+      else if (this.orbitAngle < 0) this.orbitAngle += 2 * Math.PI;
+
+      if (this.spinAngle >= 2 * Math.PI) this.spinAngle -= 2 * Math.PI;
+      else if (this.spinAngle < 0) this.spinAngle += 2 * Math.PI;
+
+      // Puck center moves like a clock hand around the pivot
+      const cx = pivotX + ropeRadius * Math.cos(this.orbitAngle);
+      const cy = pivotY + ropeRadius * Math.sin(this.orbitAngle);
+
+      // LEDs sit on the orbit circumference and rotate with spinAngle
+      const n = leds.length || 1;
+
+      for (let index = 0; index < n; index++) {
+        let col = leds[index];
+        if (!col) col = { red: 0, green: 0, blue: 0 };
+
+        // Evenly spaced around the orbit
+        const a = this.spinAngle + (Math.PI * 2 * index) / n;
+
+        const x = cx + orbitRadius * Math.cos(a);
+        const y = cy + orbitRadius * Math.sin(a);
+
+        this.histories[index].push({ x, y, color: col });
+      }
+    }
+  }
 
   draw() {
     switch (this.currentShape) {
@@ -292,6 +349,9 @@ export default class Lightshow {
         break;
       case 'cursor':
         this.feedCursorPoints();
+        break;
+      case 'orbit':
+        this.feedOrbitPoints();
         break;
       default:
         console.warn('Unknown shape:', this.currentShape);
