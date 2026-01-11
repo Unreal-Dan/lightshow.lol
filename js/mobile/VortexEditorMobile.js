@@ -766,17 +766,22 @@ export default class VortexEditorMobile {
       await this.gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
     });
 
-    this.dom.onClick('#ms-new-mode', async () => { await this.startNewModeAndEnterEditor(deviceType); });
+    this.dom.onClick('#ms-new-mode', async () => {
+      await this.startNewModeAndEnterEditor(deviceType);
+    });
 
     const loadBtn = this.dom.must('#ms-load-device', 'mode-source.html is missing #ms-load-device');
     loadBtn.innerHTML = this.loadActionLabel(deviceType);
 
+    // IMPORTANT:
+    // - Duo keeps its optical receive flow
+    // - Everyone else uses the in-button busy/progress pull again (restores "Mode x/total" UX)
     this.dom.onClick(loadBtn, async () => {
       if (deviceType === 'Duo') {
         await this.gotoDuoReceive({ deviceType });
         return;
       }
-      await this.gotoDevicePullModes({ deviceType, backTarget: 'mode-source' });
+      await this.pullFromDeviceAndEnterEditor(deviceType, { source: 'mode-source' });
     });
 
     this.dom.onClick('#ms-browse-community', async () => {
@@ -806,6 +811,12 @@ export default class VortexEditorMobile {
   }
 
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
+    // Duo doesn't use this path.
+    if (deviceType === 'Duo') {
+      await this.gotoDuoReceive({ deviceType });
+      return;
+    }
+
     const sel =
       source === 'editor-empty'
       ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
@@ -817,32 +828,147 @@ export default class VortexEditorMobile {
     const backBtn = this.dom.$('#back-btn');
 
     const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
-    const setBusyHtml = (html) => { if (loadBtn) loadBtn.innerHTML = html; };
+    const setBusyHtml = (html) => {
+      if (loadBtn) loadBtn.innerHTML = html;
+    };
+
+    const failUi = (msg) => {
+      try {
+        Notification.failure?.(msg);
+      } catch {}
+    };
+
+    const ensureActive = () => {
+      if (!this.vortexPort?.isActive?.()) {
+        failUi('Please connect a device first');
+        return false;
+      }
+      return true;
+    };
+
+    const pullWithEach = async () => {
+      if (typeof this.vortexPort.pullEachFromDevice !== 'function') {
+        throw new Error('pullEachFromDevice not available');
+      }
+
+      let lastProgressAt = Date.now();
+      let sawAnyProgress = false;
+
+      const progressCb = (p) => {
+        lastProgressAt = Date.now();
+        sawAnyProgress = true;
+
+        if (!p || typeof p !== 'object') return;
+
+        const total = Number(p.total ?? 0);
+        const i1 = Number(p.index ?? 0) + 1;
+
+        let str = `Loading modes…`;
+        if (p.phase === 'start') str = `Loading modes…`;
+        else if (p.phase === 'count') str = total > 0 ? `Loading modes… (0 / ${total})` : `Loading modes…`;
+        else if (p.phase === 'pulling') str = total > 0 ? `Pulling mode ${i1} / ${total}…` : `Pulling mode ${i1}…`;
+        else if (p.phase === 'finalizing') str = total > 0 ? `Finalizing… (${total} modes)` : `Finalizing…`;
+        else if (p.phase === 'done') str = total > 0 ? `Done (${total} modes)` : `Done`;
+
+        setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
+      };
+
+      // Watchdog:
+      // If we go "silent" for too long, assume the device/firmware didn't like the command
+      // (or startReading stole bytes, etc). Try to cancel + fail to trigger fallback.
+      const watchdogMs = 5500;
+      const intervalMs = 350;
+      let watchdogTimer = null;
+
+      const startWatchdog = () => {
+        watchdogTimer = setInterval(async () => {
+          const dt = Date.now() - lastProgressAt;
+          if (dt < watchdogMs) return;
+
+          try {
+            setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Still waiting…`);
+          } catch {}
+
+          // If we never got ANY progress callback, it's very likely unsupported/hung.
+          // Best-effort cancel, then force fallback.
+          if (!sawAnyProgress) {
+            try {
+              if (typeof this.vortexPort.cancelReading === 'function') {
+                await this.vortexPort.cancelReading();
+              }
+            } catch {}
+            clearInterval(watchdogTimer);
+            watchdogTimer = null;
+            throw new Error('pullEachFromDevice watchdog timeout (no progress)');
+          }
+        }, intervalMs);
+      };
+
+      const stopWatchdog = () => {
+        if (watchdogTimer) {
+          clearInterval(watchdogTimer);
+          watchdogTimer = null;
+        }
+      };
+
+      startWatchdog();
+      try {
+        await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, progressCb);
+      } finally {
+        stopWatchdog();
+      }
+    };
+
+    const pullWithLegacy = async () => {
+      // If you have an older bulk pull on the port, try it.
+      // (No per-mode progress, but it gets you unstuck.)
+      const fn =
+        (typeof this.vortexPort.pullFromDevice === 'function' && this.vortexPort.pullFromDevice) ||
+        (typeof this.vortexPort.pullModesFromDevice === 'function' && this.vortexPort.pullModesFromDevice) ||
+        null;
+
+      if (!fn) {
+        throw new Error('No legacy pullFromDevice / pullModesFromDevice available');
+      }
+
+      setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`);
+      await fn.call(this.vortexPort, this.vortexLib, this.vortex);
+      setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Finalizing…`);
+    };
 
     await this.dom.busy(
       loadBtn,
       baseBusyHtml,
       async () => {
+        if (!ensureActive()) return;
+
         try {
           this.vortex.clearModes();
 
-          await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
-            if (!p || typeof p !== 'object') return;
-            const total = Number(p.total ?? 0);
-            const i = Number(p.index ?? 0) + 1;
-            let str = ` Loading modes…`;
-            if (p.phase === 'count') str = ` Loading modes… (0 / ${total})`;
-            else if (p.phase === 'pulling') str = ` Pulling mode ${i} / ${total}…`;
-            else if (p.phase === 'finalizing') str = ` Finalizing… (${total} modes)`;
-            else if (p.phase === 'done') str = ` Done (${total} modes)`;
-            setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
-          });
+          // Prefer per-mode pull; fallback to legacy bulk pull if it hangs/unsupported.
+          try {
+            await pullWithEach();
+          } catch (e) {
+            console.warn('[Mobile] pullEachFromDevice failed, attempting legacy pull:', e);
+            await pullWithLegacy();
+          }
 
-          if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
+          if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
+
+          const total = this.vortex.numModes() | 0;
+          setBusyHtml(
+            `<i class="fa-solid fa-check"></i> Done (${total} mode${total === 1 ? '' : 's'})`
+          );
+
           await this.gotoEditor({ deviceType });
         } catch (err) {
           console.error('[Mobile] Load from device failed:', err);
-          Notification.failure('Failed to load modes from device');
+          failUi('Failed to load modes from device');
+
+          // Restore the button label so it doesn't look stuck forever.
+          try {
+            if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType);
+          } catch {}
         }
       },
       { disable: [newBtn, browseBtn, backBtn] }
@@ -972,21 +1098,29 @@ export default class VortexEditorMobile {
     this.dom.onClick('#m-start-new-mode', async () => {
       const before = this.vortex.numModes();
       if (!this.vortex.addNewMode(false)) return;
+
       const after = this.vortex.numModes();
       if (after > before) this.vortex.setCurMode(after - 1, false);
-      try { this._getModes().initCurMode(); this._getModes().saveCurMode(); } catch {}
+
+      try {
+        this._getModes().initCurMode();
+        this._getModes().saveCurMode();
+      } catch {}
+
       await this.gotoEditor({ deviceType: dt });
     });
 
     const loadBtn = this.dom.$('#m-load-from-device');
     if (loadBtn) {
       loadBtn.innerHTML = this.loadActionLabel(dt);
+
+      // Restore the same in-button progress pull here too.
       this.dom.onClick(loadBtn, async () => {
         if (dt === 'Duo') {
           await this.gotoDuoReceive({ deviceType: dt });
           return;
         }
-        await this.gotoDevicePullModes({ deviceType: dt, backTarget: 'editor-empty' });
+        await this.pullFromDeviceAndEnterEditor(dt, { source: 'editor-empty' });
       });
     }
 
