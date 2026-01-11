@@ -176,10 +176,12 @@ export default class VortexEditorMobile {
 
   sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-  stopEditorLightshow() {
+  stopEditorLightshow(destroy = true) {
     if (!this.lightshow) return;
     try { this.lightshow.stop(); } catch {}
-    this.lightshow = null;
+    if (destroy) {
+      this.lightshow = null;
+    }
   }
 
   clearEditorResizeHandler() {
@@ -223,14 +225,42 @@ export default class VortexEditorMobile {
   }
 
   _withLightshowPausedSync(fn) {
-    this.stopEditorLightshow();
-    this.clearEditorResizeHandler();
-    try { fn(); } catch (e) { throw e; }
+    const ls = this.lightshow;
+
+    // Pause only (do NOT destroy, do NOT unbind resize)
+    if (ls) {
+      try { ls.stop(); } catch {}
+    }
+
+    try {
+      return fn();
+    } finally {
+      if (ls) {
+        // Resume on the same instance/canvas (fast)
+        try { ls.start(); } catch {}
+      }
+    }
   }
 
   async _restartLightshowAndDemo(dt) {
-    try { await this.startEditorLightshow(dt); } catch {}
-    try { this.demoModeOnDevice(); } catch {}
+    // Fast path: if it exists, just ensure it’s running.
+    if (this.lightshow) {
+      try { this.lightshow.start(); } catch {}
+    } else {
+      // Only recreate if it was actually destroyed (screen change, etc)
+      try {
+        await this.startEditorLightshow(dt);
+      } catch (e) {
+        console.error('[Mobile] startEditorLightshow failed after mutation:', e);
+        try { await this.gotoEditor({ deviceType: dt }); } catch {}
+        return;
+      }
+    }
+
+    // Fire-and-forget demo so UI updates are instant.
+    try {
+      setTimeout(() => { try { void this.demoModeOnDevice(); } catch {} }, 0);
+    } catch {}
   }
 
   getBleConnectCopy(deviceType) {
@@ -947,25 +977,35 @@ export default class VortexEditorMobile {
   async _addModeInEditor(dt) {
     const before = this.vortex.numModes() | 0;
 
-    // mutation: pause render to avoid mid-tick mode list changes
     this._clearModeTimers();
+
     try {
       this._withLightshowPausedSync(() => {
         const ok = this.vortex.addNewMode(false);
         if (!ok) throw new Error('addNewMode returned false');
+
         const after = this.vortex.numModes() | 0;
         if (after > before) this.vortex.setCurMode(after - 1, false);
+
+        // Keep parity with other edits (init + save), but still fast.
+        try {
+          this._getModes().initCurMode();
+          this._getModes().saveCurMode();
+        } catch {}
       });
     } catch (e) {
       console.error('[Mobile] add mode failed:', e);
       Notification.failure?.('Failed to add mode');
-      await this._restartLightshowAndDemo(dt);
+      void this._restartLightshowAndDemo(dt);
       return;
     }
 
+    // Instant UI update (no waiting on BLE/demo)
     Notification.success?.('Added mode');
-    await this._restartLightshowAndDemo(dt);
-    await this._afterModeChanged(dt, { finalize: true, demo: true });
+    await this._afterModeChanged(dt, { finalize: false, demo: true });
+
+    // Ensure visuals keep running; demo is fire-and-forget inside.
+    void this._restartLightshowAndDemo(dt);
   }
 
   async _deleteModeInEditor(dt) {
@@ -985,22 +1025,44 @@ export default class VortexEditorMobile {
 
     this._clearModeTimers();
 
-    // mutation: pause render to avoid mid-tick deletion
+    let afterN = n;
+
     try {
       this._withLightshowPausedSync(() => {
-        // bound API: deletes CURRENT mode only
         this.vortex.delCurMode(false);
+
+        afterN = this.vortex.numModes() | 0;
+
+        if (afterN > 0) {
+          let newIdx = this.vortex.curModeIndex() | 0;
+          if (newIdx < 0) newIdx = 0;
+          if (newIdx >= afterN) newIdx = afterN - 1;
+
+          try { this.vortex.setCurMode(newIdx >>> 0, false); } catch {}
+
+          try {
+            this._getModes().initCurMode();
+            this._getModes().saveCurMode();
+          } catch {}
+        }
       });
     } catch (e) {
       console.error('[Mobile] delete mode failed:', e);
       Notification.failure?.('Delete failed');
-      await this._restartLightshowAndDemo(dt);
+      void this._restartLightshowAndDemo(dt);
       return;
     }
 
     Notification.success?.('Deleted mode');
-    await this._restartLightshowAndDemo(dt);
+
+    if (afterN <= 0) {
+      await this.gotoEditor({ deviceType: dt });
+      return;
+    }
+
+    // Instant UI update; BLE/demo scheduled, not awaited.
     await this._afterModeChanged(dt, { finalize: false, demo: true });
+    void this._restartLightshowAndDemo(dt);
   }
 
   // -----------------------------
