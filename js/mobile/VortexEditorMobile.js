@@ -689,7 +689,7 @@ export default class VortexEditorMobile {
     this.dom.$('.container-fluid')?.appendChild(skipLink);
 
     this.dom.onClick('#skip-to-editor', async () => {
-      await this.gotoEditor({ deviceType: 'Duo' });
+      await this.gotoEditor({ deviceType: 'Spark' });
     }, { preventDefault: true });
 
     this.dom.all('[data-device]').forEach((cardEl) => {
