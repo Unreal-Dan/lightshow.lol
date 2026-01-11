@@ -1,13 +1,18 @@
 /* ============================
-   Mobile Editor View Styles
+   Mobile Editor View Styles (NEW)
+   - Stable layout (no shifting)
+   - Carousel actions live INSIDE the pill
+   - Consistent button styling
 ============================ */
 
 #mobile-app-root .m-editor {
   height: 100vh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #0b0b0b;
+  touch-action: manipulation;
 }
 
 #mobile-app-root .m-editor-stage {
@@ -25,6 +30,7 @@
   width: 100%;
   height: 100%;
   display: block;
+  z-index: 0;
 }
 
 /* Render surface (placeholder background) */
@@ -39,6 +45,7 @@
     rgba(0, 0, 0, 0) 60%
   );
   z-index: 1;
+  pointer-events: none;
 }
 
 /* Overlay label (top-left corner) */
@@ -53,11 +60,67 @@
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.10);
   color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 #mobile-app-root .m-editor-mode-name {
-  font-weight: 700;
+  font-weight: 800;
   color: rgba(255, 255, 255, 0.92);
+}
+
+#mobile-app-root .m-editor-mode-index {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.70);
+}
+
+/* Shared button styling */
+#mobile-app-root .m-tool-btn,
+#mobile-app-root .m-carousel-btn,
+#mobile-app-root .m-carousel-action-btn,
+#mobile-app-root #mode-add,
+#mobile-app-root #mode-delete {
+  appearance: none;
+  -webkit-appearance: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+#mobile-app-root .m-tool-btn i,
+#mobile-app-root .m-carousel-btn i,
+#mobile-app-root .m-carousel-action-btn i,
+#mobile-app-root #mode-add i,
+#mobile-app-root #mode-delete i {
+  font-size: 18px;
+}
+
+#mobile-app-root .m-tool-btn:active,
+#mobile-app-root .m-carousel-btn:active,
+#mobile-app-root .m-carousel-action-btn:active,
+#mobile-app-root #mode-add:active,
+#mobile-app-root #mode-delete:active {
+  transform: translateY(1px);
+}
+
+#mobile-app-root .m-tool-btn:disabled,
+#mobile-app-root .m-carousel-btn:disabled,
+#mobile-app-root .m-carousel-action-btn:disabled,
+#mobile-app-root #mode-add:disabled,
+#mobile-app-root #mode-delete:disabled {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* Right-side tool strip */
@@ -72,23 +135,17 @@
 }
 
 #mobile-app-root .m-tool-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: #000;
-  color: rgba(255, 255, 255, 0.90);
-  display: grid;
-  place-items: center;
+  background: rgba(0, 0, 0, 0.58);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-#mobile-app-root .m-tool-btn:active {
-  transform: translateY(1px);
-}
-
-#mobile-app-root .m-tool-btn i {
+/* Disabled state (when no modes) */
+#mobile-app-root .m-editor-disabled {
+  opacity: 0.50;
+  pointer-events: none;
+  filter: grayscale(0.15);
 }
 
 /* Bottom mode carousel */
@@ -101,38 +158,145 @@
   align-items: center;
   gap: 12px;
   z-index: 5;
+  max-width: calc(100vw - 24px);
+  padding: 0;
 }
 
+/* Prev/Next buttons */
 #mobile-app-root .m-carousel-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.90);
-  display: grid;
-  place-items: center;
+  background: rgba(0, 0, 0, 0.38);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
+/* Pill (title + value) */
 #mobile-app-root .m-carousel-pill {
-  min-width: min(260px, 60vw);
+  position: relative;
+  min-width: min(300px, 66vw);
+  max-width: min(420px, calc(100vw - 24px - 52px - 52px - 24px));
   padding: 10px 14px;
+  padding-right: 98px; /* reserved space for inline actions */
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.40);
+  background: rgba(0, 0, 0, 0.52);
   text-align: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
 }
 
 #mobile-app-root .m-carousel-title {
   color: rgba(255, 255, 255, 0.70);
   line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 #mobile-app-root .m-carousel-value {
   font-size: clamp(16px, 2.6vmin, 20px);
-  font-weight: 800;
+  font-weight: 900;
   color: rgba(255, 255, 255, 0.92);
   line-height: 1.15;
 }
+
+/* Inline actions inside the pill (Add/Delete) */
+#mobile-app-root .m-carousel-actions {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
+}
+
+/* Smaller buttons inside pill so they don't feel cramped */
+#mobile-app-root .m-carousel-action-btn,
+#mobile-app-root #mode-add,
+#mobile-app-root #mode-delete {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#mobile-app-root .m-carousel-action-btn i,
+#mobile-app-root #mode-add i,
+#mobile-app-root #mode-delete i {
+  font-size: 16px;
+}
+
+/* Delete styling (subtle danger, not ugly) */
+#mobile-app-root .m-carousel-action-btn.is-danger,
+#mobile-app-root #mode-delete {
+  border-color: rgba(255, 80, 80, 0.26);
+  background: rgba(255, 80, 80, 0.10);
+  color: rgba(255, 210, 210, 0.95);
+}
+
+#mobile-app-root .m-carousel-action-btn.is-danger:active,
+#mobile-app-root #mode-delete:active {
+  background: rgba(255, 80, 80, 0.16);
+}
+
+/* Legacy wrapper (if it still exists) — keep it from affecting layout */
+#mobile-app-root .m-mode-crud {
+  display: contents;
+}
+
+/* If display:contents isn't supported, keep it compact and aligned */
+@supports not (display: contents) {
+  #mobile-app-root .m-mode-crud {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    height: 52px;
+  }
+}
+
+/* Slightly tighter bottom spacing on very small screens */
+@media (max-height: 640px) {
+  #mobile-app-root .m-editor-carousel {
+    bottom: 10px;
+    gap: 10px;
+  }
+
+  #mobile-app-root .m-tool-btn,
+  #mobile-app-root .m-carousel-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  #mobile-app-root .m-editor-tools {
+    right: 8px;
+    gap: 8px;
+  }
+
+  #mobile-app-root .m-carousel-pill {
+    min-width: min(280px, 68vw);
+    padding-right: 92px;
+  }
+
+  #mobile-app-root .m-carousel-action-btn,
+  #mobile-app-root #mode-add,
+  #mobile-app-root #mode-delete {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #mobile-app-root .m-tool-btn,
+  #mobile-app-root .m-carousel-btn,
+  #mobile-app-root .m-carousel-action-btn,
+  #mobile-app-root #mode-add,
+  #mobile-app-root #mode-delete {
+    transition: none;
+  }
+}
+
