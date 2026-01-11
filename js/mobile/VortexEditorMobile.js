@@ -944,55 +944,6 @@ export default class VortexEditorMobile {
     swipeTarget.addEventListener('lostpointercapture', () => reset(), { passive: true });
   }
 
-  bindEditorModeNav(dt) {
-    this._ensureModeCrudButtonsExist();
-    this._bindModeSwipe(dt);
-
-    const prev = this.dom.$('#mode-prev');
-    const next = this.dom.$('#mode-next');
-    const addBtn = this.dom.$('#mode-add');
-    const delBtn = this.dom.$('#mode-delete');
-
-    const bindTap = (el, fn) => {
-      if (!el) return;
-
-      if (el._mBoundTap) return;
-      el._mBoundTap = true;
-
-      const fire = async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-
-        const now = Date.now();
-        if (el._mLastTapTs && (now - el._mLastTapTs) < 250) return;
-        el._mLastTapTs = now;
-
-        await fn(e);
-      };
-
-      el.addEventListener('pointerup', fire, { passive: false });
-      el.addEventListener('click', fire, { passive: false });
-    };
-
-    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
-    bindTap(next, async () => { await this._navigateMode(dt, +1); });
-    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
-    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
-
-    if (document.body && document.body.dataset.modeKeysBound !== '1') {
-      document.body.dataset.modeKeysBound = '1';
-      window.addEventListener(
-        'keydown',
-        async (e) => {
-          if (!e) return;
-          if ((this.vortex.numModes() | 0) <= 0) return;
-          if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
-          else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
-        },
-        { passive: true }
-      );
-    }
-  }
-
   async _addModeInEditor(dt) {
     const before = this.vortex.numModes() | 0;
 
@@ -1401,14 +1352,92 @@ export default class VortexEditorMobile {
     }
   }
 
+  bindEditorModeNav(dt) {
+    this._ensureModeCrudButtonsExist();
+    this._bindModeSwipe(dt);
+
+    const prev = this.dom.$('#mode-prev');
+    const next = this.dom.$('#mode-next');
+    const addBtn = this.dom.$('#mode-add');
+    const delBtn = this.dom.$('#mode-delete');
+
+    const bindTap = (el, fn) => {
+      if (!el) return;
+      if (el._mBoundTap) return;
+      el._mBoundTap = true;
+
+      // Hard-kill any bubbling delegated click handler (SimpleDom etc).
+      const swallow = (e) => {
+        try {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+          e?.stopImmediatePropagation?.();
+        } catch {}
+      };
+
+      const fire = async (e) => {
+        swallow(e);
+
+        // Per-element lock (prevents weird double pointerup / duplicated listeners)
+        const now = Date.now();
+        if (el._mTapLockUntil && now < el._mTapLockUntil) return;
+        el._mTapLockUntil = now + 350;
+
+        await fn(e);
+      };
+
+      if (window.PointerEvent) {
+        el.addEventListener('pointerup', fire, { passive: false });
+
+        // Always swallow click so it can't cause a second activation.
+        el.addEventListener('click', swallow, { passive: false });
+      } else {
+        // Fallback if PointerEvent not supported.
+        el.addEventListener('click', fire, { passive: false });
+      }
+    };
+
+    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
+    bindTap(next, async () => { await this._navigateMode(dt, +1); });
+    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
+    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
+
+    if (document.body && document.body.dataset.modeKeysBound !== '1') {
+      document.body.dataset.modeKeysBound = '1';
+      window.addEventListener(
+        'keydown',
+        async (e) => {
+          if (!e) return;
+          if ((this.vortex.numModes() | 0) <= 0) return;
+          if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
+          else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
+        },
+        { passive: true }
+      );
+    }
+  }
+
   bindEditorTools(dt) {
     const toolsEl = this.dom.$('.m-editor-tools');
 
+    const swallow = (e) => {
+      try {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        e?.stopImmediatePropagation?.();
+      } catch {}
+    };
+
     const handleTool = async (btn, e) => {
-      try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+      swallow(e);
 
       const isDisabled = !!toolsEl?.classList.contains('m-editor-disabled');
       if (isDisabled) return;
+
+      // Per-button lock to avoid double-fire from any stacked handlers.
+      const now = Date.now();
+      if (btn._mTapLockUntil && now < btn._mTapLockUntil) return;
+      btn._mTapLockUntil = now + 350;
 
       const tool = String(btn.dataset.tool || '');
 
@@ -1431,14 +1460,29 @@ export default class VortexEditorMobile {
     };
 
     this.dom.all('[data-tool]').forEach((btn) => {
-      btn.addEventListener('pointerup', async (e) => {
-        if (e && e.pointerType === 'mouse') return;
-        await handleTool(btn, e);
-      }, { passive: false });
+      if (btn._mBoundTool) return;
+      btn._mBoundTool = true;
 
-      btn.addEventListener('click', async (e) => {
-        await handleTool(btn, e);
-      }, { passive: false });
+      if (window.PointerEvent) {
+        btn.addEventListener(
+          'pointerup',
+          async (e) => {
+            await handleTool(btn, e);
+          },
+          { passive: false }
+        );
+
+        // Swallow click so no delegated click handler (or synthetic click) runs tool twice.
+        btn.addEventListener('click', swallow, { passive: false });
+      } else {
+        btn.addEventListener(
+          'click',
+          async (e) => {
+            await handleTool(btn, e);
+          },
+          { passive: false }
+        );
+      }
     });
   }
 
