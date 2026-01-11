@@ -1,0 +1,47 @@
+<div class="mobile-fullscreen dev-xfer-page">
+  <div class="mobile-fullscreen-inner dev-xfer-inner">
+    <div class="dev-xfer-topbar">
+      <button type="button" class="btn btn-link dev-xfer-back" id="back-btn">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back</span>
+      </button>
+    </div>
+
+    <div class="text-center dev-xfer-header">
+      <h1 class="mobile-title">{{title}}</h1>
+      <div class="mobile-subtitle text-secondary">{{subtitle}}</div>
+    </div>
+
+    <div class="dev-xfer-card">
+      <div class="dev-xfer-hero">
+        <div class="dev-xfer-device">
+          <img
+            src="{{deviceImg}}"
+            alt="{{deviceAlt}}"
+            class="dev-xfer-device-img"
+          />
+        </div>
+      </div>
+
+      <div class="dev-xfer-status" id="dev-xfer-status">
+        <div class="dev-xfer-status-text" id="dev-xfer-status-text">{{status}}</div>
+        <div class="dev-xfer-progress-text" id="dev-xfer-progress-text">{{progressText}}</div>
+      </div>
+
+      <div class="progress dev-xfer-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div
+          id="dev-xfer-progress-bar"
+          class="progress-bar progress-bar-striped progress-bar-animated"
+          style="width: 8%"
+          aria-valuenow="8">
+        </div>
+      </div>
+
+      <div class="dev-xfer-actions">
+        <button type="button" class="btn btn-primary w-100" id="done-btn" disabled>
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
