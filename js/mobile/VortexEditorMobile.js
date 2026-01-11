@@ -36,6 +36,7 @@ export default class VortexEditorMobile {
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
 
+    // NOTE: Keep these fields for compatibility, but do NOT rely on caching anymore.
     this._engine = null;
     this._modes = null;
 
@@ -67,6 +68,26 @@ export default class VortexEditorMobile {
     // Transfer modal lifecycle
     this._transferModalEl = null;
     this._transferModalLoaded = false;
+
+    // Settings modal lifecycle
+    this._settingsModalEl = null;
+    this._settingsModalLoaded = false;
+
+    // Duo send loop
+    this._duoTxLoopActive = false;
+    this._duoTxLoopTimer = null;
+
+    // Mode swipe state
+    this._modeSwipe = {
+      active: false,
+      pointerId: -1,
+      startX: 0,
+      startY: 0,
+      lastX: 0,
+      lastY: 0,
+      moved: false,
+      lockedAxis: null, // 'x' | 'y' | null
+    };
 
     // Local server heuristic (desktop uses editor.isLocalServer)
     this.isLocalServer =
@@ -170,6 +191,11 @@ export default class VortexEditorMobile {
     if (!this._editorResizeHandler) return;
     window.removeEventListener('resize', this._editorResizeHandler);
     this._editorResizeHandler = null;
+  }
+
+  _invalidateEngineCaches() {
+    this._engine = null;
+    this._modes = null;
   }
 
   getBleConnectCopy(deviceType) {
@@ -357,6 +383,7 @@ export default class VortexEditorMobile {
       async () => {
         try {
           this.vortex.clearModes();
+          this._invalidateEngineCaches();
 
           await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
             if (!p || typeof p !== 'object') return;
@@ -370,6 +397,7 @@ export default class VortexEditorMobile {
             setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
           });
 
+          this._invalidateEngineCaches();
           if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
           await this.gotoEditor({ deviceType });
         } catch (err) {
@@ -385,7 +413,9 @@ export default class VortexEditorMobile {
     const before = this.vortex.numModes();
     if (!this.vortex.addNewMode(false)) return;
 
+    this._invalidateEngineCaches();
     this.vortex.setCurMode(before, false);
+
     const cur = this._getCurMode();
     if (cur) cur.init();
     this._getModes().saveCurMode();
@@ -423,10 +453,14 @@ export default class VortexEditorMobile {
     try {
       if (statusTextEl) statusTextEl.textContent = 'Listening…';
 
-      if (!preserveModes) this.vortex.clearModes();
+      if (!preserveModes) {
+        this.vortex.clearModes();
+        this._invalidateEngineCaches();
+      }
 
       await this.listenVL();
 
+      this._invalidateEngineCaches();
       const afterCount = this.vortex.numModes();
 
       if (preserveModes) {
@@ -496,6 +530,7 @@ export default class VortexEditorMobile {
     this.dom.onClick('#m-start-new-mode', async () => {
       const before = this.vortex.numModes();
       if (!this.vortex.addNewMode(false)) return;
+      this._invalidateEngineCaches();
       this.vortex.setCurMode(before, false);
       const cur = this._getCurMode();
       if (cur) cur.init();
@@ -556,30 +591,364 @@ export default class VortexEditorMobile {
     window.addEventListener('resize', this._editorResizeHandler);
   }
 
-  bindEditorModeNav(dt) {
-    const rerender = async () => { await this.gotoEditor({ deviceType: dt }); };
+  _findFirst(selectorList) {
+    for (const s of selectorList) {
+      const el = this.dom.$(s);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  _updateModeHeaderUI() {
+    const n = this.vortex.numModes();
+    if (n <= 0) return false;
+
+    const idx = this._getModes().curModeIndex() | 0;
+    const modeName = `Mode ${idx + 1}`;
+    const modeIndexLabel = `${idx + 1} / ${n}`;
+
+    const nameEl = this._findFirst(['#m-mode-name', '#mode-name', '[data-role="mode-name"]']);
+    const idxEl = this._findFirst(['#m-mode-index', '#mode-index-label', '[data-role="mode-index"]']);
+
+    if (nameEl) nameEl.textContent = modeName;
+    if (idxEl) idxEl.textContent = modeIndexLabel;
+
+    return !!(nameEl || idxEl);
+  }
+
+  async _afterModeChanged(dt, { allowRerenderFallback = true } = {}) {
+    const updated = this._updateModeHeaderUI();
+
+    try {
+      const cur = this._getCurMode();
+      if (cur) cur.init();
+      this._getModes().saveCurMode();
+    } catch {}
+
+    await this.demoModeOnDevice();
+
+    if (!updated && allowRerenderFallback) {
+      await this.gotoEditor({ deviceType: dt });
+    }
+  }
+
+  async _navigateMode(dt, delta) {
+    const n = this.vortex.numModes();
+    if (n <= 0) return;
+
+    const curIdx = (this._getModes().curModeIndex() | 0);
+    let nextIdx = (curIdx + (delta | 0)) % n;
+    if (nextIdx < 0) nextIdx += n;
+
+    this.vortex.setCurMode(nextIdx, true);
+    await this._afterModeChanged(dt);
+  }
+
+  _ensureModeCrudButtonsExist() {
+    const carousel = this.dom.$('.m-editor-carousel');
+    if (!carousel) return;
 
     const prev = this.dom.$('#mode-prev');
     const next = this.dom.$('#mode-next');
 
-    if (prev) {
-      prev.addEventListener('click', async () => {
-        const curIdx = this._getModes().curModeIndex();
-        const n = this.vortex.numModes();
-        const nextIdx = (curIdx - 1 + n) % n;
-        this.vortex.setCurMode(nextIdx, true);
-        await rerender();
-      });
+    const existingAdd = this.dom.$('#mode-add');
+    const existingDel = this.dom.$('#mode-delete');
+    if (existingAdd && existingDel) return;
+
+    let host = carousel;
+
+    if (prev && prev.parentElement && prev.parentElement === next?.parentElement) {
+      host = prev.parentElement;
     }
 
-    if (next) {
-      next.addEventListener('click', async () => {
-        const curIdx = this._getModes().curModeIndex();
-        const n = this.vortex.numModes();
-        const nextIdx = (curIdx + 1) % n;
-        this.vortex.setCurMode(nextIdx, true);
-        await rerender();
-      });
+    const wrapper = document.createElement('div');
+    wrapper.className = 'm-mode-crud';
+    wrapper.style.display = 'flex';
+    wrapper.style.gap = '10px';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.justifyContent = 'center';
+
+    if (!existingAdd) {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.id = 'mode-add';
+      addBtn.className = 'icon-button';
+      addBtn.title = 'Add mode';
+      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i>`;
+      wrapper.appendChild(addBtn);
+    }
+
+    if (!existingDel) {
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.id = 'mode-delete';
+      delBtn.className = 'icon-button';
+      delBtn.title = 'Delete mode';
+      delBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+      wrapper.appendChild(delBtn);
+    }
+
+    host.appendChild(wrapper);
+  }
+
+  _bindModeSwipe(dt) {
+    const swipeTarget =
+      this.dom.$('.m-editor-carousel') ||
+      this.dom.$('#mobile-lightshow-canvas') ||
+      this.dom.$('#mobile-app-root');
+
+    if (!swipeTarget) return;
+
+    if (swipeTarget.dataset.modeSwipeBound === '1') return;
+    swipeTarget.dataset.modeSwipeBound = '1';
+
+    const state = this._modeSwipe;
+
+    const reset = () => {
+      state.active = false;
+      state.pointerId = -1;
+      state.startX = 0;
+      state.startY = 0;
+      state.lastX = 0;
+      state.lastY = 0;
+      state.moved = false;
+      state.lockedAxis = null;
+    };
+
+    const onDown = (e) => {
+      if (!e) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (this.vortex.numModes() <= 0) return;
+
+      state.active = true;
+      state.pointerId = e.pointerId;
+      state.startX = e.clientX;
+      state.startY = e.clientY;
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+      state.moved = false;
+      state.lockedAxis = null;
+
+      try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
+    };
+
+    const onMove = (e) => {
+      if (!state.active) return;
+      if (e.pointerId !== state.pointerId) return;
+
+      state.lastX = e.clientX;
+      state.lastY = e.clientY;
+
+      const dx = state.lastX - state.startX;
+      const dy = state.lastY - state.startY;
+
+      if (!state.lockedAxis) {
+        const adx = Math.abs(dx);
+        const ady = Math.abs(dy);
+        if (adx > 8 || ady > 8) {
+          state.lockedAxis = adx > ady ? 'x' : 'y';
+        }
+      }
+
+      if (state.lockedAxis === 'x') {
+        state.moved = true;
+        try { e.preventDefault?.(); } catch {}
+      }
+    };
+
+    const onUp = async (e) => {
+      if (!state.active) return;
+      if (e.pointerId !== state.pointerId) return;
+
+      const dx = state.lastX - state.startX;
+      const dy = state.lastY - state.startY;
+
+      const adx = Math.abs(dx);
+      const ady = Math.abs(dy);
+
+      reset();
+
+      if (adx < 55) return;
+      if (adx < ady * 1.3) return;
+
+      try { e.preventDefault?.(); } catch {}
+
+      if (dx < 0) await this._navigateMode(dt, +1);
+      else await this._navigateMode(dt, -1);
+    };
+
+    swipeTarget.addEventListener('pointerdown', onDown, { passive: true });
+    swipeTarget.addEventListener('pointermove', onMove, { passive: false });
+    swipeTarget.addEventListener('pointerup', onUp, { passive: false });
+    swipeTarget.addEventListener('pointercancel', () => reset(), { passive: true });
+    swipeTarget.addEventListener('lostpointercapture', () => reset(), { passive: true });
+  }
+
+  async _addModeInEditor(dt) {
+    const before = this.vortex.numModes();
+    if (!this.vortex.addNewMode(false)) {
+      Notification.failure('Failed to add mode');
+      return;
+    }
+
+    this._invalidateEngineCaches();
+    const after = this.vortex.numModes();
+
+    if (after > before) {
+      this.vortex.setCurMode(after - 1, false);
+    } else if (after > 0) {
+      this.vortex.setCurMode(Math.min(this._getModes().curModeIndex(), after - 1), false);
+    }
+
+    await this._afterModeChanged(dt);
+
+    Notification.success?.('Added mode');
+  }
+
+  _deleteModeByTryingAllCandidates(index) {
+    const idx = index | 0;
+
+    const candidates = [
+      this._getModes?.(),
+      this._getEngine?.(),
+      this.vortex,
+    ];
+
+    const tryNoArg = this._tryCallAny(
+      candidates,
+      [
+        'deleteCurMode',
+        'removeCurMode',
+        'eraseCurMode',
+        'delCurMode',
+        'deleteCurrentMode',
+        'removeCurrentMode',
+        'eraseCurrentMode',
+      ],
+      []
+    );
+    if (tryNoArg.ok) return true;
+
+    const tryIdxOnly = this._tryCallAny(
+      candidates,
+      [
+        'deleteMode',
+        'removeMode',
+        'eraseMode',
+        'delMode',
+        'deleteModeAt',
+        'removeModeAt',
+        'eraseModeAt',
+        'delModeAt',
+        'remove',
+        'erase',
+      ],
+      [idx]
+    );
+    if (tryIdxOnly.ok) return true;
+
+    const tryIdxFlag = this._tryCallAny(
+      candidates,
+      [
+        'deleteMode',
+        'removeMode',
+        'eraseMode',
+        'deleteModeAt',
+        'removeModeAt',
+        'eraseModeAt',
+      ],
+      [idx, true]
+    );
+    if (tryIdxFlag.ok) return true;
+
+    const tryIdxFlag2 = this._tryCallAny(
+      candidates,
+      [
+        'deleteMode',
+        'removeMode',
+        'eraseMode',
+        'deleteModeAt',
+        'removeModeAt',
+        'eraseModeAt',
+      ],
+      [idx, false]
+    );
+    if (tryIdxFlag2.ok) return true;
+
+    return false;
+  }
+
+  async _deleteModeInEditor(dt) {
+    const before = this.vortex.numModes();
+    if (before <= 0) return;
+
+    const curIdx = this._getModes().curModeIndex() | 0;
+
+    const ok = window.confirm(`Delete Mode ${curIdx + 1}?`);
+    if (!ok) return;
+
+    const did = this._deleteModeByTryingAllCandidates(curIdx);
+
+    this._invalidateEngineCaches();
+
+    const after = this.vortex.numModes();
+    if (!did && after >= before) {
+      Notification.failure('Delete failed (no delete method in this build).');
+      return;
+    }
+
+    if (after <= 0) {
+      Notification.success?.('Deleted mode');
+      await this.gotoEditor({ deviceType: dt });
+      return;
+    }
+
+    const nextIdx = Math.min(curIdx, after - 1);
+    this.vortex.setCurMode(nextIdx, false);
+
+    Notification.success?.('Deleted mode');
+    await this._afterModeChanged(dt);
+  }
+
+  bindEditorModeNav(dt) {
+    this._ensureModeCrudButtonsExist();
+    this._bindModeSwipe(dt);
+
+    const prev = this.dom.$('#mode-prev');
+    const next = this.dom.$('#mode-next');
+    const addBtn = this.dom.$('#mode-add');
+    const delBtn = this.dom.$('#mode-delete');
+
+    const bindTap = (el, fn) => {
+      if (!el) return;
+
+      el.addEventListener('pointerup', async (e) => {
+        if (e && e.pointerType === 'mouse') return;
+        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+        await fn(e);
+      }, { passive: false });
+
+      el.addEventListener('click', async (e) => {
+        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+        await fn(e);
+      }, { passive: false });
+    };
+
+    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
+    bindTap(next, async () => { await this._navigateMode(dt, +1); });
+
+    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
+    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
+
+    // Optional keyboard support for desktop testing
+    if (document.body && document.body.dataset.modeKeysBound !== '1') {
+      document.body.dataset.modeKeysBound = '1';
+      window.addEventListener('keydown', async (e) => {
+        if (!e) return;
+        if (this.vortex.numModes() <= 0) return;
+        if (e.key === 'ArrowLeft') { await this._navigateMode(this.selectedDeviceType('Duo'), -1); }
+        else if (e.key === 'ArrowRight') { await this._navigateMode(this.selectedDeviceType('Duo'), +1); }
+      }, { passive: true });
     }
   }
 
@@ -867,6 +1236,7 @@ export default class VortexEditorMobile {
       await this._hideTransferModal();
 
       this.vortex.clearModes();
+      this._invalidateEngineCaches();
 
       await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
         if (!p || typeof p !== 'object') return;
@@ -882,6 +1252,7 @@ export default class VortexEditorMobile {
         if (pullBtn) pullBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> ${str}`;
       });
 
+      this._invalidateEngineCaches();
       if (this.vortex.numModes() > 0) this.vortex.setCurMode(0, false);
       await this.gotoEditor({ deviceType: dt });
 
@@ -1364,6 +1735,7 @@ export default class VortexEditorMobile {
         [vortexMode, true]
       );
 
+      this._invalidateEngineCaches();
       const after = this.vortex.numModes();
 
       if (!r.ok && after <= before) {
@@ -1452,13 +1824,13 @@ export default class VortexEditorMobile {
   // -----------------------------
 
   _getEngine() {
-    if (!this._engine) this._engine = this.vortex.engine();
-    return this._engine;
+    // CRITICAL: Do NOT cache this. Engine/modes can be replaced by the wasm layer.
+    return this.vortex.engine();
   }
 
   _getModes() {
-    if (!this._modes) this._modes = this._getEngine().modes();
-    return this._modes;
+    // CRITICAL: Do NOT cache this. This fixes “only goes to 2nd mode”.
+    return this._getEngine().modes();
   }
 
   _getCurMode() {
