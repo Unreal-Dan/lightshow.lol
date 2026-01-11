@@ -38,6 +38,28 @@ export default class CommunityBrowserPanel extends Panel {
       this.applyFilters();
     });
 
+    const prevBtn = this.contentContainer.querySelector('#vcb-prev-btn');
+    const nextBtn = this.contentContainer.querySelector('#vcb-next-btn');
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this.loadPage(this.currentPage);
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.loadPage(this.currentPage);
+        }
+      });
+    }
+  }
+
+  initialize() {
     // Create filter button container
     // Loop through devices and create filter buttons dynamically
     Object.entries(this.editor.devices).forEach(([deviceName, deviceData]) => {
@@ -63,28 +85,7 @@ export default class CommunityBrowserPanel extends Panel {
       this.filterContainer.appendChild(button);
     });
 
-    const prevBtn = this.contentContainer.querySelector('#vcb-prev-btn');
-    const nextBtn = this.contentContainer.querySelector('#vcb-next-btn');
 
-    if (prevBtn) {
-      prevBtn.addEventListener('click', () => {
-        if (this.currentPage > 1) {
-          this.currentPage--;
-          this.loadPage(this.currentPage);
-        }
-      });
-    }
-    if (nextBtn) {
-      nextBtn.addEventListener('click', () => {
-        if (this.currentPage < this.totalPages) {
-          this.currentPage++;
-          this.loadPage(this.currentPage);
-        }
-      });
-    }
-  }
-
-  initialize() {
     this.loadPage(this.currentPage);
   }
 

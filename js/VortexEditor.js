@@ -22,65 +22,10 @@ import { VERSION } from './version.js';  // Adjust path if needed
 import * as BLE from './ble.js'; // Import BLE module
 
 export default class VortexEditor {
-  devices = {
-    'None': {
-      image: 'public/images/none-logo-square-512.png',
-      icon: 'public/images/none-logo-square-64.png',
-      iconBig: 'public/images/none-logo-square-512.png',
-      label: 'None',
-      ledCount: 1
-    },
-    'Orbit': {
-      image: 'public/images/orbit.png',
-      icon: 'public/images/orbit-logo-square-64.png',
-      iconBig: 'public/images/orbit-logo-square-512.png',
-      label: 'Orbit',
-      ledCount: 28
-    },
-    'Handle': {
-      image: 'public/images/handle.png',
-      icon: 'public/images/handle-logo-square-64.png',
-      iconBig: 'public/images/handle-logo-square-512.png',
-      label: 'Handle',
-      ledCount: 3
-    },
-    'Gloves': {
-      image: 'public/images/gloves.png',
-      icon: 'public/images/gloves-logo-square-64.png',
-      iconBig: 'public/images/gloves-logo-square-512.png',
-      label: 'Gloves',
-      ledCount: 10
-    },
-    'Chromadeck': {
-      image: 'public/images/chromadeck.png',
-      icon: 'public/images/chromadeck-logo-square-64.png',
-      iconBig: 'public/images/chromadeck-logo-square-512.png',
-      label: 'Chromadeck',
-      ledCount: 20
-    },
-    'Spark': {
-      image: 'public/images/spark.png',
-      icon: 'public/images/spark-logo-square-64.png',
-      iconBig: 'public/images/spark-logo-square-512.png',
-      label: 'Spark',
-      ledCount: 6,
-      // alternate spark image/icon/label for handle
-      altImage: 'public/images/spark-handle.png',
-      altIcon: 'public/images/spark-handle-logo-square-64.png',
-      altIconBig: 'public/images/spark-handle-logo-square-512.png',
-      altLabel: 'SparkHandle',
-    },
-    'Duo': {
-      image: 'public/images/duo.png',
-      icon: 'public/images/duo-logo-square-64.png',
-      iconBig: 'public/images/duo-logo-square-512.png',
-      label: 'Duo',
-      ledCount: 2
-    }
-  };
-
   constructor(vortexLib) {
+    // store the vortexlib reference
     this.vortexLib = vortexLib;
+    this.devices = null;
 
     // initialize the vortex container inside vortexlib
     this.vortex = new vortexLib.Vortex();
@@ -185,7 +130,7 @@ export default class VortexEditor {
 
   async initialize() {
     // Load dependencies
-    await this.loadDependencies();
+    await this.loadAssets();
 
     // Start the lightshow
     this.lightshow.start();
@@ -442,12 +387,19 @@ export default class VortexEditor {
     return true;
   }
 
-  async loadDependencies() {
+  async loadAssets() {
     this.loadStylesheet("mainStyles", "css/styles.css");
     this.loadStylesheet("fontsAwesomeStyles", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css");
     await this.loadScript("pako", "https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js");
     await this.loadScript("jszip", "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js");
     await this.loadScript("lzstring", "https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js");
+
+    // fetch devices json
+    const res = await fetch('js/devices.json', { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${url}`);
+    }
+    this.devices = await res.json();
 
     // Dynamically load ESPTool
     window.esptoolPackage = await import("https://cdn.jsdelivr.net/gh/adafruit/Adafruit_WebSerial_ESPTool@latest/dist/web/index.js");
@@ -658,6 +610,15 @@ export default class VortexEditor {
     await this.vortexPort.transmitVL(this.lightshow.vortexLib, this.lightshow.vortex);
   }
 
+  async listenVL() {
+    if (!this.vortexPort.isActive()) {
+      Notification.failure("Please connect a device first");
+      return;
+    }
+    await this.vortexPort.listenVL(this.lightshow.vortexLib, this.lightshow.vortex);
+    this.modesPanel.refreshModeList();
+  }
+
   async demoColorOnDevice(color) {
     try {
       if (!this.vortexPort.isTransmitting && this.vortexPort.isActive()) {
@@ -692,8 +653,6 @@ export default class VortexEditor {
   }
 }
 
-console.log("ENTRY SCRIPT EXECUTED");
-
 async function boot() {
   try {
     const vortexLib = await VortexLib();
@@ -707,14 +666,12 @@ async function boot() {
 (function start() {
   // If the page is already loaded (or interactive), run immediately.
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    console.log("REGULAR LOAD FIRED")
     boot();
     return;
   }
 
   // Otherwise wait for DOM (not full load of images/fonts/etc).
   document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM CONTENT LOAD FIRED")
     boot();
   }, { once: true });
 })();

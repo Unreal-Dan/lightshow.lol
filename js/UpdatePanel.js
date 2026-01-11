@@ -1,3 +1,5 @@
+/* UpdatePanel.js */
+
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
@@ -7,46 +9,51 @@ export default class UpdatePanel extends Panel {
     const content = `
       <div id="updateOptions">
         <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
+
         <div class="update-progress-container">
           <div id="overallProgress" class="progress-bar">
             <div id="overallProgressBar"></div>
           </div>
         </div>
+
         <div>
-          <span id="updateProgress" style="margin-top: 10px;"></div>
+          <span id="updateProgress" style="margin-top: 10px;"></span>
         </div>
       </div>
     `;
+
     super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
+
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
+
     // this.serialPort is a local copy of the vortexport.serialport if it's
     // open yet, but most likely it's not so this will probably just be null.
     // But later we will use it to hold a private copy of the serial port if
     // the 'insert' force update key is pressed for an esp device when there's
     // no active vortexPort.serialPort then it will open this.serialPort as a
     // new port.  Otherwise if there is a vortexport.serialPort then it will be
-    // again copied into this.serialPort and used for the ESP update process 
+    // again copied into this.serialPort and used for the ESP update process
     this.serialPort = this.vortexPort.serialPort;
+
     // this tracks whether the serialport was forced open with insert or not
     this.forcedUpdate = false;
+
     // this is used for the updating process
     this.espStub = null;
+    this.espLoader = null;
+
     // update confirmation modal
     this.confirmationModal = new Modal('flash-confirmation');
   }
 
   initialize() {
-    const flashButton = document.getElementById('updateFlash');
-    const updateProgress = document.getElementById('updateProgress');
-
     this.toggleCollapse(false);
     this.hide();
   }
 
   async onDeviceConnect(deviceName, deviceVersion) {
-    console.log("Checking version...");
-    // check version which
+    console.log('Checking version...');
     this.editor.checkVersion(deviceName, deviceVersion);
   }
 
@@ -58,20 +65,35 @@ export default class UpdatePanel extends Panel {
     // maybe do something here
   }
 
+  isLocalServer() {
+    // Prefer the editor's detection if present.
+    if (typeof this.editor?.isLocalServer === 'boolean') return this.editor.isLocalServer;
+
+    // Fallback (same as your VortexEditor logic)
+    return !window.location.hostname.startsWith('lightshow.lol');
+  }
+
+  publicDataUrl(fileName) {
+    // IMPORTANT: resolves relative to this module file (UpdatePanel.js),
+    // so ../public/data/ works on local dev + GH pages subpaths.
+    return new URL(`../public/data/${fileName}`, import.meta.url).toString();
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   async initializeESPFlasher() {
     try {
-      // this.serialPort will already be filled if they pressed 'insert' to
-      // force an update and there was no vortexPort already active
+      // this.serialPort will already be filled if they pressed 'insert' to force an update
       if (!this.serialPort) {
-        // otherwise if they didn't press 'insert' and this is a normal update
-        // notification then there must be a vortexPort.serialPort active and
-        // that will be used for the ESP update serial port instead
+        // otherwise must use vortexPort.serialPort
         if (!this.vortexPort.serialPort) {
           throw new Error('No serial port available.');
         }
         this.serialPort = this.vortexPort.serialPort;
       }
-      // run the esptool update and pass this.serialPort as the active port to use
+
       const esptool = await window.esptoolPackage;
       this.espLoader = new esptool.ESPLoader(this.serialPort, console);
       await this.espLoader.initialize();
@@ -81,60 +103,116 @@ export default class UpdatePanel extends Panel {
     }
   }
 
-  sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  async fetchArrayBufferOrThrow(url, errMsg) {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      throw new Error(`${errMsg} (${res.status} ${res.statusText})`);
+    }
+    return await res.arrayBuffer();
+  }
+
+  async tryFetchArrayBuffer(url) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.arrayBuffer();
+    } catch {
+      return null;
+    }
+  }
+
+  async fetchLocalFirmwareZip(targetDevice) {
+    // Try common local filenames first. You can drop your zip in ../public/data/
+    // without touching any API.
+    const candidates = [
+      `VortexEngine-chromadeck.zip`,
+      // add other file names here if you want to try them
+    ];
+
+    let lastTried = [];
+
+    for (const name of candidates) {
+      const url = this.publicDataUrl(name);
+      lastTried.push(url);
+      const buf = await this.tryFetchArrayBuffer(url);
+      if (buf) {
+        console.log(`Using local firmware zip: ${url}`);
+        return { zipData: buf, sourceUrl: url };
+      }
+    }
+
+    throw new Error(
+      `Local firmware zip not found for '${targetDevice}'. Tried:\n` + lastTried.join('\n')
+    );
+  }
+
+  async fetchRemoteFirmwareZip(targetDevice) {
+    const firmwareApiUrl = `https://vortex.community/downloads/json/${targetDevice}`;
+
+    // Fetch firmware metadata
+    const apiResponse = await fetch(firmwareApiUrl, { cache: 'no-store' });
+    if (!apiResponse.ok) {
+      throw new Error('Failed to fetch firmware metadata');
+    }
+
+    const firmwareData = await apiResponse.json();
+    const firmwareZipUrl = firmwareData.firmware?.fileUrl;
+    if (!firmwareZipUrl) {
+      throw new Error('Firmware file URL not found in API response');
+    }
+
+    // Fetch the firmware zip
+    const zipResponse = await fetch(firmwareZipUrl, { cache: 'no-store' });
+    if (!zipResponse.ok) {
+      throw new Error('Failed to fetch firmware zip');
+    }
+
+    const zipData = await zipResponse.arrayBuffer();
+    return { zipData, sourceUrl: firmwareZipUrl };
   }
 
   async fetchAndFlashFirmware() {
-    let targetDevice = this.vortexPort.name.toLowerCase();
+    let targetDevice = this.vortexPort?.name?.toLowerCase();
     if (!targetDevice) {
-      targetDevice = this.editor.devicePanel.selectedDevice.toLowerCase();
+      targetDevice = this.editor?.devicePanel?.selectedDevice?.toLowerCase();
     }
-    if (targetDevice === 'none') {
+
+    if (!targetDevice || targetDevice === 'none') {
       throw new Error(`Select a device first`);
     }
+
     if (targetDevice !== 'chromadeck' && targetDevice !== 'spark') {
       throw new Error(`Cannot flash '${targetDevice}', wrong device!`);
     }
-    const firmwareApiUrl = `https://vortex.community/downloads/json/${targetDevice}`;
+
     let firmwareFiles;
+
     try {
-      // Fetch the firmware metadata
-      const apiResponse = await fetch(firmwareApiUrl);
-      if (!apiResponse.ok) {
-        throw new Error('Failed to fetch firmware metadata');
-      }
+      const local = this.isLocalServer();
 
-      const firmwareData = await apiResponse.json();
-      const firmwareZipUrl = firmwareData.firmware?.fileUrl;
-      if (!firmwareZipUrl) {
-        throw new Error('Firmware file URL not found in API response');
-      }
+      const { zipData, sourceUrl } = local
+        ? await this.fetchLocalFirmwareZip(targetDevice)
+        : await this.fetchRemoteFirmwareZip(targetDevice);
 
-      // Fetch the firmware zip
-      const zipResponse = await fetch(firmwareZipUrl);
-      if (!zipResponse.ok) {
-        throw new Error('Failed to fetch firmware zip');
-      }
+      console.log(`Firmware zip source: ${sourceUrl}`);
 
-      const zipData = await zipResponse.arrayBuffer();
       firmwareFiles = await this.unzipFirmware(zipData);
 
-      firmwareFiles.forEach(file => {
+      firmwareFiles.forEach((file) => {
         console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
       });
 
-      // Add the boot_app0.bin from the local server
-      const bootAppResponse = await fetch('./public/data/boot_app0.bin', { cache: 'no-store' });
-      if (!bootAppResponse.ok) {
-        throw new Error('Failed to fetch boot_app0.bin from local server');
-      }
+      // Add boot_app0.bin from ../public/data/ (works both local + hosted)
+      const bootAppUrl = this.publicDataUrl('boot_app0.bin');
+      const bootAppBuf = await this.fetchArrayBufferOrThrow(
+        bootAppUrl,
+        'Failed to fetch boot_app0.bin'
+      );
 
-      // Create the boot_app0.bin entry
       const bootAppEntry = {
-        path: './public/data/boot_app0.bin',
+        path: bootAppUrl,
         address: 0xE000,
-        data: new Uint8Array(await bootAppResponse.arrayBuffer()),
+        data: new Uint8Array(bootAppBuf),
       };
 
       // Insert boot_app0.bin as the 3rd item in the list
@@ -144,7 +222,6 @@ export default class UpdatePanel extends Panel {
       throw error;
     }
 
-    // Flash the firmware
     await this.flashFirmware(firmwareFiles);
   }
 
@@ -171,38 +248,34 @@ export default class UpdatePanel extends Panel {
   }
 
   async flashFirmware(files) {
-    const blockSize = 0x4000; // Flash memory block size
-
     const progressBar = document.getElementById('overallProgressBar');
     const progressMessage = document.getElementById('updateProgress');
 
-    // Set initial progress to 0%
-    progressBar.style.width = '0%';
-    progressMessage.textContent = 'Erasing flash...';
+    if (progressBar) progressBar.style.width = '0%';
+    if (progressMessage) progressMessage.textContent = 'Erasing flash...';
 
     // Slowly fill progress bar from 0% to 50% while eraseFlash is in progress
     let currentWidth = 0;
     const targetWidth = 50;
-    const incrementSteps = 50; // number of increments
-    const intervalDelay = 300; // ms
+    const incrementSteps = 50;
+    const intervalDelay = 300;
     const incrementValue = (targetWidth - currentWidth) / incrementSteps;
 
     const intervalId = setInterval(() => {
       currentWidth += incrementValue;
-      if (currentWidth >= targetWidth) {
-        currentWidth = targetWidth;
-      }
-      progressBar.style.width = Math.floor(currentWidth) + '%';
+      if (currentWidth >= targetWidth) currentWidth = targetWidth;
+      if (progressBar) progressBar.style.width = Math.floor(currentWidth) + '%';
     }, intervalDelay);
 
     await this.espStub.eraseFlash();
 
     clearInterval(intervalId);
-    progressBar.style.width = targetWidth + '%';
+    if (progressBar) progressBar.style.width = targetWidth + '%';
 
     // Now proceed with flashing firmware
-    progressMessage.textContent = 'Flashing firmware...';
-    let totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
+    if (progressMessage) progressMessage.textContent = 'Flashing firmware...';
+
+    const totalBytes = files.reduce((sum, file) => sum + file.data.length, 0);
     let totalBytesFlashed = 0;
 
     for (const file of files) {
@@ -220,11 +293,9 @@ export default class UpdatePanel extends Panel {
           return new Promise((resolve, reject) => {
             reader.onerror = () => {
               reader.abort();
-              reject(new DOMException("Problem parsing input file."));
+              reject(new DOMException('Problem parsing input file.'));
             };
-            reader.onload = () => {
-              resolve(reader.result);
-            };
+            reader.onload = () => resolve(reader.result);
             reader.readAsArrayBuffer(inputFile);
           });
         };
@@ -233,16 +304,23 @@ export default class UpdatePanel extends Panel {
 
         await this.espStub.flashData(
           contents,
-          (bytesWritten, totalThisFile) => {
-            // 50% range left after 50% used for erase
-            const progress = Math.floor((bytesWritten / totalBytes) * 50) + 50;
-            progressBar.style.width = progress + '%';
-            const msg = `Flashing ${bytesWritten} / ${totalBytes} (${progress}%)...`;
-            progressMessage.textContent = msg;
+          (bytesWritten /* this file */, totalThisFile) => {
+            const overallWritten = totalBytesFlashed + bytesWritten;
+            const progress = Math.floor((overallWritten / totalBytes) * 50) + 50;
+            if (progressBar) progressBar.style.width = Math.max(50, Math.min(100, progress)) + '%';
+
+            const msg = `Flashing ${overallWritten} / ${totalBytes} (${Math.max(
+              50,
+              Math.min(100, progress)
+            )}%)...`;
+
+            if (progressMessage) progressMessage.textContent = msg;
             console.log(msg);
           },
           file.address
         );
+
+        totalBytesFlashed += file.data.length;
 
         await this.sleep(100);
         console.log(`${file.path} flashed successfully.`);
@@ -252,29 +330,28 @@ export default class UpdatePanel extends Panel {
       }
     }
 
-    // Finish progress at 100% when done
-    progressBar.style.width = '100%';
+    if (progressBar) progressBar.style.width = '100%';
     console.log('All files flashed successfully.');
 
     try {
       console.log('ESP32 reset complete.');
-      if (this.espLoader) {
+      if (this.espLoader && this.espLoader._reader) {
         await this.espLoader._reader.releaseLock();
         console.log('Disconnected ESP Loader.');
       }
       console.log('Resetting ESP32...');
       await this.espStub.hardReset();
       // TODO: get this working sometime again
-      //await this.editor.vortexPort.restartConnecton();
+      // await this.editor.vortexPort.restartConnecton();
     } catch (resetError) {
       console.error('Failed to reset ESP32:', resetError);
     }
   }
 
-
   displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
     const lowerDevice = device.toLowerCase();
     const deviceIconUrl = `./public/images/${lowerDevice}-logo-square-64.png`;
+
     let content = `
       <div class="device-update-labels">
         <div>
@@ -305,14 +382,12 @@ export default class UpdatePanel extends Panel {
     }
 
     if (lowerDevice === 'duo') {
-      // Show download links for duo
       content += `
         <div class="firmware-buttons">
           <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
     } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
-      // Show download links for orbit, handle, and gloves
       content += `
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
@@ -320,9 +395,14 @@ export default class UpdatePanel extends Panel {
         </div>
       `;
     } else if (['chromadeck', 'spark'].includes(lowerDevice)) {
-      // Show update button and progress bar for chromadeck and spark
+      const local = this.isLocalServer();
+      const hint = local
+        ? `<div class="text-secondary" style="margin-top: 6px;">Local server detected — flashing from <code>../public/data/</code></div>`
+        : '';
+
       content += `
         <button id="updateFlash" class="update-button">Update Firmware Now</button>
+        ${hint}
         <div class="update-progress-container">
           <div id="overallProgress" class="update-progress-bar">
             <div id="overallProgressBar"></div>
@@ -345,7 +425,6 @@ export default class UpdatePanel extends Panel {
     `;
 
     if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
-      // Attach the flash button event listener
       const flashButton = document.getElementById('updateFlash');
 
       flashButton.addEventListener('click', () => {
@@ -362,7 +441,7 @@ export default class UpdatePanel extends Panel {
               label: '',
               onClick: () => {
                 this.confirmationModal.hide();
-                this.handleFirmwareUpdate(); // Call the organized method here
+                this.handleFirmwareUpdate();
               },
               customHtml: '<button class="modal-button proceed-button">Yes</button>',
             },
@@ -370,6 +449,7 @@ export default class UpdatePanel extends Panel {
         });
       });
     }
+
     this.show();
   }
 
@@ -377,7 +457,7 @@ export default class UpdatePanel extends Panel {
     const updateProgress = document.getElementById('updateProgress');
     try {
       Notification.success('Starting firmware update...');
-      updateProgress.textContent = 'Initializing firmware update...';
+      if (updateProgress) updateProgress.textContent = 'Initializing firmware update...';
 
       this.editor.lightshow.stop();
 
@@ -395,12 +475,13 @@ export default class UpdatePanel extends Panel {
       await this.fetchAndFlashFirmware();
 
       this.editor.lightshow.start();
-      updateProgress.textContent = 'Firmware update completed successfully!';
+      if (updateProgress) updateProgress.textContent = 'Firmware update completed successfully!';
       Notification.success('Firmware updated successfully.');
     } catch (error) {
-      updateProgress.textContent = 'Firmware update failed.';
+      if (updateProgress) updateProgress.textContent = 'Firmware update failed.';
       Notification.failure('Firmware update failed: ' + error.message);
       console.error(error);
     }
   }
 }
+

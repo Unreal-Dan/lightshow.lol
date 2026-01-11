@@ -1,0 +1,44 @@
+<!-- /js/mobile/views/transfer-modal.html -->
+<div
+  class="modal fade"
+  id="m-transfer-modal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content m-transfer-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="m-transfer-title">Mode Transfer</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="m-transfer-subtitle text-secondary" id="m-transfer-subtitle">
+          Transfer modes to or from a device
+        </div>
+
+        <div class="d-grid gap-2">
+          <button id="m-transfer-pull" type="button" class="btn btn-primary">
+            <i class="fa-solid fa-download me-2"></i>
+            Load from Duo
+          </button>
+
+          <button id="m-transfer-push" type="button" class="btn btn-secondary">
+            <i class="fa-solid fa-upload me-2"></i>
+            Save to Duo
+          </button>
+        </div>
+
+        <div class="m-transfer-footnote text-secondary" id="m-transfer-footnote">
+          Use the Chromadeck to send or receive modes from the Duo.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,36 @@
+<!-- /js/mobile/views/duo-mode-send.html -->
+<div class="mobile-fullscreen">
+  <div class="mobile-fullscreen-inner duo-rx-inner">
+    <div class="text-center duo-rx-header">
+      <h1 class="mobile-title">Save mode to Duo</h1>
+    </div>
+    <div class="duo-rx-card">
+      <div class="duo-rx-hero">
+        <div class="duo-rx-icon" aria-hidden="true">
+          <img
+            src="public/images/chromadeck-logo-square-512.png"
+            alt=""
+            class="duo-rx-device-img"
+          />
+        </div>
+        <div class="duo-rx-device">
+          <img
+            src="public/images/duo-logo-square-512.png"
+            alt="Duo"
+            class="duo-rx-duo-icon"
+          />
+        </div>
+      </div>
+      <div class="duo-rx-title" id="duo-tx-title">{{title}}</div>
+      <div class="duo-rx-body text-secondary" id="duo-tx-body">{{body}}</div>
+      <div class="duo-rx-status" id="duo-tx-status">
+        <div class="spinner-border" role="status" aria-hidden="true"></div>
+        <div class="duo-rx-status-text" id="duo-tx-status-text">{{status}}</div>
+      </div>
+    </div>
+    <div class="text-center mt-2">
+      <button id="done-btn" class="btn btn-primary">Done</button>
+    </div>
+  </div>
+</div>
+

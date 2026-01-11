@@ -1,0 +1,126 @@
+/* ============================
+   Device Transfer (Pull/Push) Pages
+============================ */
+
+#mobile-app-root .dev-xfer-inner {
+  width: 100%;
+  height: 100%;
+  padding: clamp(12px, 2.2vmin, 18px);
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: clamp(10px, 1.8vmin, 14px);
+}
+
+#mobile-app-root .dev-xfer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#mobile-app-root .dev-xfer-back {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  padding: 0;
+  font-size: clamp(1.05rem, 0.95rem + 0.25vmin, 1.2rem);
+}
+
+#mobile-app-root .dev-xfer-back i {
+  margin-right: 0.5rem;
+}
+
+#mobile-app-root .dev-xfer-header .mobile-title {
+  margin: 0;
+}
+
+#mobile-app-root .dev-xfer-card {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+
+  border-radius: clamp(16px, 2.7vmin, 22px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+
+  padding: clamp(14px, 2.3vmin, 18px);
+
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: clamp(10px, 1.8vmin, 14px);
+}
+
+#mobile-app-root .dev-xfer-hero {
+  display: grid;
+  place-items: center;
+}
+
+#mobile-app-root .dev-xfer-device {
+  width: clamp(110px, 26vmin, 180px);
+  height: clamp(110px, 26vmin, 180px);
+  border-radius: clamp(18px, 3vmin, 28px);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+#mobile-app-root .dev-xfer-device::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+#mobile-app-root .dev-xfer-device-img {
+  position: relative;
+  z-index: 1;
+
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+  display: block;
+}
+
+#mobile-app-root .dev-xfer-status {
+  display: grid;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+#mobile-app-root .dev-xfer-status-text {
+  font-size: clamp(1.05rem, 0.95rem + 0.4vmin, 1.25rem);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#mobile-app-root .dev-xfer-progress-text {
+  font-size: clamp(0.95rem, 0.86rem + 0.35vmin, 1.1rem);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+#mobile-app-root .dev-xfer-progress {
+  height: clamp(10px, 1.7vmin, 14px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#mobile-app-root .dev-xfer-actions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+#mobile-app-root .dev-xfer-page .progress-bar {
+  transition: width 0.12s ease;
+}
+
+#mobile-app-root .dev-xfer-page .dev-xfer-status.is-error .dev-xfer-status-text {
+  color: rgba(255, 120, 120, 0.95);
+}
+
