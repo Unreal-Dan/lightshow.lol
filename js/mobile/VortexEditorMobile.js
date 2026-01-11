@@ -669,18 +669,21 @@ export default class VortexEditorMobile {
     const n = this.vortex.numModes() | 0;
     if (n <= 0) return;
 
-    // navigation only changes current pointer; no guessing, only bound APIs
+    const cur = this.vortex.curModeIndex() | 0;
+
+    let next = cur + (dir > 0 ? 1 : -1);
+    if (next < 0) next = n - 1;
+    else if (next >= n) next = 0;
+
+    // Pure value call, no save
     try {
-      if (dir > 0) {
-        this.vortex.nextMode(false);
-      } else {
-        this._getModes().previousMode();
-      }
+      this.vortex.setCurMode(next >>> 0, false);
     } catch (e) {
-      console.error('[Mobile] navigate failed:', e);
+      console.error('[Mobile] setCurMode failed:', e);
       return;
     }
 
+    // Update UI immediately; defer BLE demo so spam taps don’t feel slow
     await this._afterModeChanged(dt, { finalize: false, demo: true });
   }
 
@@ -883,16 +886,18 @@ export default class VortexEditorMobile {
     const bindTap = (el, fn) => {
       if (!el) return;
 
-      el.addEventListener('pointerup', async (e) => {
-        if (e && e.pointerType === 'mouse') return;
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        await fn(e);
-      }, { passive: false });
+      // Remove any prior binding (in case editor view re-renders)
+      if (el._mBoundTap) return;
+      el._mBoundTap = true;
 
-      el.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        await fn(e);
-      }, { passive: false });
+      el.addEventListener(
+        'pointerup',
+        async (e) => {
+          try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+          await fn(e);
+        },
+        { passive: false }
+      );
     };
 
     bindTap(prev, async () => { await this._navigateMode(dt, -1); });
@@ -900,6 +905,7 @@ export default class VortexEditorMobile {
     bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
     bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
 
+    // Desktop testing (optional)
     if (document.body && document.body.dataset.modeKeysBound !== '1') {
       document.body.dataset.modeKeysBound = '1';
       window.addEventListener('keydown', async (e) => {
