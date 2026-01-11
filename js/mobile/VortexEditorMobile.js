@@ -1743,10 +1743,7 @@ export default class VortexEditorMobile {
     this._clearFxFinalize();
     this._fxFinalizeTimer = setTimeout(() => {
       this._fxFinalizeTimer = null;
-      try {
-        this._getModes().initCurMode();
-        this._getModes().saveCurMode();
-      } catch {}
+      this._finalizeCurModeSafe();
     }, ms);
   }
 
@@ -1859,6 +1856,16 @@ export default class VortexEditorMobile {
     try { return cur.getPatternID(led).value | 0; } catch { return -1; }
   }
 
+  _finalizeCurModeSafe() {
+    try {
+      const cur = this._getCurMode();
+      if (cur) cur.init(); // Mode::init() is a clean binding
+    } catch {}
+    try {
+      this._getModes().saveCurMode(); // Modes::saveCurMode() is also a clean binding
+    } catch {}
+  }
+
   async openEffectsPanel(dt) {
     const cur = this._getCurMode();
     if (!cur) return;
@@ -1876,8 +1883,8 @@ export default class VortexEditorMobile {
 
     const rgb =
       this._fxSelectedColor != null && colors[this._fxSelectedColor]
-        ? this._hexToRgb(colors[this._fxSelectedColor])
-        : null;
+      ? this._hexToRgb(colors[this._fxSelectedColor])
+      : null;
 
     await this.effectsPanel.openEffects({
       title: 'Effects',
@@ -1892,10 +1899,7 @@ export default class VortexEditorMobile {
       onDone: async () => {
         this._clearFxFinalize();
         this._clearFxDemo();
-        try {
-          this._getModes().initCurMode();
-          this._getModes().saveCurMode();
-        } catch {}
+        this._finalizeCurModeSafe();
         await this.demoModeOnDevice();
         this.effectsPanel.close();
       },
@@ -1916,8 +1920,8 @@ export default class VortexEditorMobile {
 
         const rgb2 =
           this._fxSelectedColor != null && colors2[this._fxSelectedColor]
-            ? this._hexToRgb(colors2[this._fxSelectedColor])
-            : null;
+          ? this._hexToRgb(colors2[this._fxSelectedColor])
+          : null;
 
         return {
           ledCount,
@@ -1933,17 +1937,22 @@ export default class VortexEditorMobile {
         const cur2 = this._getCurMode();
         if (!cur2) return null;
 
-        const patID = this.vortexLib.PatternID?.values?.[patValue] || null;
+        // Use the explicit binder helper instead of PatternID.values guessing.
+        let patID = null;
+        try {
+          patID = this.vortexLib.intToPatternID(patValue | 0);
+        } catch {
+          patID = null;
+        }
         if (!patID) return null;
 
         try {
           const set = cur2.getColorset(this._fxLed);
           cur2.setPattern(patID, this._fxLed, null, null);
           if (set) cur2.setColorset(set, this._fxLed);
-          this._getModes().initCurMode();
-          this._getModes().saveCurMode();
         } catch {}
 
+        this._finalizeCurModeSafe();
         await this.demoModeOnDevice();
 
         return {
@@ -1963,14 +1972,12 @@ export default class VortexEditorMobile {
         if (!set) return null;
         if (set.numColors() >= 8) return null;
 
-        set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
-        cur2.setColorset(set, this._fxLed);
-
         try {
-          this._getModes().initCurMode();
-          this._getModes().saveCurMode();
+          set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
+          cur2.setColorset(set, this._fxLed);
         } catch {}
 
+        this._finalizeCurModeSafe();
         await this.demoModeOnDevice();
 
         const colors2 = this._getColorsetHexes(cur2, this._fxLed);
@@ -1996,14 +2003,12 @@ export default class VortexEditorMobile {
         const idx = colorIndex | 0;
         if (idx < 0 || idx >= set.numColors()) return null;
 
-        set.removeColor(idx);
-        cur2.setColorset(set, this._fxLed);
-
         try {
-          this._getModes().initCurMode();
-          this._getModes().saveCurMode();
+          set.removeColor(idx);
+          cur2.setColorset(set, this._fxLed);
         } catch {}
 
+        this._finalizeCurModeSafe();
         await this.demoModeOnDevice();
 
         const colors2 = this._getColorsetHexes(cur2, this._fxLed);
@@ -2055,20 +2060,22 @@ export default class VortexEditorMobile {
 
         const set = cur2.getColorset(this._fxLed);
         if (!set) return;
-        if (idx < 0 || idx >= set.numColors()) return;
+
+        const i = idx | 0;
+        if (i < 0 || i >= set.numColors()) return;
 
         const { r, g, b } = this._hexToRgb(hex);
-        set.set(idx, new this.vortexLib.RGBColor(r, g, b));
-        cur2.setColorset(set, this._fxLed);
+
+        try {
+          set.set(i, new this.vortexLib.RGBColor(r, g, b));
+          cur2.setColorset(set, this._fxLed);
+        } catch {}
 
         if (isDragging) {
           this._scheduleFxFinalize(140);
         } else {
           this._clearFxFinalize();
-          try {
-            this._getModes().initCurMode();
-            this._getModes().saveCurMode();
-          } catch {}
+          this._finalizeCurModeSafe();
           this._scheduleFxDemo(70);
         }
       },
