@@ -5,20 +5,21 @@
 #mobile-app-root #device-select-page {
   display: flex;
   flex-direction: column;
-  height: 100dvh; /* use dynamic vh for mobile browser UI */
+  height: 100dvh;
   overflow: hidden;
 }
 
-/* Two rows: header + cards area */
+/* Three rows: hero + cards + footer */
 #mobile-app-root #device-select-page .container-fluid {
   flex: 1 1 auto;
   height: 100%;
   overflow: hidden;
-  padding: clamp(10px, 2vmin, 14px);
+  padding: clamp(12px, 2.2vmin, 16px);
+
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: clamp(8px, 1.5vmin, 12px);
-  min-height: 0; /* critical for nested grid overflow */
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(10px, 1.7vmin, 14px);
+  min-height: 0;
 }
 
 /* Kill bootstrap spacing that steals vertical space */
@@ -31,17 +32,30 @@
   margin-bottom: 0 !important;
 }
 
-/* Cards area: force-fit layout */
+/* --- Hero --- */
+
+#mobile-app-root .device-select-hero {
+  display: grid;
+  gap: clamp(6px, 1.2vmin, 10px);
+  margin-top: clamp(6px, 1.2vmin, 10px);
+}
+
+#mobile-app-root .device-select-subtitle {
+  font-size: clamp(0.95rem, 0.86rem + 0.4vmin, 1.1rem);
+}
+
+/* --- Cards grid --- */
+
 #mobile-app-root .device-select-row {
   height: 100%;
   min-height: 0;
-  margin: 0 !important;          /* remove Bootstrap row negative margins */
+  margin: 0 !important;
   padding: 0 !important;
 
   display: grid;
-  grid-template-columns: 1fr;     /* portrait: one column */
-  grid-template-rows: repeat(3, 1fr); /* 3 equal-height slots */
-  gap: clamp(8px, 1.5vmin, 12px);
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  gap: clamp(10px, 1.8vmin, 14px);
 
   align-items: stretch;
   align-content: stretch;
@@ -54,24 +68,41 @@
   padding: 0 !important;
   margin: 0 !important;
 
-  display: flex;                 /* so child can stretch */
-  min-height: 0;                 /* critical for grid overflow */
+  display: flex;
+  min-height: 0;
 }
 
-/* Device Card: fill its slot */
+/* --- Card button --- */
+
 #mobile-app-root .mobile-device-card {
   width: 100%;
   height: 100%;
-  min-height: 0;                 /* critical for inner grid shrink */
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: clamp(14px, 2.5vmin, 20px);
-  padding: clamp(10px, 2vmin, 14px);
+  min-height: 0;
+
+  position: relative;
+  border-radius: clamp(16px, 2.7vmin, 22px);
+  padding: clamp(12px, 2.2vmin, 16px);
   text-align: center;
   color: #fff;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.03)
+  );
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
   display: grid;
   place-items: center;
-  transition: transform 0.1s ease;
+
+  transition:
+    transform 0.1s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
 }
 
 #mobile-app-root .mobile-device-card:active {
@@ -80,74 +111,119 @@
 
 #mobile-app-root .mobile-device-card.is-selected {
   border-color: rgba(13, 110, 253, 0.95);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
-  background: rgba(13, 110, 253, 0.12);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.28),
+    0 0 0 3px rgba(13, 110, 253, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: linear-gradient(
+    180deg,
+    rgba(13, 110, 253, 0.18),
+    rgba(255, 255, 255, 0.03)
+  );
 }
 
-/* Inner Content: grid so icon area can shrink (without growing the card) */
+/* Selected check overlay */
+#mobile-app-root .device-card-check {
+  position: absolute;
+  top: clamp(10px, 1.8vmin, 14px);
+  right: clamp(10px, 1.8vmin, 14px);
+
+  width: clamp(34px, 6vmin, 42px);
+  height: clamp(34px, 6vmin, 42px);
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+#mobile-app-root .mobile-device-card.is-selected .device-card-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+#mobile-app-root .device-card-check i {
+  font-size: clamp(1rem, 0.9rem + 0.45vmin, 1.2rem);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* --- Inner content --- */
+
 #mobile-app-root .device-card-inner {
   width: 100%;
   height: 100%;
   min-height: 0;
 
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto; /* icon slot, then label/subtitle */
-  gap: clamp(0.5rem, 1.2vmin, 1.1rem);
-
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vmin, 14px);
 }
 
-/* Icon slot: takes the flexible space */
-#mobile-app-root .mobile-device-icon-slot {
-  min-height: 0;
-  width: 100%;
+/*
+  Fix icon cut-off:
+  - no overflow clipping on the wrapper
+  - rounded background is drawn by ::before (so the image can "breathe")
+*/
+#mobile-app-root .mobile-device-icon-wrap {
+  width: clamp(92px, 22vmin, 160px);
+  height: clamp(92px, 22vmin, 160px);
+  border-radius: clamp(18px, 3vmin, 28px);
+
+  position: relative;
   display: grid;
   place-items: center;
+
+  overflow: visible;
 }
 
-/* Icon square: fills whatever space the layout already provides, but never grows the card */
-#mobile-app-root .mobile-device-icon-wrap {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  aspect-ratio: 1 / 1;
+#mobile-app-root .mobile-device-icon-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 
-  border-radius: clamp(14px, 2.5vmin, 28px);
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.38);
   border: 1px solid rgba(255, 255, 255, 0.12);
 
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-
-  flex: 0 0 auto; /* avoid flex shrink surprises if nested in flex somewhere */
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Make the actual image occupy the square */
 #mobile-app-root .mobile-device-icon {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
+  position: relative;
+  z-index: 1;
+
+  width: 74%;
+  height: 74%;
   object-fit: contain;
-  padding: 8%;
   display: block;
 }
 
-/* Text: allow shrinking when needed */
+/* Label */
 #mobile-app-root .device-card-label {
-  font-size: clamp(1.5rem, 1.1rem + 0.6vmin, 1.9rem);
-  font-weight: 800;
-  line-height: 1.1;
+  font-size: clamp(1.45rem, 1.1rem + 0.7vmin, 1.95rem);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.08;
 }
 
-#mobile-app-root .device-card-subtitle {
-  font-size: clamp(0.85rem, 0.9rem + 0.4vmin, 1.05rem);
-  color: rgba(255, 255, 255, 0.7);
-  line-height: 1.15;
-  max-width: min(42ch, 100%);
+/* --- Footer --- */
+
+#mobile-app-root .device-select-footer {
+  padding-bottom: clamp(6px, 1.2vmin, 10px);
+}
+
+#mobile-app-root .device-select-hint {
+  font-size: clamp(0.95rem, 0.86rem + 0.35vmin, 1.1rem);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 /* Landscape: 3 columns, single row */
@@ -156,8 +232,14 @@
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: 1fr;
   }
+
+  #mobile-app-root .mobile-device-icon-wrap {
+    width: clamp(86px, 16vmin, 140px);
+    height: clamp(86px, 16vmin, 140px);
+  }
 }
 
+/* Keep your existing skip link styles (still compatible) */
 #mobile-app-root .skip-to-editor-link {
   text-align: center;
   margin-top: clamp(10px, 2vmin, 20px);
