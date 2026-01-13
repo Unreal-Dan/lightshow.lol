@@ -1,0 +1,318 @@
+/* css/mobile/led-select.css */
+
+/* Root overlay: keep it in the DOM, but hidden by default */
+.m-led-select {
+  position: fixed;
+  inset: 0;
+  z-index: 1000001;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  /* Helps avoid weird stacking/paint issues on mobile */
+  transform: translateZ(0);
+}
+
+/* Open state */
+.m-led-select.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Backdrop full-screen */
+.m-led-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  padding: 12px;
+
+  /* If you ever animate, this prevents tap-through during fade */
+  pointer-events: auto;
+}
+
+/* Bottom sheet */
+.m-led-sheet {
+  width: min(680px, 100%);
+  max-height: min(92vh, 820px);
+
+  background: rgba(18, 18, 18, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* Ensure it paints above backdrop */
+  position: relative;
+}
+
+/* Header */
+.m-led-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.m-led-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.m-led-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.m-led-summary {
+  font-size: 12px;
+  opacity: 0.9;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.m-led-iconbtn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Controls row */
+.m-led-controls {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.m-led-btn {
+  border: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+
+  font-weight: 600;
+  font-size: 13px;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Legend */
+.m-led-legend {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.m-led-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.m-led-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+}
+
+.m-led-legend-dot.is-selected {
+  border-color: rgba(0, 255, 0, 0.9);
+}
+
+.m-led-legend-dot.is-source {
+  border-color: rgba(0, 255, 0, 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65) inset;
+}
+
+/* Stage */
+.m-led-stage {
+  position: relative;
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+
+  /* Prevent scroll/pinch conflicts while selecting */
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Device image mode */
+.m-led-device {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.m-led-device.hidden {
+  display: none;
+}
+
+.m-led-device img {
+  display: block;
+  width: 100%;
+  height: auto;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.m-led-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+/* Swap button (if you place it over the image) */
+.m-led-swap {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Utilities */
+.hidden {
+  display: none !important;
+}
+
+/* LED indicators on image */
+.m-led-indicator {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  background: rgba(0, 0, 0, 0.15);
+
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.m-led-indicator.is-selected {
+  border-color: rgba(0, 255, 0, 0.95);
+}
+
+.m-led-indicator.is-source {
+  border-color: rgba(0, 255, 0, 0.95);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.80) inset,
+    0 0 10px rgba(0, 255, 0, 0.45);
+}
+
+/* Grid fallback */
+.m-led-grid {
+  width: min(620px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 8px;
+}
+
+.m-led-grid-item {
+  border: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+
+  font-weight: 700;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.m-led-grid-item.is-selected {
+  outline: 2px solid rgba(0, 255, 0, 0.95);
+}
+
+.m-led-grid-item.is-source {
+  outline: 2px solid rgba(0, 255, 0, 0.95);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.80) inset;
+}
+
+/* Drag selection box */
+.m-led-selection-box {
+  position: absolute;
+  border: 2px dashed rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* Footer */
+.m-led-footer {
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.m-led-done {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+
+  background: rgba(0, 255, 0, 0.20);
+  color: #fff;
+
+  font-weight: 800;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
