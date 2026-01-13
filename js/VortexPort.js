@@ -619,12 +619,13 @@ export default class VortexPort {
     try {
       await this.cancelReading();
 
-      const numModes = vortex.numModes() | 0;
-
-      reportFast({ phase: 'count', total: numModes });
+      reportFast({ phase: 'start' });
 
       await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+
+      const numModes = vortex.numModes() | 0;
+      reportFast({ phase: 'count', total: numModes });
 
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
@@ -633,49 +634,40 @@ export default class VortexPort {
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
 
-      // Throughput: create buffers first (no awaits), then do send+ACK loop.
-      // This mirrors pull's "read+ACK hottest" idea (here: send+ACK hottest).
-      const modeRawBufs = new Array(numModes);
-
+      // Preserve selection if you care (best-effort)
       const startIdx = vortex.curModeIndex ? (vortex.curModeIndex() | 0) : 0;
       try { vortex.setCurMode(0, false); } catch {}
 
       for (let i = 0; i < numModes; ++i) {
+        reportFast({ phase: 'pushing', index: i, total: numModes });
+
         const modeBuf = new vortexLib.ByteStream();
         vortex.getCurMode(modeBuf);
 
-        // IMPORTANT: constructCustomBuffer returns a JS raw buffer (or Uint8Array) ready for sendRaw.
-        // This avoids doing constructCustomBuffer between sendRaw and ACK.
-        modeRawBufs[i] = this.constructCustomBuffer(vortexLib, modeBuf);
+        // Match your numModes CRC behavior (cheap + avoids device rejecting payload).
+        try { modeBuf.recalcCRC(); } catch {}
+
+        await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
+        await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
 
         try { vortex.nextMode(false); } catch {}
       }
 
-      // Optional: restore selection best-effort (don’t throw if missing).
-      try {
-        if (typeof startIdx === 'number' && startIdx >= 0 && startIdx < numModes) {
-          vortex.setCurMode(startIdx, false);
-        }
-      } catch {}
-
-      for (let i = 0; i < numModes; ++i) {
-        reportFast({ phase: 'pushing', index: i, total: numModes });
-
-        await this.sendRaw(modeRawBufs[i]);
-        await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
-      }
-
       reportFast({ phase: 'finalizing', total: numModes });
 
-      // If your firmware doesn't reliably send DONE, keep it optional (like your comment).
-      // If it does, uncomment these two lines to mirror pull's expectData(DONE).
+      // If you later make DONE reliable, do it here.
       // await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
       // await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+
+      // Restore selection best-effort
+      try {
+        if (startIdx >= 0 && startIdx < numModes) vortex.setCurMode(startIdx, false);
+      } catch {}
 
       reportFast({ phase: 'done', total: numModes });
     } catch (error) {
       reportFast({ phase: 'error', error });
-      console.error('Error during pushToDevice:', error);
+      console.error('Error during pushEachToDevice:', error);
       throw error;
     } finally {
       this.startReading();
