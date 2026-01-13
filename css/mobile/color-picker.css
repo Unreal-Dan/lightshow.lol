@@ -19,7 +19,7 @@
   display: block;
   position: fixed;
   inset: 0;
-  z-index: 999999;
+  z-index: 500;
 
   background: rgba(0, 0, 0, 0.40);
   backdrop-filter: blur(6px);
@@ -583,5 +583,42 @@
   opacity: 0.25;
   transform: scale(0.92);
   transition: opacity 120ms linear, transform 120ms ease-out;
+}
+
+
+.m-cp-ledmodalbtn {
+  border: 0;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 12px;
+  height: 42px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.m-cp-ledmodaltext {
+  font-size: 13px;
+  opacity: 0.95;
+  white-space: nowrap;
+}
+
+/* make template "hidden" work for the LED container + modal button */
+#mobile-app-root .m-cp-leds.hidden,
+.m-cp-leds.hidden {
+  display: none !important;
+}
+
+#mobile-app-root .m-cp-ledmodalbtn.hidden,
+.m-cp-ledmodalbtn.hidden {
+  display: none !important;
+}
+
+/* optional: global hidden helper so other templates work too */
+#mobile-app-root .hidden,
+.hidden {
+  display: none !important;
 }
 

@@ -2544,8 +2544,7 @@ _hexToRgb(hex) {
 }
 
 _getLedCountForDevice(dt) {
-  if (dt === 'Duo') return 2;
-  return this.devices?.[dt]?.ledCount ? Math.min(2, this.devices[dt].ledCount) : 1;
+  return this.devices[dt].ledCount | 0;
 }
 
 _escape(str) {
@@ -2654,6 +2653,7 @@ async openEffectsPanel(dt) {
     : null;
 
   await this.effectsPanel.openEffects({
+    deviceType: dt,
     title: 'Effects',
     ledCount,
     ledIndex: this._fxLed,

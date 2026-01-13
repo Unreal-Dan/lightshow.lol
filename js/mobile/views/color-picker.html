@@ -9,7 +9,8 @@
   </div>
 
   <div class="m-cp-topbar">
-    <div class="m-cp-leds" role="radiogroup" aria-label="LED selection">
+    <!-- DUO: keep the exact 2-bulb toggle UI -->
+    <div class="m-cp-leds {{ledPairHidden}}" role="radiogroup" aria-label="LED selection">
       <button type="button" class="m-cp-ledbtn {{led0Active}}" data-role="led" data-led="0" aria-label="LED 1">
         <i class="fa-regular fa-lightbulb"></i>
       </button>
@@ -17,6 +18,19 @@
         <i class="fa-regular fa-lightbulb"></i>
       </button>
     </div>
+
+    <!-- SPARK/CHROMADECK: replace the 2-bulb UI with a single button that opens LedSelectModal -->
+    <button
+      type="button"
+      class="m-cp-ledmodalbtn {{ledModalHidden}}"
+      data-role="ledmodal"
+      aria-label="LED selection"
+      title="Select LEDs"
+    >
+      <i class="fa-regular fa-lightbulb"></i>
+      <span class="m-cp-ledmodaltext">{{ledModalSummary}}</span>
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
 
     <div class="m-cp-pattern">
       <select data-role="pattern" aria-label="Pattern">
@@ -119,5 +133,4 @@
     </div>
   </div>
 </div>
-
 

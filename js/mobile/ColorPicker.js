@@ -1,12 +1,20 @@
 /* js/mobile/ColorPicker.js */
 
+import LedSelectModal from './LedSelectModal.js';
 import SimpleViews from './SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
 
 export default class ColorPicker {
-  constructor({ vortexLib, views = null, basePath = 'js/mobile/views/' }) {
+  constructor({ vortexLib, views = null, basePath = 'js/mobile/views/', ledSelectModal = null }) {
     this.vortexLib = vortexLib;
     this.views = views || new SimpleViews({ basePath });
+
+    this.ledSelectModal =
+      ledSelectModal ||
+      new LedSelectModal({
+        views: this.views,
+        basePath,
+      });
 
     this.root = null;
     this.dom = null;
@@ -22,6 +30,11 @@ export default class ColorPicker {
       colorsetHtml: '',
       selectedColorIndex: null,
       pickerEnabled: false,
+
+      // NEW: LED UI mode
+      ledUiMode: 'pair', // 'pair' (Duo) or 'modal' (Spark/Chromadeck)
+      ledModalSummary: 'LEDs',
+      ledSelectState: null, // { deviceName,imageSrc,imageSrcAlt,swapEnabled,positionsUrl,positionsUrlAlt,selectedLeds,sourceLed,title }
     };
 
     this.cb = {
@@ -32,6 +45,9 @@ export default class ColorPicker {
       onColorsetDelete: null,
       onColorChange: null,
       onOff: null,
+
+      // NEW: for Spark/Chromadeck modal apply
+      onLedSelectApply: null,
     };
 
     this.state = { r: 255, g: 0, b: 0, h: 0, s: 255, v: 255 };
@@ -143,6 +159,7 @@ export default class ColorPicker {
       onColorsetDelete: null,
       onColorChange: null,
       onOff: null,
+      onLedSelectApply: null,
     };
 
     this.ctx = {
@@ -154,6 +171,10 @@ export default class ColorPicker {
       colorsetHtml: '',
       selectedColorIndex: null,
       pickerEnabled: false,
+
+      ledUiMode: 'pair',
+      ledModalSummary: 'LEDs',
+      ledSelectState: null,
     };
   }
 
@@ -171,6 +192,13 @@ export default class ColorPicker {
     selectedColorIndex = null,
     rgb = null,
 
+    // NEW (required for correct LED UI):
+    deviceType = 'Duo', // 'Duo' | 'Spark' | 'Chromadeck'
+    ledModalSummary = 'LEDs',
+
+    // NEW (Spark/Chromadeck modal config):
+    ledSelectState = null, // { title, deviceName, imageSrc, imageSrcAlt, swapEnabled, positionsUrl, positionsUrlAlt, positions, selectedLeds, sourceLed }
+
     onDone = null,
     onLedChange = null,
     onPatternChange = null,
@@ -179,7 +207,10 @@ export default class ColorPicker {
     onColorsetDelete = null,
     onColorChange = null,
     onOff = null,
-  }) {
+
+    // NEW: Spark/Chromadeck apply selection
+    onLedSelectApply = null, // async (sourceLed:number, selectedLeds:number[]) => nextCtx
+  } = {}) {
     if (!this.root || !this.dom) return;
 
     await this.preload();
@@ -194,6 +225,8 @@ export default class ColorPicker {
     this.cb.onColorChange = typeof onColorChange === 'function' ? onColorChange : null;
     this.cb.onOff = typeof onOff === 'function' ? onOff : null;
 
+    this.cb.onLedSelectApply = typeof onLedSelectApply === 'function' ? onLedSelectApply : null;
+
     const lc = Math.max(0, ledCount | 0);
     const li = Math.max(0, Math.min(Math.max(0, lc - 1), ledIndex | 0));
 
@@ -202,6 +235,11 @@ export default class ColorPicker {
     this.ctx.ledIndex = li;
     this.ctx.patternValue = Number.isFinite(patternValue) ? (patternValue | 0) : -1;
     this.ctx.patternOptionsHtml = String(patternOptionsHtml || '');
+
+    // NEW:
+    this.ctx.deviceType = String(deviceType || 'Duo');
+    this.ctx.ledModalSummary = String(ledModalSummary || 'LEDs');
+    this.ctx.ledSelectState = (ledSelectState && typeof ledSelectState === 'object') ? ledSelectState : null;
 
     this.ctx.selectedColorIndex =
       selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
@@ -225,6 +263,12 @@ export default class ColorPicker {
     this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
 
     this.root.classList.add('is-open');
+
+    // Ensure modal exists + mounted (safe even if Duo never uses it)
+    if (!this.ledSelectModal) {
+      this.ledSelectModal = new LedSelectModal({ views: this.views, basePath: 'js/mobile/views/' });
+    }
+    this.ledSelectModal.mount();
 
     await this._render();
     this._bindPerRender();
@@ -279,6 +323,14 @@ export default class ColorPicker {
 
     const pickerDisabledClass = this.ctx.pickerEnabled ? '' : 'is-disabled';
 
+    // Decide LED UI:
+    // - Duo: pair toggle
+    // - Spark/Chromadeck (or anything non-duo): modal button
+    const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
+    const ledPairHidden = isDuo ? '' : 'hidden';
+    const ledModalHidden = isDuo ? 'hidden' : '';
+    const ledModalSummary = String(this.ctx.ledModalSummary || 'LEDs');
+
     const frag = await this.views.render('color-picker.html', {
       title: this.ctx.title,
       led0Active,
@@ -295,6 +347,10 @@ export default class ColorPicker {
       v,
       hex,
       hueDeg,
+
+      ledPairHidden,
+      ledModalHidden,
+      ledModalSummary,
     });
 
     this.root.innerHTML = '';
@@ -302,6 +358,8 @@ export default class ColorPicker {
 
     this.dom = new SimpleDom(this.root);
   }
+  
+  
 
   _onResize() {
     if (!this.root || !this.root.classList.contains('is-open')) return;
@@ -377,7 +435,7 @@ export default class ColorPicker {
     const sheet = this.dom.$('.m-color-picker-sheet');
     this._tapOnBackdrop = !!(sheet && !sheet.contains(e.target));
     this._tapTargetEl =
-      e.target?.closest?.('[data-act],[data-role="led"],[data-role="cube"]') || null;
+      e.target?.closest?.('[data-act],[data-role="ledmodal"],[data-role="led"],[data-role="cube"]') || null;
 
     const cube = e.target?.closest?.('[data-role="cube"][data-kind="color"]');
     if (!cube) {
@@ -499,6 +557,186 @@ export default class ColorPicker {
 
     if (!this.root || !this.root.classList.contains('is-open')) return;
     await this._handleTapTarget(e);
+  }
+
+  async _handleTapTarget(e) {
+    const t = e?.target;
+    if (!t) return;
+
+    const sheet = this.dom.$('.m-color-picker-sheet');
+    if (sheet && !sheet.contains(t)) {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      this._fastDone();
+      return;
+    }
+
+    // Handle only the actions we actually support; otherwise DO NOT early-return
+    const actBtn = t.closest?.('[data-act]');
+    if (actBtn) {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      const act = String(actBtn.dataset.act || '');
+
+      if (act === 'done') { this._fastDone(); return; }
+
+      if (act === 'off') {
+        if (!this.ctx.pickerEnabled) return;
+        if (this.cb.onOff) this._defer(() => this.cb.onOff());
+        this._setRGB(0, 0, 0, true);
+        this._emit(false, true);
+        return;
+      }
+
+      if (act === 'delete') {
+        if (!this.ctx.pickerEnabled) return;
+        if (!this.cb.onColorsetDelete || this.ctx.selectedColorIndex == null) return;
+
+        const idx = this.ctx.selectedColorIndex | 0;
+
+        this._optimisticDeleteFromDom(idx);
+
+        this._defer(async () => {
+          const next = await this.cb.onColorsetDelete(idx);
+          await this._applyCtx(next);
+        });
+        return;
+      }
+
+      // Unknown act: keep going (don’t swallow taps meant for other handlers)
+    }
+
+    // Spark/Chromadeck button (accept any casing of data-role value)
+    const roleEl = t.closest?.('[data-role]') || null;
+    const role = roleEl ? String(roleEl.dataset.role || '').toLowerCase() : '';
+
+    if (role === 'ledmodal') {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+
+      const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
+      if (isDuo) return;
+
+      if (!this.ledSelectModal) {
+        this.ledSelectModal = new LedSelectModal({ views: this.views, basePath: 'js/mobile/views/' });
+      }
+      this.ledSelectModal.mount();
+
+      const st = (this.ctx.ledSelectState && typeof this.ctx.ledSelectState === 'object')
+        ? this.ctx.ledSelectState
+        : {};
+
+      const total = this.ctx.ledCount | 0;
+      const initialSource = Number.isFinite(st.sourceLed) ? (st.sourceLed | 0) : 0;
+
+      const initialSelected =
+        Array.isArray(st.selectedLeds) && st.selectedLeds.length
+          ? st.selectedLeds
+          : (total > 0 ? Array.from({ length: total }, (_, i) => i) : []);
+
+      const restorePickerPointerEvents = () => {
+        try { if (this.root) this.root.style.pointerEvents = ''; } catch {}
+      };
+      try { if (this.root) this.root.style.pointerEvents = 'none'; } catch {}
+
+      await this.ledSelectModal.open({
+        title: String(st.title || 'LEDs'),
+        ledCount: total,
+
+        deviceName: st.deviceName ?? null,
+        imageSrc: st.imageSrc ?? null,
+        imageSrcAlt: st.imageSrcAlt ?? null,
+        swapEnabled: !!st.swapEnabled,
+
+        positions: st.positions ?? null,
+        positionsUrl: st.positionsUrl ?? null,
+        positionsUrlAlt: st.positionsUrlAlt ?? null,
+
+        selectedLeds: initialSelected,
+        sourceLed: initialSource,
+
+        onDone: ({ sourceLed, selectedLeds }) => {
+          restorePickerPointerEvents();
+
+          if (typeof this.cb.onLedSelectApply !== 'function') return;
+
+          this._defer(async () => {
+            const next = await this.cb.onLedSelectApply(
+              sourceLed | 0,
+              Array.isArray(selectedLeds) ? selectedLeds : []
+            );
+            await this._applyCtx(next, { keepPickerSeed: true });
+          });
+        },
+
+        onCancel: () => {
+          restorePickerPointerEvents();
+        },
+      });
+
+      return;
+    }
+
+    // Duo 2-bulb toggle (also accept any casing)
+    if (role === 'led') {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+
+      const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
+      if (!isDuo) return;
+
+      const ledBtn = t.closest?.('[data-role]'); // same roleEl is fine too
+      const led = Number(ledBtn?.dataset.led ?? 0) | 0;
+
+      this.dom.all('[data-role="led"]').forEach((b) => b.classList.remove('is-active'));
+      ledBtn?.classList?.add?.('is-active');
+
+      if (!this.cb.onLedChange) return;
+
+      this._defer(async () => {
+        const next = await this.cb.onLedChange(led);
+        await this._applyCtx(next);
+      });
+
+      return;
+    }
+
+    // Colorset cubes
+    const cube = t.closest?.('[data-role="cube"]');
+    if (cube) {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+
+      const kind = String(cube.dataset.kind || '');
+      const idx = Number(cube.dataset.index ?? -1) | 0;
+
+      if (kind === 'add') {
+        cube.classList.add('is-busy');
+
+        const newIdx = this._optimisticAddFromPlus(cube);
+        if (newIdx == null || !this.cb.onColorsetAdd) return;
+
+        this._defer(async () => {
+          const next = await this.cb.onColorsetAdd();
+          await this._applyCtx(next);
+        });
+
+        return;
+      }
+
+      if (kind === 'color') {
+        this._selectCubeUI(idx);
+
+        const hex = this._extractHexFromCube(cube);
+        if (hex) this._seedPickerFromHex(hex);
+
+        if (!this.cb.onColorsetSelect) return;
+
+        this._defer(async () => {
+          const next = await this.cb.onColorsetSelect(idx);
+          await this._applyCtx(next, { keepPickerSeed: true });
+        });
+
+        return;
+      }
+
+      return;
+    }
   }
 
   _selectCubeUI(idx) {
@@ -653,131 +891,51 @@ export default class ColorPicker {
     return newIdx;
   }
 
-  async _handleTapTarget(e) {
-    const t = e?.target;
-    if (!t) return;
+  async _applyCtx(next, { keepPickerSeed = false } = {}) {
+    if (!next || typeof next !== 'object') return;
 
-    const sheet = this.dom.$('.m-color-picker-sheet');
+    if (Number.isFinite(next.ledCount)) this.ctx.ledCount = next.ledCount | 0;
+    if (Number.isFinite(next.ledIndex)) this.ctx.ledIndex = next.ledIndex | 0;
+    if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
+    if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
 
-    if (sheet && !sheet.contains(t)) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
-      this._fastDone();
-      return;
+    // NEW:
+    if (typeof next.deviceType === 'string') this.ctx.deviceType = next.deviceType;
+    if (typeof next.ledModalSummary === 'string') this.ctx.ledModalSummary = next.ledModalSummary;
+    if (next.ledSelectState && typeof next.ledSelectState === 'object') this.ctx.ledSelectState = next.ledSelectState;
+
+    const newSelected =
+      next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
+    this.ctx.selectedColorIndex = newSelected;
+
+    if (Array.isArray(next.colors)) {
+      this.ctx.colorsetHtml = this._buildColorsetHtml(next.colors, this.ctx.selectedColorIndex);
     }
 
-    const actBtn = t.closest?.('[data-act]');
-    if (actBtn) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+    this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
 
-      const act = actBtn.dataset.act;
-
-      if (act === 'done') {
-        this._fastDone();
-        return;
+    if (!keepPickerSeed) {
+      let seed = next.rgb || null;
+      if (!seed && Array.isArray(next.colors) && this.ctx.selectedColorIndex != null) {
+        const hx = next.colors[this.ctx.selectedColorIndex];
+        if (hx) seed = this._hexToRGB(hx);
       }
-
-      if (act === 'off') {
-        if (!this.ctx.pickerEnabled) return;
-
-        if (this.cb.onOff) {
-          this._defer(() => this.cb.onOff());
-        }
-
-        this._setRGB(0, 0, 0, true);
-        this._emit(false, true);
-        return;
+      if (seed) {
+        const r = this._clampByte(seed.r);
+        const g = this._clampByte(seed.g);
+        const b = this._clampByte(seed.b);
+        const hsv = this.rgbToHsv(r, g, b);
+        this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
       }
-
-      if (act === 'delete') {
-        if (!this.ctx.pickerEnabled) return;
-        if (!this.cb.onColorsetDelete || this.ctx.selectedColorIndex == null) return;
-
-        const idx = this.ctx.selectedColorIndex | 0;
-
-        // Optimistic UI only (immediate disappear / shift)
-        this._optimisticDeleteFromDom(idx);
-
-        this._defer(async () => {
-          const next = await this.cb.onColorsetDelete(idx);
-          await this._applyCtx(next);
-        });
-
-        return;
-      }
-
-      return;
     }
 
-    const ledBtn = t.closest?.('[data-role="led"]');
-    if (ledBtn) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+    await this._render();
+    this._bindPerRender();
 
-      const led = Number(ledBtn.dataset.led ?? 0) | 0;
-
-      this.dom.all('[data-role="led"]').forEach((b) => b.classList.remove('is-active'));
-      ledBtn.classList.add('is-active');
-
-      if (!this.cb.onLedChange) return;
-
-      this._defer(async () => {
-        const next = await this.cb.onLedChange(led);
-        await this._applyCtx(next);
-      });
-
-      return;
-    }
-
-    const cube = t.closest?.('[data-role="cube"]');
-    if (cube) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
-
-      const kind = String(cube.dataset.kind || '');
-      const idx = Number(cube.dataset.index ?? -1) | 0;
-
-      if (kind === 'add') {
-        cube.classList.add('is-busy');
-
-        const newIdx = this._optimisticAddFromPlus(cube);
-        if (newIdx == null || !this.cb.onColorsetAdd) return;
-
-        this._defer(async () => {
-          const next = await this.cb.onColorsetAdd();
-          await this._applyCtx(next);
-        });
-
-        return;
-      }
-
-      if (kind === 'color') {
-        this._selectCubeUI(idx);
-
-        const hex = this._extractHexFromCube(cube);
-        if (hex) this._seedPickerFromHex(hex);
-
-        if (!this.cb.onColorsetSelect) return;
-
-        this._defer(async () => {
-          const next = await this.cb.onColorsetSelect(idx);
-          await this._applyCtx(next, { keepPickerSeed: true });
-        });
-
-        return;
-      }
-
-      return;
-    }
+    await this._nextFrame();
+    this._cacheRects();
+    this._syncUI(true);
+    this._syncEffectsUI();
   }
 
   _bindPerRender() {
@@ -943,6 +1101,13 @@ export default class ColorPicker {
     if (Number.isFinite(next.ledIndex)) this.ctx.ledIndex = next.ledIndex | 0;
     if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
     if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
+
+    // NEW:
+    if (typeof next.ledUiMode === 'string') {
+      this.ctx.ledUiMode = (next.ledUiMode === 'modal') ? 'modal' : 'pair';
+    }
+    if (typeof next.ledModalSummary === 'string') this.ctx.ledModalSummary = next.ledModalSummary;
+    if (next.ledSelectState && typeof next.ledSelectState === 'object') this.ctx.ledSelectState = next.ledSelectState;
 
     const newSelected =
       next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
