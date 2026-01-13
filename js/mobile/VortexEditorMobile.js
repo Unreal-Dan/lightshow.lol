@@ -2000,10 +2000,6 @@ export default class VortexEditorMobile {
         return;
       }
 
-      if (typeof this.vortexPort.pushEachToDevice !== 'function') {
-        throw new Error('VortexPort.pushEachToDevice missing');
-      }
-
       try {
         this._getModes().initCurMode();
         this._getModes().saveCurMode();

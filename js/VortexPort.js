@@ -590,27 +590,18 @@ export default class VortexPort {
     if (!this.isActive()) throw new Error('Port not active');
     if (this.isTransmitting) throw new Error('Already transmitting:' + this.isTransmitting);
 
-    // Fast/non-blocking progress: mirror pullEachFromDevice.
-    let pending = null;
-    let scheduled = false;
-
-    const reportFast = (info) => {
+    const report = (info) => {
       if (typeof onProgress !== 'function') return;
-      pending = info;
-      if (scheduled) return;
-      scheduled = true;
+      try { onProgress(info); } catch (_) {}
+    };
 
-      const sched =
-        typeof requestAnimationFrame === 'function'
-          ? (fn) => requestAnimationFrame(fn)
-          : (fn) => setTimeout(fn, 0);
-
-      sched(() => {
-        scheduled = false;
-        const p = pending;
-        pending = null;
-        try { onProgress(p); } catch (_) {}
-      });
+    const paint = async () => {
+      // give the browser a chance to repaint the button/progress text
+      if (typeof requestAnimationFrame === 'function') {
+        await new Promise((r) => requestAnimationFrame(() => r()));
+      } else {
+        await new Promise((r) => setTimeout(r, 0));
+      }
     };
 
     if (this.debugLogging) console.log('pushEachToDevice Start');
@@ -619,13 +610,15 @@ export default class VortexPort {
     try {
       await this.cancelReading();
 
-      reportFast({ phase: 'start' });
+      report({ phase: 'start' });
+      await paint();
+
+      const numModes = vortex.numModes() | 0;
+      report({ phase: 'count', total: numModes });
+      await paint();
 
       await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
-
-      const numModes = vortex.numModes() | 0;
-      reportFast({ phase: 'count', total: numModes });
 
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
@@ -634,17 +627,17 @@ export default class VortexPort {
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
 
-      // Preserve selection if you care (best-effort)
       const startIdx = vortex.curModeIndex ? (vortex.curModeIndex() | 0) : 0;
       try { vortex.setCurMode(0, false); } catch {}
 
       for (let i = 0; i < numModes; ++i) {
-        reportFast({ phase: 'pushing', index: i, total: numModes });
+        report({ phase: 'pushing', index: i, total: numModes });
+        await paint();
 
         const modeBuf = new vortexLib.ByteStream();
         vortex.getCurMode(modeBuf);
 
-        // Match your numModes CRC behavior (cheap + avoids device rejecting payload).
+        // harmless if already correct; avoids device rejecting payload
         try { modeBuf.recalcCRC(); } catch {}
 
         await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
@@ -653,20 +646,17 @@ export default class VortexPort {
         try { vortex.nextMode(false); } catch {}
       }
 
-      reportFast({ phase: 'finalizing', total: numModes });
+      report({ phase: 'finalizing', total: numModes });
+      await paint();
 
-      // If you later make DONE reliable, do it here.
-      // await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
-      // await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
-
-      // Restore selection best-effort
       try {
         if (startIdx >= 0 && startIdx < numModes) vortex.setCurMode(startIdx, false);
       } catch {}
 
-      reportFast({ phase: 'done', total: numModes });
+      report({ phase: 'done', total: numModes });
+      await paint();
     } catch (error) {
-      reportFast({ phase: 'error', error });
+      report({ phase: 'error', error });
       console.error('Error during pushEachToDevice:', error);
       throw error;
     } finally {
