@@ -580,17 +580,13 @@ export default class VortexEditorMobile {
         this._getModes().saveCurMode();
       } catch {}
 
-      if (typeof this.vortexPort.pushEachToDevice !== 'function') {
-        throw new Error('VortexPort.pushEachToDevice missing');
-      }
-
       this._setDevXferUI({ status: 'Saving modes…', progressText: 'Starting…', percent: 8, error: false, animate: true });
 
       // If your pushEachToDevice doesn't accept a callback yet, this will still work:
       // we try with a callback first; if it throws due to signature mismatch, retry without.
       let usedCallback = false;
 
-      const progressCb = (p) => {
+      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, (p) => {
         usedCallback = true;
 
         if (!p || typeof p !== 'object') return;
@@ -625,17 +621,7 @@ export default class VortexEditorMobile {
         }
 
         update({ status, progressText: text, percent, error: false, animate: p.phase !== 'done' });
-      };
-
-      try {
-        await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
-      } catch (e) {
-        if (!usedCallback) {
-          await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex);
-        } else {
-          throw e;
-        }
-      }
+      });
 
       if (!usedCallback) {
         this._setDevXferUI({
