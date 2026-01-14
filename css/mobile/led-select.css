@@ -262,7 +262,7 @@
   border-radius: 999px;
 
   /* solid dark body */
-  background: #0b0b0b;
+  background: #0b0000;
 
   /* clear ring like legend, but thicker */
   border: 4px solid rgba(255, 255, 255, 0.80);
@@ -370,8 +370,8 @@
 #mobile-app-root .m-led-selection-box,
 .m-led-selection-box {
   position: absolute;
-  border: 2px dashed rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(0, 255, 255, 0.95);
+  background: rgba(0, 255, 255, 0.14);
   border-radius: 10px;
   pointer-events: none;
 }
@@ -398,5 +398,29 @@
 
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* Done button normal */
+#mobile-app-root .m-led-done,
+.m-led-done {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 255, 0, 0.20);
+  color: #fff;
+  font-weight: 800;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Disabled Done: gray + no taps */
+#mobile-app-root .m-led-done:disabled,
+.m-led-done:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 1;
+  pointer-events: none;
+  filter: grayscale(1);
 }
 

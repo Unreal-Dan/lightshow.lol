@@ -53,6 +53,7 @@ export default class VortexEditorMobile {
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
 
     this.ledSelectState = new LedSelectionState();
+    this._ledSelFallback = { sourceLed: 0, selectedLeds: null }; // null => all leds (single-led mode)
 
     this.effectsPanel = new ColorPicker({
       vortexLib: this.vortexLib,
@@ -60,28 +61,21 @@ export default class VortexEditorMobile {
       basePath: 'js/mobile/views/',
     });
 
-    this._fxLed = 0;
-    this._fxSelectedColor = null;
-
     this._fxFinalizeTimer = null;
     this._fxDemoTimer = null;
 
     this._modeFinalizeTimer = null;
     this._modeDemoTimer = null;
 
-    // Transfer modal lifecycle
     this._transferModalEl = null;
     this._transferModalLoaded = false;
 
-    // Settings modal lifecycle
     this._settingsModalEl = null;
     this._settingsModalLoaded = false;
 
-    // Duo send loop
     this._duoTxLoopActive = false;
     this._duoTxLoopTimer = null;
 
-    // Mode swipe state
     this._modeSwipe = {
       active: false,
       pointerId: -1,
@@ -90,15 +84,15 @@ export default class VortexEditorMobile {
       lastX: 0,
       lastY: 0,
       lockedAxis: null,
+      captured: false,
     };
 
-    // Local server heuristic (desktop uses editor.isLocalServer)
     this.isLocalServer =
       location.hostname === 'localhost' ||
       location.hostname === '127.0.0.1' ||
       location.hostname.endsWith('.local');
 
-    // Community browser (desktop parity)
+    // Community browser state (kept minimal but functional)
     this._vcbCurrentPage = 1;
     this._vcbPageSize = 999;
     this._vcbModesCache = {};
@@ -122,8 +116,8 @@ export default class VortexEditorMobile {
   isBLESupported() { return true; }
 
   isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
-    const currentParts = currentVersion.split('.').map(Number);
-    const targetParts = targetVersion.split('.').map(Number);
+    const currentParts = String(currentVersion || '').split('.').map(Number);
+    const targetParts = String(targetVersion || '').split('.').map(Number);
     for (let i = 0; i < targetParts.length; i++) {
       if ((currentParts[i] ?? 0) > (targetParts[i] ?? 0)) return true;
       if ((currentParts[i] ?? 0) < (targetParts[i] ?? 0)) return false;
@@ -147,7 +141,9 @@ export default class VortexEditorMobile {
     if (!res.ok) throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`);
     this.devices = await res.json();
 
-    this.effectsPanel.mount(document.body);
+    // ColorPicker mounts itself to <body> in its own implementation
+    this.effectsPanel.mount();
+
     await this.gotoDeviceSelect();
   }
 
@@ -186,9 +182,7 @@ export default class VortexEditorMobile {
   stopEditorLightshow(destroy = true) {
     if (!this.lightshow) return;
     try { this.lightshow.stop(); } catch {}
-    if (destroy) {
-      this.lightshow = null;
-    }
+    if (destroy) this.lightshow = null;
   }
 
   clearEditorResizeHandler() {
@@ -213,7 +207,6 @@ export default class VortexEditorMobile {
     this._modeFinalizeTimer = setTimeout(() => {
       this._modeFinalizeTimer = null;
       try {
-        // pure bound API
         this._getModes().initCurMode();
         this._getModes().saveCurMode();
       } catch {}
@@ -227,34 +220,28 @@ export default class VortexEditorMobile {
     }
     this._modeDemoTimer = setTimeout(() => {
       this._modeDemoTimer = null;
-      try { this.demoModeOnDevice(); } catch {}
+      try { void this.demoModeOnDevice(); } catch {}
     }, ms);
   }
 
   _withLightshowPausedSync(fn) {
     const ls = this.lightshow;
-
-    // Pause only (do NOT destroy, do NOT unbind resize)
     if (ls) {
       try { ls.stop(); } catch {}
     }
-
     try {
       return fn();
     } finally {
       if (ls) {
-        // Resume on the same instance/canvas (fast)
         try { ls.start(); } catch {}
       }
     }
   }
 
   async _restartLightshowAndDemo(dt) {
-    // Fast path: if it exists, just ensure it’s running.
     if (this.lightshow) {
       try { this.lightshow.start(); } catch {}
     } else {
-      // Only recreate if it was actually destroyed (screen change, etc)
       try {
         await this.startEditorLightshow(dt);
       } catch (e) {
@@ -264,7 +251,6 @@ export default class VortexEditorMobile {
       }
     }
 
-    // Fire-and-forget demo so UI updates are instant.
     try {
       setTimeout(() => { try { void this.demoModeOnDevice(); } catch {} }, 0);
     } catch {}
@@ -309,371 +295,6 @@ export default class VortexEditorMobile {
     );
   }
 
-  _devXferUi() {
-    return {
-      statusWrap: this.dom.$('#dev-xfer-status'),
-      statusText: this.dom.$('#dev-xfer-status-text'),
-      progressText: this.dom.$('#dev-xfer-progress-text'),
-      bar: this.dom.$('#dev-xfer-progress-bar'),
-      backBtn: this.dom.$('#back-btn'),
-      doneBtn: this.dom.$('#done-btn'),
-    };
-  }
-
-  _setDevXferUI({ status = null, progressText = null, percent = null, error = false, animate = true } = {}) {
-    const ui = this._devXferUi();
-
-    if (ui.statusWrap) ui.statusWrap.classList.toggle('is-error', !!error);
-
-    if (ui.statusText && status != null) ui.statusText.textContent = String(status);
-    if (ui.progressText && progressText != null) ui.progressText.textContent = String(progressText);
-
-    if (ui.bar) {
-      const p = percent == null ? null : Math.max(0, Math.min(100, Number(percent)));
-      if (p != null && Number.isFinite(p)) {
-        ui.bar.style.width = `${p}%`;
-        ui.bar.setAttribute('aria-valuenow', String(p | 0));
-      }
-
-      ui.bar.classList.toggle('progress-bar-animated', !!animate);
-      ui.bar.classList.toggle('progress-bar-striped', true);
-    }
-  }
-
-  _makeThrottled(fn, ms = 60) {
-    let t = 0;
-    let pending = null;
-
-    return (...args) => {
-      pending = args;
-      const now = Date.now();
-      if (now - t < ms) return;
-
-      t = now;
-      const a = pending;
-      pending = null;
-
-      try { fn(...a); } catch {}
-    };
-  }
-
-  async gotoDevicePullModes({ deviceType, backTarget = 'mode-source' } = {}) {
-    const dt = deviceType || this.selectedDeviceType('Duo');
-
-    this.stopEditorLightshow();
-    this.clearEditorResizeHandler();
-    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
-
-    const deviceImg = this._getDeviceImgFor(dt);
-    const deviceAlt = dt;
-
-    const frag = await this.views.render('device-modes-receive.html', {
-      title: 'Load from device',
-      subtitle: dt,
-      deviceImg,
-      deviceAlt,
-      status: 'Starting…',
-      progressText: '',
-    });
-
-    this.dom.set(frag);
-
-    const ui = this._devXferUi();
-    const backNav = async () => {
-      if (backTarget === 'editor' || backTarget === 'editor-empty') {
-        await this.gotoEditor({ deviceType: dt });
-      } else {
-        await this.gotoModeSource({ deviceType: dt });
-      }
-    };
-
-    if (ui.backBtn) {
-      ui.backBtn.disabled = true;
-      ui.backBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        if (ui.backBtn.disabled) return;
-        await backNav();
-      }, { passive: false });
-    }
-
-    if (ui.doneBtn) {
-      ui.doneBtn.disabled = true;
-      ui.doneBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        if (ui.doneBtn.disabled) return;
-        await backNav();
-      }, { passive: false });
-    }
-
-    await this._runDevicePullModes(dt, { backTarget });
-  }
-
-  async _runDevicePullModes(dt, { backTarget = 'mode-source' } = {}) {
-    const ui = this._devXferUi();
-
-    const unlock = () => {
-      if (ui.backBtn) ui.backBtn.disabled = false;
-      if (ui.doneBtn) ui.doneBtn.disabled = false;
-    };
-
-    const update = this._makeThrottled((o) => this._setDevXferUI(o), 55);
-
-    try {
-      if (!this._requireActivePort()) {
-        this._setDevXferUI({
-          status: 'Not connected.',
-          progressText: 'Tap Back and connect a device first.',
-          percent: 8,
-          error: true,
-          animate: false,
-        });
-        unlock();
-        return;
-      }
-
-      this._setDevXferUI({ status: 'Loading modes…', progressText: 'Starting…', percent: 8, error: false, animate: true });
-
-      this.vortex.clearModes();
-
-      await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
-        if (!p || typeof p !== 'object') return;
-
-        const total = Number(p.total ?? 0);
-        const i1 = Number(p.index ?? 0) + 1;
-
-        let status = 'Loading modes…';
-        let text = '';
-        let percent = 10;
-
-        if (p.phase === 'start') {
-          status = 'Loading modes…';
-          text = 'Starting…';
-          percent = 10;
-        } else if (p.phase === 'count') {
-          status = 'Counting…';
-          text = total > 0 ? `0 / ${total}` : '';
-          percent = 12;
-        } else if (p.phase === 'pulling') {
-          status = 'Pulling…';
-          text = total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`;
-          percent = total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 40;
-        } else if (p.phase === 'finalizing') {
-          status = 'Finalizing…';
-          text = total > 0 ? `${total} mode${total === 1 ? '' : 's'}` : '';
-          percent = 98;
-        } else if (p.phase === 'done') {
-          status = 'Done.';
-          text = total > 0 ? `${total} mode${total === 1 ? '' : 's'} loaded` : 'Loaded';
-          percent = 100;
-        }
-
-        update({ status, progressText: text, percent, error: false, animate: p.phase !== 'done' });
-      });
-
-      if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
-
-      this._setDevXferUI({
-        status: 'Done.',
-        progressText: `${this.vortex.numModes() | 0} mode${(this.vortex.numModes() | 0) === 1 ? '' : 's'} loaded`,
-        percent: 100,
-        error: false,
-        animate: false,
-      });
-
-      if (ui.doneBtn) ui.doneBtn.disabled = false;
-      if (ui.backBtn) ui.backBtn.disabled = false;
-
-      await this.gotoEditor({ deviceType: dt });
-    } catch (err) {
-      console.error('[Mobile] Device pull failed:', err);
-      this._setDevXferUI({
-        status: 'Load failed.',
-        progressText: 'Tap Back and try again.',
-        percent: 100,
-        error: true,
-        animate: false,
-      });
-      unlock();
-    }
-  }
-
-  async gotoDevicePushModes({ deviceType, backTarget = 'editor' } = {}) {
-    const dt = deviceType || this.selectedDeviceType('Duo');
-
-    this.stopEditorLightshow();
-    this.clearEditorResizeHandler();
-    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
-
-    const deviceImg = this._getDeviceImgFor(dt);
-    const deviceAlt = dt;
-
-    const frag = await this.views.render('device-modes-send.html', {
-      title: 'Save to device',
-      subtitle: dt,
-      deviceImg,
-      deviceAlt,
-      status: 'Starting…',
-      progressText: '',
-    });
-
-    this.dom.set(frag);
-
-    const ui = this._devXferUi();
-    const backNav = async () => {
-      if (backTarget === 'mode-source') await this.gotoModeSource({ deviceType: dt });
-      else await this.gotoEditor({ deviceType: dt });
-    };
-
-    if (ui.backBtn) {
-      ui.backBtn.disabled = true;
-      ui.backBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        if (ui.backBtn.disabled) return;
-        await backNav();
-      }, { passive: false });
-    }
-
-    if (ui.doneBtn) {
-      ui.doneBtn.disabled = true;
-      ui.doneBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        if (ui.doneBtn.disabled) return;
-        await backNav();
-      }, { passive: false });
-    }
-
-    await this._runDevicePushModes(dt, { backTarget });
-  }
-
-  async _runDevicePushModes(dt, { backTarget = 'editor' } = {}) {
-    const ui = this._devXferUi();
-    const unlock = () => {
-      if (ui.backBtn) ui.backBtn.disabled = false;
-      if (ui.doneBtn) ui.doneBtn.disabled = false;
-    };
-
-    const update = this._makeThrottled((o) => this._setDevXferUI(o), 55);
-
-    let usedCallback = false;
-
-    const applyProgress = (p) => {
-      usedCallback = true;
-
-      if (!p || typeof p !== 'object') return;
-
-      const phase = String(p.phase || '');
-      const total = (p.total ?? 0) | 0;
-      const idx = (p.index ?? 0) | 0;
-      const i1 = idx + 1;
-
-      let status = 'Saving…';
-      let text = '';
-      let percent = 10;
-      let animate = true;
-      let error = false;
-
-      if (phase === 'start') {
-        status = 'Saving modes…';
-        text = 'Starting…';
-        percent = 10;
-        animate = true;
-      } else if (phase === 'count') {
-        status = 'Saving modes…';
-        text = total > 0 ? `0 / ${total}` : '';
-        percent = 12;
-        animate = true;
-      } else if (phase === 'pushing') {
-        status = 'Saving modes…';
-        text = total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`;
-        percent = total > 0 ? Math.min(95, Math.max(12, Math.round((i1 / total) * 92))) : 40;
-        animate = true;
-      } else if (phase === 'done') {
-        status = 'Done.';
-        text = total > 0 ? `${total} mode${total === 1 ? '' : 's'} saved` : 'Saved.';
-        percent = 100;
-        animate = false;
-      } else if (phase === 'error') {
-        status = 'Save failed.';
-        text = 'Tap Back and try again.';
-        percent = 100;
-        animate = false;
-        error = true;
-      } else {
-        return;
-      }
-
-      update({ status, progressText: text, percent, error, animate });
-    };
-
-    try {
-      const hasModes = (this.vortex?.numModes?.() | 0) > 0;
-      if (!hasModes) {
-        this._setDevXferUI({
-          status: 'Nothing to save.',
-          progressText: 'No modes in the editor.',
-          percent: 100,
-          error: true,
-          animate: false,
-        });
-        unlock();
-        return;
-      }
-
-      if (!this._requireActivePort()) {
-        this._setDevXferUI({
-          status: 'Not connected.',
-          progressText: 'Tap Back and connect a device first.',
-          percent: 8,
-          error: true,
-          animate: false,
-        });
-        unlock();
-        return;
-      }
-
-      try {
-        this._getModes().initCurMode();
-        this._getModes().saveCurMode();
-      } catch {}
-
-      this._setDevXferUI({
-        status: 'Saving modes…',
-        progressText: 'Starting…',
-        percent: 8,
-        error: false,
-        animate: true,
-      });
-
-      // Extra args are harmless even if pushEachToDevice was defined without onProgress.
-      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, applyProgress);
-
-      // Ensure a clean terminal UI even if the callback got throttled/coalesced.
-      this._setDevXferUI({
-        status: 'Done.',
-        progressText: 'Saved.',
-        percent: 100,
-        error: false,
-        animate: false,
-      });
-
-      unlock();
-      Notification.success?.('Saved to device');
-    } catch (err) {
-      console.error('[Mobile] Device push failed:', err);
-
-      // If the port reported an error phase, it already updated the UI; still force terminal state.
-      this._setDevXferUI({
-        status: 'Save failed.',
-        progressText: 'Tap Back and try again.',
-        percent: 100,
-        error: true,
-        animate: false,
-      });
-
-      unlock();
-    }
-  }
-
   async gotoDeviceSelect() {
     const cardFragments = await Promise.all(
       DEVICE_CARDS.map((c) => this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img }))
@@ -710,10 +331,13 @@ export default class VortexEditorMobile {
 
   async onDeviceSelected(deviceType) {
     console.log('[Mobile] selected device:', deviceType);
-    // make sure the led count is set otherwise when we import the mode it will
-    // be imported as 1 led then later when we change the led count it will
-    // just stretch that one led across all
-    this.vortex.setLedCount(this.devices[deviceType].ledCount);
+
+    this.vortex.setLedCount(this.devices?.[deviceType]?.ledCount ?? 1);
+
+    // Reset mobile LED selection defaults whenever device changes
+    const lc = this.vortex.engine().leds().ledCount() | 0;
+    this._ledSelEnsureDefaults(lc);
+
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     await this.gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
   }
@@ -818,8 +442,20 @@ export default class VortexEditorMobile {
     }
   }
 
+  async demoColorOnDevice(rgbColor) {
+    // If you have a dedicated fast "demo color" path, use it. Otherwise just demo the mode.
+    try {
+      if (typeof this.vortexPort.demoColor === 'function') {
+        await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
+      } else {
+        await this.demoModeOnDevice();
+      }
+    } catch {
+      try { await this.demoModeOnDevice(); } catch {}
+    }
+  }
+
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
-    // Duo doesn't use this path.
     if (deviceType === 'Duo') {
       await this.gotoDuoReceive({ deviceType });
       return;
@@ -827,8 +463,8 @@ export default class VortexEditorMobile {
 
     const sel =
       source === 'editor-empty'
-      ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
-      : { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' };
+        ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
+        : { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' };
 
     const loadBtn = this.dom.$(sel.load);
     const newBtn = this.dom.$(sel.newm);
@@ -836,29 +472,17 @@ export default class VortexEditorMobile {
     const backBtn = this.dom.$('#back-btn');
 
     const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
-    const setBusyHtml = (html) => {
-      if (loadBtn) loadBtn.innerHTML = html;
-    };
-
-    const failUi = (msg) => {
-      try {
-        Notification.failure?.(msg);
-      } catch {}
-    };
+    const setBusyHtml = (html) => { if (loadBtn) loadBtn.innerHTML = html; };
 
     const ensureActive = () => {
       if (!this.vortexPort?.isActive?.()) {
-        failUi('Please connect a device first');
+        Notification.failure?.('Please connect a device first');
         return false;
       }
       return true;
     };
 
     const pullWithEach = async () => {
-      if (typeof this.vortexPort.pullEachFromDevice !== 'function') {
-        throw new Error('pullEachFromDevice not available');
-      }
-
       let lastProgressAt = Date.now();
       let sawAnyProgress = false;
 
@@ -881,9 +505,6 @@ export default class VortexEditorMobile {
         setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
       };
 
-      // Watchdog:
-      // If we go "silent" for too long, assume the device/firmware didn't like the command
-      // (or startReading stole bytes, etc). Try to cancel + fail to trigger fallback.
       const watchdogMs = 5500;
       const intervalMs = 350;
       let watchdogTimer = null;
@@ -893,12 +514,8 @@ export default class VortexEditorMobile {
           const dt = Date.now() - lastProgressAt;
           if (dt < watchdogMs) return;
 
-          try {
-            setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Still waiting…`);
-          } catch {}
+          try { setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Still waiting…`); } catch {}
 
-          // If we never got ANY progress callback, it's very likely unsupported/hung.
-          // Best-effort cancel, then force fallback.
           if (!sawAnyProgress) {
             try {
               if (typeof this.vortexPort.cancelReading === 'function') {
@@ -927,23 +544,6 @@ export default class VortexEditorMobile {
       }
     };
 
-    const pullWithLegacy = async () => {
-      // If you have an older bulk pull on the port, try it.
-      // (No per-mode progress, but it gets you unstuck.)
-      const fn =
-        (typeof this.vortexPort.pullFromDevice === 'function' && this.vortexPort.pullFromDevice) ||
-        (typeof this.vortexPort.pullModesFromDevice === 'function' && this.vortexPort.pullModesFromDevice) ||
-        null;
-
-      if (!fn) {
-        throw new Error('No legacy pullFromDevice / pullModesFromDevice available');
-      }
-
-      setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`);
-      await fn.call(this.vortexPort, this.vortexLib, this.vortex);
-      setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Finalizing…`);
-    };
-
     await this.dom.busy(
       loadBtn,
       baseBusyHtml,
@@ -952,31 +552,18 @@ export default class VortexEditorMobile {
 
         try {
           this.vortex.clearModes();
-
-          // Prefer per-mode pull; fallback to legacy bulk pull if it hangs/unsupported.
-          try {
-            await pullWithEach();
-          } catch (e) {
-            console.warn('[Mobile] pullEachFromDevice failed, attempting legacy pull:', e);
-            await pullWithLegacy();
-          }
+          await pullWithEach();
 
           if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
 
           const total = this.vortex.numModes() | 0;
-          setBusyHtml(
-            `<i class="fa-solid fa-check"></i> Done (${total} mode${total === 1 ? '' : 's'})`
-          );
+          setBusyHtml(`<i class="fa-solid fa-check"></i> Done (${total} mode${total === 1 ? '' : 's'})`);
 
           await this.gotoEditor({ deviceType });
         } catch (err) {
           console.error('[Mobile] Load from device failed:', err);
-          failUi('Failed to load modes from device');
-
-          // Restore the button label so it doesn't look stuck forever.
-          try {
-            if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType);
-          } catch {}
+          Notification.failure?.('Failed to load modes from device');
+          try { if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType); } catch {}
         }
       },
       { disable: [newBtn, browseBtn, backBtn] }
@@ -987,11 +574,8 @@ export default class VortexEditorMobile {
     const before = this.vortex.numModes();
     if (!this.vortex.addNewMode(false)) return;
 
-    // go to newly-added mode (append)
     const after = this.vortex.numModes();
-    if (after > before) {
-      this.vortex.setCurMode(after - 1, false);
-    }
+    if (after > before) this.vortex.setCurMode(after - 1, false);
 
     try {
       this._getModes().initCurMode();
@@ -1059,7 +643,7 @@ export default class VortexEditorMobile {
     const dt = deviceType || this.selectedDeviceType('Duo');
     this.setDeviceType(dt);
 
-    const hasModes = this.vortex.numModes() > 0;
+    const hasModes = (this.vortex.numModes() | 0) > 0;
 
     const idx = this.vortex.curModeIndex() | 0;
     const n = this.vortex.numModes() | 0;
@@ -1092,6 +676,9 @@ export default class VortexEditorMobile {
 
     if (this.effectsPanel.isOpen()) this.effectsPanel.close();
 
+    const lc = this.vortex.engine().leds().ledCount() | 0;
+    this._ledSelEnsureDefaults(lc);
+
     if (!hasModes) {
       await this.bindEmptyEditorActions(dt);
       return;
@@ -1101,7 +688,7 @@ export default class VortexEditorMobile {
     this.bindEditorTools(dt);
 
     await this.startEditorLightshow(dt);
-    this.demoModeOnDevice();
+    void this.demoModeOnDevice();
   }
 
   async bindEmptyEditorActions(dt) {
@@ -1123,8 +710,6 @@ export default class VortexEditorMobile {
     const loadBtn = this.dom.$('#m-load-from-device');
     if (loadBtn) {
       loadBtn.innerHTML = this.loadActionLabel(dt);
-
-      // Restore the same in-button progress pull here too.
       this.dom.onClick(loadBtn, async () => {
         if (dt === 'Duo') {
           await this.gotoDuoReceive({ deviceType: dt });
@@ -1152,7 +737,6 @@ export default class VortexEditorMobile {
     this.lightshow.setDuoEditorMode(isDuo);
 
     const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
-
 
     Object.assign(this.lightshow, {
       tickRate: isDuo ? 3 : 1,
@@ -1200,12 +784,9 @@ export default class VortexEditorMobile {
     if (nameEl) nameEl.textContent = modeName;
     if (idxEl) idxEl.textContent = modeIndexLabel;
 
-    // Optional: if you show mode "name" from engine
     const modeTitleEl = this._findFirst(['#m-mode-title', '[data-role="mode-title"]']);
     if (modeTitleEl) {
-      try {
-        modeTitleEl.textContent = this.vortex.getModeName();
-      } catch {}
+      try { modeTitleEl.textContent = this.vortex.getModeName(); } catch {}
     }
 
     return !!(nameEl || idxEl || modeTitleEl);
@@ -1221,7 +802,7 @@ export default class VortexEditorMobile {
     }
   }
 
-  async _navigateMode(dt, dir /* +1 next, -1 prev */) {
+  async _navigateMode(dt, dir) {
     const n = this.vortex.numModes() | 0;
     if (n <= 0) return;
 
@@ -1231,7 +812,6 @@ export default class VortexEditorMobile {
     if (next < 0) next = n - 1;
     else if (next >= n) next = 0;
 
-    // Pure value call, no save
     try {
       this.vortex.setCurMode(next >>> 0, false);
     } catch (e) {
@@ -1239,7 +819,6 @@ export default class VortexEditorMobile {
       return;
     }
 
-    // Update UI immediately; defer BLE demo so spam taps don’t feel slow
     await this._afterModeChanged(dt, { finalize: false, demo: true });
   }
 
@@ -1285,7 +864,6 @@ export default class VortexEditorMobile {
   }
 
   _bindModeSwipe(dt) {
-    // Bind swipe to the CANVAS (or stage) — never the carousel/buttons.
     const swipeTarget =
       this.dom.$('#mobile-lightshow-canvas') ||
       this.dom.$('.m-editor-stage') ||
@@ -1320,8 +898,6 @@ export default class VortexEditorMobile {
       if (!e) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if ((this.vortex.numModes() | 0) <= 0) return;
-
-      // If the user started on an interactive control, never treat it as swipe.
       if (isInteractiveTarget(e.target)) return;
 
       state.active = true;
@@ -1350,7 +926,6 @@ export default class VortexEditorMobile {
         if (adx > 8 || ady > 8) state.lockedAxis = adx > ady ? 'x' : 'y';
       }
 
-      // Only capture once we KNOW it's a horizontal swipe.
       if (state.lockedAxis === 'x') {
         if (!state.captured) {
           state.captured = true;
@@ -1378,115 +953,6 @@ export default class VortexEditorMobile {
       reset();
 
       if (!wasSwipe) return;
-
-      try { e.preventDefault?.(); } catch {}
-
-      if (dx < 0) await this._navigateMode(dt, +1);
-      else await this._navigateMode(dt, -1);
-    };
-
-    swipeTarget.addEventListener('pointerdown', onDown, { passive: true });
-    swipeTarget.addEventListener('pointermove', onMove, { passive: false });
-    swipeTarget.addEventListener('pointerup', onUp, { passive: false });
-    swipeTarget.addEventListener('pointercancel', () => reset(), { passive: true });
-    swipeTarget.addEventListener('lostpointercapture', () => reset(), { passive: true });
-  }
-
-  _bindModeSwipe(dt) {
-    // Bind swipe to the CANVAS (or stage) — never the carousel/buttons.
-    const swipeTarget =
-      this.dom.$('#mobile-lightshow-canvas') ||
-      this.dom.$('.m-editor-stage') ||
-      this.dom.$('#mobile-app-root');
-
-    if (!swipeTarget) return;
-    if (swipeTarget.dataset.modeSwipeBound === '1') return;
-    swipeTarget.dataset.modeSwipeBound = '1';
-
-    const state = this._modeSwipe;
-
-    const reset = () => {
-      state.active = false;
-      state.pointerId = -1;
-      state.startX = 0;
-      state.startY = 0;
-      state.lastX = 0;
-      state.lastY = 0;
-      state.lockedAxis = null;
-      state.captured = false;
-    };
-
-    const isInteractiveTarget = (t) => {
-      const el = t && t.nodeType === 1 ? t : null;
-      if (!el) return false;
-      return !!el.closest?.(
-        'button, a, input, select, textarea, label, [role="button"], [data-tool], .m-carousel-btn, .m-tool-btn, .m-carousel-action-btn'
-      );
-    };
-
-    const onDown = (e) => {
-      if (!e) return;
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      if ((this.vortex.numModes() | 0) <= 0) return;
-
-      // If the user started on an interactive control, never treat it as swipe.
-      if (isInteractiveTarget(e.target)) return;
-
-      state.active = true;
-      state.pointerId = e.pointerId;
-      state.startX = e.clientX;
-      state.startY = e.clientY;
-      state.lastX = e.clientX;
-      state.lastY = e.clientY;
-      state.lockedAxis = null;
-      state.captured = false;
-    };
-
-    const onMove = (e) => {
-      if (!state.active) return;
-      if (e.pointerId !== state.pointerId) return;
-
-      state.lastX = e.clientX;
-      state.lastY = e.clientY;
-
-      const dx = state.lastX - state.startX;
-      const dy = state.lastY - state.startY;
-
-      if (!state.lockedAxis) {
-        const adx = Math.abs(dx);
-        const ady = Math.abs(dy);
-        if (adx > 8 || ady > 8) state.lockedAxis = adx > ady ? 'x' : 'y';
-      }
-
-      // Only capture once we KNOW it's a horizontal swipe.
-      if (state.lockedAxis === 'x') {
-        if (!state.captured) {
-          state.captured = true;
-          try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
-        }
-        try { e.preventDefault?.(); } catch {}
-      }
-    };
-
-    const onUp = async (e) => {
-      if (!state.active) return;
-      if (e.pointerId !== state.pointerId) return;
-
-      const dx = state.lastX - state.startX;
-      const dy = state.lastY - state.startY;
-
-      const adx = Math.abs(dx);
-      const ady = Math.abs(dy);
-
-      const wasSwipe =
-        state.captured &&
-        adx >= 55 &&
-        adx >= ady * 1.3;
-
-      reset();
-
-      if (!wasSwipe) return;
-
       try { e.preventDefault?.(); } catch {}
 
       if (dx < 0) await this._navigateMode(dt, +1);
@@ -1502,7 +968,6 @@ export default class VortexEditorMobile {
 
   async _addModeInEditor(dt) {
     const before = this.vortex.numModes() | 0;
-
     this._clearModeTimers();
 
     try {
@@ -1513,7 +978,6 @@ export default class VortexEditorMobile {
         const after = this.vortex.numModes() | 0;
         if (after > before) this.vortex.setCurMode(after - 1, false);
 
-        // Keep parity with other edits (init + save), but still fast.
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
@@ -1526,11 +990,8 @@ export default class VortexEditorMobile {
       return;
     }
 
-    // Instant UI update (no waiting on BLE/demo)
     Notification.success?.('Added mode');
     await this._afterModeChanged(dt, { finalize: false, demo: true });
-
-    // Ensure visuals keep running; demo is fire-and-forget inside.
     void this._restartLightshowAndDemo(dt);
   }
 
@@ -1539,8 +1000,6 @@ export default class VortexEditorMobile {
     if (n <= 0) return;
 
     const idx = this.vortex.curModeIndex() | 0;
-
-    // Do not allow deleting Mode 1
     if (idx === 0) {
       Notification.failure?.('Mode 1 cannot be deleted');
       return;
@@ -1550,13 +1009,11 @@ export default class VortexEditorMobile {
     if (!ok) return;
 
     this._clearModeTimers();
-
     let afterN = n;
 
     try {
       this._withLightshowPausedSync(() => {
         this.vortex.delCurMode(false);
-
         afterN = this.vortex.numModes() | 0;
 
         if (afterN > 0) {
@@ -1586,14 +1043,9 @@ export default class VortexEditorMobile {
       return;
     }
 
-    // Instant UI update; BLE/demo scheduled, not awaited.
     await this._afterModeChanged(dt, { finalize: false, demo: true });
     void this._restartLightshowAndDemo(dt);
   }
-
-  // -----------------------------
-  // Transfer (explicit names only)
-  // -----------------------------
 
   _requireActivePort() {
     if (!this.vortexPort?.isActive?.()) {
@@ -1601,6 +1053,120 @@ export default class VortexEditorMobile {
       return false;
     }
     return true;
+  }
+
+  bindEditorModeNav(dt) {
+    this._ensureModeCrudButtonsExist();
+    this._bindModeSwipe(dt);
+
+    const prev = this.dom.$('#mode-prev');
+    const next = this.dom.$('#mode-next');
+    const addBtn = this.dom.$('#mode-add');
+    const delBtn = this.dom.$('#mode-delete');
+
+    const bindTap = (el, fn) => {
+      if (!el) return;
+      if (el._mBoundTap) return;
+      el._mBoundTap = true;
+
+      const swallow = (e) => {
+        try {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+          e?.stopImmediatePropagation?.();
+        } catch {}
+      };
+
+      const fire = async (e) => {
+        swallow(e);
+
+        const now = Date.now();
+        if (el._mTapLockUntil && now < el._mTapLockUntil) return;
+        el._mTapLockUntil = now + 350;
+
+        await fn(e);
+      };
+
+      if (window.PointerEvent) {
+        el.addEventListener('pointerup', fire, { passive: false });
+        el.addEventListener('click', swallow, { passive: false });
+      } else {
+        el.addEventListener('click', fire, { passive: false });
+      }
+    };
+
+    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
+    bindTap(next, async () => { await this._navigateMode(dt, +1); });
+    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
+    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
+
+    if (document.body && document.body.dataset.modeKeysBound !== '1') {
+      document.body.dataset.modeKeysBound = '1';
+      window.addEventListener(
+        'keydown',
+        async (e) => {
+          if (!e) return;
+          if ((this.vortex.numModes() | 0) <= 0) return;
+          if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
+          else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
+        },
+        { passive: true }
+      );
+    }
+  }
+
+  bindEditorTools(dt) {
+    const toolsEl = this.dom.$('.m-editor-tools');
+
+    const swallow = (e) => {
+      try {
+        e?.preventDefault?.();
+        e?.stopPropagation?.();
+        e?.stopImmediatePropagation?.();
+      } catch {}
+    };
+
+    const handleTool = async (btn, e) => {
+      swallow(e);
+
+      const isDisabled = !!toolsEl?.classList.contains('m-editor-disabled');
+      if (isDisabled) return;
+
+      const now = Date.now();
+      if (btn._mTapLockUntil && now < btn._mTapLockUntil) return;
+      btn._mTapLockUntil = now + 350;
+
+      const tool = String(btn.dataset.tool || '');
+
+      if (tool === 'effects') {
+        if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+        else await this.openEffectsPanel(dt);
+        return;
+      }
+
+      if (tool === 'transfer' || tool === 'share') {
+        if (!this._requireActivePort()) return;
+        await this._showTransferModal(dt);
+        return;
+      }
+
+      if (tool === 'settings') {
+        await this._showSettingsMenu(dt);
+        return;
+      }
+    };
+
+    this.dom.all('[data-tool]').forEach((btn) => {
+      if (btn._mBoundTool) return;
+      btn._mBoundTool = true;
+
+      if (window.PointerEvent) {
+        btn.addEventListener('pointerup', async (e) => { await handleTool(btn, e); }, { passive: false });
+        btn.addEventListener('click', swallow, { passive: false });
+      } else {
+        btn.addEventListener('click', async (e) => { await handleTool(btn, e); }, { passive: false });
+      }
+    });
   }
 
   async _ensureTransferModal() {
@@ -1672,31 +1238,20 @@ export default class VortexEditorMobile {
 
       const onPull = async (e) => {
         swallow(e);
-
         if (modal.dataset.xferRunning === '1') return;
 
         const dtNow = String(modal.dataset.device || dt || this.selectedDeviceType('Duo'));
         if (!this._requireActivePort()) return;
 
-        const pullBtn2 = modal.querySelector('#m-transfer-pull');
-        const pushBtn2 = modal.querySelector('#m-transfer-push');
-
         modal.dataset.xferRunning = '1';
-
         try {
           if (dtNow === 'Duo') {
-            // Duo path is still a dedicated view flow (works well).
-            if (pullBtn2) pullBtn2.disabled = true;
-            if (pushBtn2) pushBtn2.disabled = true;
-            if (pullBtn2) pullBtn2.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Opening…`;
-
             await this._hideTransferModal();
-            await this._pullSingleModeFromDuoInEditor();
+            await this.gotoDuoReceive({ deviceType: 'Duo', preserveModes: true, backTarget: 'editor' });
             return;
           }
-
-          // Non-Duo: do the transfer right here and show progress in the tapped button.
-          await this._pullModesFromDeviceInEditor(dtNow, pullBtn2, pushBtn2);
+          await this._hideTransferModal();
+          await this.pullFromDeviceAndEnterEditor(dtNow, { source: 'editor' });
         } finally {
           modal.dataset.xferRunning = '0';
           try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
@@ -1705,30 +1260,29 @@ export default class VortexEditorMobile {
 
       const onPush = async (e) => {
         swallow(e);
-
         if (modal.dataset.xferRunning === '1') return;
 
         const dtNow = String(modal.dataset.device || dt || this.selectedDeviceType('Duo'));
         if (!this._requireActivePort()) return;
 
-        const pullBtn2 = modal.querySelector('#m-transfer-pull');
-        const pushBtn2 = modal.querySelector('#m-transfer-push');
-        if (!pushBtn2 || pushBtn2.disabled) return;
+        const hasModes = (this.vortex.numModes() | 0) > 0;
+        if (!hasModes) return;
 
         modal.dataset.xferRunning = '1';
-
         try {
           if (dtNow === 'Duo') {
-            if (pullBtn2) pullBtn2.disabled = true;
-            if (pushBtn2) pushBtn2.disabled = true;
-            if (pushBtn2) pushBtn2.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-2"></i> Opening…`;
-
             await this._hideTransferModal();
-            await this._pushSingleModeToDuoInEditor();
+            await this.gotoDuoSend({ deviceType: 'Duo', backTarget: 'editor' });
             return;
           }
 
-          await this._pushModesToDeviceInEditor(dtNow, pullBtn2, pushBtn2);
+          try {
+            this._getModes().initCurMode();
+            this._getModes().saveCurMode();
+          } catch {}
+
+          await this._hideTransferModal();
+          await this.gotoDevicePushModes({ deviceType: dtNow, backTarget: 'editor' });
         } finally {
           modal.dataset.xferRunning = '0';
           try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
@@ -1750,7 +1304,6 @@ export default class VortexEditorMobile {
       return;
     }
 
-    // Make it non-dismissible so users can't accidentally close mid-transfer.
     const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: 'static', keyboard: false });
     inst.show();
   }
@@ -1763,7 +1316,6 @@ export default class VortexEditorMobile {
 
     await new Promise((resolve) => {
       let done = false;
-
       const finish = () => {
         if (done) return;
         done = true;
@@ -1774,50 +1326,93 @@ export default class VortexEditorMobile {
       try { modalEl.addEventListener('hidden.bs.modal', finish, { once: true }); } catch {}
 
       try { inst.hide(); } catch { finish(); }
-
-      // Fallback: don't let a missed event strand the UI.
       setTimeout(finish, 700);
     });
   }
 
-  async _pullSingleModeFromDuoInEditor() {
-    try {
-      await this._hideTransferModal();
-      await this.gotoDuoReceive({
-        deviceType: 'Duo',
-        preserveModes: true,
-        backTarget: 'editor',
-      });
-    } catch (err) {
-      console.error('[Mobile] Duo pull (from editor) failed:', err);
-      Notification.failure('Failed to pull mode from Duo');
-    }
+  async gotoDevicePushModes({ deviceType, backTarget = 'editor' } = {}) {
+    const dt = deviceType || this.selectedDeviceType('Duo');
+
+    this.stopEditorLightshow();
+    this.clearEditorResizeHandler();
+    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+
+    const deviceImg = this._getDeviceImgFor(dt);
+    const deviceAlt = dt;
+
+    const frag = await this.views.render('device-modes-send.html', {
+      title: 'Save to device',
+      subtitle: dt,
+      deviceImg,
+      deviceAlt,
+      status: 'Starting…',
+      progressText: '',
+    });
+
+    this.dom.set(frag);
+
+    const backNav = async () => {
+      if (backTarget === 'mode-source') await this.gotoModeSource({ deviceType: dt });
+      else await this.gotoEditor({ deviceType: dt });
+    };
+
+    this.dom.onClick('#back-btn', async () => { await backNav(); }, { preventDefault: true });
+    this.dom.onClick('#done-btn', async () => { await backNav(); }, { preventDefault: true });
+
+    await this._runDevicePushModes(dt);
   }
 
-  async _pushSingleModeToDuoInEditor() {
-    try {
-      const hasModes = (this.vortex.numModes() | 0) > 0;
-      if (!hasModes) {
-        Notification.failure('No mode to push');
-        return;
-      }
+  async _runDevicePushModes(dt) {
+    const statusText = this.dom.$('#dev-xfer-status-text');
+    const progressText = this.dom.$('#dev-xfer-progress-text');
+    const bar = this.dom.$('#dev-xfer-progress-bar');
 
-      if (!this._requireActivePort()) return;
-
+    const setUI = ({ s = null, p = null, pct = null, err = false } = {}) => {
       try {
-        this._getModes().initCurMode();
-        this._getModes().saveCurMode();
+        const wrap = this.dom.$('#dev-xfer-status');
+        if (wrap) wrap.classList.toggle('is-error', !!err);
       } catch {}
+      if (statusText && s != null) statusText.textContent = String(s);
+      if (progressText && p != null) progressText.textContent = String(p);
+      if (bar && pct != null) {
+        const v = Math.max(0, Math.min(100, Number(pct)));
+        if (Number.isFinite(v)) bar.style.width = `${v}%`;
+      }
+    };
 
-      await this._hideTransferModal();
+    const hasModes = (this.vortex?.numModes?.() | 0) > 0;
+    if (!hasModes) {
+      setUI({ s: 'Nothing to save.', p: 'No modes in the editor.', pct: 100, err: true });
+      return;
+    }
 
-      await this.gotoDuoSend({
-        deviceType: 'Duo',
-        backTarget: 'editor',
+    if (!this._requireActivePort()) {
+      setUI({ s: 'Not connected.', p: 'Tap Back and connect a device first.', pct: 10, err: true });
+      return;
+    }
+
+    try {
+      try { this._getModes().initCurMode(); this._getModes().saveCurMode(); } catch {}
+
+      setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
+
+      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, (o) => {
+        const phase = String(o?.phase || '');
+        const total = (o?.total ?? 0) | 0;
+        const idx = (o?.index ?? 0) | 0;
+        const i1 = idx + 1;
+
+        if (phase === 'start') setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
+        else if (phase === 'count') setUI({ s: 'Saving modes…', p: total > 0 ? `0 / ${total}` : '', pct: 12, err: false });
+        else if (phase === 'pushing') setUI({ s: 'Saving modes…', p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`, pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50, err: false });
+        else if (phase === 'finalizing') setUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
+        else if (phase === 'done') setUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
       });
+
+      Notification.success?.('Saved to device');
     } catch (err) {
-      console.error('[Mobile] Duo push failed:', err);
-      Notification.failure('Failed to start sending to Duo');
+      console.error('[Mobile] Device push failed:', err);
+      setUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
     }
   }
 
@@ -1859,9 +1454,7 @@ export default class VortexEditorMobile {
     this._duoTxLoopActive = true;
     this._duoTxLoopTimer = null;
 
-    const setStatus = (txt) => {
-      if (statusTextEl) statusTextEl.textContent = txt;
-    };
+    const setStatus = (txt) => { if (statusTextEl) statusTextEl.textContent = txt; };
 
     const fail = (txt) => {
       try { statusEl?.classList.add('is-error'); } catch {}
@@ -1886,7 +1479,6 @@ export default class VortexEditorMobile {
       try {
         setStatus('Sending… keep pointing…');
 
-        // Explicit method name only. If your VortexPort uses a different name, rename it there.
         if (typeof this.vortexPort.transmitVL !== 'function') {
           throw new Error('VortexPort.transmitVL missing');
         }
@@ -1912,291 +1504,6 @@ export default class VortexEditorMobile {
       clearTimeout(this._duoTxLoopTimer);
       this._duoTxLoopTimer = null;
     }
-  }
-
-  async _pullModesFromDeviceInEditor(dt, pullBtn, pushBtn) {
-    const modal = await this._ensureTransferModal();
-    const closeBtn = modal.querySelector('.btn-close');
-
-    const restoreClose = () => {
-      try {
-        if (closeBtn) {
-          closeBtn.disabled = false;
-          if (!closeBtn.getAttribute('data-bs-dismiss')) closeBtn.setAttribute('data-bs-dismiss', 'modal');
-        }
-      } catch {}
-    };
-
-    const lockClose = () => {
-      try {
-        if (closeBtn) {
-          closeBtn.disabled = true;
-          closeBtn.removeAttribute('data-bs-dismiss');
-        }
-      } catch {}
-    };
-
-    const setPullHtml = (html) => { try { if (pullBtn) pullBtn.innerHTML = html; } catch {} };
-
-    const update = this._makeThrottled((html) => setPullHtml(html), 55);
-
-    try {
-      lockClose();
-
-      if (pullBtn) pullBtn.disabled = true;
-      if (pushBtn) pushBtn.disabled = true;
-
-      this.vortex.clearModes();
-
-      setPullHtml(`<i class="fa-solid fa-spinner fa-spin me-2"></i> Starting…`);
-
-      await this.vortexPort.pullEachFromDevice(this.vortexLib, this.vortex, (p) => {
-        if (!p || typeof p !== 'object') return;
-
-        const total = Number(p.total ?? 0);
-        const i = (Number(p.index ?? 0) | 0) + 1;
-
-        let str = `Pulling…`;
-        if (p.phase === 'start') str = `Starting…`;
-        else if (p.phase === 'count') str = total > 0 ? `Counting… (0 / ${total})` : `Counting…`;
-        else if (p.phase === 'pulling') str = total > 0 ? `Pulling ${i} / ${total}…` : `Pulling ${i}…`;
-        else if (p.phase === 'finalizing') str = total > 0 ? `Finalizing… (${total})` : `Finalizing…`;
-        else if (p.phase === 'done') str = total > 0 ? `Done (${total})` : `Done`;
-
-        update(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${str}`);
-      });
-
-      if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
-
-      const total = this.vortex.numModes() | 0;
-      setPullHtml(`<i class="fa-solid fa-check me-2"></i> Done (${total})`);
-
-      await this._hideTransferModal();
-      await this.gotoEditor({ deviceType: dt });
-
-      Notification.success?.('Pulled modes from device');
-    } catch (err) {
-      console.error('[Mobile] Pull from device failed:', err);
-      Notification.failure('Failed to pull modes from device');
-    } finally {
-      restoreClose();
-      try {
-        if (pullBtn) pullBtn.disabled = false;
-        if (pushBtn) pushBtn.disabled = !((this.vortex.numModes() | 0) > 0);
-        await this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
-      } catch {}
-    }
-  }
-
-  async _pushModesToDeviceInEditor(dt, pullBtn, pushBtn) {
-    const modal = await this._ensureTransferModal();
-    const closeBtn = modal.querySelector('.btn-close');
-
-    const restoreClose = () => {
-      try {
-        if (closeBtn) {
-          closeBtn.disabled = false;
-          if (!closeBtn.getAttribute('data-bs-dismiss')) closeBtn.setAttribute('data-bs-dismiss', 'modal');
-        }
-      } catch {}
-    };
-
-    const lockClose = () => {
-      try {
-        if (closeBtn) {
-          closeBtn.disabled = true;
-          closeBtn.removeAttribute('data-bs-dismiss');
-        }
-      } catch {}
-    };
-
-    const setPushHtml = (html) => { try { if (pushBtn) pushBtn.innerHTML = html; } catch {} };
-    const update = this._makeThrottled((html) => setPushHtml(html), 55);
-
-    try {
-      lockClose();
-
-      const hasModes = (this.vortex.numModes() | 0) > 0;
-      if (!hasModes) {
-        Notification.failure('No modes to push');
-        return;
-      }
-
-      try {
-        this._getModes().initCurMode();
-        this._getModes().saveCurMode();
-      } catch {}
-
-      if (pullBtn) pullBtn.disabled = true;
-      if (pushBtn) pushBtn.disabled = true;
-
-      setPushHtml(`<i class="fa-solid fa-spinner fa-spin me-2"></i> Starting…`);
-
-      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, (p) => {
-        if (!p || typeof p !== 'object') return;
-
-        const total = Number(p.total ?? 0);
-        const i = (Number(p.index ?? 0) | 0) + 1;
-
-        let str = `Pushing…`;
-        if (p.phase === 'start') str = `Starting…`;
-        else if (p.phase === 'count') str = total > 0 ? `Counting… (0 / ${total})` : `Counting…`;
-        else if (p.phase === 'pushing') str = total > 0 ? `Pushing ${i} / ${total}…` : `Pushing ${i}…`;
-        else if (p.phase === 'finalizing') str = total > 0 ? `Finalizing… (${total})` : `Finalizing…`;
-        else if (p.phase === 'done') str = total > 0 ? `Done (${total})` : `Done`;
-
-        update(`<i class="fa-solid fa-spinner fa-spin me-2"></i> ${str}`);
-      });
-
-      setPushHtml(`<i class="fa-solid fa-check me-2"></i> Done`);
-      await this._hideTransferModal();
-
-      Notification.success?.('Pushed modes to device');
-    } catch (err) {
-      console.error('[Mobile] Push to device failed:', err);
-      Notification.failure('Failed to push modes to device');
-    } finally {
-      restoreClose();
-      try {
-        if (pullBtn) pullBtn.disabled = false;
-        if (pushBtn) pushBtn.disabled = !((this.vortex.numModes() | 0) > 0);
-        await this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
-      } catch {}
-    }
-  }
-
-  bindEditorModeNav(dt) {
-    this._ensureModeCrudButtonsExist();
-    this._bindModeSwipe(dt);
-
-    const prev = this.dom.$('#mode-prev');
-    const next = this.dom.$('#mode-next');
-    const addBtn = this.dom.$('#mode-add');
-    const delBtn = this.dom.$('#mode-delete');
-
-    const bindTap = (el, fn) => {
-      if (!el) return;
-      if (el._mBoundTap) return;
-      el._mBoundTap = true;
-
-      // Hard-kill any bubbling delegated click handler (SimpleDom etc).
-      const swallow = (e) => {
-        try {
-          e?.preventDefault?.();
-          e?.stopPropagation?.();
-          e?.stopImmediatePropagation?.();
-        } catch {}
-      };
-
-      const fire = async (e) => {
-        swallow(e);
-
-        // Per-element lock (prevents weird double pointerup / duplicated listeners)
-        const now = Date.now();
-        if (el._mTapLockUntil && now < el._mTapLockUntil) return;
-        el._mTapLockUntil = now + 350;
-
-        await fn(e);
-      };
-
-      if (window.PointerEvent) {
-        el.addEventListener('pointerup', fire, { passive: false });
-
-        // Always swallow click so it can't cause a second activation.
-        el.addEventListener('click', swallow, { passive: false });
-      } else {
-        // Fallback if PointerEvent not supported.
-        el.addEventListener('click', fire, { passive: false });
-      }
-    };
-
-    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
-    bindTap(next, async () => { await this._navigateMode(dt, +1); });
-    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
-    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
-
-    if (document.body && document.body.dataset.modeKeysBound !== '1') {
-      document.body.dataset.modeKeysBound = '1';
-      window.addEventListener(
-        'keydown',
-        async (e) => {
-          if (!e) return;
-          if ((this.vortex.numModes() | 0) <= 0) return;
-          if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
-          else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
-        },
-        { passive: true }
-      );
-    }
-  }
-
-  bindEditorTools(dt) {
-    const toolsEl = this.dom.$('.m-editor-tools');
-
-    const swallow = (e) => {
-      try {
-        e?.preventDefault?.();
-        e?.stopPropagation?.();
-        e?.stopImmediatePropagation?.();
-      } catch {}
-    };
-
-    const handleTool = async (btn, e) => {
-      swallow(e);
-
-      const isDisabled = !!toolsEl?.classList.contains('m-editor-disabled');
-      if (isDisabled) return;
-
-      // Per-button lock to avoid double-fire from any stacked handlers.
-      const now = Date.now();
-      if (btn._mTapLockUntil && now < btn._mTapLockUntil) return;
-      btn._mTapLockUntil = now + 350;
-
-      const tool = String(btn.dataset.tool || '');
-
-      if (tool === 'effects') {
-        if (this.effectsPanel.isOpen()) this.effectsPanel.close();
-        else await this.openEffectsPanel(dt);
-        return;
-      }
-
-      if (tool === 'transfer' || tool === 'share') {
-        if (!this._requireActivePort()) return;
-        await this._showTransferModal(dt);
-        return;
-      }
-
-      if (tool === 'settings') {
-        await this._showSettingsMenu(dt);
-        return;
-      }
-    };
-
-    this.dom.all('[data-tool]').forEach((btn) => {
-      if (btn._mBoundTool) return;
-      btn._mBoundTool = true;
-
-      if (window.PointerEvent) {
-        btn.addEventListener(
-          'pointerup',
-          async (e) => {
-            await handleTool(btn, e);
-          },
-          { passive: false }
-        );
-
-        // Swallow click so no delegated click handler (or synthetic click) runs tool twice.
-        btn.addEventListener('click', swallow, { passive: false });
-      } else {
-        btn.addEventListener(
-          'click',
-          async (e) => {
-            await handleTool(btn, e);
-          },
-          { passive: false }
-        );
-      }
-    });
   }
 
   async _hideSettingsMenu() {
@@ -2248,19 +1555,8 @@ export default class VortexEditorMobile {
   }
 
   // -----------------------------
-  // Community Browser (no guessing import)
-  // Uses vortex.printJson() + vortex.parseJson()
+  // Community Browser (minimal functional)
   // -----------------------------
-
-  _vcbSetStatus(text) {
-    const el = this._vcbEls.status;
-    if (!el) return;
-    el.textContent = String(text || '');
-  }
-
-  _vcbClearCache() {
-    this._vcbModesCache = {};
-  }
 
   _vcbAttachEls() {
     this._vcbEls.searchBox = this.dom.$('#m-vcb-search-box');
@@ -2271,6 +1567,16 @@ export default class VortexEditorMobile {
     this._vcbEls.nextBtn = this.dom.$('#m-vcb-next-btn');
     this._vcbEls.status = this.dom.$('#m-vcb-status');
     this._vcbEls.refreshBtn = this.dom.$('#m-vcb-refresh');
+  }
+
+  _vcbSetStatus(text) {
+    const el = this._vcbEls.status;
+    if (!el) return;
+    el.textContent = String(text || '');
+  }
+
+  _vcbClearCache() {
+    this._vcbModesCache = {};
   }
 
   _vcbBuildFilterButtons() {
@@ -2303,7 +1609,7 @@ export default class VortexEditorMobile {
           this._vcbActiveFilters.add(deviceName);
           btn.classList.add('active');
         }
-        this._vcbApplyFiltersAndRender();
+        void this._vcbApplyFiltersAndRender();
       }, { passive: true });
 
       this._vcbActiveFilters.add(deviceName);
@@ -2397,10 +1703,6 @@ export default class VortexEditorMobile {
       actions.appendChild(importBtn);
       row.appendChild(actions);
 
-      row.addEventListener('click', async () => {
-        await this._vcbImportMode(mode);
-      }, { passive: true });
-
       container.appendChild(row);
     }
   }
@@ -2431,48 +1733,33 @@ export default class VortexEditorMobile {
 
       this._vcbSetStatus(
         filtered.length
-        ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
-        : 'No matches on this page'
+          ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
+          : 'No matches on this page'
       );
     } catch (err) {
       console.error('[Mobile] Error fetching modes:', err);
       this._vcbUpdatePager();
       this._vcbSetStatus('Failed to load modes.');
-      const container = this._vcbEls.modesContainer;
-      if (container) {
-        container.innerHTML = '';
-        const p = document.createElement('p');
-        p.style.color = 'red';
-        p.textContent = 'Failed to load modes.';
-        container.appendChild(p);
-      }
     }
   }
 
   async _vcbApplyFiltersAndRender() {
-    try {
-      const pageData = this._vcbModesCache[this._vcbCurrentPage];
-      if (!pageData) {
-        await this._vcbLoadPage(this._vcbCurrentPage);
-        return;
-      }
-      const filtered = this._vcbApplyFilters(pageData);
-      this._vcbUpdatePager();
-      this._vcbRenderPage(filtered);
-      this._vcbSetStatus(
-        filtered.length
+    const pageData = this._vcbModesCache[this._vcbCurrentPage];
+    if (!pageData) {
+      await this._vcbLoadPage(this._vcbCurrentPage);
+      return;
+    }
+    const filtered = this._vcbApplyFilters(pageData);
+    this._vcbUpdatePager();
+    this._vcbRenderPage(filtered);
+    this._vcbSetStatus(
+      filtered.length
         ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
         : 'No matches on this page'
-      );
-    } catch (err) {
-      console.error('[Mobile] applyFilters failed:', err);
-    }
+    );
   }
 
   _vcbBuildModeJsonFromCommunity(mode) {
-    // We intentionally build a "mode json" that your C++ loadFromJson/loadModeFromJson understands.
-    // No guessing function names. Import path uses vortex.printJson + vortex.parseJson only.
-
     const patternSets = Array.isArray(mode?.patternSets) ? mode.patternSets : [];
     const ledPatternOrder = Array.isArray(mode?.ledPatternOrder) ? mode.ledPatternOrder : [];
 
@@ -2512,20 +1799,11 @@ export default class VortexEditorMobile {
 
   async _vcbImportMode(mode) {
     try {
-      // Get full current state JSON from engine
-      const beforeCount = this.vortex.numModes() | 0;
       const jsonStr = String(this.vortex.printJson(false) || '');
-
       let obj;
-      try {
-        obj = jsonStr ? JSON.parse(jsonStr) : {};
-      } catch {
-        obj = {};
-      }
-
+      try { obj = jsonStr ? JSON.parse(jsonStr) : {}; } catch { obj = {}; }
       if (!obj || typeof obj !== 'object') obj = {};
       if (!Array.isArray(obj.modes)) obj.modes = [];
-      if (typeof obj.num_modes !== 'number') obj.num_modes = obj.modes.length | 0;
 
       const modeJson = this._vcbBuildModeJsonFromCommunity(mode);
       const insertIndex = obj.modes.length | 0;
@@ -2535,14 +1813,12 @@ export default class VortexEditorMobile {
 
       const outStr = JSON.stringify(obj);
 
-      // mutation: pause render during parseJson (clears and reloads)
       this._clearModeTimers();
       this._withLightshowPausedSync(() => {
         const ok = this.vortex.parseJson(outStr);
         if (!ok) throw new Error('vortex.parseJson returned false');
       });
 
-      // Select the newly-imported mode (the appended one)
       const afterCount = this.vortex.numModes() | 0;
       if (afterCount > 0) {
         const target = Math.min(insertIndex, afterCount - 1);
@@ -2554,9 +1830,7 @@ export default class VortexEditorMobile {
     } catch (err) {
       console.error('[Mobile] importMode failed:', err);
       Notification.failure('Import failed');
-      try {
-        await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
-      } catch {}
+      try { await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') }); } catch {}
     }
   }
 
@@ -2615,49 +1889,24 @@ export default class VortexEditorMobile {
   }
 
   // -----------------------------
-  // Engine helpers (pure bound APIs)
+  // Engine helpers
   // -----------------------------
 
-  _getEngine() {
-    return this.vortex.engine();
-  }
+  _getEngine() { return this.vortex.engine(); }
+  _getModes() { return this._getEngine().modes(); }
+  _getCurMode() { return this._getModes().curMode(); }
 
-  _getModes() {
-    return this._getEngine().modes();
-  }
+  _getLedCount() { return this._getEngine().leds().ledCount() | 0; }
+  _getMultiIndex() { return this._getEngine().leds().ledMulti() | 0; }
+  _isMultiMode(curMode) { return !!(curMode && curMode.isMultiLed && curMode.isMultiLed()); }
 
-  _getCurMode() {
-    return this._getModes().curMode();
-  }
-
-  _clearFxFinalize() {
-    if (this._fxFinalizeTimer) {
-      clearTimeout(this._fxFinalizeTimer);
-      this._fxFinalizeTimer = null;
-    }
-  }
-
-  _scheduleFxFinalize(ms = 140) {
-    this._clearFxFinalize();
-    this._fxFinalizeTimer = setTimeout(() => {
-      this._fxFinalizeTimer = null;
-      this._finalizeCurModeSafe();
-    }, ms);
-  }
-
-  _clearFxDemo() {
-    if (this._fxDemoTimer) {
-      clearTimeout(this._fxDemoTimer);
-      this._fxDemoTimer = null;
-    }
-  }
-
-  _scheduleFxDemo(ms = 70) {
-    this._clearFxDemo();
-    this._fxDemoTimer = setTimeout(() => {
-      this._fxDemoTimer = null;
-      this.demoModeOnDevice();
-    }, ms);
+  _escape(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
   }
 
   _rgbToHex(r, g, b) {
@@ -2674,17 +1923,18 @@ export default class VortexEditorMobile {
     return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
   }
 
-  _getLedCountForDevice(dt) {
-    return this.devices[dt].ledCount | 0;
-  }
-
-  _escape(str) {
-    return String(str)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+  _extractColorsHexFromColorset(set) {
+    const out = [];
+    if (!set) return out;
+    const n = Math.min(8, set.numColors ? (set.numColors() | 0) : 0);
+    for (let i = 0; i < n; i++) {
+      const c = set.get(i);
+      const r = (c?.red ?? 0) & 0xff;
+      const g = (c?.green ?? 0) & 0xff;
+      const b = (c?.blue ?? 0) & 0xff;
+      out.push(this._rgbToHex(r, g, b));
+    }
+    return out;
   }
 
   _patternOptionsHtml({ allowMulti }) {
@@ -2737,84 +1987,219 @@ export default class VortexEditorMobile {
     );
   }
 
-  _getCurMode() {
-    return this.vortex.engine().modes().curMode();
-  }
-
-  _getLedCountForDevice() {
-    return this.vortex.engine().leds().ledCount() | 0;
-  }
-
-  _getMultiIndex() {
-    return this.vortex.engine().leds().ledMulti() | 0;
-  }
-
-  _isMultiMode(curMode) {
-    return !!(curMode && curMode.isMultiLed && curMode.isMultiLed());
-  }
-
-  _extractColorsHexFromColorset(vortexLib, set) {
-    const out = [];
-    if (!set) return out;
-
-    const n = Math.min(8, set.numColors ? (set.numColors() | 0) : 0);
-    for (let i = 0; i < n; i++) {
-      const c = set.get(i);
-      const r = (c?.red ?? 0) & 0xff;
-      const g = (c?.green ?? 0) & 0xff;
-      const b = (c?.blue ?? 0) & 0xff;
-      out.push(`#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`);
+  _ledSelEnsureDefaults(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+    if (this.ledSelectState && typeof this.ledSelectState.ensureDefaultsForSingleLed === 'function') {
+      try { this.ledSelectState.ensureDefaultsForSingleLed({ ledCount: lc }); return; } catch {}
     }
-    return out;
+
+    const src = this._ledSelFallback.sourceLed | 0;
+    if (!(src >= 0 && src < lc)) this._ledSelFallback.sourceLed = 0;
+
+    let sel = this._ledSelFallback.selectedLeds;
+    if (!Array.isArray(sel) || sel.length === 0) this._ledSelFallback.selectedLeds = null;
   }
 
-  _getColorsetHexes(cur, led) {
-    const set = cur.getColorset(led);
-    const out = [];
-    if (!set) return out;
-    const n = set.numColors();
-    for (let i = 0; i < n; i++) {
-      const c = set.get(i);
-      out.push(this._rgbToHex(c.red, c.green, c.blue));
+  _ledSelGetSingleSource(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+    if (this.ledSelectState && typeof this.ledSelectState.getSingleSource === 'function') {
+      try {
+        const v = this.ledSelectState.getSingleSource() | 0;
+        return (v >= 0 && v < lc) ? v : 0;
+      } catch {}
     }
-    return out;
+    const v = this._ledSelFallback.sourceLed | 0;
+    return (v >= 0 && v < lc) ? v : 0;
   }
 
-  _getPatternValue(cur, led) {
-    try { return cur.getPatternID(led).value | 0; } catch { return -1; }
+  _ledSelGetSingleSelected(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+    if (this.ledSelectState && typeof this.ledSelectState.getSingleSelected === 'function') {
+      try {
+        const a = this.ledSelectState.getSingleSelected();
+        if (Array.isArray(a) && a.length) return a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
+      } catch {}
+    }
+
+    const a = this._ledSelFallback.selectedLeds;
+    if (!Array.isArray(a) || a.length === 0) return null;
+    const out = a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
+    return out.length ? out : null;
   }
 
-  _finalizeCurModeSafe() {
-    try {
-      const cur = this._getCurMode();
-      if (cur) cur.init(); // Mode::init() is a clean binding
-    } catch {}
-    try {
-      this._getModes().saveCurMode(); // Modes::saveCurMode() is also a clean binding
-    } catch {}
+  _ledSelSetFromModal({ ledCount, sourceLed, selectedLeds }) {
+    const lc = Math.max(0, ledCount | 0);
+    const src = (sourceLed | 0);
+    const sel = Array.isArray(selectedLeds) ? selectedLeds.map((x) => x | 0) : null;
+
+    if (this.ledSelectState && typeof this.ledSelectState.setFromModal === 'function') {
+      try { this.ledSelectState.setFromModal({ ledCount: lc, sourceLed: src, selectedLeds: sel }); return; } catch {}
+    }
+
+    this._ledSelFallback.sourceLed = (src >= 0 && src < lc) ? src : 0;
+    if (!sel || sel.length === 0) this._ledSelFallback.selectedLeds = null;
+    else this._ledSelFallback.selectedLeds = sel.filter((x) => x >= 0 && x < lc);
   }
 
-  async openEffectsPanel(dt) {
-    const deviceType = this.devicePanel?.selectedDevice || 'Spark'; // however you store it
-    const ledCount = this._getLedCountForDevice();
+  _ledSelGetSummary({ isMultiMode, ledCount }) {
+    const lc = Math.max(0, ledCount | 0);
+    if (this.ledSelectState && typeof this.ledSelectState.getSummary === 'function') {
+      try { return String(this.ledSelectState.getSummary({ isMultiMode: !!isMultiMode, ledCount: lc })); } catch {}
+    }
+
+    if (isMultiMode) return 'Multi';
+    const sel = this._ledSelGetSingleSelected(lc);
+    const n = Array.isArray(sel) ? sel.length : lc;
+    return `${n}/${lc}`;
+  }
+
+  _effectiveSelection(curMode) {
+    const ledCount = this._getLedCount();
     const multiIndex = this._getMultiIndex();
-    const curMode = this._getCurMode();
     const isMulti = this._isMultiMode(curMode);
 
-    this.ledSelectState.ensureDefaultsForSingleLed({ ledCount });
+    if (isMulti) {
+      return { isMulti: true, sourceLed: multiIndex, targetLeds: [multiIndex] };
+    }
+
+    this._ledSelEnsureDefaults(ledCount);
+
+    let src = this._ledSelGetSingleSource(ledCount);
+    let sel = this._ledSelGetSingleSelected(ledCount);
+
+    let targetLeds;
+    if (!Array.isArray(sel) || sel.length === 0) {
+      targetLeds = Array.from({ length: ledCount }, (_, i) => i);
+    } else {
+      targetLeds = sel.slice();
+    }
+
+    if (!targetLeds.includes(src)) targetLeds.push(src);
+    targetLeds = targetLeds.filter((x) => x >= 0 && x < ledCount);
+    targetLeds.sort((a, b) => a - b);
+
+    return { isMulti: false, sourceLed: src, targetLeds };
+  }
+
+  _applyColorsetMutation(mutatorFn) {
+    const cur = this._getCurMode();
+    if (!cur) return null;
+
+    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
+    const set = cur.getColorset(sourceLed);
+    if (!set) return null;
+
+    try {
+      mutatorFn(set);
+    } catch (e) {
+      console.error('[Mobile] colorset mutation failed:', e);
+      return null;
+    }
+
+    try {
+      for (const led of targetLeds) {
+        cur.setColorset(set, led);
+      }
+    } catch (e) {
+      console.error('[Mobile] setColorset apply failed:', e);
+    }
+
+    try { cur.init(); } catch {}
+    try { this._getModes().saveCurMode(); } catch {}
+
+    return { cur, set, sourceLed, targetLeds };
+  }
+
+  _applyPatternToSelection(patID) {
+    const cur = this._getCurMode();
+    if (!cur || !patID) return;
+
+    const ledCount = this._getLedCount();
+    const multiIndex = this._getMultiIndex();
+
+    const isSingle = !!this.vortexLib.isSingleLedPatternID?.(patID);
+    const isMultiBefore = this._isMultiMode(cur);
+
+    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
+    const set = cur.getColorset(sourceLed);
+
+    if (isSingle) {
+      if (isMultiBefore) {
+        // Desktop parity: clear multi, switch back to singles, apply to ALL singles.
+        try { if (typeof cur.clearPattern === 'function') cur.clearPattern(multiIndex); } catch {}
+
+        // Ensure LED selection is "all" after multi -> single transition
+        this._ledSelSetFromModal({ ledCount, sourceLed: 0, selectedLeds: null });
+
+        try { cur.setPattern(patID, ledCount, null, null); } catch {}
+        try { if (set) cur.setColorset(set, ledCount); } catch {}
+      } else {
+        for (const led of targetLeds) {
+          try { cur.setPattern(patID, led, null, null); } catch {}
+          try { if (set) cur.setColorset(set, led); } catch {}
+        }
+      }
+    } else {
+      // Multi pattern
+      try { cur.setPattern(patID, multiIndex, null, null); } catch {}
+      try { if (set) cur.setColorset(set, multiIndex); } catch {}
+    }
+
+    try { cur.init(); } catch {}
+    try { this._getModes().saveCurMode(); } catch {}
+  }
+
+  // -----------------------------
+  // Effects panel
+  // -----------------------------
+
+  async openEffectsPanel(dt) {
+    const deviceType = dt || this.selectedDeviceType('Duo');
+    const ledCount = this._getLedCount();
+    const multiIndex = this._getMultiIndex();
+    const curMode = this._getCurMode();
+    if (!curMode) {
+      Notification.failure?.('No active mode');
+      return;
+    }
+
+    const isMulti = this._isMultiMode(curMode);
+    this._ledSelEnsureDefaults(ledCount);
+
+    const deviceMeta = this.devices?.[deviceType] || {};
+
+    const eff = this._effectiveSelection(curMode);
+    const srcLed = eff.sourceLed;
+
+    const set = curMode.getColorset(srcLed);
+    const colors = this._extractColorsHexFromColorset(set);
+
+    const initialSelectedColorIndex = colors.length ? 0 : null;
+    const seedHex = (initialSelectedColorIndex != null) ? colors[initialSelectedColorIndex] : '#FF0000';
+    const seedRgb = this._hexToRgb(seedHex);
+
+    const allowMulti = (deviceType !== 'None' && deviceType !== 'Duo');
+    const patternOptionsHtml = this._patternOptionsHtml({ allowMulti });
+
+    let patternValue = -1;
+    try {
+      patternValue = curMode.getPatternID(srcLed).value | 0;
+    } catch {
+      patternValue = -1;
+    }
 
     const ledSelectState = {
       title: 'LEDs',
       deviceName: deviceType,
-      imageSrc: this.devices?.[deviceType]?.image ?? null,
-      imageSrcAlt: this.devices?.[deviceType]?.altImage ?? null,
-      swapEnabled: !!this.devices?.[deviceType]?.altImage,
+      imageSrc: deviceMeta?.image ?? null,
+      imageSrcAlt: deviceMeta?.altImage ?? null,
+      swapEnabled: !!deviceMeta?.altImage,
       positionsUrl: `public/data/${String(deviceType).toLowerCase()}-led-positions.json`,
-      positionsUrlAlt: this.devices?.[deviceType]?.altLabel
-        ? `public/data/${String(this.devices[deviceType].altLabel).toLowerCase()}-led-positions.json`
+      positionsUrlAlt: deviceMeta?.altLabel
+        ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json`
         : null,
-      selectedLeds: this.ledSelectState.getSingleSelected(),
-      sourceLed: this.ledSelectState.getSingleSource(),
+      selectedLeds: isMulti ? [multiIndex] : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+      sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
     };
 
     await this.effectsPanel.openEffects({
@@ -2822,48 +2207,75 @@ export default class VortexEditorMobile {
       deviceType,
       ledCount,
       ledIndex: 0,
-      patternValue: curMode ? curMode.getPatternID(this.ledSelectState.getEffectiveSelection({
-        isMultiMode: isMulti,
-        multiIndex,
-        ledCount,
-      }).sourceLed).value : -1,
-      patternOptionsHtml: this._buildPatternOptionsHtml?.() ?? '', // your existing function
-      colors: curMode ? this._extractColorsHexFromColorset(this.vortexLib, curMode.getColorset(
-        this.ledSelectState.getEffectiveSelection({ isMultiMode: isMulti, multiIndex, ledCount }).sourceLed
-      )) : [],
-      selectedColorIndex: 0,
 
-      ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isMulti, ledCount }),
+      patternValue,
+      patternOptionsHtml,
+
+      colors,
+      selectedColorIndex: initialSelectedColorIndex,
+      rgb: seedRgb,
+
+      ledModalSummary: this._ledSelGetSummary({ isMultiMode: isMulti, ledCount }),
       ledSelectState,
 
       onLedSelectApply: async (sourceLed, selectedLeds) => {
-        // Only meaningful for single-led mode; multi is locked anyway.
         const cur = this._getCurMode();
+        if (!cur) return null;
+
         const isM = this._isMultiMode(cur);
+
+        // Persist selection only when not multi
         if (!isM) {
-          this.ledSelectState.setFromModal({ ledCount, sourceLed, selectedLeds });
+          this._ledSelSetFromModal({ ledCount, sourceLed, selectedLeds });
         }
 
+        // Recompute effective selection (source may be forced to multiIndex if multi-mode)
+        const eff2 = this._effectiveSelection(cur);
+        const src2 = eff2.sourceLed;
+
+        // Refresh pattern + colorset based on SOURCE led
+        let patVal = -1;
+        try { patVal = cur.getPatternID(src2).value | 0; } catch { patVal = -1; }
+
+        const set2 = cur.getColorset(src2);
+        const cols2 = this._extractColorsHexFromColorset(set2);
+
+        const selIdx = cols2.length ? 0 : null;
+        const rgb2 = cols2.length ? this._hexToRgb(cols2[0]) : { r: 255, g: 0, b: 0 };
+
+        const nextSummary = this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount });
+
         return {
-          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM, ledCount }),
+          ledModalSummary: nextSummary,
+
+          // keep modal state in sync for the next time the LED modal opens
           ledSelectState: {
             ...ledSelectState,
-            selectedLeds: this.ledSelectState.getSingleSelected(),
-            sourceLed: this.ledSelectState.getSingleSource(),
+            selectedLeds: eff2.isMulti ? [multiIndex] : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+            sourceLed: eff2.isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
           },
+
+          // refresh the Effects UI itself
+          patternValue: patVal,
+          colors: cols2,
+          selectedColorIndex: selIdx,
+          rgb: rgb2,
         };
       },
 
-      onPatternChange: async (patternValue) => {
-        const patID = this.vortexLib.PatternID.values[String(patternValue)];
+      onPatternChange: async (newPatternValue) => {
+        const patID = this.vortexLib.PatternID.values[String(newPatternValue)];
+        if (!patID) return null;
+
         this._applyPatternToSelection(patID);
 
         const cur2 = this._getCurMode();
         const isM2 = this._isMultiMode(cur2);
 
+        // patternValue must reflect what we selected
         return {
-          patternValue: patternValue | 0,
-          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM2, ledCount }),
+          patternValue: (newPatternValue | 0),
+          ledModalSummary: this._ledSelGetSummary({ isMultiMode: isM2, ledCount }),
         };
       },
 
@@ -2871,83 +2283,85 @@ export default class VortexEditorMobile {
         const cur2 = this._getCurMode();
         if (!cur2) return null;
 
-        const isM2 = this._isMultiMode(cur2);
-        const { sourceLed } = this.ledSelectState.getEffectiveSelection({
-          isMultiMode: isM2,
-          multiIndex,
-          ledCount,
-        });
+        const eff2 = this._effectiveSelection(cur2);
+        const set2 = cur2.getColorset(eff2.sourceLed);
+        const cols2 = this._extractColorsHexFromColorset(set2);
 
-        const set = cur2.getColorset(sourceLed);
-        const colors = this._extractColorsHexFromColorset(this.vortexLib, set);
-        const pick = colors[idx | 0] || colors[0] || '#FF0000';
-
-        const v = parseInt(String(pick).replace('#', ''), 16) >>> 0;
-        const rgb = { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+        const sel = idx | 0;
+        const hx = cols2[sel] || cols2[0] || '#FF0000';
+        const rgb = this._hexToRgb(hx);
 
         return {
-          selectedColorIndex: idx | 0,
-          colors,
+          colors: cols2,
+          selectedColorIndex: cols2.length ? Math.max(0, Math.min(sel, cols2.length - 1)) : null,
           rgb,
-          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM2, ledCount }),
+          ledModalSummary: this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount }),
         };
       },
 
       onColorsetAdd: async () => {
-        const res = this._applyColorsetMutation((set) => {
-          set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
+        const res = this._applyColorsetMutation((setX) => {
+          setX.addColor(new this.vortexLib.RGBColor(255, 0, 0));
         });
         if (!res) return null;
 
-        const colors = this._extractColorsHexFromColorset(this.vortexLib, res.set);
-        const selectedColorIndex = Math.max(0, colors.length - 1);
+        const cols2 = this._extractColorsHexFromColorset(res.set);
+        const selectedColorIndex = cols2.length ? (cols2.length - 1) : null;
 
-        return { colors, selectedColorIndex, rgb: { r: 255, g: 0, b: 0 } };
+        return {
+          colors: cols2,
+          selectedColorIndex,
+          rgb: { r: 255, g: 0, b: 0 },
+        };
       },
 
       onColorsetDelete: async (idx) => {
         const delIdx = idx | 0;
-        const res = this._applyColorsetMutation((set) => {
-          if ((set.numColors() | 0) <= 0) return;
-          set.removeColor(delIdx);
+
+        const res = this._applyColorsetMutation((setX) => {
+          if ((setX.numColors() | 0) <= 0) return;
+          setX.removeColor(delIdx);
         });
         if (!res) return null;
 
-        const colors = this._extractColorsHexFromColorset(this.vortexLib, res.set);
-        const selectedColorIndex = colors.length ? Math.min(delIdx, colors.length - 1) : null;
+        const cols2 = this._extractColorsHexFromColorset(res.set);
+        const selectedColorIndex = cols2.length ? Math.min(delIdx, cols2.length - 1) : null;
 
         let rgb = null;
         if (selectedColorIndex != null) {
-          const pick = colors[selectedColorIndex] || '#000000';
-          const v = parseInt(String(pick).replace('#', ''), 16) >>> 0;
-          rgb = { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+          rgb = this._hexToRgb(cols2[selectedColorIndex] || '#000000');
         }
 
-        return { colors, selectedColorIndex, rgb };
+        return { colors: cols2, selectedColorIndex, rgb };
       },
 
       onColorChange: async (colorIndex, hex, isDragging) => {
-        const v = parseInt(String(hex || '#000000').replace('#', ''), 16) >>> 0;
-        const r = (v >> 16) & 255;
-        const g = (v >> 8) & 255;
-        const b = v & 255;
+        const { r, g, b } = this._hexToRgb(hex);
 
-        this._applyColorsetMutation((set) => {
+        this._applyColorsetMutation((setX) => {
           const i = colorIndex | 0;
-          if (i < 0 || i >= (set.numColors() | 0)) return;
-          set.set(i, new this.vortexLib.RGBColor(r, g, b));
+          if (i < 0 || i >= (setX.numColors() | 0)) return;
+          setX.set(i, new this.vortexLib.RGBColor(r, g, b));
         });
 
-        // keep your existing “demo while dragging” logic here if you want
-        // (ColorPicker doesn’t need a return value for onColorChange)
-        if (isDragging && this.demoColorOnDevice) {
+        if (isDragging) {
           try { await this.demoColorOnDevice(new this.vortexLib.RGBColor(r, g, b)); } catch {}
-        } else if (this.demoModeOnDevice) {
+        } else {
           try { await this.demoModeOnDevice(); } catch {}
         }
       },
-    });
 
+      onOff: async () => {
+        this._applyColorsetMutation((setX) => {
+          if ((setX.numColors() | 0) <= 0) {
+            setX.addColor(new this.vortexLib.RGBColor(0, 0, 0));
+          } else {
+            setX.set(0, new this.vortexLib.RGBColor(0, 0, 0));
+          }
+        });
+        try { await this.demoModeOnDevice(); } catch {}
+      },
+    });
   }
 }
 
@@ -2958,7 +2372,6 @@ async function boot() {
   try {
     const vortexLib = await VortexLib();
     const editor = new VortexEditorMobile(vortexLib);
-    // expose for console debugging if you want
     window.editor = editor;
     await editor.initialize();
   } catch (error) {

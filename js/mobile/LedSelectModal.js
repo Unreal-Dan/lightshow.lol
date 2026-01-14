@@ -223,11 +223,16 @@ export default class LedSelectModal {
 
     this.root.classList.add('is-open');
 
-    // bind image src
+    // bind image src (and WAIT for layout before building indicators)
     const img = this.dom.$('[data-role="deviceimg"]');
     if (img) {
       const srcToUse = this._useAlt && this._imageSrcAlt ? this._imageSrcAlt : this._imageSrc;
-      if (srcToUse) img.src = this._cacheBust(srcToUse);
+      if (srcToUse) {
+        img.src = this._cacheBust(srcToUse);
+      }
+
+      // Critical: image must have a real box before we compute overlay positioning.
+      await this._waitForImageReady(img);
     }
 
     await this._nextFrame();
@@ -235,6 +240,51 @@ export default class LedSelectModal {
     this._cacheStageRect();
     this._normalizeSelection();
     this._syncUI();
+  }
+
+  async _waitForImageReady(img, timeoutMs = 2000) {
+    if (!img) return;
+
+    const hasLayout = () => {
+      if (!img.complete) return false;
+      if (!img.naturalWidth || !img.naturalHeight) return false;
+      const r = img.getBoundingClientRect();
+      return (r.width > 4 && r.height > 4);
+    };
+
+    if (hasLayout()) return;
+
+    await new Promise((resolve) => {
+      let done = false;
+
+      const finish = () => {
+        if (done) return;
+        done = true;
+        try { cleanup(); } catch {}
+        resolve();
+      };
+
+      const cleanup = () => {
+        clearTimeout(t);
+        img.removeEventListener('load', onLoad);
+        img.removeEventListener('error', onLoad);
+      };
+
+      const onLoad = () => {
+        // Give layout a couple frames to settle after decode/layout.
+        requestAnimationFrame(() => requestAnimationFrame(finish));
+      };
+
+      img.addEventListener('load', onLoad);
+      img.addEventListener('error', onLoad);
+
+      const t = setTimeout(finish, timeoutMs);
+    });
+
+    // If it *still* isn't laid out, give it one more frame (helps on iOS sometimes).
+    if (!hasLayout()) {
+      await new Promise((r) => requestAnimationFrame(() => r()));
+    }
   }
 
   async _nextFrame() {
@@ -370,33 +420,50 @@ export default class LedSelectModal {
   }
 
   _syncUI() {
+    // indicators
     const els = this.dom.all('[data-role="led"]');
+    const src = this._source | 0;
+
     for (const el of els) {
       const idx = Number(el.dataset.ledIndex ?? -1) | 0;
       const sel = this._selected.has(idx);
-      const main = idx === (this._source | 0);
+      const main = (src >= 0) && (idx === src);
 
       el.classList.toggle('is-selected', !!sel);
       el.classList.toggle('is-source', !!main);
     }
 
+    // summary
     const sum = this.dom.$('[data-role="summary"]');
     if (sum) {
       const selectedCount = this._selected.size;
-      const src = (this._source | 0) + 1;
       const total = this._ledCount | 0;
-      sum.textContent =
-        total > 0 ? `Source: ${src}/${total} • Selected: ${selectedCount}` : `Selected: ${selectedCount}`;
+
+      if (selectedCount === 0) {
+        sum.textContent = total > 0 ? `Selected: 0 • Pick at least one` : `Selected: 0`;
+      } else {
+        sum.textContent = total > 0
+          ? `Source: ${(src + 1)} • Selected: ${selectedCount}/${total}`
+          : `Selected: ${selectedCount}`;
+      }
     }
+
+    // disable Done if none selected
+    const doneBtn =
+      this.dom.$('[data-act="done"]') ||
+      this.dom.$('.m-led-done');
+
+    if (doneBtn) doneBtn.disabled = (this._selected.size === 0);
   }
 
   _normalizeSelection() {
     if (this._ledCount <= 0) {
       this._selected = new Set();
-      this._source = 0;
+      this._source = -1;
       return;
     }
 
+    // clamp set
     const next = new Set();
     for (const v of this._selected) {
       const n = v | 0;
@@ -404,15 +471,19 @@ export default class LedSelectModal {
     }
     this._selected = next;
 
-    if (!((this._source | 0) >= 0 && (this._source | 0) < this._ledCount)) this._source = 0;
-
-    if (this._selected.size === 0) this._selected.add(this._source | 0);
-
-    if (!this._selected.has(this._source | 0)) {
-      const arr = Array.from(this._selected).sort((a, b) => a - b);
-      this._source = arr.length ? (arr[0] | 0) : 0;
-      this._selected.add(this._source | 0);
+    // If empty is allowed (we allow it), then "no selection" means no source.
+    if (this._selected.size === 0) {
+      this._source = -1;
+      return;
     }
+
+    // Ensure source is valid and within the selected set
+    let src = this._source | 0;
+    if (!(src >= 0 && src < this._ledCount) || !this._selected.has(src)) {
+      const arr = Array.from(this._selected).sort((a, b) => a - b);
+      src = arr.length ? (arr[0] | 0) : -1;
+    }
+    this._source = src;
   }
 
   _selectAll() {
@@ -423,7 +494,7 @@ export default class LedSelectModal {
   }
 
   _selectNone() {
-    this._selected = new Set([this._source | 0]);
+    this._selected = new Set(); // allow empty selection
     this._normalizeSelection();
     this._syncUI();
   }
@@ -487,6 +558,11 @@ export default class LedSelectModal {
 
   _done() {
     this._normalizeSelection();
+    if (this._selected.size === 0) {
+      this._syncUI();
+      return;
+    }
+
     const out = Array.from(this._selected).sort((a, b) => a - b);
     const src = (this._source | 0);
 
@@ -516,6 +592,10 @@ export default class LedSelectModal {
     const isSel = this._selected.has(i);
     const isSrc = (this._source | 0) === i;
 
+    // semantics:
+    // - if unselected: select + set source
+    // - if selected & not source: set source
+    // - if selected & is source: deselect (can become empty)
     if (!isSel) {
       this._selected.add(i);
       this._source = i;
@@ -523,6 +603,7 @@ export default class LedSelectModal {
       this._source = i;
     } else {
       this._selected.delete(i);
+      // if it becomes empty, normalize will set source = -1
     }
 
     this._normalizeSelection();
