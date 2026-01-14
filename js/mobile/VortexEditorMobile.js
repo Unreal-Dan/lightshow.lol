@@ -736,18 +736,19 @@ export default class VortexEditorMobile {
     this.lightshow = new Lightshow(this.vortexLib, this.vortex, canvas);
 
     const isDuo = dt === 'Duo';
+    const isDeck = dt === 'Chromadeck';
     this.lightshow.updateLayout(false);
     this.lightshow.setDuoEditorMode(isDuo);
 
     const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
 
     Object.assign(this.lightshow, {
-      tickRate: isDuo ? 3 : 1,
+      tickRate: isDuo ? 3 : 3,
       trailSize: isDuo ? 300 : 120,
       dotSize: isDuo ? 15 : 5,
       blurFac: 1,
-      circleRadius: isDuo ? 180 : 400,
-      spread: isDuo ? 50 : 150,
+      circleRadius: isDuo ? 180 : (isDeck ? 85 : 400),
+      spread: isDuo ? 50 : (isDeck ? 10 : 150),
       direction: -1,
     });
 
