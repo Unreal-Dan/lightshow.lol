@@ -171,7 +171,6 @@
 #mobile-app-root .m-led-legend-dot.is-source,
 .m-led-legend-dot.is-source {
   border-color: rgba(0, 255, 0, 0.9);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65) inset;
 }
 
 /* Stage */
@@ -265,7 +264,7 @@
   background: #0b0000;
 
   /* clear ring like legend, but thicker */
-  border: 4px solid rgba(255, 255, 255, 0.80);
+  border: 6px solid rgba(255, 255, 255, 255);
 
   /* no glow */
   box-shadow: none;
@@ -286,33 +285,24 @@
 /* Selected: yellow ring + slightly lighter fill (still dark) */
 #mobile-app-root .m-led-indicator.is-selected,
 .m-led-indicator.is-selected {
-  border-color: rgba(255, 255, 0, 0.95);
+  border-color: #ffff00;
   background: #111;
+  box-shadow: 0 0 10px 1px #ffff00f2;
 }
 
 /* Source: green ring + slightly lighter fill (still dark) */
 #mobile-app-root .m-led-indicator.is-source,
 .m-led-indicator.is-source {
-  border-color: rgba(0, 255, 0, 0.95);
+  border-color: #17b803;
   background: #111;
+  box-shadow: 0 0 10px 1px #17b803f2;
 }
 
-/* If both classes ever coexist, source wins visually */
 #mobile-app-root .m-led-indicator.is-source.is-selected,
 .m-led-indicator.is-source.is-selected {
-  border-color: rgba(0, 255, 0, 0.98);
+  border-color: #17b803;
   background: #111;
-}
-
-/* Make them even more “UI” by adding a subtle inner rim (NOT glow) */
-#mobile-app-root .m-led-indicator::after,
-.m-led-indicator::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border-radius: 999px;
-  border: 2px solid rgba(0, 0, 0, 0.55);
-  pointer-events: none;
+  box-shadow: 0 0 10px 1px #17b803f2;
 }
 
 /* Keep them manageable on tiny screens */
@@ -403,7 +393,7 @@
 /* Done button normal */
 #mobile-app-root .m-led-done,
 .m-led-done {
-  border: 0;
+  border: 1px solid green;
   padding: 10px 14px;
   border-radius: 12px;
   background: rgba(0, 255, 0, 0.20);
@@ -422,5 +412,54 @@
   opacity: 1;
   pointer-events: none;
   filter: grayscale(1);
+}
+
+/* Subtle "drag to box select" hint inside the LED stage */
+#mobile-app-root .m-led-stage,
+.m-led-stage {
+  position: relative; /* ensure absolute hint anchors correctly */
+}
+
+/* hint container */
+#mobile-app-root .m-led-gesture-hint,
+.m-led-gesture-hint {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  color: rgba(255, 255, 255, 0.40);
+  opacity: 0.75;
+
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  z-index: 50; /* above device image, below nothing interactive */
+}
+
+/* finger icon */
+#mobile-app-root .m-led-gesture-hint i,
+.m-led-gesture-hint i {
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(40px) rotate(-10deg);
+}
+
+/* dashed box being "drawn" */
+#mobile-app-root .m-led-gesture-box,
+.m-led-gesture-box {
+  position: relative;
+  width: 38px;
+  height: 28px;
+
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+
+  background: rgba(0, 0, 0, 0.18);
+  transform: translateY(10px) translateX(10px);
 }
 
