@@ -19,10 +19,17 @@
   display: block;
   position: fixed;
   inset: 0;
-  z-index: 500;
 
+  /* IMPORTANT:
+     Keep this high so it sits above the app,
+     but BELOW LedSelectModal (1000001). */
+  z-index: 1000000;
+
+  /* IMPORTANT:
+     DO NOT use backdrop-filter here.
+     On mobile Safari this can composite ABOVE other fixed siblings
+     regardless of z-index. */
   background: rgba(0, 0, 0, 0.40);
-  backdrop-filter: blur(6px);
 
   padding:
     max(10px, env(safe-area-inset-top))
@@ -31,6 +38,10 @@
     max(10px, env(safe-area-inset-left));
 
   overflow: hidden;
+
+  /* Helps stabilize stacking on mobile */
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 /* -----------------------------
@@ -59,6 +70,9 @@
     0 2px 0 rgba(255, 255, 255, 0.06) inset;
 
   font-size: 16px;
+
+  /* keep above the overlay backdrop */
+  z-index: 1;
 }
 
 /* =========================================================
@@ -77,8 +91,9 @@
   margin: -2px 0 10px 0;
   padding: 4px 0 10px 0;
 
+  /* IMPORTANT: no backdrop-filter here either */
   background: rgba(10, 10, 10, 0.94);
-  backdrop-filter: blur(10px);
+
   z-index: 2;
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -256,7 +271,6 @@
   pointer-events: none;
 }
 
-/* Selection ring (kept original outline + adds snap + glow overrides below) */
 #mobile-app-root .m-color-cube.is-selected,
 .m-color-cube.is-selected {
   outline: 3px solid rgba(255, 255, 255, 0.70);
@@ -276,7 +290,7 @@
 #mobile-app-root .m-cp-body.is-disabled,
 .m-cp-body.is-disabled {
   opacity: 0.35;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 /* =========================================================
@@ -287,7 +301,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   gap: 12px;
-  align-items: stretch; /* row height follows SV box; hue stretches */
+  align-items: stretch;
   margin-top: 12px;
 }
 
@@ -301,7 +315,6 @@
   min-height: 0;
 }
 
-/* center labels over controls */
 #mobile-app-root .m-cp-sv .m-cp-label,
 .m-cp-sv .m-cp-label,
 #mobile-app-root .m-cp-hue .m-cp-label,
@@ -312,7 +325,7 @@
 #mobile-app-root .m-cp-svbox,
 .m-cp-svbox {
   width: 100%;
-  aspect-ratio: 1 / 1; /* defines shared row height */
+  aspect-ratio: 1 / 1;
   border-radius: 14px;
   border: 1px solid #282828;
   position: relative;
@@ -334,7 +347,7 @@
 #mobile-app-root .m-cp-hueslider,
 .m-cp-hueslider {
   width: 44px;
-  flex: 1 1 auto; /* matches svbox height (grid row height) */
+  flex: 1 1 auto;
   min-height: 0;
   border-radius: 14px;
   border: 1px solid #242424;
@@ -522,27 +535,20 @@
 }
 
 /* =========================================================
-   Long-press delete "armed" state (original + enhanced)
+   Long-press delete "armed" state
 ========================================================= */
-
-/* Original behavior (kept) */
 #mobile-app-root .m-color-cube.is-delete-armed,
 .m-color-cube.is-delete-armed {
   animation: m-cube-delete-flash 0.55s ease-in-out infinite;
   outline: 3px solid rgba(255, 60, 60, 0.95);
   outline-offset: 2px;
+  position: relative;
 }
 
 @keyframes m-cube-delete-flash {
   0%   { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
   50%  { box-shadow: 0 0 0 4px rgba(255,60,60,0.35); }
   100% { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
-}
-
-/* Enhanced: larger red halo behind finger using ::after (adds, doesn't remove) */
-#mobile-app-root .m-color-cube.is-delete-armed,
-.m-color-cube.is-delete-armed {
-  position: relative;
 }
 
 #mobile-app-root .m-color-cube.is-delete-armed::after,
@@ -564,20 +570,14 @@
   100% { transform: scale(0.98); opacity: 0.55; }
 }
 
-/* =========================================================
-   Selection ring responsiveness (adds snap/glow; keeps outline)
-========================================================= */
 #mobile-app-root .m-color-cube.is-selected,
 .m-color-cube.is-selected {
-  outline: 3px solid rgba(255, 255, 255, 0.70);
-  outline-offset: 2px;
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.95),
     0 0 14px rgba(255, 255, 255, 0.22);
   transition: box-shadow 60ms linear, transform 60ms linear;
 }
 
-/* Immediate visual confirmation while deletion is executing (optional class from JS) */
 #mobile-app-root .m-color-cube.is-deleting,
 .m-color-cube.is-deleting {
   opacity: 0.25;
@@ -585,7 +585,7 @@
   transition: opacity 120ms linear, transform 120ms ease-out;
 }
 
-
+/* Spark/Chromadeck LED modal button */
 .m-cp-ledmodalbtn {
   border: 0;
   background: rgba(255,255,255,0.08);
@@ -605,7 +605,6 @@
   white-space: nowrap;
 }
 
-/* make template "hidden" work for the LED container + modal button */
 #mobile-app-root .m-cp-leds.hidden,
 .m-cp-leds.hidden {
   display: none !important;
@@ -616,7 +615,6 @@
   display: none !important;
 }
 
-/* optional: global hidden helper so other templates work too */
 #mobile-app-root .hidden,
 .hidden {
   display: none !important;

@@ -47,7 +47,7 @@ export default class LedSelectModal {
     this._stageScrollL = 0;
     this._stageScrollT = 0;
 
-    // click squelch after drag
+    // click squelch after drag / after open (ghost click)
     this._squelchClickUntil = 0;
 
     this._delegatedInstalled = false;
@@ -115,6 +115,12 @@ export default class LedSelectModal {
       this.root.innerHTML = '';
       this.root.classList.remove('is-open');
       this.root.style.pointerEvents = '';
+      this.root.style.display = '';
+      this.root.style.position = '';
+      this.root.style.inset = '';
+      this.root.style.opacity = '';
+      this.root.style.visibility = '';
+      this.root.style.zIndex = '';
     }
   }
 
@@ -201,18 +207,21 @@ export default class LedSelectModal {
     this.root.appendChild(frag);
     this.dom = new SimpleDom(this.root);
 
+    // ---- IMPORTANT: ghost-click squelch right after open ----
+    // The tap that opened us can synthesize a delayed "click" that lands on the backdrop.
+    // Kill that for a short window so we don't immediately cancel.
+    this._squelchClickUntil = Date.now() + 650;
+
     // bring to front even if CSS is stale somewhere
     this.root.style.zIndex = '1000001';
+    this.root.style.position = 'fixed';
+    this.root.style.inset = '0';
+    this.root.style.display = 'block';
+    this.root.style.opacity = '1';
+    this.root.style.visibility = 'visible';
+    this.root.style.pointerEvents = 'auto';
 
     this.root.classList.add('is-open');
-    this.root.style.position = 'fixed';
-this.root.style.inset = '0';
-this.root.style.display = 'block';
-this.root.style.opacity = '1';
-this.root.style.visibility = 'visible';
-this.root.style.pointerEvents = 'auto';
-this.root.style.zIndex = '1000001';
-
 
     // bind image src
     const img = this.dom.$('[data-role="deviceimg"]');
@@ -324,8 +333,8 @@ this.root.style.zIndex = '1000001';
       const max = Math.min(this._ledCount, this._points.length);
       for (let i = 0; i < max; i++) {
         const p = this._points[i];
-        const x = (Number(p?.x ?? 0) * scaleX);
-        const y = (Number(p?.y ?? 0) * scaleY);
+        const x = Number(p?.x ?? 0) * scaleX;
+        const y = Number(p?.y ?? 0) * scaleY;
 
         const el = document.createElement('div');
         el.className = 'm-led-indicator';
@@ -336,7 +345,6 @@ this.root.style.zIndex = '1000001';
 
         overlay.appendChild(el);
       }
-
       return;
     }
 
@@ -362,7 +370,6 @@ this.root.style.zIndex = '1000001';
   }
 
   _syncUI() {
-    // indicators
     const els = this.dom.all('[data-role="led"]');
     for (const el of els) {
       const idx = Number(el.dataset.ledIndex ?? -1) | 0;
@@ -373,7 +380,6 @@ this.root.style.zIndex = '1000001';
       el.classList.toggle('is-source', !!main);
     }
 
-    // summary
     const sum = this.dom.$('[data-role="summary"]');
     if (sum) {
       const selectedCount = this._selected.size;
@@ -391,7 +397,6 @@ this.root.style.zIndex = '1000001';
       return;
     }
 
-    // clamp set
     const next = new Set();
     for (const v of this._selected) {
       const n = v | 0;
@@ -399,13 +404,10 @@ this.root.style.zIndex = '1000001';
     }
     this._selected = next;
 
-    // clamp source
     if (!((this._source | 0) >= 0 && (this._source | 0) < this._ledCount)) this._source = 0;
 
-    // ensure at least one selected
     if (this._selected.size === 0) this._selected.add(this._source | 0);
 
-    // ensure source in selected
     if (!this._selected.has(this._source | 0)) {
       const arr = Array.from(this._selected).sort((a, b) => a - b);
       this._source = arr.length ? (arr[0] | 0) : 0;
@@ -460,7 +462,6 @@ this.root.style.zIndex = '1000001';
     if (!this._swapEnabled) return;
     this._useAlt = !this._useAlt;
 
-    // reload positions
     const url = this._resolvePositionsUrl();
     if (url) {
       const obj = await this._fetchPositions(url);
@@ -471,7 +472,6 @@ this.root.style.zIndex = '1000001';
       this._origH = 1;
     }
 
-    // update image src
     const img = this.dom.$('[data-role="deviceimg"]');
     if (img) {
       const srcToUse = this._useAlt && this._imageSrcAlt ? this._imageSrcAlt : this._imageSrc;
@@ -516,10 +516,6 @@ this.root.style.zIndex = '1000001';
     const isSel = this._selected.has(i);
     const isSrc = (this._source | 0) === i;
 
-    // semantics:
-    // - if unselected: select + set source
-    // - if selected & not source: set source
-    // - if selected & is source: deselect (but keep at least one selected)
     if (!isSel) {
       this._selected.add(i);
       this._source = i;
@@ -610,16 +606,19 @@ this.root.style.zIndex = '1000001';
   _onPointerDown(e) {
     if (!this.isOpen()) return;
 
-    // prevent page scroll while interacting
+    // ---- IMPORTANT: swallow any immediate post-open pointerdown (rare but happens) ----
+    if (Date.now() < this._squelchClickUntil) {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      return;
+    }
+
     try {
       e.preventDefault();
     } catch {}
 
     const sheet = this.dom.$('.m-led-sheet');
     if (sheet && !sheet.contains(e.target)) {
-      try {
-        e.stopPropagation();
-      } catch {}
+      try { e.stopPropagation(); } catch {}
       this._cancel();
       return;
     }
@@ -627,7 +626,6 @@ this.root.style.zIndex = '1000001';
     const act = e.target?.closest?.('[data-act]')?.dataset?.act;
     if (act) return;
 
-    // if tapping a led, let click handler process it
     const led = e.target?.closest?.('[data-role="led"]');
     if (led) return;
 
@@ -653,9 +651,7 @@ this.root.style.zIndex = '1000001';
     if (!this.isOpen()) return;
     if (!this._dragging) return;
 
-    try {
-      e.preventDefault();
-    } catch {}
+    try { e.preventDefault(); } catch {}
 
     const stage = this.dom.$('[data-role="stage"]');
     if (!stage) return;
@@ -674,9 +670,7 @@ this.root.style.zIndex = '1000001';
     if (!this.isOpen()) return;
 
     if (this._dragging) {
-      try {
-        e.preventDefault();
-      } catch {}
+      try { e.preventDefault(); } catch {}
 
       this._dragging = false;
 
@@ -700,20 +694,17 @@ this.root.style.zIndex = '1000001';
   async _onClick(e) {
     if (!this.isOpen()) return;
 
+    // ---- ghost click squelch (the main fix) ----
     if (Date.now() < this._squelchClickUntil) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
       return;
     }
 
+    if (Date.now() < this._squelchClickUntil) return;
+
     const actBtn = e.target?.closest?.('[data-act]');
     if (actBtn) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
 
       const act = String(actBtn.dataset.act || '');
 
@@ -732,20 +723,14 @@ this.root.style.zIndex = '1000001';
 
     const sheet = this.dom.$('.m-led-sheet');
     if (sheet && !sheet.contains(e.target)) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
       this._cancel();
       return;
     }
 
     const led = e.target?.closest?.('[data-role="led"]');
     if (led) {
-      try {
-        e.preventDefault();
-        e.stopPropagation();
-      } catch {}
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
       const idx = Number(led.dataset.ledIndex ?? -1) | 0;
       this._tapLed(idx);
       return;

@@ -312,6 +312,79 @@ export default class ColorPicker {
     }, 0);
   }
 
+  _applyPatternToSelection(patID) {
+    const curMode = this._getCurMode();
+    if (!curMode || !patID) return;
+
+    const ledCount = this._getLedCountForDevice();
+    const multiIndex = this._getMultiIndex();
+    const isMulti = this._isMultiMode(curMode);
+
+    const { targetLeds, sourceLed } = this.mobileLedSel.getEffectiveSelection({
+      isMultiMode: isMulti,
+      multiIndex,
+      ledCount,
+    });
+
+    const set = curMode.getColorset(sourceLed);
+
+    if (this.vortexLib.isSingleLedPatternID(patID)) {
+      if (isMulti) {
+        // switching multi -> single
+        curMode.clearPattern(multiIndex);
+        // apply single pattern + colorset to ALL singles
+        for (let led = 0; led < ledCount; led++) {
+          curMode.setPattern(patID, led, null, null);
+          curMode.setColorset(set, led);
+        }
+        // restore default selectable state (all selected, src=0)
+        this.mobileLedSel.ensureDefaultsForSingleLed({ ledCount });
+      } else {
+        // apply to selected leds
+        for (const led of targetLeds) {
+          curMode.setPattern(patID, led, null, null);
+          curMode.setColorset(set, led);
+        }
+      }
+    } else {
+      // switching to multi-led pattern
+      curMode.setPattern(patID, multiIndex, null, null);
+      curMode.setColorset(set, multiIndex);
+    }
+
+    curMode.init();
+    this.vortex.engine().modes().saveCurMode();
+  }
+  
+  _applyColorsetMutation(mutatorFn) {
+    const curMode = this._getCurMode();
+    if (!curMode) return null;
+
+    const ledCount = this._getLedCountForDevice();
+    const multiIndex = this._getMultiIndex();
+    const isMulti = this._isMultiMode(curMode);
+
+    const { targetLeds, sourceLed } = this.mobileLedSel.getEffectiveSelection({
+      isMultiMode: isMulti,
+      multiIndex,
+      ledCount,
+    });
+
+    const set = curMode.getColorset(sourceLed);
+    if (!set) return null;
+
+    mutatorFn(set);
+
+    for (const led of targetLeds) {
+      curMode.setColorset(set, led);
+    }
+
+    curMode.init();
+    this.vortex.engine().modes().saveCurMode();
+
+    return { set, sourceLed, targetLeds, isMulti, ledCount };
+  }
+
   async _render() {
     const { r, g, b, h, s, v } = this.state;
     const hex = this._rgbToHex(r, g, b);

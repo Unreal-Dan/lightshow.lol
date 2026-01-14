@@ -9,6 +9,8 @@ import SimpleViews from './SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 
+import LedSelectionState from './LedSelectionState.js';
+
 const ASSETS = {
   styles: [
     { id: 'fa-css', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css' },
@@ -49,6 +51,8 @@ export default class VortexEditorMobile {
     this._editorResizeHandler = null;
 
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
+
+    this.ledSelectState = new LedSelectionState();
 
     this.effectsPanel = new ColorPicker({
       vortexLib: this.vortexLib,
@@ -2307,674 +2311,644 @@ export default class VortexEditorMobile {
     }
   }
 
-async _vcbFetchPage(pageNumber) {
-  const page = pageNumber | 0;
-  if (page <= 0) throw new Error('invalid page');
-  if (this._vcbModesCache[page]) return this._vcbModesCache[page];
+  async _vcbFetchPage(pageNumber) {
+    const page = pageNumber | 0;
+    if (page <= 0) throw new Error('invalid page');
+    if (this._vcbModesCache[page]) return this._vcbModesCache[page];
 
-  let response;
-  const v = Date.now();
+    let response;
+    const v = Date.now();
 
-  if (this.isLocalServer) {
-    const suffix = page > 1 ? '2' : '';
-    response = await fetch(`public/data/modeData${suffix}.json?v=${v}`);
-  } else {
-    response = await fetch(`https://vortex.community/modes/json?page=${page}&pageSize=${this._vcbPageSize}&v=${v}`, {
-      method: 'GET',
-      credentials: 'include'
+    if (this.isLocalServer) {
+      const suffix = page > 1 ? '2' : '';
+      response = await fetch(`public/data/modeData${suffix}.json?v=${v}`);
+    } else {
+      response = await fetch(`https://vortex.community/modes/json?page=${page}&pageSize=${this._vcbPageSize}&v=${v}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+    }
+
+    const data = await response.json();
+    this._vcbModesCache[page] = data;
+
+    if (typeof data?.pages === 'number') this._vcbTotalPages = data.pages;
+
+    return data;
+  }
+
+  _vcbApplyFilters(pageData) {
+    if (!pageData || !Array.isArray(pageData.data)) return [];
+    const q = String(this._vcbSearchQuery || '').trim().toLowerCase();
+
+    return pageData.data.filter((mode) => {
+      const dev = String(mode?.deviceType || '').trim();
+      const matchesDevice = this._vcbActiveFilters.has(dev);
+      const name = String(mode?.name || '').toLowerCase();
+      const matchesSearch = !q || (name && name.includes(q));
+      return matchesDevice && matchesSearch;
     });
   }
 
-  const data = await response.json();
-  this._vcbModesCache[page] = data;
-
-  if (typeof data?.pages === 'number') this._vcbTotalPages = data.pages;
-
-  return data;
-}
-
-_vcbApplyFilters(pageData) {
-  if (!pageData || !Array.isArray(pageData.data)) return [];
-  const q = String(this._vcbSearchQuery || '').trim().toLowerCase();
-
-  return pageData.data.filter((mode) => {
-    const dev = String(mode?.deviceType || '').trim();
-    const matchesDevice = this._vcbActiveFilters.has(dev);
-    const name = String(mode?.name || '').toLowerCase();
-    const matchesSearch = !q || (name && name.includes(q));
-    return matchesDevice && matchesSearch;
-  });
-}
-
-_vcbRenderPage(filteredModes) {
-  const container = this._vcbEls.modesContainer;
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (!filteredModes || filteredModes.length <= 0) {
-    const empty = document.createElement('div');
-    empty.className = 'm-vcb-status';
-    empty.textContent = 'No modes found.';
-    container.appendChild(empty);
-    return;
-  }
-
-  for (const mode of filteredModes) {
-    const row = document.createElement('div');
-    row.className = 'm-vcb-entry';
-    row.dataset.device = String(mode.deviceType || '');
-
-    const deviceIcon = document.createElement('img');
-    deviceIcon.className = 'm-vcb-device-icon';
-    deviceIcon.src = `public/images/${String(mode.deviceType || '').toLowerCase()}-logo-square-512.png`;
-    deviceIcon.alt = String(mode.deviceType || '');
-    row.appendChild(deviceIcon);
-
-    const nameDiv = document.createElement('div');
-    nameDiv.className = 'm-vcb-name';
-    nameDiv.textContent = mode.name || 'Unnamed Mode';
-    row.appendChild(nameDiv);
-
-    const actions = document.createElement('div');
-    actions.className = 'm-vcb-actions';
-
-    const importBtn = document.createElement('button');
-    importBtn.type = 'button';
-    importBtn.className = 'm-vcb-import-btn';
-    importBtn.innerHTML = '<i class="fa-solid fa-share"></i>';
-    importBtn.title = 'Import';
-
-    importBtn.addEventListener('click', async (e) => {
-      try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-      await this._vcbImportMode(mode);
-    }, { passive: false });
-
-    actions.appendChild(importBtn);
-    row.appendChild(actions);
-
-    row.addEventListener('click', async () => {
-      await this._vcbImportMode(mode);
-    }, { passive: true });
-
-    container.appendChild(row);
-  }
-}
-
-_vcbUpdatePager() {
-  const label = this._vcbEls.pageLabel;
-  if (label) label.textContent = `Page ${this._vcbCurrentPage} / ${this._vcbTotalPages || '?'}`;
-
-  const prevBtn = this._vcbEls.prevBtn;
-  const nextBtn = this._vcbEls.nextBtn;
-
-  if (prevBtn) prevBtn.disabled = !(this._vcbCurrentPage > 1);
-  if (nextBtn) nextBtn.disabled = !(this._vcbCurrentPage < (this._vcbTotalPages || 1));
-}
-
-async _vcbLoadPage(pageNumber) {
-  this._vcbCurrentPage = pageNumber | 0;
-  if (this._vcbCurrentPage <= 0) this._vcbCurrentPage = 1;
-
-  this._vcbSetStatus('Loading…');
-
-  try {
-    const pageData = await this._vcbFetchPage(this._vcbCurrentPage);
-    const filtered = this._vcbApplyFilters(pageData);
-
-    this._vcbUpdatePager();
-    this._vcbRenderPage(filtered);
-
-    this._vcbSetStatus(
-      filtered.length
-      ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
-      : 'No matches on this page'
-    );
-  } catch (err) {
-    console.error('[Mobile] Error fetching modes:', err);
-    this._vcbUpdatePager();
-    this._vcbSetStatus('Failed to load modes.');
+  _vcbRenderPage(filteredModes) {
     const container = this._vcbEls.modesContainer;
-    if (container) {
-      container.innerHTML = '';
-      const p = document.createElement('p');
-      p.style.color = 'red';
-      p.textContent = 'Failed to load modes.';
-      container.appendChild(p);
-    }
-  }
-}
+    if (!container) return;
 
-async _vcbApplyFiltersAndRender() {
-  try {
-    const pageData = this._vcbModesCache[this._vcbCurrentPage];
-    if (!pageData) {
-      await this._vcbLoadPage(this._vcbCurrentPage);
+    container.innerHTML = '';
+
+    if (!filteredModes || filteredModes.length <= 0) {
+      const empty = document.createElement('div');
+      empty.className = 'm-vcb-status';
+      empty.textContent = 'No modes found.';
+      container.appendChild(empty);
       return;
     }
-    const filtered = this._vcbApplyFilters(pageData);
-    this._vcbUpdatePager();
-    this._vcbRenderPage(filtered);
-    this._vcbSetStatus(
-      filtered.length
-      ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
-      : 'No matches on this page'
-    );
-  } catch (err) {
-    console.error('[Mobile] applyFilters failed:', err);
+
+    for (const mode of filteredModes) {
+      const row = document.createElement('div');
+      row.className = 'm-vcb-entry';
+      row.dataset.device = String(mode.deviceType || '');
+
+      const deviceIcon = document.createElement('img');
+      deviceIcon.className = 'm-vcb-device-icon';
+      deviceIcon.src = `public/images/${String(mode.deviceType || '').toLowerCase()}-logo-square-512.png`;
+      deviceIcon.alt = String(mode.deviceType || '');
+      row.appendChild(deviceIcon);
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'm-vcb-name';
+      nameDiv.textContent = mode.name || 'Unnamed Mode';
+      row.appendChild(nameDiv);
+
+      const actions = document.createElement('div');
+      actions.className = 'm-vcb-actions';
+
+      const importBtn = document.createElement('button');
+      importBtn.type = 'button';
+      importBtn.className = 'm-vcb-import-btn';
+      importBtn.innerHTML = '<i class="fa-solid fa-share"></i>';
+      importBtn.title = 'Import';
+
+      importBtn.addEventListener('click', async (e) => {
+        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
+        await this._vcbImportMode(mode);
+      }, { passive: false });
+
+      actions.appendChild(importBtn);
+      row.appendChild(actions);
+
+      row.addEventListener('click', async () => {
+        await this._vcbImportMode(mode);
+      }, { passive: true });
+
+      container.appendChild(row);
+    }
   }
-}
 
-_vcbBuildModeJsonFromCommunity(mode) {
-  // We intentionally build a "mode json" that your C++ loadFromJson/loadModeFromJson understands.
-  // No guessing function names. Import path uses vortex.printJson + vortex.parseJson only.
+  _vcbUpdatePager() {
+    const label = this._vcbEls.pageLabel;
+    if (label) label.textContent = `Page ${this._vcbCurrentPage} / ${this._vcbTotalPages || '?'}`;
 
-  const patternSets = Array.isArray(mode?.patternSets) ? mode.patternSets : [];
-  const ledPatternOrder = Array.isArray(mode?.ledPatternOrder) ? mode.ledPatternOrder : [];
+    const prevBtn = this._vcbEls.prevBtn;
+    const nextBtn = this._vcbEls.nextBtn;
 
-  const patternSetMap = {};
-  for (const ps of patternSets) {
-    if (!ps || typeof ps !== 'object') continue;
-    const id = String(ps._id || '');
-    if (!id) continue;
-    patternSetMap[id] = ps.data;
+    if (prevBtn) prevBtn.disabled = !(this._vcbCurrentPage > 1);
+    if (nextBtn) nextBtn.disabled = !(this._vcbCurrentPage < (this._vcbTotalPages || 1));
   }
 
-  const ledCounts = {
-    Gloves: 10,
-    Orbit: 28,
-    Handle: 3,
-    Duo: 2,
-    Chromadeck: 20,
-    Spark: 6
-  };
+  async _vcbLoadPage(pageNumber) {
+    this._vcbCurrentPage = pageNumber | 0;
+    if (this._vcbCurrentPage <= 0) this._vcbCurrentPage = 1;
 
-  const dev = String(mode?.deviceType || '');
-  const num_leds = ledCounts[dev] || 1;
+    this._vcbSetStatus('Loading…');
 
-  const single_pats = ledPatternOrder.map((orderIndex) => {
-    const i = orderIndex | 0;
-    const ps = patternSets[i];
-    const id = ps?._id ? String(ps._id) : '';
-    return id ? patternSetMap[id] : null;
-  });
-
-  return {
-    num_leds,
-    flags: mode?.flags ?? 0,
-    single_pats
-  };
-}
-
-async _vcbImportMode(mode) {
-  try {
-    // Get full current state JSON from engine
-    const beforeCount = this.vortex.numModes() | 0;
-    const jsonStr = String(this.vortex.printJson(false) || '');
-
-    let obj;
     try {
-      obj = jsonStr ? JSON.parse(jsonStr) : {};
-    } catch {
-      obj = {};
+      const pageData = await this._vcbFetchPage(this._vcbCurrentPage);
+      const filtered = this._vcbApplyFilters(pageData);
+
+      this._vcbUpdatePager();
+      this._vcbRenderPage(filtered);
+
+      this._vcbSetStatus(
+        filtered.length
+        ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
+        : 'No matches on this page'
+      );
+    } catch (err) {
+      console.error('[Mobile] Error fetching modes:', err);
+      this._vcbUpdatePager();
+      this._vcbSetStatus('Failed to load modes.');
+      const container = this._vcbEls.modesContainer;
+      if (container) {
+        container.innerHTML = '';
+        const p = document.createElement('p');
+        p.style.color = 'red';
+        p.textContent = 'Failed to load modes.';
+        container.appendChild(p);
+      }
+    }
+  }
+
+  async _vcbApplyFiltersAndRender() {
+    try {
+      const pageData = this._vcbModesCache[this._vcbCurrentPage];
+      if (!pageData) {
+        await this._vcbLoadPage(this._vcbCurrentPage);
+        return;
+      }
+      const filtered = this._vcbApplyFilters(pageData);
+      this._vcbUpdatePager();
+      this._vcbRenderPage(filtered);
+      this._vcbSetStatus(
+        filtered.length
+        ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
+        : 'No matches on this page'
+      );
+    } catch (err) {
+      console.error('[Mobile] applyFilters failed:', err);
+    }
+  }
+
+  _vcbBuildModeJsonFromCommunity(mode) {
+    // We intentionally build a "mode json" that your C++ loadFromJson/loadModeFromJson understands.
+    // No guessing function names. Import path uses vortex.printJson + vortex.parseJson only.
+
+    const patternSets = Array.isArray(mode?.patternSets) ? mode.patternSets : [];
+    const ledPatternOrder = Array.isArray(mode?.ledPatternOrder) ? mode.ledPatternOrder : [];
+
+    const patternSetMap = {};
+    for (const ps of patternSets) {
+      if (!ps || typeof ps !== 'object') continue;
+      const id = String(ps._id || '');
+      if (!id) continue;
+      patternSetMap[id] = ps.data;
     }
 
-    if (!obj || typeof obj !== 'object') obj = {};
-    if (!Array.isArray(obj.modes)) obj.modes = [];
-    if (typeof obj.num_modes !== 'number') obj.num_modes = obj.modes.length | 0;
+    const ledCounts = {
+      Gloves: 10,
+      Orbit: 28,
+      Handle: 3,
+      Duo: 2,
+      Chromadeck: 20,
+      Spark: 6
+    };
 
-    const modeJson = this._vcbBuildModeJsonFromCommunity(mode);
-    const insertIndex = obj.modes.length | 0;
+    const dev = String(mode?.deviceType || '');
+    const num_leds = ledCounts[dev] || 1;
 
-    obj.modes.push(modeJson);
-    obj.num_modes = (obj.modes.length | 0);
-
-    const outStr = JSON.stringify(obj);
-
-    // mutation: pause render during parseJson (clears and reloads)
-    this._clearModeTimers();
-    this._withLightshowPausedSync(() => {
-      const ok = this.vortex.parseJson(outStr);
-      if (!ok) throw new Error('vortex.parseJson returned false');
+    const single_pats = ledPatternOrder.map((orderIndex) => {
+      const i = orderIndex | 0;
+      const ps = patternSets[i];
+      const id = ps?._id ? String(ps._id) : '';
+      return id ? patternSetMap[id] : null;
     });
 
-    // Select the newly-imported mode (the appended one)
-    const afterCount = this.vortex.numModes() | 0;
-    if (afterCount > 0) {
-      const target = Math.min(insertIndex, afterCount - 1);
-      this.vortex.setCurMode(target, false);
+    return {
+      num_leds,
+      flags: mode?.flags ?? 0,
+      single_pats
+    };
+  }
+
+  async _vcbImportMode(mode) {
+    try {
+      // Get full current state JSON from engine
+      const beforeCount = this.vortex.numModes() | 0;
+      const jsonStr = String(this.vortex.printJson(false) || '');
+
+      let obj;
+      try {
+        obj = jsonStr ? JSON.parse(jsonStr) : {};
+      } catch {
+        obj = {};
+      }
+
+      if (!obj || typeof obj !== 'object') obj = {};
+      if (!Array.isArray(obj.modes)) obj.modes = [];
+      if (typeof obj.num_modes !== 'number') obj.num_modes = obj.modes.length | 0;
+
+      const modeJson = this._vcbBuildModeJsonFromCommunity(mode);
+      const insertIndex = obj.modes.length | 0;
+
+      obj.modes.push(modeJson);
+      obj.num_modes = (obj.modes.length | 0);
+
+      const outStr = JSON.stringify(obj);
+
+      // mutation: pause render during parseJson (clears and reloads)
+      this._clearModeTimers();
+      this._withLightshowPausedSync(() => {
+        const ok = this.vortex.parseJson(outStr);
+        if (!ok) throw new Error('vortex.parseJson returned false');
+      });
+
+      // Select the newly-imported mode (the appended one)
+      const afterCount = this.vortex.numModes() | 0;
+      if (afterCount > 0) {
+        const target = Math.min(insertIndex, afterCount - 1);
+        this.vortex.setCurMode(target, false);
+      }
+
+      Notification.success?.('Imported mode');
+      await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
+    } catch (err) {
+      console.error('[Mobile] importMode failed:', err);
+      Notification.failure('Import failed');
+      try {
+        await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
+      } catch {}
+    }
+  }
+
+  async gotoCommunityBrowser({ deviceType, backTarget = 'mode-source' } = {}) {
+    const dt = deviceType || this.selectedDeviceType('Duo');
+
+    this.stopEditorLightshow();
+    this.clearEditorResizeHandler();
+    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+
+    const frag = await this.views.render('community-browser.html', {});
+    this.dom.set(frag);
+
+    this._vcbAttachEls();
+
+    this.dom.onClick('#back-btn', async () => {
+      if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
+      else await this.gotoModeSource({ deviceType: dt });
+    });
+
+    if (this._vcbEls.searchBox) {
+      this._vcbEls.searchBox.value = this._vcbSearchQuery || '';
+      this._vcbEls.searchBox.addEventListener('input', async () => {
+        this._vcbSearchQuery = String(this._vcbEls.searchBox.value || '');
+        await this._vcbApplyFiltersAndRender();
+      }, { passive: true });
     }
 
-    Notification.success?.('Imported mode');
-    await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
-  } catch (err) {
-    console.error('[Mobile] importMode failed:', err);
-    Notification.failure('Import failed');
+    if (this._vcbEls.prevBtn) {
+      this._vcbEls.prevBtn.addEventListener('click', async () => {
+        if (this._vcbCurrentPage > 1) {
+          this._vcbCurrentPage--;
+          await this._vcbLoadPage(this._vcbCurrentPage);
+        }
+      }, { passive: true });
+    }
+
+    if (this._vcbEls.nextBtn) {
+      this._vcbEls.nextBtn.addEventListener('click', async () => {
+        if (this._vcbCurrentPage < (this._vcbTotalPages || 1)) {
+          this._vcbCurrentPage++;
+          await this._vcbLoadPage(this._vcbCurrentPage);
+        }
+      }, { passive: true });
+    }
+
+    if (this._vcbEls.refreshBtn) {
+      this._vcbEls.refreshBtn.addEventListener('click', async () => {
+        this._vcbClearCache();
+        await this._vcbLoadPage(this._vcbCurrentPage);
+      }, { passive: true });
+    }
+
+    this._vcbBuildFilterButtons();
+    await this._vcbLoadPage(this._vcbCurrentPage);
+  }
+
+  // -----------------------------
+  // Engine helpers (pure bound APIs)
+  // -----------------------------
+
+  _getEngine() {
+    return this.vortex.engine();
+  }
+
+  _getModes() {
+    return this._getEngine().modes();
+  }
+
+  _getCurMode() {
+    return this._getModes().curMode();
+  }
+
+  _clearFxFinalize() {
+    if (this._fxFinalizeTimer) {
+      clearTimeout(this._fxFinalizeTimer);
+      this._fxFinalizeTimer = null;
+    }
+  }
+
+  _scheduleFxFinalize(ms = 140) {
+    this._clearFxFinalize();
+    this._fxFinalizeTimer = setTimeout(() => {
+      this._fxFinalizeTimer = null;
+      this._finalizeCurModeSafe();
+    }, ms);
+  }
+
+  _clearFxDemo() {
+    if (this._fxDemoTimer) {
+      clearTimeout(this._fxDemoTimer);
+      this._fxDemoTimer = null;
+    }
+  }
+
+  _scheduleFxDemo(ms = 70) {
+    this._clearFxDemo();
+    this._fxDemoTimer = setTimeout(() => {
+      this._fxDemoTimer = null;
+      this.demoModeOnDevice();
+    }, ms);
+  }
+
+  _rgbToHex(r, g, b) {
+    const rr = (r & 255) >>> 0;
+    const gg = (g & 255) >>> 0;
+    const bb = (b & 255) >>> 0;
+    return `#${((1 << 24) | (rr << 16) | (gg << 8) | bb).toString(16).slice(1).toUpperCase()}`;
+  }
+
+  _hexToRgb(hex) {
+    const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) return { r: 255, g: 0, b: 0 };
+    const v = parseInt(m[1], 16) >>> 0;
+    return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+  }
+
+  _getLedCountForDevice(dt) {
+    return this.devices[dt].ledCount | 0;
+  }
+
+  _escape(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  _patternOptionsHtml({ allowMulti }) {
+    const patternEnum = this.vortexLib.PatternID;
+
+    const strobe = [];
+    const blend = [];
+    const solid = [];
+    const multi = [];
+
+    for (let k in patternEnum) {
+      if (!Object.prototype.hasOwnProperty.call(patternEnum, k)) continue;
+      if (k === 'values' || k === 'argCount') continue;
+
+      const pat = patternEnum[k];
+      if (!pat) continue;
+      if (pat === patternEnum.PATTERN_NONE || pat === patternEnum.PATTERN_COUNT) continue;
+
+      let label = '';
+      try {
+        label = this.vortex.patternToString(pat);
+        if (label.startsWith('complementary')) label = 'comp. ' + label.slice(14);
+      } catch {
+        label = k;
+      }
+
+      const val = pat.value ?? -1;
+      const opt = `<option value="${val}">${this._escape(label)}</option>`;
+
+      const isSingle = !!this.vortexLib.isSingleLedPatternID?.(pat);
+
+      if (!isSingle) {
+        if (allowMulti) multi.push(opt);
+        continue;
+      }
+
+      if (label.includes('blend')) blend.push(opt);
+      else if (label.includes('solid')) solid.push(opt);
+      else strobe.push(opt);
+    }
+
+    const mk = (label, arr) =>
+      arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '';
+
+    return (
+      mk('Strobe Patterns', strobe) +
+      mk('Blend Patterns', blend) +
+      mk('Solid Patterns', solid) +
+      (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
+    );
+  }
+
+  _getCurMode() {
+    return this.vortex.engine().modes().curMode();
+  }
+
+  _getLedCountForDevice() {
+    return this.vortex.engine().leds().ledCount() | 0;
+  }
+
+  _getMultiIndex() {
+    return this.vortex.engine().leds().ledMulti() | 0;
+  }
+
+  _isMultiMode(curMode) {
+    return !!(curMode && curMode.isMultiLed && curMode.isMultiLed());
+  }
+
+  _extractColorsHexFromColorset(vortexLib, set) {
+    const out = [];
+    if (!set) return out;
+
+    const n = Math.min(8, set.numColors ? (set.numColors() | 0) : 0);
+    for (let i = 0; i < n; i++) {
+      const c = set.get(i);
+      const r = (c?.red ?? 0) & 0xff;
+      const g = (c?.green ?? 0) & 0xff;
+      const b = (c?.blue ?? 0) & 0xff;
+      out.push(`#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`);
+    }
+    return out;
+  }
+
+  _getColorsetHexes(cur, led) {
+    const set = cur.getColorset(led);
+    const out = [];
+    if (!set) return out;
+    const n = set.numColors();
+    for (let i = 0; i < n; i++) {
+      const c = set.get(i);
+      out.push(this._rgbToHex(c.red, c.green, c.blue));
+    }
+    return out;
+  }
+
+  _getPatternValue(cur, led) {
+    try { return cur.getPatternID(led).value | 0; } catch { return -1; }
+  }
+
+  _finalizeCurModeSafe() {
     try {
-      await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
+      const cur = this._getCurMode();
+      if (cur) cur.init(); // Mode::init() is a clean binding
+    } catch {}
+    try {
+      this._getModes().saveCurMode(); // Modes::saveCurMode() is also a clean binding
     } catch {}
   }
-}
 
-async gotoCommunityBrowser({ deviceType, backTarget = 'mode-source' } = {}) {
-  const dt = deviceType || this.selectedDeviceType('Duo');
+  async openEffectsPanel(dt) {
+    const deviceType = this.devicePanel?.selectedDevice || 'Spark'; // however you store it
+    const ledCount = this._getLedCountForDevice();
+    const multiIndex = this._getMultiIndex();
+    const curMode = this._getCurMode();
+    const isMulti = this._isMultiMode(curMode);
 
-  this.stopEditorLightshow();
-  this.clearEditorResizeHandler();
-  if (this.effectsPanel.isOpen()) this.effectsPanel.close();
+    this.ledSelectState.ensureDefaultsForSingleLed({ ledCount });
 
-  const frag = await this.views.render('community-browser.html', {});
-  this.dom.set(frag);
+    const ledSelectState = {
+      title: 'LEDs',
+      deviceName: deviceType,
+      imageSrc: this.devices?.[deviceType]?.image ?? null,
+      imageSrcAlt: this.devices?.[deviceType]?.altImage ?? null,
+      swapEnabled: !!this.devices?.[deviceType]?.altImage,
+      positionsUrl: `public/data/${String(deviceType).toLowerCase()}-led-positions.json`,
+      positionsUrlAlt: this.devices?.[deviceType]?.altLabel
+        ? `public/data/${String(this.devices[deviceType].altLabel).toLowerCase()}-led-positions.json`
+        : null,
+      selectedLeds: this.ledSelectState.getSingleSelected(),
+      sourceLed: this.ledSelectState.getSingleSource(),
+    };
 
-  this._vcbAttachEls();
-
-  this.dom.onClick('#back-btn', async () => {
-    if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
-    else await this.gotoModeSource({ deviceType: dt });
-  });
-
-  if (this._vcbEls.searchBox) {
-    this._vcbEls.searchBox.value = this._vcbSearchQuery || '';
-    this._vcbEls.searchBox.addEventListener('input', async () => {
-      this._vcbSearchQuery = String(this._vcbEls.searchBox.value || '');
-      await this._vcbApplyFiltersAndRender();
-    }, { passive: true });
-  }
-
-  if (this._vcbEls.prevBtn) {
-    this._vcbEls.prevBtn.addEventListener('click', async () => {
-      if (this._vcbCurrentPage > 1) {
-        this._vcbCurrentPage--;
-        await this._vcbLoadPage(this._vcbCurrentPage);
-      }
-    }, { passive: true });
-  }
-
-  if (this._vcbEls.nextBtn) {
-    this._vcbEls.nextBtn.addEventListener('click', async () => {
-      if (this._vcbCurrentPage < (this._vcbTotalPages || 1)) {
-        this._vcbCurrentPage++;
-        await this._vcbLoadPage(this._vcbCurrentPage);
-      }
-    }, { passive: true });
-  }
-
-  if (this._vcbEls.refreshBtn) {
-    this._vcbEls.refreshBtn.addEventListener('click', async () => {
-      this._vcbClearCache();
-      await this._vcbLoadPage(this._vcbCurrentPage);
-    }, { passive: true });
-  }
-
-  this._vcbBuildFilterButtons();
-  await this._vcbLoadPage(this._vcbCurrentPage);
-}
-
-// -----------------------------
-// Engine helpers (pure bound APIs)
-// -----------------------------
-
-_getEngine() {
-  return this.vortex.engine();
-}
-
-_getModes() {
-  return this._getEngine().modes();
-}
-
-_getCurMode() {
-  return this._getModes().curMode();
-}
-
-_clearFxFinalize() {
-  if (this._fxFinalizeTimer) {
-    clearTimeout(this._fxFinalizeTimer);
-    this._fxFinalizeTimer = null;
-  }
-}
-
-_scheduleFxFinalize(ms = 140) {
-  this._clearFxFinalize();
-  this._fxFinalizeTimer = setTimeout(() => {
-    this._fxFinalizeTimer = null;
-    this._finalizeCurModeSafe();
-  }, ms);
-}
-
-_clearFxDemo() {
-  if (this._fxDemoTimer) {
-    clearTimeout(this._fxDemoTimer);
-    this._fxDemoTimer = null;
-  }
-}
-
-_scheduleFxDemo(ms = 70) {
-  this._clearFxDemo();
-  this._fxDemoTimer = setTimeout(() => {
-    this._fxDemoTimer = null;
-    this.demoModeOnDevice();
-  }, ms);
-}
-
-_rgbToHex(r, g, b) {
-  const rr = (r & 255) >>> 0;
-  const gg = (g & 255) >>> 0;
-  const bb = (b & 255) >>> 0;
-  return `#${((1 << 24) | (rr << 16) | (gg << 8) | bb).toString(16).slice(1).toUpperCase()}`;
-}
-
-_hexToRgb(hex) {
-  const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
-  if (!m) return { r: 255, g: 0, b: 0 };
-  const v = parseInt(m[1], 16) >>> 0;
-  return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
-}
-
-_getLedCountForDevice(dt) {
-  return this.devices[dt].ledCount | 0;
-}
-
-_escape(str) {
-  return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-_patternOptionsHtml({ allowMulti }) {
-  const patternEnum = this.vortexLib.PatternID;
-
-  const strobe = [];
-  const blend = [];
-  const solid = [];
-  const multi = [];
-
-  for (let k in patternEnum) {
-    if (!Object.prototype.hasOwnProperty.call(patternEnum, k)) continue;
-    if (k === 'values' || k === 'argCount') continue;
-
-    const pat = patternEnum[k];
-    if (!pat) continue;
-    if (pat === patternEnum.PATTERN_NONE || pat === patternEnum.PATTERN_COUNT) continue;
-
-    let label = '';
-    try {
-      label = this.vortex.patternToString(pat);
-      if (label.startsWith('complementary')) label = 'comp. ' + label.slice(14);
-    } catch {
-      label = k;
-    }
-
-    const val = pat.value ?? -1;
-    const opt = `<option value="${val}">${this._escape(label)}</option>`;
-
-    const isSingle = !!this.vortexLib.isSingleLedPatternID?.(pat);
-
-    if (!isSingle) {
-      if (allowMulti) multi.push(opt);
-      continue;
-    }
-
-    if (label.includes('blend')) blend.push(opt);
-    else if (label.includes('solid')) solid.push(opt);
-    else strobe.push(opt);
-  }
-
-  const mk = (label, arr) =>
-    arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '';
-
-  return (
-    mk('Strobe Patterns', strobe) +
-    mk('Blend Patterns', blend) +
-    mk('Solid Patterns', solid) +
-    (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
-  );
-}
-
-_getColorsetHexes(cur, led) {
-  const set = cur.getColorset(led);
-  const out = [];
-  if (!set) return out;
-  const n = set.numColors();
-  for (let i = 0; i < n; i++) {
-    const c = set.get(i);
-    out.push(this._rgbToHex(c.red, c.green, c.blue));
-  }
-  return out;
-}
-
-_getPatternValue(cur, led) {
-  try { return cur.getPatternID(led).value | 0; } catch { return -1; }
-}
-
-_finalizeCurModeSafe() {
-  try {
-    const cur = this._getCurMode();
-    if (cur) cur.init(); // Mode::init() is a clean binding
-  } catch {}
-  try {
-    this._getModes().saveCurMode(); // Modes::saveCurMode() is also a clean binding
-  } catch {}
-}
-
-async openEffectsPanel(dt) {
-  const cur = this._getCurMode();
-  if (!cur) return;
-
-  const ledCount = this._getLedCountForDevice(dt);
-  this._fxLed = Math.max(0, Math.min(ledCount - 1, this._fxLed | 0));
-
-  const allowMulti = dt !== 'Duo' && dt !== 'None';
-
-  const colors = this._getColorsetHexes(cur, this._fxLed);
-  const patternValue = this._getPatternValue(cur, this._fxLed);
-
-  if (this._fxSelectedColor == null) this._fxSelectedColor = colors.length ? 0 : null;
-  else if (this._fxSelectedColor >= colors.length) this._fxSelectedColor = colors.length ? colors.length - 1 : null;
-
-  const rgb =
-    this._fxSelectedColor != null && colors[this._fxSelectedColor]
-    ? this._hexToRgb(colors[this._fxSelectedColor])
-    : null;
-
-  await this.effectsPanel.openEffects({
-    deviceType: dt,
-    title: 'Effects',
-    ledCount,
-    ledIndex: this._fxLed,
-    patternValue,
-    patternOptionsHtml: this._patternOptionsHtml({ allowMulti }),
-    colors,
-    selectedColorIndex: this._fxSelectedColor,
-    rgb,
-
-    onDone: async () => {
-      this._clearFxFinalize();
-      this._clearFxDemo();
-      this._finalizeCurModeSafe();
-      await this.demoModeOnDevice();
-      this.effectsPanel.close();
-    },
-
-    onOff: () => {},
-
-    onLedChange: async (newLed) => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return null;
-
-      this._fxLed = Math.max(0, Math.min(ledCount - 1, newLed | 0));
-
-      const colors2 = this._getColorsetHexes(cur2, this._fxLed);
-      const pat2 = this._getPatternValue(cur2, this._fxLed);
-
-      if (this._fxSelectedColor == null) this._fxSelectedColor = colors2.length ? 0 : null;
-      else if (this._fxSelectedColor >= colors2.length) this._fxSelectedColor = colors2.length ? colors2.length - 1 : null;
-
-      const rgb2 =
-        this._fxSelectedColor != null && colors2[this._fxSelectedColor]
-        ? this._hexToRgb(colors2[this._fxSelectedColor])
-        : null;
-
-      return {
+    await this.effectsPanel.openEffects({
+      title: 'Effects',
+      deviceType,
+      ledCount,
+      ledIndex: 0,
+      patternValue: curMode ? curMode.getPatternID(this.ledSelectState.getEffectiveSelection({
+        isMultiMode: isMulti,
+        multiIndex,
         ledCount,
-        ledIndex: this._fxLed,
-        patternValue: pat2,
-        colors: colors2,
-        selectedColorIndex: this._fxSelectedColor,
-        rgb: rgb2,
-      };
-    },
+      }).sourceLed).value : -1,
+      patternOptionsHtml: this._buildPatternOptionsHtml?.() ?? '', // your existing function
+      colors: curMode ? this._extractColorsHexFromColorset(this.vortexLib, curMode.getColorset(
+        this.ledSelectState.getEffectiveSelection({ isMultiMode: isMulti, multiIndex, ledCount }).sourceLed
+      )) : [],
+      selectedColorIndex: 0,
 
-    onPatternChange: async (patValue) => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return null;
+      ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isMulti, ledCount }),
+      ledSelectState,
 
-      // Use the explicit binder helper instead of PatternID.values guessing.
-      let patID = null;
-      try {
-        patID = this.vortexLib.intToPatternID(patValue | 0);
-      } catch {
-        patID = null;
-      }
-      if (!patID) return null;
+      onLedSelectApply: async (sourceLed, selectedLeds) => {
+        // Only meaningful for single-led mode; multi is locked anyway.
+        const cur = this._getCurMode();
+        const isM = this._isMultiMode(cur);
+        if (!isM) {
+          this.ledSelectState.setFromModal({ ledCount, sourceLed, selectedLeds });
+        }
 
-      try {
-        const set = cur2.getColorset(this._fxLed);
-        cur2.setPattern(patID, this._fxLed, null, null);
-        if (set) cur2.setColorset(set, this._fxLed);
-      } catch {}
-
-      this._finalizeCurModeSafe();
-      await this.demoModeOnDevice();
-
-      return {
-        ledCount,
-        ledIndex: this._fxLed,
-        patternValue: patValue | 0,
-        colors: this._getColorsetHexes(cur2, this._fxLed),
-        selectedColorIndex: this._fxSelectedColor,
-      };
-    },
-
-    onColorsetAdd: async () => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return null;
-
-      const set = cur2.getColorset(this._fxLed);
-      if (!set) return null;
-      if (set.numColors() >= 8) return null;
-
-      try {
-        set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
-        cur2.setColorset(set, this._fxLed);
-      } catch {}
-
-      this._finalizeCurModeSafe();
-      await this.demoModeOnDevice();
-
-      const colors2 = this._getColorsetHexes(cur2, this._fxLed);
-      this._fxSelectedColor = Math.max(0, colors2.length - 1);
-
-      return {
-        ledCount,
-        ledIndex: this._fxLed,
-        patternValue: this._getPatternValue(cur2, this._fxLed),
-        colors: colors2,
-        selectedColorIndex: this._fxSelectedColor,
-        rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
-      };
-    },
-
-    onColorsetDelete: async (colorIndex) => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return null;
-
-      const set = cur2.getColorset(this._fxLed);
-      if (!set) return null;
-
-      const idx = colorIndex | 0;
-      if (idx < 0 || idx >= set.numColors()) return null;
-
-      try {
-        set.removeColor(idx);
-        cur2.setColorset(set, this._fxLed);
-      } catch {}
-
-      this._finalizeCurModeSafe();
-      await this.demoModeOnDevice();
-
-      const colors2 = this._getColorsetHexes(cur2, this._fxLed);
-      if (colors2.length <= 0) {
-        this._fxSelectedColor = null;
         return {
-          ledCount,
-          ledIndex: this._fxLed,
-          patternValue: this._getPatternValue(cur2, this._fxLed),
-          colors: colors2,
-          selectedColorIndex: null,
+          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM, ledCount }),
+          ledSelectState: {
+            ...ledSelectState,
+            selectedLeds: this.ledSelectState.getSingleSelected(),
+            sourceLed: this.ledSelectState.getSingleSource(),
+          },
         };
-      }
+      },
 
-      this._fxSelectedColor = Math.min(idx, colors2.length - 1);
-      return {
-        ledCount,
-        ledIndex: this._fxLed,
-        patternValue: this._getPatternValue(cur2, this._fxLed),
-        colors: colors2,
-        selectedColorIndex: this._fxSelectedColor,
-        rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
-      };
-    },
+      onPatternChange: async (patternValue) => {
+        const patID = this.vortexLib.PatternID.values[String(patternValue)];
+        this._applyPatternToSelection(patID);
 
-    onColorsetSelect: async (colorIndex) => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return null;
+        const cur2 = this._getCurMode();
+        const isM2 = this._isMultiMode(cur2);
 
-      const colors2 = this._getColorsetHexes(cur2, this._fxLed);
-      const idx = colorIndex | 0;
-      if (idx < 0 || idx >= colors2.length) return null;
+        return {
+          patternValue: patternValue | 0,
+          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM2, ledCount }),
+        };
+      },
 
-      this._fxSelectedColor = idx;
+      onColorsetSelect: async (idx) => {
+        const cur2 = this._getCurMode();
+        if (!cur2) return null;
 
-      return {
-        ledCount,
-        ledIndex: this._fxLed,
-        patternValue: this._getPatternValue(cur2, this._fxLed),
-        colors: colors2,
-        selectedColorIndex: this._fxSelectedColor,
-        rgb: this._hexToRgb(colors2[this._fxSelectedColor]),
-      };
-    },
+        const isM2 = this._isMultiMode(cur2);
+        const { sourceLed } = this.ledSelectState.getEffectiveSelection({
+          isMultiMode: isM2,
+          multiIndex,
+          ledCount,
+        });
 
-    onColorChange: (idx, hex, isDragging) => {
-      const cur2 = this._getCurMode();
-      if (!cur2) return;
+        const set = cur2.getColorset(sourceLed);
+        const colors = this._extractColorsHexFromColorset(this.vortexLib, set);
+        const pick = colors[idx | 0] || colors[0] || '#FF0000';
 
-      const set = cur2.getColorset(this._fxLed);
-      if (!set) return;
+        const v = parseInt(String(pick).replace('#', ''), 16) >>> 0;
+        const rgb = { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
 
-      const i = idx | 0;
-      if (i < 0 || i >= set.numColors()) return;
+        return {
+          selectedColorIndex: idx | 0,
+          colors,
+          rgb,
+          ledModalSummary: this.ledSelectState.getSummary({ isMultiMode: isM2, ledCount }),
+        };
+      },
 
-      const { r, g, b } = this._hexToRgb(hex);
+      onColorsetAdd: async () => {
+        const res = this._applyColorsetMutation((set) => {
+          set.addColor(new this.vortexLib.RGBColor(255, 0, 0));
+        });
+        if (!res) return null;
 
-      try {
-        set.set(i, new this.vortexLib.RGBColor(r, g, b));
-        cur2.setColorset(set, this._fxLed);
-      } catch {}
+        const colors = this._extractColorsHexFromColorset(this.vortexLib, res.set);
+        const selectedColorIndex = Math.max(0, colors.length - 1);
 
-      if (isDragging) {
-        this._scheduleFxFinalize(140);
-      } else {
-        this._clearFxFinalize();
-        this._finalizeCurModeSafe();
-        this._scheduleFxDemo(70);
-      }
-    },
-  });
-}
+        return { colors, selectedColorIndex, rgb: { r: 255, g: 0, b: 0 } };
+      },
+
+      onColorsetDelete: async (idx) => {
+        const delIdx = idx | 0;
+        const res = this._applyColorsetMutation((set) => {
+          if ((set.numColors() | 0) <= 0) return;
+          set.removeColor(delIdx);
+        });
+        if (!res) return null;
+
+        const colors = this._extractColorsHexFromColorset(this.vortexLib, res.set);
+        const selectedColorIndex = colors.length ? Math.min(delIdx, colors.length - 1) : null;
+
+        let rgb = null;
+        if (selectedColorIndex != null) {
+          const pick = colors[selectedColorIndex] || '#000000';
+          const v = parseInt(String(pick).replace('#', ''), 16) >>> 0;
+          rgb = { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+        }
+
+        return { colors, selectedColorIndex, rgb };
+      },
+
+      onColorChange: async (colorIndex, hex, isDragging) => {
+        const v = parseInt(String(hex || '#000000').replace('#', ''), 16) >>> 0;
+        const r = (v >> 16) & 255;
+        const g = (v >> 8) & 255;
+        const b = v & 255;
+
+        this._applyColorsetMutation((set) => {
+          const i = colorIndex | 0;
+          if (i < 0 || i >= (set.numColors() | 0)) return;
+          set.set(i, new this.vortexLib.RGBColor(r, g, b));
+        });
+
+        // keep your existing “demo while dragging” logic here if you want
+        // (ColorPicker doesn’t need a return value for onColorChange)
+        if (isDragging && this.demoColorOnDevice) {
+          try { await this.demoColorOnDevice(new this.vortexLib.RGBColor(r, g, b)); } catch {}
+        } else if (this.demoModeOnDevice) {
+          try { await this.demoModeOnDevice(); } catch {}
+        }
+      },
+    });
+
+  }
 }
 
 /* -----------------------------
