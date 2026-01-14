@@ -27,35 +27,32 @@ export default class LedSelectModal {
     this._ledCount = 0;
 
     this._selected = new Set(); // ints
-    this._source = 0; // int, -1 when none
+    this._source = -1; // int, -1 means none
 
     this._points = null; // [{x,y},...]
     this._origW = 1;
     this._origH = 1;
 
-    // box select state (viewport-based so it can cover legend + stage)
-    this._dragPending = false;
+    // stage drag-selection
     this._dragging = false;
     this._dragPointerId = -1;
-    this._dragStartedOnLed = false;
-    this._dragLedIdx = -1;
-    this._dragThreshold = 6;
-    this._startX = 0;
-    this._startY = 0;
-    this._curX = 0;
-    this._curY = 0;
-
+    this._dragStartX = 0;
+    this._dragStartY = 0;
+    this._dragCurX = 0;
+    this._dragCurY = 0;
     this._selectionBox = null;
 
-    // click squelch after drag / after open (ghost click)
-    this._squelchClickUntil = 0;
+    // ghost backdrop click right after open
+    this._backdropSquelchUntil = 0;
 
     this._delegatedInstalled = false;
-    this._onPointerDown = this._onPointerDown.bind(this);
-    this._onPointerMove = this._onPointerMove.bind(this);
-    this._onPointerUp = this._onPointerUp.bind(this);
-    this._onClick = this._onClick.bind(this);
+
+    this._onRootClick = this._onRootClick.bind(this);
     this._onResize = this._onResize.bind(this);
+
+    this._onStagePointerDown = this._onStagePointerDown.bind(this);
+    this._onStagePointerMove = this._onStagePointerMove.bind(this);
+    this._onStagePointerUp = this._onStagePointerUp.bind(this);
   }
 
   async preload() {
@@ -80,13 +77,8 @@ export default class LedSelectModal {
     if (!this._delegatedInstalled) {
       this._delegatedInstalled = true;
 
-      this.root.addEventListener('pointerdown', this._onPointerDown, { passive: false });
-      this.root.addEventListener('pointermove', this._onPointerMove, { passive: false });
-      this.root.addEventListener('pointerup', this._onPointerUp, { passive: false });
-      this.root.addEventListener('pointercancel', this._onPointerUp, { passive: false });
-
-      this.root.addEventListener('click', this._onClick, { passive: false });
-
+      // Keep root logic strictly for buttons/backdrop. Do NOT intercept pointers globally.
+      this.root.addEventListener('click', this._onRootClick, { passive: false });
       window.addEventListener('resize', this._onResize, { passive: true });
     }
 
@@ -101,17 +93,13 @@ export default class LedSelectModal {
     this._onDone = null;
     this._onCancel = null;
 
-    this._dragPending = false;
     this._dragging = false;
     this._dragPointerId = -1;
-    this._dragStartedOnLed = false;
-    this._dragLedIdx = -1;
-
     this._removeSelectionBox();
 
     this._points = null;
 
-    this._squelchClickUntil = 0;
+    this._backdropSquelchUntil = 0;
 
     if (this.root) {
       this.root.innerHTML = '';
@@ -135,7 +123,6 @@ export default class LedSelectModal {
     imageSrcAlt = null,
     swapEnabled = false,
 
-    // positions: { points:[{x,y}...], original_width, original_height }
     positions = null,
     positionsUrl = null,
     positionsUrlAlt = null,
@@ -155,7 +142,6 @@ export default class LedSelectModal {
     this._onCancel = typeof onCancel === 'function' ? onCancel : null;
 
     this._deviceName = deviceName ? String(deviceName) : null;
-
     this._ledCount = Math.max(0, ledCount | 0);
 
     this._imageSrc = imageSrc ? String(imageSrc) : null;
@@ -179,14 +165,11 @@ export default class LedSelectModal {
     let src = sourceLed | 0;
     if (!(src >= 0 && src < this._ledCount)) src = 0;
 
-    // allow empty on entry only if caller gave empty
     if (this._ledCount > 0 && this._selected.size === 0) {
-      // keep empty if they passed empty explicitly, otherwise seed source
-      // (selectedLeds null/undefined means use default)
+      // default to source only if nothing provided
       if (selectedLeds == null) this._selected.add(src);
     }
     if (this._ledCount > 0 && this._selected.size > 0 && !this._selected.has(src)) {
-      // if caller passed a source not in selection, force it in
       this._selected.add(src);
     }
 
@@ -216,9 +199,6 @@ export default class LedSelectModal {
     this.root.appendChild(frag);
     this.dom = new SimpleDom(this.root);
 
-    // ghost-click squelch right after open
-    this._squelchClickUntil = Date.now() + 650;
-
     // bring to front
     this.root.style.zIndex = '1000001';
     this.root.style.position = 'fixed';
@@ -230,18 +210,38 @@ export default class LedSelectModal {
 
     this.root.classList.add('is-open');
 
-    // bind image src (and WAIT for layout before building indicators)
+    // suppress the opening tap’s delayed click from closing the sheet
+    this._backdropSquelchUntil = Date.now() + 650;
+
+    // bind stage pointer handlers (ONLY on the selection stage)
+    this._bindStageHandlers();
+
+    // set image & wait for layout, then build indicators
     const img = this.dom.$('[data-role="deviceimg"]');
     if (img) {
       const srcToUse = this._useAlt && this._imageSrcAlt ? this._imageSrcAlt : this._imageSrc;
       if (srcToUse) img.src = this._cacheBust(srcToUse);
       await this._waitForImageReady(img);
+
+      // iOS can still settle layout a tick later
+      await this._nextFrame();
     }
 
-    await this._nextFrame();
     this._buildIndicators();
     this._normalizeSelection();
     this._syncUI();
+  }
+
+  _bindStageHandlers() {
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
+    if (stage.dataset.ledStageBound === '1') return;
+    stage.dataset.ledStageBound = '1';
+
+    stage.addEventListener('pointerdown', this._onStagePointerDown, { passive: false });
+    stage.addEventListener('pointermove', this._onStagePointerMove, { passive: false });
+    stage.addEventListener('pointerup', this._onStagePointerUp, { passive: false });
+    stage.addEventListener('pointercancel', this._onStagePointerUp, { passive: false });
   }
 
   async _waitForImageReady(img, timeoutMs = 2000) {
@@ -251,7 +251,7 @@ export default class LedSelectModal {
       if (!img.complete) return false;
       if (!img.naturalWidth || !img.naturalHeight) return false;
       const r = img.getBoundingClientRect();
-      return r.width > 4 && r.height > 4;
+      return r.width > 8 && r.height > 8;
     };
 
     if (hasLayout()) return;
@@ -361,6 +361,9 @@ export default class LedSelectModal {
       const devRect = device.getBoundingClientRect();
       const imgRect = img.getBoundingClientRect();
 
+      // If layout is still zeroed, bail; resize/load will rebuild.
+      if (imgRect.width <= 8 || imgRect.height <= 8) return;
+
       const scaleX = imgRect.width / this._origW;
       const scaleY = imgRect.height / this._origH;
 
@@ -419,7 +422,6 @@ export default class LedSelectModal {
       const idx = Number(el.dataset.ledIndex ?? -1) | 0;
       const sel = this._selected.has(idx);
       const main = (src >= 0) && (idx === src);
-
       el.classList.toggle('is-selected', !!sel);
       el.classList.toggle('is-source', !!main);
     }
@@ -440,6 +442,9 @@ export default class LedSelectModal {
 
     const doneBtn = this.dom.$('[data-act="done"]') || this.dom.$('.m-led-done');
     if (doneBtn) doneBtn.disabled = (this._selected.size === 0);
+
+    const hint = this.dom.$('[data-role="proceedhint"]');
+    if (hint) hint.classList.toggle('hidden', this._selected.size !== 0);
   }
 
   _normalizeSelection() {
@@ -449,6 +454,7 @@ export default class LedSelectModal {
       return;
     }
 
+    // clamp
     const next = new Set();
     for (const v of this._selected) {
       const n = v | 0;
@@ -472,12 +478,14 @@ export default class LedSelectModal {
   _selectAll() {
     this._selected = new Set();
     for (let i = 0; i < this._ledCount; i++) this._selected.add(i);
+    this._source = this._ledCount > 0 ? 0 : -1;
     this._normalizeSelection();
     this._syncUI();
   }
 
   _selectNone() {
     this._selected = new Set();
+    this._source = -1;
     this._normalizeSelection();
     this._syncUI();
   }
@@ -488,32 +496,32 @@ export default class LedSelectModal {
       if (!this._selected.has(i)) next.add(i);
     }
     this._selected = next;
+    this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
   }
 
   _evens() {
     const next = new Set();
-    for (let i = 0; i < this._ledCount; i++) {
-      if ((i % 2) === 0) next.add(i);
-    }
+    for (let i = 0; i < this._ledCount; i++) if ((i % 2) === 0) next.add(i);
     this._selected = next;
+    this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
   }
 
   _odds() {
     const next = new Set();
-    for (let i = 0; i < this._ledCount; i++) {
-      if ((i % 2) !== 0) next.add(i);
-    }
+    for (let i = 0; i < this._ledCount; i++) if ((i % 2) !== 0) next.add(i);
     this._selected = next;
+    this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
   }
 
   async _swap() {
     if (!this._swapEnabled) return;
+
     this._useAlt = !this._useAlt;
 
     const url = this._resolvePositionsUrl();
@@ -531,9 +539,9 @@ export default class LedSelectModal {
       const srcToUse = this._useAlt && this._imageSrcAlt ? this._imageSrcAlt : this._imageSrc;
       if (srcToUse) img.src = this._cacheBust(srcToUse);
       await this._waitForImageReady(img);
+      await this._nextFrame();
     }
 
-    await this._nextFrame();
     this._buildIndicators();
     this._normalizeSelection();
     this._syncUI();
@@ -584,29 +592,20 @@ export default class LedSelectModal {
     this._syncUI();
   }
 
-  _clearSelection() {
-    this._selected = new Set();
-    this._source = -1;
-    this._normalizeSelection();
-    this._syncUI();
-  }
-
   _startSelectionBox(x, y) {
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
+
     this._removeSelectionBox();
 
     this._selectionBox = document.createElement('div');
     this._selectionBox.className = 'm-led-selection-box';
+    stage.appendChild(this._selectionBox);
 
-    // viewport-based so it can cover legend + stage
-    this._selectionBox.style.position = 'fixed';
     this._selectionBox.style.left = `${x}px`;
     this._selectionBox.style.top = `${y}px`;
-    this._selectionBox.style.width = `0px`;
-    this._selectionBox.style.height = `0px`;
-    this._selectionBox.style.zIndex = '1000002';
-    this._selectionBox.style.pointerEvents = 'none';
-
-    this.root.appendChild(this._selectionBox);
+    this._selectionBox.style.width = '0px';
+    this._selectionBox.style.height = '0px';
   }
 
   _updateSelectionBox(x0, y0, x1, y1) {
@@ -624,6 +623,9 @@ export default class LedSelectModal {
   }
 
   _finishBoxSelection(x0, y0, x1, y1) {
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
+
     const l = Math.min(x0, x1);
     const t = Math.min(y0, y1);
     const r = Math.max(x0, x1);
@@ -633,12 +635,16 @@ export default class LedSelectModal {
     if (isClick) return;
 
     const ledEls = this.dom.all('[data-role="led"]');
-    const inBox = [];
 
+    const stageRect = stage.getBoundingClientRect();
+    const sx = stage.scrollLeft || 0;
+    const sy = stage.scrollTop || 0;
+
+    const inBox = [];
     for (const el of ledEls) {
       const rect = el.getBoundingClientRect();
-      const cx = (rect.left + rect.right) * 0.5;
-      const cy = (rect.top + rect.bottom) * 0.5;
+      const cx = ((rect.left + rect.right) * 0.5 - stageRect.left) + sx;
+      const cy = ((rect.top + rect.bottom) * 0.5 - stageRect.top) + sy;
 
       if (cx >= l && cx <= r && cy >= t && cy <= b) {
         const idx = Number(el.dataset.ledIndex ?? -1) | 0;
@@ -646,11 +652,7 @@ export default class LedSelectModal {
       }
     }
 
-    if (inBox.length === 0) {
-      // dragging a box over nothing = clear selection
-      this._clearSelection();
-      return;
-    }
+    if (inBox.length === 0) return;
 
     inBox.sort((a, b) => a - b);
     this._selected = new Set(inBox);
@@ -660,148 +662,92 @@ export default class LedSelectModal {
     this._syncUI();
   }
 
-  _isWithinSelectionSurface(target) {
-    const el = target && target.nodeType === 1 ? target : null;
-    if (!el) return false;
-
-    // inside sheet only
-    const sheet = this.dom.$('.m-led-sheet');
-    if (!sheet || !sheet.contains(el)) return false;
-
-    // exclude header/controls/footer/buttons
-    if (el.closest('.m-led-header')) return false;
-    if (el.closest('.m-led-controls')) return false;
-    if (el.closest('.m-led-footer')) return false;
-    if (el.closest('[data-act]')) return false;
-
-    return true; // includes legend + stage + device image area
+  _stageCoords(stage, clientX, clientY) {
+    const rect = stage.getBoundingClientRect();
+    const sx = stage.scrollLeft || 0;
+    const sy = stage.scrollTop || 0;
+    return {
+      x: (clientX - rect.left) + sx,
+      y: (clientY - rect.top) + sy,
+    };
   }
 
-  _onPointerDown(e) {
+  _onStagePointerDown(e) {
     if (!this.isOpen()) return;
+    if (!e) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    if (Date.now() < this._squelchClickUntil) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
-      return;
-    }
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
 
-    try { e.preventDefault(); } catch {}
-
-    const sheet = this.dom.$('.m-led-sheet');
-    if (sheet && !sheet.contains(e.target)) {
-      try { e.stopPropagation(); } catch {}
-      this._cancel();
-      return;
-    }
-
-    if (!this._isWithinSelectionSurface(e.target)) {
-      // allow normal clicks on header/controls/footer to be handled by click handler
-      return;
-    }
-
-    this._dragPending = true;
-    this._dragging = false;
-    this._dragPointerId = e.pointerId;
-    this._dragStartedOnLed = false;
-    this._dragLedIdx = -1;
-
-    this._startX = e.clientX;
-    this._startY = e.clientY;
-    this._curX = this._startX;
-    this._curY = this._startY;
-
-    const ledEl = e.target?.closest?.('[data-role="led"]');
+    const ledEl = e.target?.closest?.('[data-role="led"]') || null;
     if (ledEl) {
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
       const idx = Number(ledEl.dataset.ledIndex ?? -1) | 0;
-      if (idx >= 0 && idx < this._ledCount) {
-        this._dragStartedOnLed = true;
-        this._dragLedIdx = idx;
-      }
+      if (idx >= 0 && idx < this._ledCount) this._tapLed(idx);
+      return;
     }
 
-    try { this.root.setPointerCapture?.(e.pointerId); } catch {}
+    // start drag selection on stage background
+    try { e.preventDefault(); e.stopPropagation(); } catch {}
+
+    this._dragging = true;
+    this._dragPointerId = e.pointerId;
+
+    const p = this._stageCoords(stage, e.clientX, e.clientY);
+    this._dragStartX = p.x;
+    this._dragStartY = p.y;
+    this._dragCurX = p.x;
+    this._dragCurY = p.y;
+
+    this._startSelectionBox(this._dragStartX, this._dragStartY);
+
+    try { stage.setPointerCapture?.(e.pointerId); } catch {}
   }
 
-  _onPointerMove(e) {
+  _onStagePointerMove(e) {
     if (!this.isOpen()) return;
-    if (!this._dragPending) return;
+    if (!this._dragging) return;
     if (e.pointerId !== this._dragPointerId) return;
 
-    try { e.preventDefault(); } catch {}
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
 
-    this._curX = e.clientX;
-    this._curY = e.clientY;
+    try { e.preventDefault(); e.stopPropagation(); } catch {}
 
-    const dx = this._curX - this._startX;
-    const dy = this._curY - this._startY;
+    const p = this._stageCoords(stage, e.clientX, e.clientY);
+    this._dragCurX = p.x;
+    this._dragCurY = p.y;
 
-    if (!this._dragging) {
-      if (Math.abs(dx) < this._dragThreshold && Math.abs(dy) < this._dragThreshold) return;
-
-      this._dragging = true;
-      this._startSelectionBox(this._startX, this._startY);
-    }
-
-    this._updateSelectionBox(this._startX, this._startY, this._curX, this._curY);
+    this._updateSelectionBox(this._dragStartX, this._dragStartY, this._dragCurX, this._dragCurY);
   }
 
-  _onPointerUp(e) {
+  _onStagePointerUp(e) {
     if (!this.isOpen()) return;
-    if (e.pointerId !== this._dragPointerId) {
-      // still squelch click after pointer sequences
-      this._squelchClickUntil = Date.now() + 350;
-      return;
-    }
+    if (!this._dragging) return;
+    if (e.pointerId !== this._dragPointerId) return;
 
-    // swallow synthetic click after pointerup
-    this._squelchClickUntil = Date.now() + 350;
+    const stage = this.dom.$('[data-role="stage"]');
+    if (!stage) return;
 
-    const wasPending = this._dragPending;
-    const wasDragging = this._dragging;
+    try { e.preventDefault(); e.stopPropagation(); } catch {}
 
-    this._dragPending = false;
     this._dragging = false;
     this._dragPointerId = -1;
 
-    try { e.preventDefault(); } catch {}
+    const p = this._stageCoords(stage, e.clientX, e.clientY);
+    this._finishBoxSelection(this._dragStartX, this._dragStartY, p.x, p.y);
 
-    if (!wasPending) return;
-
-    const endX = e.clientX;
-    const endY = e.clientY;
-
-    if (wasDragging) {
-      this._finishBoxSelection(this._startX, this._startY, endX, endY);
-      this._removeSelectionBox();
-      return;
-    }
-
-    // tap behavior
-    if (this._dragStartedOnLed && this._dragLedIdx >= 0) {
-      this._tapLed(this._dragLedIdx);
-    } else {
-      // tap in selection surface but NOT on a led => clear selection
-      if (this._isWithinSelectionSurface(e.target)) {
-        this._clearSelection();
-      }
-    }
-
-    this._dragStartedOnLed = false;
-    this._dragLedIdx = -1;
+    this._removeSelectionBox();
   }
 
-  async _onClick(e) {
+  _onRootClick(e) {
     if (!this.isOpen()) return;
-
-    if (Date.now() < this._squelchClickUntil) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
-      return;
-    }
+    if (!e) return;
 
     const actBtn = e.target?.closest?.('[data-act]');
     if (actBtn) {
       try { e.preventDefault(); e.stopPropagation(); } catch {}
-
       const act = String(actBtn.dataset.act || '');
 
       if (act === 'cancel') return this._cancel();
@@ -817,26 +763,24 @@ export default class LedSelectModal {
       return;
     }
 
+    // backdrop click closes (but ignore ghost click right after open)
     const sheet = this.dom.$('.m-led-sheet');
     if (sheet && !sheet.contains(e.target)) {
+      if (Date.now() < this._backdropSquelchUntil) {
+        try { e.preventDefault(); e.stopPropagation(); } catch {}
+        return;
+      }
       try { e.preventDefault(); e.stopPropagation(); } catch {}
       this._cancel();
       return;
     }
 
-    // Mouse fallback: click on led toggles (pointerup already handles touch)
+    // mouse fallback: allow clicking leds (if stage handlers missed for some reason)
     const led = e.target?.closest?.('[data-role="led"]');
     if (led) {
       try { e.preventDefault(); e.stopPropagation(); } catch {}
       const idx = Number(led.dataset.ledIndex ?? -1) | 0;
-      this._tapLed(idx);
-      return;
-    }
-
-    // Mouse fallback: click in selection surface but not on a led clears selection
-    if (this._isWithinSelectionSurface(e.target)) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
-      this._clearSelection();
+      if (idx >= 0 && idx < this._ledCount) this._tapLed(idx);
       return;
     }
   }
