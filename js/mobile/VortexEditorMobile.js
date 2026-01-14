@@ -35,6 +35,7 @@ export default class VortexEditorMobile {
 
     this.vortex = new this.vortexLib.Vortex();
     this.vortex.init();
+    this.vortex.setLedCount(1);
 
     this.vortexPort = new VortexPort(this, true);
 
@@ -705,6 +706,11 @@ export default class VortexEditorMobile {
 
   async onDeviceSelected(deviceType) {
     console.log('[Mobile] selected device:', deviceType);
+    // make sure the led count is set otherwise when we import the mode it will
+    // be imported as 1 led then later when we change the led count it will
+    // just stretch that one led across all
+    const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
+    this.vortex.setLedCount(ledCount);
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     await this.gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
   }
