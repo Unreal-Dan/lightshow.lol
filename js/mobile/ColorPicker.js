@@ -355,7 +355,7 @@ export default class ColorPicker {
     curMode.init();
     this.vortex.engine().modes().saveCurMode();
   }
-  
+
   _applyColorsetMutation(mutatorFn) {
     const curMode = this._getCurMode();
     if (!curMode) return null;
@@ -431,8 +431,8 @@ export default class ColorPicker {
 
     this.dom = new SimpleDom(this.root);
   }
-  
-  
+
+
 
   _onResize() {
     if (!this.root || !this.root.classList.contains('is-open')) return;

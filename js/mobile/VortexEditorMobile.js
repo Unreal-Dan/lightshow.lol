@@ -296,6 +296,9 @@ export default class VortexEditorMobile {
   }
 
   async gotoDeviceSelect() {
+    // uncomment to skip to editor
+    //await this.gotoEditor({ deviceType: 'Spark' });
+    //
     const cardFragments = await Promise.all(
       DEVICE_CARDS.map((c) => this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img }))
     );
@@ -312,7 +315,6 @@ export default class VortexEditorMobile {
       `<a href="#" id="skip-to-editor">Skip to Editor ` +
       `<i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
     this.dom.$('.container-fluid')?.appendChild(skipLink);
-    await this.gotoEditor({ deviceType: 'Spark' });
 
     this.dom.onClick('#skip-to-editor', async () => {
       await this.gotoEditor({ deviceType: 'Spark' });
@@ -1156,9 +1158,6 @@ export default class VortexEditorMobile {
         return;
       }
     };
-
-    this.vortex.setLedCount(6);
-    this.openEffectsPanel(dt);
 
     this.dom.all('[data-tool]').forEach((btn) => {
       if (btn._mBoundTool) return;
