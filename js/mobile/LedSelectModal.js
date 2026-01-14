@@ -763,6 +763,16 @@ export default class LedSelectModal {
       return;
     }
 
+    const isLed = !!e.target?.closest?.('[data-role="led"]');
+    const isStage = !!e.target?.closest?.('[data-role="stage"]');
+    // If the click is inside the stage, ignore it.
+    // Stage pointer handlers already handle LED taps and box-drag.
+    if (isStage && !isLed) {
+      this._selectNone();
+      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      return;
+    }
+
     // backdrop click closes (but ignore ghost click right after open)
     const sheet = this.dom.$('.m-led-sheet');
     if (sheet && !sheet.contains(e.target)) {
@@ -772,15 +782,6 @@ export default class LedSelectModal {
       }
       try { e.preventDefault(); e.stopPropagation(); } catch {}
       this._cancel();
-      return;
-    }
-
-    // mouse fallback: allow clicking leds (if stage handlers missed for some reason)
-    const led = e.target?.closest?.('[data-role="led"]');
-    if (led) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
-      const idx = Number(led.dataset.ledIndex ?? -1) | 0;
-      if (idx >= 0 && idx < this._ledCount) this._tapLed(idx);
       return;
     }
   }
