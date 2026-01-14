@@ -587,38 +587,50 @@ export default class VortexPort {
   }
 
   async pushEachToDevice(vortexLib, vortex, onProgress = null) {
-    if (!this.isActive()) throw new Error('Port not active');
-    if (this.isTransmitting) throw new Error('Already transmitting:' + this.isTransmitting);
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      throw new Error('Already transmitting:' + this.isTransmitting);
+    }
 
-    const report = (info) => {
+    // Fast/non-blocking progress: only keep the latest update and flush it later.
+    // No requestAnimationFrame; don't do real work in the hot send/ack path.
+    let pending = null;
+    let scheduled = false;
+
+    const reportFast = (info) => {
       if (typeof onProgress !== 'function') return;
-      try { onProgress(info); } catch (_) {}
+      pending = info;
+      if (scheduled) return;
+      scheduled = true;
+
+      setTimeout(() => {
+        scheduled = false;
+        const p = pending;
+        pending = null;
+        try { onProgress(p); } catch (_) {}
+      }, 0);
     };
 
-    const paint = async () => {
-      // give the browser a chance to repaint the button/progress text
-      if (typeof requestAnimationFrame === 'function') {
-        await new Promise((r) => requestAnimationFrame(() => r()));
-      } else {
-        await new Promise((r) => setTimeout(r, 0));
-      }
-    };
-
-    if (this.debugLogging) console.log('pushEachToDevice Start');
-    this.isTransmitting = 'pushEachToDevice';
-
+    if (this.debugLogging) console.log("pushEachToDevice Start");
+    this.isTransmitting = 'pushEachToDevice'; // Set the transmitting flag
     try {
+      reportFast({ phase: 'start' });
+
+      // Unserialize the stream of data
+      const modes = new vortexLib.ByteStream();
+      if (!vortex.getModes(modes)) {
+        throw new Error('Failed to get cur mode');
+      }
+
       await this.cancelReading();
-
-      report({ phase: 'start' });
-      await paint();
-
-      const numModes = vortex.numModes() | 0;
-      report({ phase: 'count', total: numModes });
-      await paint();
 
       await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+
+      const numModes = vortex.numModes();
+      reportFast({ phase: 'count', total: numModes });
 
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
@@ -627,42 +639,32 @@ export default class VortexPort {
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
 
-      const startIdx = vortex.curModeIndex ? (vortex.curModeIndex() | 0) : 0;
-      try { vortex.setCurMode(0, false); } catch {}
+      vortex.setCurMode(0, false);
 
       for (let i = 0; i < numModes; ++i) {
-        report({ phase: 'pushing', index: i, total: numModes });
-        await paint();
+        reportFast({ phase: 'pushing', index: i, total: numModes });
 
         const modeBuf = new vortexLib.ByteStream();
         vortex.getCurMode(modeBuf);
 
-        // harmless if already correct; avoids device rejecting payload
-        try { modeBuf.recalcCRC(); } catch {}
-
         await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
         await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
 
-        try { vortex.nextMode(false); } catch {}
+        vortex.nextMode(false);
       }
 
-      report({ phase: 'finalizing', total: numModes });
-      await paint();
+      reportFast({ phase: 'done', total: numModes });
 
-      try {
-        if (startIdx >= 0 && startIdx < numModes) vortex.setCurMode(startIdx, false);
-      } catch {}
-
-      report({ phase: 'done', total: numModes });
-      await paint();
+      // these aren't really working... oh well it works good without them
+      //await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+      //await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
     } catch (error) {
-      report({ phase: 'error', error });
-      console.error('Error during pushEachToDevice:', error);
-      throw error;
+      reportFast({ phase: 'error', error });
+      console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = null;
-      if (this.debugLogging) console.log('pushEachToDevice End');
+      this.isTransmitting = null; // Reset the transmitting flag
+      if (this.debugLogging) console.log("pushEachToDevice End");
     }
   }
 
