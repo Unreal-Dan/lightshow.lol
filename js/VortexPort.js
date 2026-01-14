@@ -634,7 +634,7 @@ export default class VortexPort {
 
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
-      numModesBuf.recalcCRC();
+      numModesBuf.recalcCRC(true);
 
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
@@ -654,10 +654,6 @@ export default class VortexPort {
       }
 
       reportFast({ phase: 'done', total: numModes });
-
-      // these aren't really working... oh well it works good without them
-      //await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
-      //await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
     } catch (error) {
       reportFast({ phase: 'error', error });
       console.error('Error during pushToDevice:', error);
