@@ -549,6 +549,57 @@ export default class VortexEditorMobile {
 
     const update = this._makeThrottled((o) => this._setDevXferUI(o), 55);
 
+    let usedCallback = false;
+
+    const applyProgress = (p) => {
+      usedCallback = true;
+
+      if (!p || typeof p !== 'object') return;
+
+      const phase = String(p.phase || '');
+      const total = (p.total ?? 0) | 0;
+      const idx = (p.index ?? 0) | 0;
+      const i1 = idx + 1;
+
+      let status = 'Saving…';
+      let text = '';
+      let percent = 10;
+      let animate = true;
+      let error = false;
+
+      if (phase === 'start') {
+        status = 'Saving modes…';
+        text = 'Starting…';
+        percent = 10;
+        animate = true;
+      } else if (phase === 'count') {
+        status = 'Saving modes…';
+        text = total > 0 ? `0 / ${total}` : '';
+        percent = 12;
+        animate = true;
+      } else if (phase === 'pushing') {
+        status = 'Saving modes…';
+        text = total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`;
+        percent = total > 0 ? Math.min(95, Math.max(12, Math.round((i1 / total) * 92))) : 40;
+        animate = true;
+      } else if (phase === 'done') {
+        status = 'Done.';
+        text = total > 0 ? `${total} mode${total === 1 ? '' : 's'} saved` : 'Saved.';
+        percent = 100;
+        animate = false;
+      } else if (phase === 'error') {
+        status = 'Save failed.';
+        text = 'Tap Back and try again.';
+        percent = 100;
+        animate = false;
+        error = true;
+      } else {
+        return;
+      }
+
+      update({ status, progressText: text, percent, error, animate });
+    };
+
     try {
       const hasModes = (this.vortex?.numModes?.() | 0) > 0;
       if (!hasModes) {
@@ -580,71 +631,32 @@ export default class VortexEditorMobile {
         this._getModes().saveCurMode();
       } catch {}
 
-      this._setDevXferUI({ status: 'Saving modes…', progressText: 'Starting…', percent: 8, error: false, animate: true });
-
-      // If your pushEachToDevice doesn't accept a callback yet, this will still work:
-      // we try with a callback first; if it throws due to signature mismatch, retry without.
-      let usedCallback = false;
-
-      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, (p) => {
-        usedCallback = true;
-
-        if (!p || typeof p !== 'object') return;
-
-        const total = Number(p.total ?? 0);
-        const i1 = Number(p.index ?? 0) + 1;
-
-        let status = 'Saving…';
-        let text = '';
-        let percent = 10;
-
-        if (p.phase === 'start') {
-          status = 'Saving…';
-          text = 'Starting…';
-          percent = 10;
-        } else if (p.phase === 'count') {
-          status = 'Counting…';
-          text = total > 0 ? `0 / ${total}` : '';
-          percent = 12;
-        } else if (p.phase === 'pushing') {
-          status = 'Pushing…';
-          text = total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`;
-          percent = total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 40;
-        } else if (p.phase === 'finalizing') {
-          status = 'Finalizing…';
-          text = total > 0 ? `${total} mode${total === 1 ? '' : 's'}` : '';
-          percent = 98;
-        } else if (p.phase === 'done') {
-          status = 'Done.';
-          text = total > 0 ? `${total} mode${total === 1 ? '' : 's'} saved` : 'Saved';
-          percent = 100;
-        }
-
-        update({ status, progressText: text, percent, error: false, animate: p.phase !== 'done' });
+      this._setDevXferUI({
+        status: 'Saving modes…',
+        progressText: 'Starting…',
+        percent: 8,
+        error: false,
+        animate: true,
       });
 
-      if (!usedCallback) {
-        this._setDevXferUI({
-          status: 'Done.',
-          progressText: 'Saved.',
-          percent: 100,
-          error: false,
-          animate: false,
-        });
-      } else {
-        this._setDevXferUI({
-          status: 'Done.',
-          progressText: 'Saved.',
-          percent: 100,
-          error: false,
-          animate: false,
-        });
-      }
+      // Extra args are harmless even if pushEachToDevice was defined without onProgress.
+      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, applyProgress);
+
+      // Ensure a clean terminal UI even if the callback got throttled/coalesced.
+      this._setDevXferUI({
+        status: 'Done.',
+        progressText: 'Saved.',
+        percent: 100,
+        error: false,
+        animate: false,
+      });
 
       unlock();
       Notification.success?.('Saved to device');
     } catch (err) {
       console.error('[Mobile] Device push failed:', err);
+
+      // If the port reported an error phase, it already updated the UI; still force terminal state.
       this._setDevXferUI({
         status: 'Save failed.',
         progressText: 'Tap Back and try again.',
@@ -652,6 +664,7 @@ export default class VortexEditorMobile {
         error: true,
         animate: false,
       });
+
       unlock();
     }
   }
