@@ -1360,10 +1360,44 @@ export default class VortexEditorMobile {
         const dtNow = String(modal.dataset.device || dt || this.selectedDeviceType('Duo'));
         if (!this._requireActivePort()) return;
 
-        const hasModes = (this.vortex.numModes() | 0) > 0;
+        const hasModes = (this.vortex?.numModes?.() | 0) > 0;
         if (!hasModes) return;
 
         modal.dataset.xferRunning = '1';
+
+        const origPushHtml = pushBtn?.innerHTML || '';
+        const origPullHtml = pullBtn?.innerHTML || '';
+
+        const setPushHtml = (html) => {
+          if (pushBtn) pushBtn.innerHTML = html;
+        };
+
+        // Throttle DOM updates
+        let pending = null;
+        let rafScheduled = false;
+        const flush = () => {
+          rafScheduled = false;
+          if (!pending) return;
+          const html = pending;
+          pending = null;
+          try {
+            setPushHtml(html);
+          } catch {}
+        };
+        const schedulePushHtml = (html) => {
+          pending = html;
+          if (rafScheduled) return;
+          rafScheduled = true;
+          requestAnimationFrame(flush);
+        };
+
+        const disableBtns = (v) => {
+          try {
+            if (pullBtn) pullBtn.disabled = !!v;
+            if (pushBtn) pushBtn.disabled = !!v;
+          } catch {}
+        };
+
         try {
           if (dtNow === 'Duo') {
             await this._hideTransferModal();
@@ -1371,16 +1405,125 @@ export default class VortexEditorMobile {
             return;
           }
 
+          // Prevent demos/timers from interfering
+          this._transferInProgress = true;
+          try {
+            this._clearModeTimers?.();
+          } catch {}
+
+          // Make sure current mode is saved before pushing
           try {
             this._getModes().initCurMode();
             this._getModes().saveCurMode();
           } catch {}
 
-          await this._hideTransferModal();
-          await this.gotoDevicePushModes({ deviceType: dtNow, backTarget: 'editor' });
-        } finally {
-          modal.dataset.xferRunning = '0';
+          disableBtns(true);
+          schedulePushHtml(`<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving…`);
+          flush();
+
+          // Real watchdog that can actually fail the await by racing it
+          const watchdogMs = 15000;
+          let watchdogTimer = null;
+          const bump = () => {
+            if (watchdogTimer) clearTimeout(watchdogTimer);
+            watchdogTimer = setTimeout(async () => {
+              try {
+                schedulePushHtml(`<i class="fa-solid fa-triangle-exclamation me-2"></i> Timed out`);
+                flush();
+              } catch {}
+
+              // best-effort “unstick”
+              try {
+                if (typeof this.vortexPort.cancelPush === 'function') await this.vortexPort.cancelPush();
+                else if (typeof this.vortexPort.cancelReading === 'function') await this.vortexPort.cancelReading();
+                else if (typeof this.vortexPort.disconnect === 'function') await this.vortexPort.disconnect();
+              } catch {}
+
+              throw new Error('pushEachToDevice watchdog timeout');
+            }, watchdogMs);
+          };
+
+          const watchdogPromise = new Promise((_, reject) => {
+            bump();
+            // The throw inside setTimeout won’t reject this promise, so we reject by trapping errors:
+            // We do that by wrapping bump() timer callback logic above with reject here instead:
+            if (watchdogTimer) clearTimeout(watchdogTimer);
+            watchdogTimer = setTimeout(async () => {
+              try {
+                schedulePushHtml(`<i class="fa-solid fa-triangle-exclamation me-2"></i> Timed out`);
+                flush();
+              } catch {}
+
+              try {
+                if (typeof this.vortexPort.cancelPush === 'function') await this.vortexPort.cancelPush();
+                else if (typeof this.vortexPort.cancelReading === 'function') await this.vortexPort.cancelReading();
+                else if (typeof this.vortexPort.disconnect === 'function') await this.vortexPort.disconnect();
+              } catch {}
+
+              reject(new Error('pushEachToDevice watchdog timeout'));
+            }, watchdogMs);
+          });
+
+          const progressCb = (o) => {
+            try {
+              bump();
+            } catch {}
+
+            const phase = String(o?.phase || '');
+            const total = (o?.total ?? 0) | 0;
+            const idx = (o?.index ?? 0) | 0;
+            const i1 = idx + 1;
+
+            if (phase === 'start') schedulePushHtml(`<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving…`);
+            else if (phase === 'count')
+              schedulePushHtml(
+                `<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving… ${total > 0 ? `(0 / ${total})` : ''}`
+              );
+            else if (phase === 'pushing')
+              schedulePushHtml(
+                `<i class="fa-solid fa-spinner fa-spin me-2"></i> Saving… ${total > 0 ? `(${i1} / ${total})` : `(${i1})`}`
+              );
+            else if (phase === 'finalizing') schedulePushHtml(`<i class="fa-solid fa-spinner fa-spin me-2"></i> Finalizing…`);
+            else if (phase === 'done')
+              schedulePushHtml(`<i class="fa-solid fa-check me-2"></i> Saved${total > 0 ? ` (${total})` : ''}`);
+            else if (phase === 'error') schedulePushHtml(`<i class="fa-solid fa-triangle-exclamation me-2"></i> Failed`);
+          };
+
+          const pushPromise = this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
+
           try {
+            await Promise.race([pushPromise, watchdogPromise]);
+          } finally {
+            if (watchdogTimer) {
+              clearTimeout(watchdogTimer);
+              watchdogTimer = null;
+            }
+            try {
+              flush();
+            } catch {}
+          }
+
+          // Success: brief terminal state, then close modal
+          Notification.success?.('Saved to device');
+          await this.sleep?.(250);
+          await this._hideTransferModal();
+        } catch (err) {
+          console.error('[Mobile] Save to device failed:', err);
+          Notification.failure?.('Failed to save to device');
+
+          // Keep modal open so user can see failure state
+          schedulePushHtml(`<i class="fa-solid fa-triangle-exclamation me-2"></i> Save failed`);
+          flush();
+        } finally {
+          this._transferInProgress = false;
+
+          disableBtns(false);
+          modal.dataset.xferRunning = '0';
+
+          // Restore button labels for the current device
+          try {
+            if (pullBtn) pullBtn.innerHTML = origPullHtml || pullBtn.innerHTML;
+            if (pushBtn) pushBtn.innerHTML = origPushHtml || pushBtn.innerHTML;
             await this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
           } catch {}
         }
