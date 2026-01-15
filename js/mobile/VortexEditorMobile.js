@@ -1407,6 +1407,7 @@ export default class VortexEditorMobile {
 
   async gotoDevicePushModes({ deviceType, backTarget = 'editor' } = {}) {
     const dt = deviceType || this.selectedDeviceType('Duo');
+    this.setDeviceType(dt);
 
     this.stopEditorLightshow();
     this.clearEditorResizeHandler();
@@ -1486,25 +1487,94 @@ export default class VortexEditorMobile {
 
       setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
 
-      await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, (o) => {
+      // ---- throttled UI updater (prevents DOM spam from stalling BLE)
+      let pending = null;
+      let rafScheduled = false;
+      const flush = () => {
+        rafScheduled = false;
+        if (!pending) return;
+        const p = pending;
+        pending = null;
+        try {
+          setUI(p);
+        } catch {}
+      };
+      const scheduleUI = (payload) => {
+        pending = payload;
+        if (rafScheduled) return;
+        rafScheduled = true;
+        requestAnimationFrame(flush);
+      };
+
+      // ---- watchdog: if push stops reporting progress, fail cleanly
+      let lastProgressAt = Date.now();
+      let sawAnyProgress = false;
+
+      const watchdogMs = 7000;
+      const intervalMs = 350;
+      let watchdogTimer = setInterval(async () => {
+        const dtWait = Date.now() - lastProgressAt;
+        if (dtWait < watchdogMs) return;
+
+        try {
+          scheduleUI({ s: 'Saving modes…', p: 'Still waiting…', pct: 15, err: false });
+        } catch {}
+
+        // If we never saw *any* progress, attempt a cancel/reset if your port supports it.
+        if (!sawAnyProgress) {
+          try {
+            if (typeof this.vortexPort.cancelReading === 'function') {
+              await this.vortexPort.cancelReading();
+            }
+          } catch {}
+        }
+
+        clearInterval(watchdogTimer);
+        watchdogTimer = null;
+        throw new Error('pushEachToDevice watchdog timeout (no progress)');
+      }, intervalMs);
+
+      const progressCb = (o) => {
+        lastProgressAt = Date.now();
+        sawAnyProgress = true;
+
         const phase = String(o?.phase || '');
         const total = (o?.total ?? 0) | 0;
         const idx = (o?.index ?? 0) | 0;
         const i1 = idx + 1;
 
-        if (phase === 'start') setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
-        else if (phase === 'count') setUI({ s: 'Saving modes…', p: total > 0 ? `0 / ${total}` : '', pct: 12, err: false });
-        else if (phase === 'pushing')
-          setUI({
-            s: 'Saving modes…',
-            p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`,
-            pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50,
-            err: false,
-          });
-        else if (phase === 'finalizing') setUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
-        else if (phase === 'done') setUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
-      });
+        try {
+          if (phase === 'start') scheduleUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
+          else if (phase === 'count') scheduleUI({ s: 'Saving modes…', p: total > 0 ? `0 / ${total}` : '', pct: 12, err: false });
+          else if (phase === 'pushing')
+            scheduleUI({
+              s: 'Saving modes…',
+              p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`,
+              pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50,
+              err: false,
+            });
+          else if (phase === 'finalizing') scheduleUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
+          else if (phase === 'done') scheduleUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
+          else if (phase === 'error') scheduleUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
+        } catch {
+          // Never let UI issues break transfer logic
+        }
+      };
 
+      try {
+        await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
+      } finally {
+        if (watchdogTimer) {
+          clearInterval(watchdogTimer);
+          watchdogTimer = null;
+        }
+        // force one last flush so terminal state shows up
+        try {
+          flush();
+        } catch {}
+      }
+
+      setUI({ s: 'Done.', p: 'Saved.', pct: 100, err: false });
       Notification.success?.('Saved to device');
     } catch (err) {
       console.error('[Mobile] Device push failed:', err);
