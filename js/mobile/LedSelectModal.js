@@ -481,6 +481,7 @@ export default class LedSelectModal {
     this._source = this._ledCount > 0 ? 0 : -1;
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _selectNone() {
@@ -488,6 +489,7 @@ export default class LedSelectModal {
     this._source = -1;
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _invert() {
@@ -499,6 +501,7 @@ export default class LedSelectModal {
     this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _evens() {
@@ -508,6 +511,7 @@ export default class LedSelectModal {
     this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _odds() {
@@ -517,6 +521,7 @@ export default class LedSelectModal {
     this._source = this._selected.size ? Math.min(...Array.from(this._selected)) : -1;
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   async _swap() {
@@ -545,6 +550,16 @@ export default class LedSelectModal {
     this._buildIndicators();
     this._normalizeSelection();
     this._syncUI();
+    this._update();
+  }
+
+  _update() {
+    const out = Array.from(this._selected).sort((a, b) => a - b);
+    const src = (this._source | 0);
+    const fn = this._onDone;
+    if (fn) {
+      try { fn({ sourceLed: src, selectedLeds: out }); } catch {}
+    }
   }
 
   _done() {
@@ -590,6 +605,7 @@ export default class LedSelectModal {
 
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _startSelectionBox(x, y) {
