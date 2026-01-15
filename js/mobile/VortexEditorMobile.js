@@ -1509,64 +1509,119 @@ export default class VortexEditorMobile {
       return;
     }
 
+    // Prevent demos/timers from racing the transfer
+    this._transferInProgress = true;
+    try {
+      this._clearModeTimers?.();
+    } catch {}
+
+    // Throttled UI via RAF to avoid main-thread starvation
+    let pending = null;
+    let rafScheduled = false;
+    const flush = () => {
+      rafScheduled = false;
+      if (!pending) return;
+      const p = pending;
+      pending = null;
+      try {
+        setUI(p);
+      } catch {}
+    };
+    const scheduleUI = (payload) => {
+      pending = payload;
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(flush);
+    };
+
+    // Optional: pause background reader if VortexPort supports it
+    let pausedReading = false;
+    const tryPauseReading = async () => {
+      try {
+        if (typeof this.vortexPort.pauseReading === 'function') {
+          await this.vortexPort.pauseReading();
+          pausedReading = true;
+          return;
+        }
+        if (typeof this.vortexPort.stopReading === 'function') {
+          await this.vortexPort.stopReading();
+          pausedReading = true;
+          return;
+        }
+      } catch {}
+    };
+    const tryResumeReading = async () => {
+      try {
+        if (!pausedReading) return;
+        if (typeof this.vortexPort.resumeReading === 'function') {
+          await this.vortexPort.resumeReading();
+          return;
+        }
+        if (typeof this.vortexPort.startReading === 'function') {
+          await this.vortexPort.startReading();
+          return;
+        }
+      } catch {}
+    };
+
+    const tryCancelTransfer = async () => {
+      try {
+        if (typeof this.vortexPort.cancelPush === 'function') {
+          await this.vortexPort.cancelPush();
+          return;
+        }
+      } catch {}
+      try {
+        if (typeof this.vortexPort.cancelReading === 'function') {
+          await this.vortexPort.cancelReading();
+          return;
+        }
+      } catch {}
+      try {
+        if (typeof this.vortexPort.disconnect === 'function') {
+          await this.vortexPort.disconnect();
+          return;
+        }
+      } catch {}
+    };
+
     try {
       try {
         this._getModes().initCurMode();
         this._getModes().saveCurMode();
       } catch {}
 
-      setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
+      scheduleUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
+      flush();
 
-      // ---- throttled UI updater (prevents DOM spam from stalling BLE)
-      let pending = null;
-      let rafScheduled = false;
-      const flush = () => {
-        rafScheduled = false;
-        if (!pending) return;
-        const p = pending;
-        pending = null;
-        try {
-          setUI(p);
-        } catch {}
-      };
-      const scheduleUI = (payload) => {
-        pending = payload;
-        if (rafScheduled) return;
-        rafScheduled = true;
-        requestAnimationFrame(flush);
-      };
+      await tryPauseReading();
 
-      // ---- watchdog: if push stops reporting progress, fail cleanly
-      let lastProgressAt = Date.now();
-      let sawAnyProgress = false;
+      const watchdogMs = 12000; // give BLE enough time, but fail deterministically
+      let watchdogTimer = null;
+      let bumpWatchdog = null;
 
-      const watchdogMs = 7000;
-      const intervalMs = 350;
-      let watchdogTimer = setInterval(async () => {
-        const dtWait = Date.now() - lastProgressAt;
-        if (dtWait < watchdogMs) return;
-
-        try {
-          scheduleUI({ s: 'Saving modes…', p: 'Still waiting…', pct: 15, err: false });
-        } catch {}
-
-        // If we never saw *any* progress, attempt a cancel/reset if your port supports it.
-        if (!sawAnyProgress) {
-          try {
-            if (typeof this.vortexPort.cancelReading === 'function') {
-              await this.vortexPort.cancelReading();
-            }
-          } catch {}
-        }
-
-        clearInterval(watchdogTimer);
-        watchdogTimer = null;
-        throw new Error('pushEachToDevice watchdog timeout (no progress)');
-      }, intervalMs);
+      const watchdogPromise = new Promise((_, reject) => {
+        const arm = () => {
+          if (watchdogTimer) clearTimeout(watchdogTimer);
+          watchdogTimer = setTimeout(async () => {
+            try {
+              scheduleUI({ s: 'Save stalled.', p: 'Timed out waiting for device.', pct: 100, err: true });
+              flush();
+            } catch {}
+            try {
+              await tryCancelTransfer();
+            } catch {}
+            reject(new Error('pushEachToDevice watchdog timeout'));
+          }, watchdogMs);
+        };
+        bumpWatchdog = arm;
+        arm();
+      });
 
       const progressCb = (o) => {
-        lastProgressAt = Date.now();
-        sawAnyProgress = true;
+        try {
+          bumpWatchdog?.();
+        } catch {}
 
         const phase = String(o?.phase || '');
         const total = (o?.total ?? 0) | 0;
@@ -1586,19 +1641,23 @@ export default class VortexEditorMobile {
           else if (phase === 'finalizing') scheduleUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
           else if (phase === 'done') scheduleUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
           else if (phase === 'error') scheduleUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
-        } catch {
-          // Never let UI issues break transfer logic
-        }
+        } catch {}
       };
 
+      const pushPromise = (async () => {
+        try {
+          bumpWatchdog?.();
+        } catch {}
+        return await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
+      })();
+
       try {
-        await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
+        await Promise.race([pushPromise, watchdogPromise]);
       } finally {
         if (watchdogTimer) {
-          clearInterval(watchdogTimer);
+          clearTimeout(watchdogTimer);
           watchdogTimer = null;
         }
-        // force one last flush so terminal state shows up
         try {
           flush();
         } catch {}
@@ -1609,8 +1668,14 @@ export default class VortexEditorMobile {
     } catch (err) {
       console.error('[Mobile] Device push failed:', err);
       setUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
+    } finally {
+      try {
+        await tryResumeReading();
+      } catch {}
+      this._transferInProgress = false;
     }
   }
+  
 
   async gotoDuoSend({ deviceType, backTarget = 'editor' } = {}) {
     const dt = deviceType || this.selectedDeviceType('Duo');
