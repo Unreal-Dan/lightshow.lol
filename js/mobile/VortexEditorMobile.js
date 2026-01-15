@@ -10,6 +10,7 @@ import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 
 import LedSelectionState from './LedSelectionState.js';
+import CommunityBrowser from './CommunityBrowser.js';
 
 const ASSETS = {
   styles: [
@@ -17,9 +18,7 @@ const ASSETS = {
     { id: 'bootstrap-css', href: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' },
     { id: 'mobile-styles-css', href: 'css/mobile/mobile-styles.css' },
   ],
-  scripts: [
-    { id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }
-  ],
+  scripts: [{ id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }],
   data: {
     devices: 'js/devices.json',
   },
@@ -61,6 +60,8 @@ export default class VortexEditorMobile {
       basePath: 'js/mobile/views/',
     });
 
+    this.communityBrowser = new CommunityBrowser(this);
+
     this._fxFinalizeTimer = null;
     this._fxDemoTimer = null;
 
@@ -91,29 +92,14 @@ export default class VortexEditorMobile {
       location.hostname === 'localhost' ||
       location.hostname === '127.0.0.1' ||
       location.hostname.endsWith('.local');
-
-    // Community browser state (kept minimal but functional)
-    this._vcbCurrentPage = 1;
-    this._vcbPageSize = 999;
-    this._vcbModesCache = {};
-    this._vcbTotalPages = 1;
-    this._vcbActiveFilters = new Set();
-    this._vcbSearchQuery = '';
-
-    this._vcbEls = {
-      searchBox: null,
-      filterContainer: null,
-      modesContainer: null,
-      pageLabel: null,
-      prevBtn: null,
-      nextBtn: null,
-      status: null,
-      refreshBtn: null,
-    };
   }
 
-  detectMobile() { return true; }
-  isBLESupported() { return true; }
+  detectMobile() {
+    return true;
+  }
+  isBLESupported() {
+    return true;
+  }
 
   isVersionGreaterOrEqual(currentVersion, targetVersion = '1.3.0') {
     const currentParts = String(currentVersion || '').split('.').map(Number);
@@ -177,11 +163,15 @@ export default class VortexEditorMobile {
     });
   }
 
-  sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+  sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
 
   stopEditorLightshow(destroy = true) {
     if (!this.lightshow) return;
-    try { this.lightshow.stop(); } catch {}
+    try {
+      this.lightshow.stop();
+    } catch {}
     if (destroy) this.lightshow = null;
   }
 
@@ -220,39 +210,53 @@ export default class VortexEditorMobile {
     }
     this._modeDemoTimer = setTimeout(() => {
       this._modeDemoTimer = null;
-      try { void this.demoModeOnDevice(); } catch {}
+      try {
+        void this.demoModeOnDevice();
+      } catch {}
     }, ms);
   }
 
   _withLightshowPausedSync(fn) {
     const ls = this.lightshow;
     if (ls) {
-      try { ls.stop(); } catch {}
+      try {
+        ls.stop();
+      } catch {}
     }
     try {
       return fn();
     } finally {
       if (ls) {
-        try { ls.start(); } catch {}
+        try {
+          ls.start();
+        } catch {}
       }
     }
   }
 
   async _restartLightshowAndDemo(dt) {
     if (this.lightshow) {
-      try { this.lightshow.start(); } catch {}
+      try {
+        this.lightshow.start();
+      } catch {}
     } else {
       try {
         await this.startEditorLightshow(dt);
       } catch (e) {
         console.error('[Mobile] startEditorLightshow failed after mutation:', e);
-        try { await this.gotoEditor({ deviceType: dt }); } catch {}
+        try {
+          await this.gotoEditor({ deviceType: dt });
+        } catch {}
         return;
       }
     }
 
     try {
-      setTimeout(() => { try { void this.demoModeOnDevice(); } catch {} }, 0);
+      setTimeout(() => {
+        try {
+          void this.demoModeOnDevice();
+        } catch {}
+      }, 0);
     } catch {}
   }
 
@@ -276,7 +280,9 @@ export default class VortexEditorMobile {
     return `<i class="fa-solid fa-download"></i> Load from device`;
   }
 
-  selectedDeviceType(fallback = 'Duo') { return this.deviceType || fallback; }
+  selectedDeviceType(fallback = 'Duo') {
+    return this.deviceType || fallback;
+  }
 
   updateDeviceSelectUI() {
     const selected = this.deviceType;
@@ -287,18 +293,10 @@ export default class VortexEditorMobile {
 
   _getDeviceImgFor(dt) {
     const d = this.devices?.[dt];
-    return (
-      d?.image ||
-      d?.iconBig ||
-      d?.icon ||
-      `public/images/${String(dt || '').toLowerCase()}-logo-square-512.png`
-    );
+    return d?.image || d?.iconBig || d?.icon || `public/images/${String(dt || '').toLowerCase()}-logo-square-512.png`;
   }
 
   async gotoDeviceSelect() {
-    // uncomment to skip to editor
-    //await this.gotoEditor({ deviceType: 'Spark' });
-    //
     const cardFragments = await Promise.all(
       DEVICE_CARDS.map((c) => this.views.render('device-card.html', { id: c.id, label: c.label, img: c.img }))
     );
@@ -316,9 +314,13 @@ export default class VortexEditorMobile {
       `<i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
     this.dom.$('.container-fluid')?.appendChild(skipLink);
 
-    this.dom.onClick('#skip-to-editor', async () => {
-      await this.gotoEditor({ deviceType: 'Spark' });
-    }, { preventDefault: true });
+    this.dom.onClick(
+      '#skip-to-editor',
+      async () => {
+        await this.gotoEditor({ deviceType: 'Spark' });
+      },
+      { preventDefault: true }
+    );
 
     this.dom.all('[data-device]').forEach((cardEl) => {
       cardEl.addEventListener('click', async () => {
@@ -349,7 +351,9 @@ export default class VortexEditorMobile {
     const frag = await this.views.render('ble-connect.html', { deviceType, deviceImg, deviceAlt, instructions });
     this.dom.set(frag);
 
-    this.dom.onClick('#back-btn', async () => { await this.gotoDeviceSelect(); });
+    this.dom.onClick('#back-btn', async () => {
+      await this.gotoDeviceSelect();
+    });
 
     const connectBtn = this.dom.must('#ble-connect-btn', 'ble-connect.html is missing #ble-connect-btn');
 
@@ -424,6 +428,10 @@ export default class VortexEditorMobile {
     });
   }
 
+  async gotoCommunityBrowser({ deviceType, backTarget = 'mode-source' } = {}) {
+    return await this.communityBrowser.gotoCommunityBrowser({ deviceType, backTarget });
+  }
+
   async listenVL() {
     if (!this.vortexPort.isActive()) {
       Notification.failure('Please connect a device first');
@@ -446,7 +454,6 @@ export default class VortexEditorMobile {
   }
 
   async demoColorOnDevice(rgbColor) {
-    // If you have a dedicated fast "demo color" path, use it. Otherwise just demo the mode.
     try {
       if (typeof this.vortexPort.demoColor === 'function') {
         await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
@@ -454,7 +461,9 @@ export default class VortexEditorMobile {
         await this.demoModeOnDevice();
       }
     } catch {
-      try { await this.demoModeOnDevice(); } catch {}
+      try {
+        await this.demoModeOnDevice();
+      } catch {}
     }
   }
 
@@ -475,7 +484,9 @@ export default class VortexEditorMobile {
     const backBtn = this.dom.$('#back-btn');
 
     const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
-    const setBusyHtml = (html) => { if (loadBtn) loadBtn.innerHTML = html; };
+    const setBusyHtml = (html) => {
+      if (loadBtn) loadBtn.innerHTML = html;
+    };
 
     const ensureActive = () => {
       if (!this.vortexPort?.isActive?.()) {
@@ -517,7 +528,9 @@ export default class VortexEditorMobile {
           const dt = Date.now() - lastProgressAt;
           if (dt < watchdogMs) return;
 
-          try { setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Still waiting…`); } catch {}
+          try {
+            setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> Still waiting…`);
+          } catch {}
 
           if (!sawAnyProgress) {
             try {
@@ -566,7 +579,9 @@ export default class VortexEditorMobile {
         } catch (err) {
           console.error('[Mobile] Load from device failed:', err);
           Notification.failure?.('Failed to load modes from device');
-          try { if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType); } catch {}
+          try {
+            if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType);
+          } catch {}
         }
       },
       { disable: [newBtn, browseBtn, backBtn] }
@@ -745,10 +760,10 @@ export default class VortexEditorMobile {
     Object.assign(this.lightshow, {
       tickRate: isDuo ? 3 : 3,
       trailSize: isDuo ? 300 : 120,
-      dotSize: isDuo ? 15 : (isDeck ? 5 : 8),
+      dotSize: isDuo ? 15 : isDeck ? 5 : 8,
       blurFac: 1,
-      circleRadius: isDuo ? 180 : (isDeck ? 85 : 400),
-      spread: isDuo ? 50 : (isDeck ? 10 : 150),
+      circleRadius: isDuo ? 180 : isDeck ? 85 : 400,
+      spread: isDuo ? 50 : isDeck ? 10 : 150,
       direction: -1,
     });
 
@@ -790,7 +805,9 @@ export default class VortexEditorMobile {
 
     const modeTitleEl = this._findFirst(['#m-mode-title', '[data-role="mode-title"]']);
     if (modeTitleEl) {
-      try { modeTitleEl.textContent = this.vortex.getModeName(); } catch {}
+      try {
+        modeTitleEl.textContent = this.vortex.getModeName();
+      } catch {}
     }
 
     return !!(nameEl || idxEl || modeTitleEl);
@@ -868,10 +885,7 @@ export default class VortexEditorMobile {
   }
 
   _bindModeSwipe(dt) {
-    const swipeTarget =
-      this.dom.$('#mobile-lightshow-canvas') ||
-      this.dom.$('.m-editor-stage') ||
-      this.dom.$('#mobile-app-root');
+    const swipeTarget = this.dom.$('#mobile-lightshow-canvas') || this.dom.$('.m-editor-stage') || this.dom.$('#mobile-app-root');
 
     if (!swipeTarget) return;
     if (swipeTarget.dataset.modeSwipeBound === '1') return;
@@ -933,9 +947,13 @@ export default class VortexEditorMobile {
       if (state.lockedAxis === 'x') {
         if (!state.captured) {
           state.captured = true;
-          try { swipeTarget.setPointerCapture?.(e.pointerId); } catch {}
+          try {
+            swipeTarget.setPointerCapture?.(e.pointerId);
+          } catch {}
         }
-        try { e.preventDefault?.(); } catch {}
+        try {
+          e.preventDefault?.();
+        } catch {}
       }
     };
 
@@ -949,15 +967,14 @@ export default class VortexEditorMobile {
       const adx = Math.abs(dx);
       const ady = Math.abs(dy);
 
-      const wasSwipe =
-        state.captured &&
-        adx >= 55 &&
-        adx >= ady * 1.3;
+      const wasSwipe = state.captured && adx >= 55 && adx >= ady * 1.3;
 
       reset();
 
       if (!wasSwipe) return;
-      try { e.preventDefault?.(); } catch {}
+      try {
+        e.preventDefault?.();
+      } catch {}
 
       if (dx < 0) await this._navigateMode(dt, +1);
       else await this._navigateMode(dt, -1);
@@ -1025,7 +1042,9 @@ export default class VortexEditorMobile {
           if (newIdx < 0) newIdx = 0;
           if (newIdx >= afterN) newIdx = afterN - 1;
 
-          try { this.vortex.setCurMode(newIdx >>> 0, false); } catch {}
+          try {
+            this.vortex.setCurMode(newIdx >>> 0, false);
+          } catch {}
 
           try {
             this._getModes().initCurMode();
@@ -1099,10 +1118,18 @@ export default class VortexEditorMobile {
       }
     };
 
-    bindTap(prev, async () => { await this._navigateMode(dt, -1); });
-    bindTap(next, async () => { await this._navigateMode(dt, +1); });
-    bindTap(addBtn, async () => { await this._addModeInEditor(dt); });
-    bindTap(delBtn, async () => { await this._deleteModeInEditor(dt); });
+    bindTap(prev, async () => {
+      await this._navigateMode(dt, -1);
+    });
+    bindTap(next, async () => {
+      await this._navigateMode(dt, +1);
+    });
+    bindTap(addBtn, async () => {
+      await this._addModeInEditor(dt);
+    });
+    bindTap(delBtn, async () => {
+      await this._deleteModeInEditor(dt);
+    });
 
     if (document.body && document.body.dataset.modeKeysBound !== '1') {
       document.body.dataset.modeKeysBound = '1';
@@ -1165,10 +1192,22 @@ export default class VortexEditorMobile {
       btn._mBoundTool = true;
 
       if (window.PointerEvent) {
-        btn.addEventListener('pointerup', async (e) => { await handleTool(btn, e); }, { passive: false });
+        btn.addEventListener(
+          'pointerup',
+          async (e) => {
+            await handleTool(btn, e);
+          },
+          { passive: false }
+        );
         btn.addEventListener('click', swallow, { passive: false });
       } else {
-        btn.addEventListener('click', async (e) => { await handleTool(btn, e); }, { passive: false });
+        btn.addEventListener(
+          'click',
+          async (e) => {
+            await handleTool(btn, e);
+          },
+          { passive: false }
+        );
       }
     });
   }
@@ -1213,31 +1252,29 @@ export default class VortexEditorMobile {
     if (subtitle) subtitle.textContent = `Transfer modes to or from ${dt}`;
     if (footnote) {
       footnote.textContent =
-        dt === 'Duo'
-          ? 'Use the Chromadeck to send or receive modes from the Duo.'
-          : 'Pull/push modes directly over BLE.';
+        dt === 'Duo' ? 'Use the Chromadeck to send or receive modes from the Duo.' : 'Pull/push modes directly over BLE.';
     }
 
     if (pullBtn) {
       pullBtn.disabled = false;
-      pullBtn.innerHTML =
-        `<i class="fa-solid fa-download me-2"></i> ` +
-        `${dt === 'Duo' ? 'Load from Duo' : 'Load from device'}`;
+      pullBtn.innerHTML = `<i class="fa-solid fa-download me-2"></i> ${dt === 'Duo' ? 'Load from Duo' : 'Load from device'}`;
     }
 
     if (pushBtn) {
       const hasModes = (this.vortex?.numModes?.() | 0) > 0;
       pushBtn.disabled = !hasModes;
-      pushBtn.innerHTML =
-        `<i class="fa-solid fa-upload me-2"></i> ` +
-        `${dt === 'Duo' ? 'Save to Duo' : 'Save to device'}`;
+      pushBtn.innerHTML = `<i class="fa-solid fa-upload me-2"></i> ${dt === 'Duo' ? 'Save to Duo' : 'Save to device'}`;
     }
 
     if (modal.dataset.bound !== '1') {
       modal.dataset.bound = '1';
 
       const swallow = (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); e?.stopImmediatePropagation?.(); } catch {}
+        try {
+          e?.preventDefault?.();
+          e?.stopPropagation?.();
+          e?.stopImmediatePropagation?.();
+        } catch {}
       };
 
       const onPull = async (e) => {
@@ -1258,7 +1295,9 @@ export default class VortexEditorMobile {
           await this.pullFromDeviceAndEnterEditor(dtNow, { source: 'editor' });
         } finally {
           modal.dataset.xferRunning = '0';
-          try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
+          try {
+            await this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
+          } catch {}
         }
       };
 
@@ -1289,7 +1328,9 @@ export default class VortexEditorMobile {
           await this.gotoDevicePushModes({ deviceType: dtNow, backTarget: 'editor' });
         } finally {
           modal.dataset.xferRunning = '0';
-          try { await this._configureTransferModalForDevice(this.selectedDeviceType('Duo')); } catch {}
+          try {
+            await this._configureTransferModalForDevice(this.selectedDeviceType('Duo'));
+          } catch {}
         }
       };
 
@@ -1323,13 +1364,21 @@ export default class VortexEditorMobile {
       const finish = () => {
         if (done) return;
         done = true;
-        try { modalEl.removeEventListener('hidden.bs.modal', finish); } catch {}
+        try {
+          modalEl.removeEventListener('hidden.bs.modal', finish);
+        } catch {}
         resolve();
       };
 
-      try { modalEl.addEventListener('hidden.bs.modal', finish, { once: true }); } catch {}
+      try {
+        modalEl.addEventListener('hidden.bs.modal', finish, { once: true });
+      } catch {}
 
-      try { inst.hide(); } catch { finish(); }
+      try {
+        inst.hide();
+      } catch {
+        finish();
+      }
       setTimeout(finish, 700);
     });
   }
@@ -1360,8 +1409,20 @@ export default class VortexEditorMobile {
       else await this.gotoEditor({ deviceType: dt });
     };
 
-    this.dom.onClick('#back-btn', async () => { await backNav(); }, { preventDefault: true });
-    this.dom.onClick('#done-btn', async () => { await backNav(); }, { preventDefault: true });
+    this.dom.onClick(
+      '#back-btn',
+      async () => {
+        await backNav();
+      },
+      { preventDefault: true }
+    );
+    this.dom.onClick(
+      '#done-btn',
+      async () => {
+        await backNav();
+      },
+      { preventDefault: true }
+    );
 
     await this._runDevicePushModes(dt);
   }
@@ -1396,7 +1457,10 @@ export default class VortexEditorMobile {
     }
 
     try {
-      try { this._getModes().initCurMode(); this._getModes().saveCurMode(); } catch {}
+      try {
+        this._getModes().initCurMode();
+        this._getModes().saveCurMode();
+      } catch {}
 
       setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
 
@@ -1408,7 +1472,13 @@ export default class VortexEditorMobile {
 
         if (phase === 'start') setUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
         else if (phase === 'count') setUI({ s: 'Saving modes…', p: total > 0 ? `0 / ${total}` : '', pct: 12, err: false });
-        else if (phase === 'pushing') setUI({ s: 'Saving modes…', p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`, pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50, err: false });
+        else if (phase === 'pushing')
+          setUI({
+            s: 'Saving modes…',
+            p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`,
+            pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50,
+            err: false,
+          });
         else if (phase === 'finalizing') setUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
         else if (phase === 'done') setUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
       });
@@ -1441,12 +1511,19 @@ export default class VortexEditorMobile {
 
     const doneBtn = this.dom.$('#done-btn');
     if (doneBtn) {
-      doneBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        this._stopDuoTransmitLoop();
-        if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
-        else await this.gotoModeSource({ deviceType: dt });
-      }, { passive: false });
+      doneBtn.addEventListener(
+        'click',
+        async (e) => {
+          try {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+          } catch {}
+          this._stopDuoTransmitLoop();
+          if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
+          else await this.gotoModeSource({ deviceType: dt });
+        },
+        { passive: false }
+      );
     }
 
     this._startDuoTransmitLoop({ intervalMs: 900, statusEl, statusTextEl });
@@ -1458,10 +1535,14 @@ export default class VortexEditorMobile {
     this._duoTxLoopActive = true;
     this._duoTxLoopTimer = null;
 
-    const setStatus = (txt) => { if (statusTextEl) statusTextEl.textContent = txt; };
+    const setStatus = (txt) => {
+      if (statusTextEl) statusTextEl.textContent = txt;
+    };
 
     const fail = (txt) => {
-      try { statusEl?.classList.add('is-error'); } catch {}
+      try {
+        statusEl?.classList.add('is-error');
+      } catch {}
       setStatus(txt);
       this._stopDuoTransmitLoop();
     };
@@ -1559,350 +1640,28 @@ export default class VortexEditorMobile {
   }
 
   // -----------------------------
-  // Community Browser (minimal functional)
-  // -----------------------------
-
-  _vcbAttachEls() {
-    this._vcbEls.searchBox = this.dom.$('#m-vcb-search-box');
-    this._vcbEls.filterContainer = this.dom.$('#m-vcb-filter-container');
-    this._vcbEls.modesContainer = this.dom.$('#m-vcb-modes-container');
-    this._vcbEls.pageLabel = this.dom.$('#m-vcb-page-label');
-    this._vcbEls.prevBtn = this.dom.$('#m-vcb-prev-btn');
-    this._vcbEls.nextBtn = this.dom.$('#m-vcb-next-btn');
-    this._vcbEls.status = this.dom.$('#m-vcb-status');
-    this._vcbEls.refreshBtn = this.dom.$('#m-vcb-refresh');
-  }
-
-  _vcbSetStatus(text) {
-    const el = this._vcbEls.status;
-    if (!el) return;
-    el.textContent = String(text || '');
-  }
-
-  _vcbClearCache() {
-    this._vcbModesCache = {};
-  }
-
-  _vcbBuildFilterButtons() {
-    const container = this._vcbEls.filterContainer;
-    if (!container) return;
-
-    container.innerHTML = '';
-    this._vcbActiveFilters.clear();
-
-    const entries = Object.entries(this.devices || {});
-    for (const [deviceName, deviceData] of entries) {
-      if (deviceName === 'None') continue;
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'm-vcb-filter-btn active';
-      btn.dataset.device = deviceName;
-      btn.title = `Filter by ${deviceData?.label || deviceName}`;
-
-      const img = document.createElement('img');
-      img.src = deviceData?.icon || `public/images/${String(deviceName).toLowerCase()}-logo-square-64.png`;
-      img.alt = deviceName;
-      btn.appendChild(img);
-
-      btn.addEventListener('click', () => {
-        if (this._vcbActiveFilters.has(deviceName)) {
-          this._vcbActiveFilters.delete(deviceName);
-          btn.classList.remove('active');
-        } else {
-          this._vcbActiveFilters.add(deviceName);
-          btn.classList.add('active');
-        }
-        void this._vcbApplyFiltersAndRender();
-      }, { passive: true });
-
-      this._vcbActiveFilters.add(deviceName);
-      container.appendChild(btn);
-    }
-  }
-
-  async _vcbFetchPage(pageNumber) {
-    const page = pageNumber | 0;
-    if (page <= 0) throw new Error('invalid page');
-    if (this._vcbModesCache[page]) return this._vcbModesCache[page];
-
-    let response;
-    const v = Date.now();
-
-    if (this.isLocalServer) {
-      const suffix = page > 1 ? '2' : '';
-      response = await fetch(`public/data/modeData${suffix}.json?v=${v}`);
-    } else {
-      response = await fetch(`https://vortex.community/modes/json?page=${page}&pageSize=${this._vcbPageSize}&v=${v}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-    }
-
-    const data = await response.json();
-    this._vcbModesCache[page] = data;
-
-    if (typeof data?.pages === 'number') this._vcbTotalPages = data.pages;
-
-    return data;
-  }
-
-  _vcbApplyFilters(pageData) {
-    if (!pageData || !Array.isArray(pageData.data)) return [];
-    const q = String(this._vcbSearchQuery || '').trim().toLowerCase();
-
-    return pageData.data.filter((mode) => {
-      const dev = String(mode?.deviceType || '').trim();
-      const matchesDevice = this._vcbActiveFilters.has(dev);
-      const name = String(mode?.name || '').toLowerCase();
-      const matchesSearch = !q || (name && name.includes(q));
-      return matchesDevice && matchesSearch;
-    });
-  }
-
-  _vcbRenderPage(filteredModes) {
-    const container = this._vcbEls.modesContainer;
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!filteredModes || filteredModes.length <= 0) {
-      const empty = document.createElement('div');
-      empty.className = 'm-vcb-status';
-      empty.textContent = 'No modes found.';
-      container.appendChild(empty);
-      return;
-    }
-
-    for (const mode of filteredModes) {
-      const row = document.createElement('div');
-      row.className = 'm-vcb-entry';
-      row.dataset.device = String(mode.deviceType || '');
-
-      const deviceIcon = document.createElement('img');
-      deviceIcon.className = 'm-vcb-device-icon';
-      deviceIcon.src = `public/images/${String(mode.deviceType || '').toLowerCase()}-logo-square-512.png`;
-      deviceIcon.alt = String(mode.deviceType || '');
-      row.appendChild(deviceIcon);
-
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'm-vcb-name';
-      nameDiv.textContent = mode.name || 'Unnamed Mode';
-      row.appendChild(nameDiv);
-
-      const actions = document.createElement('div');
-      actions.className = 'm-vcb-actions';
-
-      const importBtn = document.createElement('button');
-      importBtn.type = 'button';
-      importBtn.className = 'm-vcb-import-btn';
-      importBtn.innerHTML = '<i class="fa-solid fa-share"></i>';
-      importBtn.title = 'Import';
-
-      importBtn.addEventListener('click', async (e) => {
-        try { e?.preventDefault?.(); e?.stopPropagation?.(); } catch {}
-        await this._vcbImportMode(mode);
-      }, { passive: false });
-
-      actions.appendChild(importBtn);
-      row.appendChild(actions);
-
-      container.appendChild(row);
-    }
-  }
-
-  _vcbUpdatePager() {
-    const label = this._vcbEls.pageLabel;
-    if (label) label.textContent = `Page ${this._vcbCurrentPage} / ${this._vcbTotalPages || '?'}`;
-
-    const prevBtn = this._vcbEls.prevBtn;
-    const nextBtn = this._vcbEls.nextBtn;
-
-    if (prevBtn) prevBtn.disabled = !(this._vcbCurrentPage > 1);
-    if (nextBtn) nextBtn.disabled = !(this._vcbCurrentPage < (this._vcbTotalPages || 1));
-  }
-
-  async _vcbLoadPage(pageNumber) {
-    this._vcbCurrentPage = pageNumber | 0;
-    if (this._vcbCurrentPage <= 0) this._vcbCurrentPage = 1;
-
-    this._vcbSetStatus('Loading…');
-
-    try {
-      const pageData = await this._vcbFetchPage(this._vcbCurrentPage);
-      const filtered = this._vcbApplyFilters(pageData);
-
-      this._vcbUpdatePager();
-      this._vcbRenderPage(filtered);
-
-      this._vcbSetStatus(
-        filtered.length
-          ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
-          : 'No matches on this page'
-      );
-    } catch (err) {
-      console.error('[Mobile] Error fetching modes:', err);
-      this._vcbUpdatePager();
-      this._vcbSetStatus('Failed to load modes.');
-    }
-  }
-
-  async _vcbApplyFiltersAndRender() {
-    const pageData = this._vcbModesCache[this._vcbCurrentPage];
-    if (!pageData) {
-      await this._vcbLoadPage(this._vcbCurrentPage);
-      return;
-    }
-    const filtered = this._vcbApplyFilters(pageData);
-    this._vcbUpdatePager();
-    this._vcbRenderPage(filtered);
-    this._vcbSetStatus(
-      filtered.length
-        ? `${filtered.length} mode${filtered.length === 1 ? '' : 's'} on this page`
-        : 'No matches on this page'
-    );
-  }
-
-  _vcbBuildModeJsonFromCommunity(mode) {
-    const patternSets = Array.isArray(mode?.patternSets) ? mode.patternSets : [];
-    const ledPatternOrder = Array.isArray(mode?.ledPatternOrder) ? mode.ledPatternOrder : [];
-
-    const patternSetMap = {};
-    for (const ps of patternSets) {
-      if (!ps || typeof ps !== 'object') continue;
-      const id = String(ps._id || '');
-      if (!id) continue;
-      patternSetMap[id] = ps.data;
-    }
-
-    const ledCounts = {
-      Gloves: 10,
-      Orbit: 28,
-      Handle: 3,
-      Duo: 2,
-      Chromadeck: 20,
-      Spark: 6
-    };
-
-    const dev = String(mode?.deviceType || '');
-    const num_leds = ledCounts[dev] || 1;
-
-    const single_pats = ledPatternOrder.map((orderIndex) => {
-      const i = orderIndex | 0;
-      const ps = patternSets[i];
-      const id = ps?._id ? String(ps._id) : '';
-      return id ? patternSetMap[id] : null;
-    });
-
-    return {
-      num_leds,
-      flags: mode?.flags ?? 0,
-      single_pats
-    };
-  }
-
-  async _vcbImportMode(mode) {
-    try {
-      const jsonStr = String(this.vortex.printJson(false) || '');
-      let obj;
-      try { obj = jsonStr ? JSON.parse(jsonStr) : {}; } catch { obj = {}; }
-      if (!obj || typeof obj !== 'object') obj = {};
-      if (!Array.isArray(obj.modes)) obj.modes = [];
-
-      const modeJson = this._vcbBuildModeJsonFromCommunity(mode);
-      const insertIndex = obj.modes.length | 0;
-
-      obj.modes.push(modeJson);
-      obj.num_modes = (obj.modes.length | 0);
-
-      const outStr = JSON.stringify(obj);
-
-      this._clearModeTimers();
-      this._withLightshowPausedSync(() => {
-        const ok = this.vortex.parseJson(outStr);
-        if (!ok) throw new Error('vortex.parseJson returned false');
-      });
-
-      const afterCount = this.vortex.numModes() | 0;
-      if (afterCount > 0) {
-        const target = Math.min(insertIndex, afterCount - 1);
-        this.vortex.setCurMode(target, false);
-      }
-
-      Notification.success?.('Imported mode');
-      await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') });
-    } catch (err) {
-      console.error('[Mobile] importMode failed:', err);
-      Notification.failure('Import failed');
-      try { await this.gotoEditor({ deviceType: this.selectedDeviceType('Duo') }); } catch {}
-    }
-  }
-
-  async gotoCommunityBrowser({ deviceType, backTarget = 'mode-source' } = {}) {
-    const dt = deviceType || this.selectedDeviceType('Duo');
-
-    this.stopEditorLightshow();
-    this.clearEditorResizeHandler();
-    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
-
-    const frag = await this.views.render('community-browser.html', {});
-    this.dom.set(frag);
-
-    this._vcbAttachEls();
-
-    this.dom.onClick('#back-btn', async () => {
-      if (backTarget === 'editor') await this.gotoEditor({ deviceType: dt });
-      else await this.gotoModeSource({ deviceType: dt });
-    });
-
-    if (this._vcbEls.searchBox) {
-      this._vcbEls.searchBox.value = this._vcbSearchQuery || '';
-      this._vcbEls.searchBox.addEventListener('input', async () => {
-        this._vcbSearchQuery = String(this._vcbEls.searchBox.value || '');
-        await this._vcbApplyFiltersAndRender();
-      }, { passive: true });
-    }
-
-    if (this._vcbEls.prevBtn) {
-      this._vcbEls.prevBtn.addEventListener('click', async () => {
-        if (this._vcbCurrentPage > 1) {
-          this._vcbCurrentPage--;
-          await this._vcbLoadPage(this._vcbCurrentPage);
-        }
-      }, { passive: true });
-    }
-
-    if (this._vcbEls.nextBtn) {
-      this._vcbEls.nextBtn.addEventListener('click', async () => {
-        if (this._vcbCurrentPage < (this._vcbTotalPages || 1)) {
-          this._vcbCurrentPage++;
-          await this._vcbLoadPage(this._vcbCurrentPage);
-        }
-      }, { passive: true });
-    }
-
-    if (this._vcbEls.refreshBtn) {
-      this._vcbEls.refreshBtn.addEventListener('click', async () => {
-        this._vcbClearCache();
-        await this._vcbLoadPage(this._vcbCurrentPage);
-      }, { passive: true });
-    }
-
-    this._vcbBuildFilterButtons();
-    await this._vcbLoadPage(this._vcbCurrentPage);
-  }
-
-  // -----------------------------
   // Engine helpers
   // -----------------------------
 
-  _getEngine() { return this.vortex.engine(); }
-  _getModes() { return this._getEngine().modes(); }
-  _getCurMode() { return this._getModes().curMode(); }
+  _getEngine() {
+    return this.vortex.engine();
+  }
+  _getModes() {
+    return this._getEngine().modes();
+  }
+  _getCurMode() {
+    return this._getModes().curMode();
+  }
 
-  _getLedCount() { return this._getEngine().leds().ledCount() | 0; }
-  _getMultiIndex() { return this._getEngine().leds().ledMulti() | 0; }
-  _isMultiMode(curMode) { return !!(curMode && curMode.isMultiLed && curMode.isMultiLed()); }
+  _getLedCount() {
+    return this._getEngine().leds().ledCount() | 0;
+  }
+  _getMultiIndex() {
+    return this._getEngine().leds().ledMulti() | 0;
+  }
+  _isMultiMode(curMode) {
+    return !!(curMode && curMode.isMultiLed && curMode.isMultiLed());
+  }
 
   _escape(str) {
     return String(str)
@@ -1980,21 +1739,18 @@ export default class VortexEditorMobile {
       else strobe.push(opt);
     }
 
-    const mk = (label, arr) =>
-      arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '';
+    const mk = (label, arr) => (arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '');
 
-    return (
-      mk('Strobe Patterns', strobe) +
-      mk('Blend Patterns', blend) +
-      mk('Solid Patterns', solid) +
-      (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
-    );
+    return mk('Strobe Patterns', strobe) + mk('Blend Patterns', blend) + mk('Solid Patterns', solid) + (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '');
   }
 
   _ledSelEnsureDefaults(ledCount) {
     const lc = Math.max(0, ledCount | 0);
     if (this.ledSelectState && typeof this.ledSelectState.ensureDefaultsForSingleLed === 'function') {
-      try { this.ledSelectState.ensureDefaultsForSingleLed({ ledCount: lc }); return; } catch {}
+      try {
+        this.ledSelectState.ensureDefaultsForSingleLed({ ledCount: lc });
+        return;
+      } catch {}
     }
 
     const src = this._ledSelFallback.sourceLed | 0;
@@ -2009,11 +1765,11 @@ export default class VortexEditorMobile {
     if (this.ledSelectState && typeof this.ledSelectState.getSingleSource === 'function') {
       try {
         const v = this.ledSelectState.getSingleSource() | 0;
-        return (v >= 0 && v < lc) ? v : 0;
+        return v >= 0 && v < lc ? v : 0;
       } catch {}
     }
     const v = this._ledSelFallback.sourceLed | 0;
-    return (v >= 0 && v < lc) ? v : 0;
+    return v >= 0 && v < lc ? v : 0;
   }
 
   _ledSelGetSingleSelected(ledCount) {
@@ -2033,14 +1789,17 @@ export default class VortexEditorMobile {
 
   _ledSelSetFromModal({ ledCount, sourceLed, selectedLeds }) {
     const lc = Math.max(0, ledCount | 0);
-    const src = (sourceLed | 0);
+    const src = sourceLed | 0;
     const sel = Array.isArray(selectedLeds) ? selectedLeds.map((x) => x | 0) : null;
 
     if (this.ledSelectState && typeof this.ledSelectState.setFromModal === 'function') {
-      try { this.ledSelectState.setFromModal({ ledCount: lc, sourceLed: src, selectedLeds: sel }); return; } catch {}
+      try {
+        this.ledSelectState.setFromModal({ ledCount: lc, sourceLed: src, selectedLeds: sel });
+        return;
+      } catch {}
     }
 
-    this._ledSelFallback.sourceLed = (src >= 0 && src < lc) ? src : 0;
+    this._ledSelFallback.sourceLed = src >= 0 && src < lc ? src : 0;
     if (!sel || sel.length === 0) this._ledSelFallback.selectedLeds = null;
     else this._ledSelFallback.selectedLeds = sel.filter((x) => x >= 0 && x < lc);
   }
@@ -2048,7 +1807,9 @@ export default class VortexEditorMobile {
   _ledSelGetSummary({ isMultiMode, ledCount }) {
     const lc = Math.max(0, ledCount | 0);
     if (this.ledSelectState && typeof this.ledSelectState.getSummary === 'function') {
-      try { return String(this.ledSelectState.getSummary({ isMultiMode: !!isMultiMode, ledCount: lc })); } catch {}
+      try {
+        return String(this.ledSelectState.getSummary({ isMultiMode: !!isMultiMode, ledCount: lc }));
+      } catch {}
     }
 
     if (isMultiMode) return 'Multi';
@@ -2108,8 +1869,12 @@ export default class VortexEditorMobile {
       console.error('[Mobile] setColorset apply failed:', e);
     }
 
-    try { cur.init(); } catch {}
-    try { this._getModes().saveCurMode(); } catch {}
+    try {
+      cur.init();
+    } catch {}
+    try {
+      this._getModes().saveCurMode();
+    } catch {}
 
     return { cur, set, sourceLed, targetLeds };
   }
@@ -2129,28 +1894,43 @@ export default class VortexEditorMobile {
 
     if (isSingle) {
       if (isMultiBefore) {
-        // Desktop parity: clear multi, switch back to singles, apply to ALL singles.
-        try { if (typeof cur.clearPattern === 'function') cur.clearPattern(multiIndex); } catch {}
+        try {
+          if (typeof cur.clearPattern === 'function') cur.clearPattern(multiIndex);
+        } catch {}
 
-        // Ensure LED selection is "all" after multi -> single transition
         this._ledSelSetFromModal({ ledCount, sourceLed: 0, selectedLeds: null });
 
-        try { cur.setPattern(patID, ledCount, null, null); } catch {}
-        try { if (set) cur.setColorset(set, ledCount); } catch {}
+        try {
+          cur.setPattern(patID, ledCount, null, null);
+        } catch {}
+        try {
+          if (set) cur.setColorset(set, ledCount);
+        } catch {}
       } else {
         for (const led of targetLeds) {
-          try { cur.setPattern(patID, led, null, null); } catch {}
-          try { if (set) cur.setColorset(set, led); } catch {}
+          try {
+            cur.setPattern(patID, led, null, null);
+          } catch {}
+          try {
+            if (set) cur.setColorset(set, led);
+          } catch {}
         }
       }
     } else {
-      // Multi pattern
-      try { cur.setPattern(patID, multiIndex, null, null); } catch {}
-      try { if (set) cur.setColorset(set, multiIndex); } catch {}
+      try {
+        cur.setPattern(patID, multiIndex, null, null);
+      } catch {}
+      try {
+        if (set) cur.setColorset(set, multiIndex);
+      } catch {}
     }
 
-    try { cur.init(); } catch {}
-    try { this._getModes().saveCurMode(); } catch {}
+    try {
+      cur.init();
+    } catch {}
+    try {
+      this._getModes().saveCurMode();
+    } catch {}
   }
 
   // -----------------------------
@@ -2179,10 +1959,10 @@ export default class VortexEditorMobile {
     const colors = this._extractColorsHexFromColorset(set);
 
     const initialSelectedColorIndex = colors.length ? 0 : null;
-    const seedHex = (initialSelectedColorIndex != null) ? colors[initialSelectedColorIndex] : '#FF0000';
+    const seedHex = initialSelectedColorIndex != null ? colors[initialSelectedColorIndex] : '#FF0000';
     const seedRgb = this._hexToRgb(seedHex);
 
-    const allowMulti = (deviceType !== 'None' && deviceType !== 'Duo');
+    const allowMulti = deviceType !== 'None' && deviceType !== 'Duo';
     const patternOptionsHtml = this._patternOptionsHtml({ allowMulti });
 
     let patternValue = -1;
@@ -2199,10 +1979,8 @@ export default class VortexEditorMobile {
       imageSrcAlt: deviceMeta?.altImage ?? null,
       swapEnabled: !!deviceMeta?.altImage,
       positionsUrl: `public/data/${String(deviceType).toLowerCase()}-led-positions.json`,
-      positionsUrlAlt: deviceMeta?.altLabel
-        ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json`
-        : null,
-      selectedLeds: isMulti ? [multiIndex] : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+      positionsUrlAlt: deviceMeta?.altLabel ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json` : null,
+      selectedLeds: isMulti ? [multiIndex] : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
       sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
     };
 
@@ -2228,18 +2006,19 @@ export default class VortexEditorMobile {
 
         const isM = this._isMultiMode(cur);
 
-        // Persist selection only when not multi
         if (!isM) {
           this._ledSelSetFromModal({ ledCount, sourceLed, selectedLeds });
         }
 
-        // Recompute effective selection (source may be forced to multiIndex if multi-mode)
         const eff2 = this._effectiveSelection(cur);
         const src2 = eff2.sourceLed;
 
-        // Refresh pattern + colorset based on SOURCE led
         let patVal = -1;
-        try { patVal = cur.getPatternID(src2).value | 0; } catch { patVal = -1; }
+        try {
+          patVal = cur.getPatternID(src2).value | 0;
+        } catch {
+          patVal = -1;
+        }
 
         const set2 = cur.getColorset(src2);
         const cols2 = this._extractColorsHexFromColorset(set2);
@@ -2251,15 +2030,12 @@ export default class VortexEditorMobile {
 
         return {
           ledModalSummary: nextSummary,
-
-          // keep modal state in sync for the next time the LED modal opens
           ledSelectState: {
             ...ledSelectState,
-            selectedLeds: eff2.isMulti ? [multiIndex] : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+            selectedLeds: eff2.isMulti ? [multiIndex] : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
             sourceLed: eff2.isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
           },
 
-          // refresh the Effects UI itself
           patternValue: patVal,
           colors: cols2,
           selectedColorIndex: selIdx,
@@ -2276,9 +2052,8 @@ export default class VortexEditorMobile {
         const cur2 = this._getCurMode();
         const isM2 = this._isMultiMode(cur2);
 
-        // patternValue must reflect what we selected
         return {
-          patternValue: (newPatternValue | 0),
+          patternValue: newPatternValue | 0,
           ledModalSummary: this._ledSelGetSummary({ isMultiMode: isM2, ledCount }),
         };
       },
@@ -2310,7 +2085,7 @@ export default class VortexEditorMobile {
         if (!res) return null;
 
         const cols2 = this._extractColorsHexFromColorset(res.set);
-        const selectedColorIndex = cols2.length ? (cols2.length - 1) : null;
+        const selectedColorIndex = cols2.length ? cols2.length - 1 : null;
 
         return {
           colors: cols2,
@@ -2349,9 +2124,13 @@ export default class VortexEditorMobile {
         });
 
         if (isDragging) {
-          try { await this.demoColorOnDevice(new this.vortexLib.RGBColor(r, g, b)); } catch {}
+          try {
+            await this.demoColorOnDevice(new this.vortexLib.RGBColor(r, g, b));
+          } catch {}
         } else {
-          try { await this.demoModeOnDevice(); } catch {}
+          try {
+            await this.demoModeOnDevice();
+          } catch {}
         }
       },
 
@@ -2363,7 +2142,9 @@ export default class VortexEditorMobile {
             setX.set(0, new this.vortexLib.RGBColor(0, 0, 0));
           }
         });
-        try { await this.demoModeOnDevice(); } catch {}
+        try {
+          await this.demoModeOnDevice();
+        } catch {}
       },
     });
   }
@@ -2388,6 +2169,12 @@ async function boot() {
     boot();
     return;
   }
-  document.addEventListener('DOMContentLoaded', () => { boot(); }, { once: true });
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      boot();
+    },
+    { once: true }
+  );
 })();
 
