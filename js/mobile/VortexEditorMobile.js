@@ -48,6 +48,8 @@ export default class VortexEditorMobile {
     this.lightshow = null;
     this._editorResizeHandler = null;
 
+    this._transferInProgress = false;
+
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
 
     this.effectsPanel = new ColorPicker({
@@ -459,10 +461,13 @@ export default class VortexEditorMobile {
 
   async demoModeOnDevice() {
     try {
+      if (this._transferInProgress) return;
+
       let tries = 0;
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
         if (tries++ > 10) return;
         await this.sleep(100);
+        if (this._transferInProgress) return;
       }
       await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
     } catch (error) {
@@ -484,7 +489,7 @@ export default class VortexEditorMobile {
     }
   }
 
-  async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source' } = {}) {
+  async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source', progressEl = null, disableEls = [] } = {}) {
     if (deviceType === 'Duo') {
       await this.gotoDuoReceive({ deviceType });
       return;
@@ -493,11 +498,13 @@ export default class VortexEditorMobile {
     const sel =
       source === 'editor-empty'
         ? { load: '#m-load-from-device', newm: '#m-start-new-mode', browse: '#m-browse-community' }
-        : { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' };
+        : source === 'mode-source'
+          ? { load: '#ms-load-device', newm: '#ms-new-mode', browse: '#ms-browse-community' }
+          : { load: null, newm: null, browse: null };
 
-    const loadBtn = this.dom.$(sel.load);
-    const newBtn = this.dom.$(sel.newm);
-    const browseBtn = this.dom.$(sel.browse);
+    const loadBtn = progressEl || (sel.load ? this.dom.$(sel.load) : null);
+    const newBtn = sel.newm ? this.dom.$(sel.newm) : null;
+    const browseBtn = sel.browse ? this.dom.$(sel.browse) : null;
     const backBtn = this.dom.$('#back-btn');
 
     const baseBusyHtml = `<i class="fa-solid fa-spinner fa-spin"></i> Loading modes…`;
@@ -532,6 +539,7 @@ export default class VortexEditorMobile {
         else if (p.phase === 'pulling') str = total > 0 ? `Pulling mode ${i1} / ${total}…` : `Pulling mode ${i1}…`;
         else if (p.phase === 'finalizing') str = total > 0 ? `Finalizing… (${total} modes)` : `Finalizing…`;
         else if (p.phase === 'done') str = total > 0 ? `Done (${total} modes)` : `Done`;
+        else if (p.phase === 'error') str = `Failed.`;
 
         setBusyHtml(`<i class="fa-solid fa-spinner fa-spin"></i> ${str}`);
       };
@@ -577,32 +585,42 @@ export default class VortexEditorMobile {
       }
     };
 
-    await this.dom.busy(
-      loadBtn,
-      baseBusyHtml,
-      async () => {
-        if (!ensureActive()) return;
+    const disableList = [newBtn, browseBtn, backBtn, ...disableEls].filter(Boolean);
 
+    // If we don't have a concrete button, just run the operation without dom.busy wrapping.
+    const runCore = async () => {
+      if (!ensureActive()) return;
+
+      this._transferInProgress = true;
+      this._clearModeTimers();
+
+      try {
+        this.vortex.clearModes();
+        await pullWithEach();
+
+        if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
+
+        const total = this.vortex.numModes() | 0;
+        setBusyHtml(`<i class="fa-solid fa-check"></i> Done (${total} mode${total === 1 ? '' : 's'})`);
+
+        await this.gotoEditor({ deviceType });
+      } catch (err) {
+        console.error('[Mobile] Load from device failed:', err);
+        Notification.failure?.('Failed to load modes from device');
         try {
-          this.vortex.clearModes();
-          await pullWithEach();
+          if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType);
+        } catch {}
+      } finally {
+        this._transferInProgress = false;
+      }
+    };
 
-          if ((this.vortex.numModes() | 0) > 0) this.vortex.setCurMode(0, false);
+    if (!loadBtn) {
+      await runCore();
+      return;
+    }
 
-          const total = this.vortex.numModes() | 0;
-          setBusyHtml(`<i class="fa-solid fa-check"></i> Done (${total} mode${total === 1 ? '' : 's'})`);
-
-          await this.gotoEditor({ deviceType });
-        } catch (err) {
-          console.error('[Mobile] Load from device failed:', err);
-          Notification.failure?.('Failed to load modes from device');
-          try {
-            if (loadBtn) loadBtn.innerHTML = this.loadActionLabel(deviceType);
-          } catch {}
-        }
-      },
-      { disable: [newBtn, browseBtn, backBtn] }
-    );
+    await this.dom.busy(loadBtn, baseBusyHtml, runCore, { disable: disableList });
   }
 
   async startNewModeAndEnterEditor(deviceType) {
@@ -1307,14 +1325,26 @@ export default class VortexEditorMobile {
         if (!this._requireActivePort()) return;
 
         modal.dataset.xferRunning = '1';
+
         try {
           if (dtNow === 'Duo') {
             await this._hideTransferModal();
             await this.gotoDuoReceive({ deviceType: 'Duo', preserveModes: true, backTarget: 'editor' });
             return;
           }
+
+          // Keep modal open while pulling so progress shows in the button.
+          if (pullBtn) pullBtn.disabled = true;
+          if (pushBtn) pushBtn.disabled = true;
+
+          await this.pullFromDeviceAndEnterEditor(dtNow, {
+            source: 'transfer-modal',
+            progressEl: pullBtn,
+            disableEls: [pushBtn],
+          });
+
+          // After pull flow completes (success or fail), close the modal if we're still on editor.
           await this._hideTransferModal();
-          await this.pullFromDeviceAndEnterEditor(dtNow, { source: 'editor' });
         } finally {
           modal.dataset.xferRunning = '0';
           try {
