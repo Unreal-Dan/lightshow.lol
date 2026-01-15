@@ -745,7 +745,7 @@ export default class VortexEditorMobile {
     Object.assign(this.lightshow, {
       tickRate: isDuo ? 3 : 3,
       trailSize: isDuo ? 300 : 120,
-      dotSize: isDuo ? 15 : 5,
+      dotSize: isDuo ? 15 : (isDeck ? 5 : 8),
       blurFac: 1,
       circleRadius: isDuo ? 180 : (isDeck ? 85 : 400),
       spread: isDuo ? 50 : (isDeck ? 10 : 150),

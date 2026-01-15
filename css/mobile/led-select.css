@@ -260,50 +260,109 @@
   transform: translate(-50%, -50%);
   border-radius: 999px;
 
-  /* solid dark body */
-  background: #0b0000;
+  /* Unselected: thinner gray ring */
+  border: 6px solid rgba(255, 255, 255, 1);
 
-  /* clear ring like legend, but thicker */
-  border: 6px solid rgba(255, 255, 255, 255);
+  /* Unselected: gray LED-like depth */
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.10) 18%,
+      rgba(255, 255, 255, 0.04) 34%,
+      rgba(0,   0,   0,   0.22) 58%,
+      rgba(0,   0,   0,   0.58) 100%),
+    radial-gradient(circle at 50% 62%,
+      #7a7a7a 0%,
+      #3a3a3a 55%,
+      #161616 100%);
 
-  /* no glow */
-  box-shadow: none;
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.18),
+    inset 0 -2px 4px rgba(0,0,0,0.65);
 
   pointer-events: auto;
   box-sizing: border-box;
 
-  /* feels clickable */
   cursor: pointer;
   transition: transform 70ms linear, border-color 70ms linear, background-color 70ms linear;
 }
+
 
 #mobile-app-root .m-led-indicator:active,
 .m-led-indicator:active {
   transform: translate(-50%, -50%) scale(0.92);
 }
 
-/* Selected: yellow ring + slightly lighter fill (still dark) */
+/* Selected: yellow ring + LED-like depth (same size/color, just shaded) */
 #mobile-app-root .m-led-indicator.is-selected,
 .m-led-indicator.is-selected {
-  border-color: #ffff00;
-  background: #111;
-  box-shadow: 0 0 10px 1px #ffff00f2;
+  border: 6px solid #ffff00;
+
+  /* LED look: bright core + darker edge + specular highlight */
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #ffff00 0%,
+      #cfcf00 55%,
+      #8a8a00 100%);
+
+  box-shadow:
+    0 0 10px 1px #ffff00f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
 }
 
-/* Source: green ring + slightly lighter fill (still dark) */
+/* Source: green ring + LED-like depth (same size/color, just shaded) */
 #mobile-app-root .m-led-indicator.is-source,
 .m-led-indicator.is-source {
-  border-color: #17b803;
-  background: #111;
-  box-shadow: 0 0 10px 1px #17b803f2;
+  border: 6px solid #17b803;
+
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #17b803 0%,
+      #129102 55%,
+      #0a4f01 100%);
+
+  box-shadow:
+    0 0 10px 1px #17b803f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
 }
 
+/* Source+Selected: keep it identical to source (green wins) */
 #mobile-app-root .m-led-indicator.is-source.is-selected,
 .m-led-indicator.is-source.is-selected {
-  border-color: #17b803;
-  background: #111;
-  box-shadow: 0 0 10px 1px #17b803f2;
+  border: 6px solid #17b803;
+
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #17b803 0%,
+      #129102 55%,
+      #0a4f01 100%);
+
+  box-shadow:
+    0 0 10px 1px #17b803f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
 }
+
 
 /* Keep them manageable on tiny screens */
 @media (max-width: 360px) {
