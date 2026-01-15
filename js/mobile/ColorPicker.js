@@ -3,9 +3,26 @@
 import LedSelectModal from './LedSelectModal.js';
 import SimpleViews from './SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
+import LedSelectionState from './LedSelectionState.js';
 
 export default class ColorPicker {
-  constructor({ vortexLib, views = null, basePath = 'js/mobile/views/', ledSelectModal = null }) {
+  constructor({
+    vortexLib,
+    views = null,
+    basePath = 'js/mobile/views/',
+    ledSelectModal = null,
+
+    // Host adapter (lets ColorPicker access Vortex + device meta + demo functions)
+    // {
+    //   getVortex: () => vortex,
+    //   getDeviceType: () => 'Duo' | 'Spark' | 'Chromadeck',
+    //   getDevices: () => devicesJson,
+    //   demoMode: async () => {},
+    //   demoColor: async (rgbColor) => {},
+    //   notifyFailure: (msg) => {}
+    // }
+    host = null,
+  } = {}) {
     this.vortexLib = vortexLib;
     this.views = views || new SimpleViews({ basePath });
 
@@ -15,6 +32,12 @@ export default class ColorPicker {
         views: this.views,
         basePath,
       });
+
+    this.host = host || null;
+
+    // Selection state (moved out of VortexEditorMobile)
+    this.ledSelectionState = new LedSelectionState();
+    this._ledSelFallback = { sourceLed: 0, selectedLeds: null }; // null => all leds (single-led mode)
 
     this.root = null;
     this.dom = null;
@@ -31,10 +54,11 @@ export default class ColorPicker {
       selectedColorIndex: null,
       pickerEnabled: false,
 
-      // NEW: LED UI mode
-      ledUiMode: 'pair', // 'pair' (Duo) or 'modal' (Spark/Chromadeck)
+      deviceType: 'Duo',
       ledModalSummary: 'LEDs',
-      ledSelectState: null, // { deviceName,imageSrc,imageSrcAlt,swapEnabled,positionsUrl,positionsUrlAlt,selectedLeds,sourceLed,title }
+
+      // UI-provided state for LED modal
+      ledSelectState: null, // { title, deviceName, imageSrc, imageSrcAlt, swapEnabled, positionsUrl, positionsUrlAlt, positions, selectedLeds, sourceLed }
     };
 
     this.cb = {
@@ -45,8 +69,6 @@ export default class ColorPicker {
       onColorsetDelete: null,
       onColorChange: null,
       onOff: null,
-
-      // NEW: for Spark/Chromadeck modal apply
       onLedSelectApply: null,
     };
 
@@ -89,6 +111,65 @@ export default class ColorPicker {
     // tap target tracking (touch retargeting fix)
     this._tapTargetEl = null;
     this._tapOnBackdrop = false;
+  }
+
+  setHost(host) {
+    this.host = host || null;
+  }
+
+  _getVortex() {
+    const h = this.host;
+    if (!h) return null;
+    try {
+      if (typeof h.getVortex === 'function') return h.getVortex() || null;
+    } catch {}
+    return h.vortex || null;
+  }
+
+  _getDevicesJson() {
+    const h = this.host;
+    if (!h) return null;
+    try {
+      if (typeof h.getDevices === 'function') return h.getDevices() || null;
+    } catch {}
+    return h.devices || null;
+  }
+
+  _getHostDeviceType(fallback = 'Duo') {
+    const h = this.host;
+    if (!h) return fallback;
+    try {
+      if (typeof h.getDeviceType === 'function') {
+        const v = h.getDeviceType();
+        if (v != null) return String(v);
+      }
+    } catch {}
+    if (h.deviceType != null) return String(h.deviceType);
+    return fallback;
+  }
+
+  async _hostDemoMode() {
+    const h = this.host;
+    if (!h || typeof h.demoMode !== 'function') return;
+    try {
+      await h.demoMode();
+    } catch {}
+  }
+
+  async _hostDemoColor(rgbColor) {
+    const h = this.host;
+    if (!h || typeof h.demoColor !== 'function') return;
+    try {
+      await h.demoColor(rgbColor);
+    } catch {}
+  }
+
+  _hostFailure(msg) {
+    const h = this.host;
+    if (!h || typeof h.notifyFailure !== 'function') return;
+    try {
+      h.notifyFailure(String(msg || ''));
+    } catch {}
   }
 
   async preload() {
@@ -172,7 +253,7 @@ export default class ColorPicker {
       selectedColorIndex: null,
       pickerEnabled: false,
 
-      ledUiMode: 'pair',
+      deviceType: 'Duo',
       ledModalSummary: 'LEDs',
       ledSelectState: null,
     };
@@ -180,6 +261,263 @@ export default class ColorPicker {
 
   isOpen() {
     return !!(this.root && this.root.classList.contains('is-open'));
+  }
+
+  ensureLedSelectionDefaults(ledCount) {
+    this._ledSelEnsureDefaults(ledCount);
+  }
+
+  async openForCurrentMode({ deviceType = null, title = 'Effects' } = {}) {
+    const vortex = this._getVortex();
+    if (!vortex) {
+      this._hostFailure('Vortex is unavailable');
+      return;
+    }
+
+    const dt = String(deviceType || this._getHostDeviceType('Duo') || 'Duo');
+
+    const engine = vortex.engine();
+    const modes = engine.modes();
+    const leds = engine.leds();
+
+    const curMode = modes.curMode();
+    if (!curMode) {
+      this._hostFailure('No active mode');
+      return;
+    }
+
+    const ledCount = (leds.ledCount() | 0) >>> 0;
+    const multiIndex = leds.ledMulti() | 0;
+
+    this._ledSelEnsureDefaults(ledCount);
+
+    const isMulti = this._isMultiMode(curMode);
+    const deviceMeta = (this._getDevicesJson()?.[dt]) || {};
+
+    const eff = this._effectiveSelection(curMode);
+    const srcLed = eff.sourceLed | 0;
+
+    const set = curMode.getColorset(srcLed);
+    const colors = this._extractColorsHexFromColorset(set);
+
+    const initialSelectedColorIndex = colors.length ? 0 : null;
+    const seedHex = initialSelectedColorIndex != null ? colors[initialSelectedColorIndex] : '#FF0000';
+    const seedRgb = this._hexToRgb(seedHex);
+
+    const allowMulti = dt !== 'None' && dt !== 'Duo';
+    const patternOptionsHtml = this._patternOptionsHtml({ vortex, allowMulti });
+
+    let patternValue = -1;
+    try {
+      patternValue = curMode.getPatternID(srcLed).value | 0;
+    } catch {
+      patternValue = -1;
+    }
+
+    const ledSelectState = {
+      title: 'LEDs',
+      deviceName: dt,
+      imageSrc: deviceMeta?.image ?? null,
+      imageSrcAlt: deviceMeta?.altImage ?? null,
+      swapEnabled: !!deviceMeta?.altImage,
+      positionsUrl: `public/data/${String(dt).toLowerCase()}-led-positions.json`,
+      positionsUrlAlt: deviceMeta?.altLabel
+        ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json`
+        : null,
+      selectedLeds: isMulti
+        ? [multiIndex]
+        : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+      sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
+    };
+
+    await this.openEffects({
+      title: String(title || 'Effects'),
+      deviceType: dt,
+      ledCount,
+
+      // IMPORTANT: keep the Duo "selected LED" UI in sync with the colors/pattern we load
+      ledIndex: srcLed,
+
+      patternValue,
+      patternOptionsHtml,
+
+      colors,
+      selectedColorIndex: initialSelectedColorIndex,
+      rgb: seedRgb,
+
+      ledModalSummary: this._ledSelGetSummary({ isMultiMode: isMulti, ledCount }),
+      ledSelectState,
+
+      onDone: () => {},
+
+      onLedSelectApply: async (sourceLed, selectedLeds) => {
+        const vortex2 = this._getVortex();
+        if (!vortex2) return null;
+
+        const cur = vortex2.engine().modes().curMode();
+        if (!cur) return null;
+
+        const lc = (vortex2.engine().leds().ledCount() | 0) >>> 0;
+        const mi = vortex2.engine().leds().ledMulti() | 0;
+
+        const isM = this._isMultiMode(cur);
+        if (!isM) {
+          this._ledSelSetFromModal({ ledCount: lc, sourceLed, selectedLeds });
+        }
+
+        const eff2 = this._effectiveSelection(cur);
+        const src2 = eff2.sourceLed | 0;
+
+        let patVal = -1;
+        try {
+          patVal = cur.getPatternID(src2).value | 0;
+        } catch {
+          patVal = -1;
+        }
+
+        const set2 = cur.getColorset(src2);
+        const cols2 = this._extractColorsHexFromColorset(set2);
+
+        const selIdx = cols2.length ? 0 : null;
+        const rgb2 = cols2.length ? this._hexToRGB(cols2[0]) : { r: 255, g: 0, b: 0 };
+
+        const nextSummary = this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount: lc });
+
+        return {
+          // keep duo UI in sync too (even though modal isn't used for Duo)
+          ledIndex: src2,
+
+          ledModalSummary: nextSummary,
+          ledSelectState: {
+            ...ledSelectState,
+            selectedLeds: eff2.isMulti
+              ? [mi]
+              : (this._ledSelGetSingleSelected(lc) ?? Array.from({ length: lc }, (_, i) => i)),
+            sourceLed: eff2.isMulti ? mi : this._ledSelGetSingleSource(lc),
+          },
+
+          patternValue: patVal,
+          colors: cols2,
+          selectedColorIndex: selIdx,
+          rgb: rgb2,
+        };
+      },
+
+      onPatternChange: async (newPatternValue) => {
+        const vortex2 = this._getVortex();
+        if (!vortex2) return null;
+
+        const cur2 = vortex2.engine().modes().curMode();
+        if (!cur2) return null;
+
+        const patID = this.vortexLib.PatternID.values[String(newPatternValue)];
+        if (!patID) return null;
+
+        this._applyPatternToSelection(patID);
+
+        const isM2 = this._isMultiMode(cur2);
+
+        const lc = (vortex2.engine().leds().ledCount() | 0) >>> 0;
+        return {
+          patternValue: newPatternValue | 0,
+          ledModalSummary: this._ledSelGetSummary({ isMultiMode: isM2, ledCount: lc }),
+        };
+      },
+
+      onColorsetSelect: async (idx) => {
+        const vortex2 = this._getVortex();
+        if (!vortex2) return null;
+
+        const cur2 = vortex2.engine().modes().curMode();
+        if (!cur2) return null;
+
+        const lc = (vortex2.engine().leds().ledCount() | 0) >>> 0;
+
+        const eff2 = this._effectiveSelection(cur2);
+        const set2 = cur2.getColorset(eff2.sourceLed);
+        const cols2 = this._extractColorsHexFromColorset(set2);
+
+        const sel = idx | 0;
+        const hx = cols2[sel] || cols2[0] || '#FF0000';
+        const rgb = this._hexToRgb(hx);
+
+        return {
+          colors: cols2,
+          selectedColorIndex: cols2.length ? Math.max(0, Math.min(sel, cols2.length - 1)) : null,
+          rgb,
+          ledModalSummary: this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount: lc }),
+        };
+      },
+
+      onColorsetAdd: async () => {
+        const res = this._applyColorsetMutation((setX) => {
+          setX.addColor(new this.vortexLib.RGBColor(255, 0, 0));
+        });
+        if (!res) return null;
+
+        const cols2 = this._extractColorsHexFromColorset(res.set);
+        const selectedColorIndex = cols2.length ? cols2.length - 1 : null;
+
+        return {
+          colors: cols2,
+          selectedColorIndex,
+          rgb: { r: 255, g: 0, b: 0 },
+        };
+      },
+
+      onColorsetDelete: async (idx) => {
+        const delIdx = idx | 0;
+
+        const res = this._applyColorsetMutation((setX) => {
+          if ((setX.numColors() | 0) <= 0) return;
+          setX.removeColor(delIdx);
+        });
+        if (!res) return null;
+
+        const cols2 = this._extractColorsHexFromColorset(res.set);
+        const selectedColorIndex = cols2.length ? Math.min(delIdx, cols2.length - 1) : null;
+
+        let rgb = null;
+        if (selectedColorIndex != null) {
+          rgb = this._hexToRgb(cols2[selectedColorIndex] || '#000000');
+        }
+
+        return { colors: cols2, selectedColorIndex, rgb };
+      },
+
+      onColorChange: async (colorIndex, hex, isDragging) => {
+        const { r, g, b } = this._hexToRgb(hex);
+
+        this._applyColorsetMutation((setX) => {
+          const i = colorIndex | 0;
+          if (i < 0 || i >= (setX.numColors() | 0)) return;
+          setX.set(i, new this.vortexLib.RGBColor(r, g, b));
+        });
+
+        if (isDragging) {
+          try {
+            await this._hostDemoColor(new this.vortexLib.RGBColor(r, g, b));
+          } catch {}
+        } else {
+          try {
+            await this._hostDemoMode();
+          } catch {}
+        }
+      },
+
+      onOff: async () => {
+        this._applyColorsetMutation((setX) => {
+          if ((setX.numColors() | 0) <= 0) {
+            setX.addColor(new this.vortexLib.RGBColor(0, 0, 0));
+          } else {
+            setX.set(0, new this.vortexLib.RGBColor(0, 0, 0));
+          }
+        });
+        try {
+          await this._hostDemoMode();
+        } catch {}
+      },
+    });
   }
 
   async openEffects({
@@ -192,12 +530,9 @@ export default class ColorPicker {
     selectedColorIndex = null,
     rgb = null,
 
-    // NEW (required for correct LED UI):
-    deviceType = 'Duo', // 'Duo' | 'Spark' | 'Chromadeck'
+    deviceType = 'Duo',
     ledModalSummary = 'LEDs',
-
-    // NEW (Spark/Chromadeck modal config):
-    ledSelectState = null, // { title, deviceName, imageSrc, imageSrcAlt, swapEnabled, positionsUrl, positionsUrlAlt, positions, selectedLeds, sourceLed }
+    ledSelectState = null,
 
     onDone = null,
     onLedChange = null,
@@ -207,9 +542,7 @@ export default class ColorPicker {
     onColorsetDelete = null,
     onColorChange = null,
     onOff = null,
-
-    // NEW: Spark/Chromadeck apply selection
-    onLedSelectApply = null, // async (sourceLed:number, selectedLeds:number[]) => nextCtx
+    onLedSelectApply = null,
   } = {}) {
     if (!this.root || !this.dom) return;
 
@@ -224,7 +557,6 @@ export default class ColorPicker {
     this.cb.onColorsetDelete = typeof onColorsetDelete === 'function' ? onColorsetDelete : null;
     this.cb.onColorChange = typeof onColorChange === 'function' ? onColorChange : null;
     this.cb.onOff = typeof onOff === 'function' ? onOff : null;
-
     this.cb.onLedSelectApply = typeof onLedSelectApply === 'function' ? onLedSelectApply : null;
 
     const lc = Math.max(0, ledCount | 0);
@@ -236,18 +568,15 @@ export default class ColorPicker {
     this.ctx.patternValue = Number.isFinite(patternValue) ? (patternValue | 0) : -1;
     this.ctx.patternOptionsHtml = String(patternOptionsHtml || '');
 
-    // NEW:
     this.ctx.deviceType = String(deviceType || 'Duo');
     this.ctx.ledModalSummary = String(ledModalSummary || 'LEDs');
     this.ctx.ledSelectState = (ledSelectState && typeof ledSelectState === 'object') ? ledSelectState : null;
 
-    this.ctx.selectedColorIndex =
-      selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
+    this.ctx.selectedColorIndex = selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
 
     this.ctx.colorsetHtml = this._buildColorsetHtml(colors, this.ctx.selectedColorIndex);
     this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
 
-    // seed picker color
     let seed = rgb;
     if (!seed && Array.isArray(colors) && this.ctx.selectedColorIndex != null) {
       const hx = colors[this.ctx.selectedColorIndex];
@@ -264,7 +593,6 @@ export default class ColorPicker {
 
     this.root.classList.add('is-open');
 
-    // Ensure modal exists + mounted (safe even if Duo never uses it)
     if (!this.ledSelectModal) {
       this.ledSelectModal = new LedSelectModal({ views: this.views, basePath: 'js/mobile/views/' });
     }
@@ -312,77 +640,28 @@ export default class ColorPicker {
     }, 0);
   }
 
-  _applyPatternToSelection(patID) {
-    const curMode = this._getCurMode();
-    if (!curMode || !patID) return;
-
-    const ledCount = this._getLedCountForDevice();
-    const multiIndex = this._getMultiIndex();
-    const isMulti = this._isMultiMode(curMode);
-
-    const { targetLeds, sourceLed } = this.mobileLedSel.getEffectiveSelection({
-      isMultiMode: isMulti,
-      multiIndex,
-      ledCount,
-    });
-
-    const set = curMode.getColorset(sourceLed);
-
-    if (this.vortexLib.isSingleLedPatternID(patID)) {
-      if (isMulti) {
-        // switching multi -> single
-        curMode.clearPattern(multiIndex);
-        // apply single pattern + colorset to ALL singles
-        for (let led = 0; led < ledCount; led++) {
-          curMode.setPattern(patID, led, null, null);
-          curMode.setColorset(set, led);
-        }
-        // restore default selectable state (all selected, src=0)
-        this.mobileLedSel.ensureDefaultsForSingleLed({ ledCount });
-      } else {
-        // apply to selected leds
-        for (const led of targetLeds) {
-          curMode.setPattern(patID, led, null, null);
-          curMode.setColorset(set, led);
-        }
-      }
-    } else {
-      // switching to multi-led pattern
-      curMode.setPattern(patID, multiIndex, null, null);
-      curMode.setColorset(set, multiIndex);
-    }
-
-    curMode.init();
-    this.vortex.engine().modes().saveCurMode();
+  _getEngine() {
+    const vortex = this._getVortex();
+    return vortex ? vortex.engine() : null;
   }
-
-  _applyColorsetMutation(mutatorFn) {
-    const curMode = this._getCurMode();
-    if (!curMode) return null;
-
-    const ledCount = this._getLedCountForDevice();
-    const multiIndex = this._getMultiIndex();
-    const isMulti = this._isMultiMode(curMode);
-
-    const { targetLeds, sourceLed } = this.mobileLedSel.getEffectiveSelection({
-      isMultiMode: isMulti,
-      multiIndex,
-      ledCount,
-    });
-
-    const set = curMode.getColorset(sourceLed);
-    if (!set) return null;
-
-    mutatorFn(set);
-
-    for (const led of targetLeds) {
-      curMode.setColorset(set, led);
-    }
-
-    curMode.init();
-    this.vortex.engine().modes().saveCurMode();
-
-    return { set, sourceLed, targetLeds, isMulti, ledCount };
+  _getModes() {
+    const e = this._getEngine();
+    return e ? e.modes() : null;
+  }
+  _getCurMode() {
+    const m = this._getModes();
+    return m ? m.curMode() : null;
+  }
+  _getLedCountForDevice() {
+    const e = this._getEngine();
+    return e ? (e.leds().ledCount() | 0) : (this.ctx.ledCount | 0);
+  }
+  _getMultiIndex() {
+    const e = this._getEngine();
+    return e ? (e.leds().ledMulti() | 0) : 0;
+  }
+  _isMultiMode(curMode) {
+    return !!(curMode && curMode.isMultiLed && curMode.isMultiLed());
   }
 
   async _render() {
@@ -396,9 +675,6 @@ export default class ColorPicker {
 
     const pickerDisabledClass = this.ctx.pickerEnabled ? '' : 'is-disabled';
 
-    // Decide LED UI:
-    // - Duo: pair toggle
-    // - Spark/Chromadeck (or anything non-duo): modal button
     const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
     const ledPairHidden = isDuo ? '' : 'hidden';
     const ledModalHidden = isDuo ? 'hidden' : '';
@@ -431,8 +707,6 @@ export default class ColorPicker {
 
     this.dom = new SimpleDom(this.root);
   }
-
-
 
   _onResize() {
     if (!this.root || !this.root.classList.contains('is-open')) return;
@@ -507,8 +781,10 @@ export default class ColorPicker {
 
     const sheet = this.dom.$('.m-color-picker-sheet');
     this._tapOnBackdrop = !!(sheet && !sheet.contains(e.target));
+
+    // casing-safe data-role matching
     this._tapTargetEl =
-      e.target?.closest?.('[data-act],[data-role="ledmodal"],[data-role="led"],[data-role="cube"]') || null;
+      e.target?.closest?.('[data-act],[data-role="ledmodal" i],[data-role="led" i],[data-role="cube"]') || null;
 
     const cube = e.target?.closest?.('[data-role="cube"][data-kind="color"]');
     if (!cube) {
@@ -567,7 +843,6 @@ export default class ColorPicker {
 
       this._cancelLongPress();
 
-      // Optimistic UI only: do NOT store a colorset model here.
       this._optimisticDeleteFromDom(idx);
 
       this._defer(async () => {
@@ -598,8 +873,7 @@ export default class ColorPicker {
     }
 
     const t =
-      (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) ||
-      e.target;
+      (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) || e.target;
 
     this._tapTargetEl = null;
     this._tapOnBackdrop = false;
@@ -638,18 +912,26 @@ export default class ColorPicker {
 
     const sheet = this.dom.$('.m-color-picker-sheet');
     if (sheet && !sheet.contains(t)) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
       this._fastDone();
       return;
     }
 
-    // Handle only the actions we actually support; otherwise DO NOT early-return
     const actBtn = t.closest?.('[data-act]');
     if (actBtn) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
       const act = String(actBtn.dataset.act || '');
 
-      if (act === 'done') { this._fastDone(); return; }
+      if (act === 'done') {
+        this._fastDone();
+        return;
+      }
 
       if (act === 'off') {
         if (!this.ctx.pickerEnabled) return;
@@ -673,28 +955,30 @@ export default class ColorPicker {
         });
         return;
       }
-
-      // Unknown act: keep going (don’t swallow taps meant for other handlers)
     }
 
-    // Spark/Chromadeck button (accept any casing of data-role value)
     const roleEl = t.closest?.('[data-role]') || null;
     const role = roleEl ? String(roleEl.dataset.role || '').toLowerCase() : '';
 
     if (role === 'ledmodal') {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
 
       const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
       if (isDuo) return;
+
+      const curMode = this._getCurMode();
+      const isMulti = this._isMultiMode(curMode);
+      if (isMulti) return;
 
       if (!this.ledSelectModal) {
         this.ledSelectModal = new LedSelectModal({ views: this.views, basePath: 'js/mobile/views/' });
       }
       this.ledSelectModal.mount();
 
-      const st = (this.ctx.ledSelectState && typeof this.ctx.ledSelectState === 'object')
-        ? this.ctx.ledSelectState
-        : {};
+      const st = (this.ctx.ledSelectState && typeof this.ctx.ledSelectState === 'object') ? this.ctx.ledSelectState : {};
 
       const total = this.ctx.ledCount | 0;
       const initialSource = Number.isFinite(st.sourceLed) ? (st.sourceLed | 0) : 0;
@@ -705,9 +989,13 @@ export default class ColorPicker {
           : (total > 0 ? Array.from({ length: total }, (_, i) => i) : []);
 
       const restorePickerPointerEvents = () => {
-        try { if (this.root) this.root.style.pointerEvents = ''; } catch {}
+        try {
+          if (this.root) this.root.style.pointerEvents = '';
+        } catch {}
       };
-      try { if (this.root) this.root.style.pointerEvents = 'none'; } catch {}
+      try {
+        if (this.root) this.root.style.pointerEvents = 'none';
+      } catch {}
 
       await this.ledSelectModal.open({
         title: String(st.title || 'LEDs'),
@@ -747,33 +1035,81 @@ export default class ColorPicker {
       return;
     }
 
-    // Duo 2-bulb toggle (also accept any casing)
     if (role === 'led') {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
 
       const isDuo = String(this.ctx.deviceType || '').toLowerCase() === 'duo';
       if (!isDuo) return;
 
-      const ledBtn = t.closest?.('[data-role]'); // same roleEl is fine too
+      const ledBtn = t.closest?.('[data-role]');
       const led = Number(ledBtn?.dataset.led ?? 0) | 0;
 
       this.dom.all('[data-role="led"]').forEach((b) => b.classList.remove('is-active'));
       ledBtn?.classList?.add?.('is-active');
 
-      if (!this.cb.onLedChange) return;
+      // If the host wired onLedChange, use it.
+      if (typeof this.cb.onLedChange === 'function') {
+        this._defer(async () => {
+          const next = await this.cb.onLedChange(led);
+          await this._applyCtx(next);
+        });
+        return;
+      }
 
-      this._defer(async () => {
-        const next = await this.cb.onLedChange(led);
-        await this._applyCtx(next);
-      });
+      // Fallback: Duo LED buttons directly select a single LED (source + selected)
+      // and rebuild picker state from the current mode.
+      const vortex = this._getVortex();
+      if (!vortex) return;
+
+      const engine = vortex.engine?.();
+      const curMode = engine?.modes?.()?.curMode?.();
+      if (!curMode) return;
+
+      const lc = (engine?.leds?.()?.ledCount?.() | 0) >>> 0;
+      if (lc <= 0) return;
+
+      const clampedLed = Math.max(0, Math.min(lc - 1, led | 0));
+
+      // Store the selection in the same mechanism used for non-Duo devices
+      this._ledSelSetFromModal({ ledCount: lc, sourceLed: clampedLed, selectedLeds: [clampedLed] });
+
+      let patVal = -1;
+      try {
+        patVal = curMode.getPatternID(clampedLed).value | 0;
+      } catch {
+        patVal = -1;
+      }
+
+      const set = curMode.getColorset(clampedLed);
+      const cols = this._extractColorsHexFromColorset(set);
+
+      const selIdx = cols.length ? 0 : null;
+      const rgb = cols.length ? this._hexToRGB(cols[0]) : { r: 255, g: 0, b: 0 };
+
+      await this._applyCtx(
+        {
+          ledCount: lc,
+          ledIndex: clampedLed,
+          patternValue: patVal,
+          colors: cols,
+          selectedColorIndex: selIdx,
+          rgb,
+        },
+        { keepPickerSeed: false }
+      );
 
       return;
     }
 
-    // Colorset cubes
     const cube = t.closest?.('[data-role="cube"]');
     if (cube) {
-      try { e.preventDefault(); e.stopPropagation(); } catch {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch {}
 
       const kind = String(cube.dataset.kind || '');
       const idx = Number(cube.dataset.index ?? -1) | 0;
@@ -972,13 +1308,11 @@ export default class ColorPicker {
     if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
     if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
 
-    // NEW:
     if (typeof next.deviceType === 'string') this.ctx.deviceType = next.deviceType;
     if (typeof next.ledModalSummary === 'string') this.ctx.ledModalSummary = next.ledModalSummary;
     if (next.ledSelectState && typeof next.ledSelectState === 'object') this.ctx.ledSelectState = next.ledSelectState;
 
-    const newSelected =
-      next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
+    const newSelected = next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
     this.ctx.selectedColorIndex = newSelected;
 
     if (Array.isArray(next.colors)) {
@@ -1167,55 +1501,6 @@ export default class ColorPicker {
     }
   }
 
-  async _applyCtx(next, { keepPickerSeed = false } = {}) {
-    if (!next || typeof next !== 'object') return;
-
-    if (Number.isFinite(next.ledCount)) this.ctx.ledCount = next.ledCount | 0;
-    if (Number.isFinite(next.ledIndex)) this.ctx.ledIndex = next.ledIndex | 0;
-    if (Number.isFinite(next.patternValue)) this.ctx.patternValue = next.patternValue | 0;
-    if (typeof next.patternOptionsHtml === 'string') this.ctx.patternOptionsHtml = next.patternOptionsHtml;
-
-    // NEW:
-    if (typeof next.ledUiMode === 'string') {
-      this.ctx.ledUiMode = (next.ledUiMode === 'modal') ? 'modal' : 'pair';
-    }
-    if (typeof next.ledModalSummary === 'string') this.ctx.ledModalSummary = next.ledModalSummary;
-    if (next.ledSelectState && typeof next.ledSelectState === 'object') this.ctx.ledSelectState = next.ledSelectState;
-
-    const newSelected =
-      next.selectedColorIndex == null ? null : Math.max(0, next.selectedColorIndex | 0);
-    this.ctx.selectedColorIndex = newSelected;
-
-    if (Array.isArray(next.colors)) {
-      this.ctx.colorsetHtml = this._buildColorsetHtml(next.colors, this.ctx.selectedColorIndex);
-    }
-
-    this.ctx.pickerEnabled = this.ctx.selectedColorIndex != null;
-
-    if (!keepPickerSeed) {
-      let seed = next.rgb || null;
-      if (!seed && Array.isArray(next.colors) && this.ctx.selectedColorIndex != null) {
-        const hx = next.colors[this.ctx.selectedColorIndex];
-        if (hx) seed = this._hexToRGB(hx);
-      }
-      if (seed) {
-        const r = this._clampByte(seed.r);
-        const g = this._clampByte(seed.g);
-        const b = this._clampByte(seed.b);
-        const hsv = this.rgbToHsv(r, g, b);
-        this.state = { r, g, b, h: hsv.h, s: hsv.s, v: hsv.v };
-      }
-    }
-
-    await this._render();
-    this._bindPerRender();
-
-    await this._nextFrame();
-    this._cacheRects();
-    this._syncUI(true);
-    this._syncEffectsUI();
-  }
-
   _handleHuePointer(e, isDragging) {
     const rect = this._hueRect || this.dom.$('[data-role="hueslider"]')?.getBoundingClientRect();
     if (!rect) return;
@@ -1371,9 +1656,7 @@ export default class ColorPicker {
           this.cb.onColorChange(payload.idx, payload.hex, true);
         } catch {}
 
-        const cube = this.dom.$(
-          `[data-role="cube"][data-kind="color"][data-index="${payload.idx}"]`
-        );
+        const cube = this.dom.$(`[data-role="cube"][data-kind="color"][data-index="${payload.idx}"]`);
         if (cube) cube.style.background = payload.hex;
       }, wait);
     }
@@ -1424,6 +1707,296 @@ export default class ColorPicker {
     if (n < 0) return 0;
     if (n > 255) return 255;
     return n;
+  }
+
+  // =========================================================
+  // Extracted logic from VortexEditorMobile
+  // =========================================================
+
+  _escape(str) {
+    return String(str)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  _hexToRgb(hex) {
+    const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
+    if (!m) return { r: 255, g: 0, b: 0 };
+    const v = parseInt(m[1], 16) >>> 0;
+    return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+  }
+
+  _rgbToHexFast(r, g, b) {
+    const rr = (r & 255) >>> 0;
+    const gg = (g & 255) >>> 0;
+    const bb = (b & 255) >>> 0;
+    return `#${((1 << 24) | (rr << 16) | (gg << 8) | bb).toString(16).slice(1).toUpperCase()}`;
+  }
+
+  _extractColorsHexFromColorset(set) {
+    const out = [];
+    if (!set) return out;
+    const n = Math.min(8, set.numColors ? (set.numColors() | 0) : 0);
+    for (let i = 0; i < n; i++) {
+      const c = set.get(i);
+      const r = (c?.red ?? 0) & 0xff;
+      const g = (c?.green ?? 0) & 0xff;
+      const b = (c?.blue ?? 0) & 0xff;
+      out.push(this._rgbToHexFast(r, g, b));
+    }
+    return out;
+  }
+
+  _patternOptionsHtml({ vortex, allowMulti }) {
+    const patternEnum = this.vortexLib.PatternID;
+
+    const strobe = [];
+    const blend = [];
+    const solid = [];
+    const multi = [];
+
+    for (let k in patternEnum) {
+      if (!Object.prototype.hasOwnProperty.call(patternEnum, k)) continue;
+      if (k === 'values' || k === 'argCount') continue;
+
+      const pat = patternEnum[k];
+      if (!pat) continue;
+      if (pat === patternEnum.PATTERN_NONE || pat === patternEnum.PATTERN_COUNT) continue;
+
+      let label = '';
+      try {
+        label = vortex.patternToString(pat);
+        if (label.startsWith('complementary')) label = 'comp. ' + label.slice(14);
+      } catch {
+        label = k;
+      }
+
+      const val = pat.value ?? -1;
+      const opt = `<option value="${val}">${this._escape(label)}</option>`;
+
+      const isSingle = !!this.vortexLib.isSingleLedPatternID?.(pat);
+
+      if (!isSingle) {
+        if (allowMulti) multi.push(opt);
+        continue;
+      }
+
+      if (label.includes('blend')) blend.push(opt);
+      else if (label.includes('solid')) solid.push(opt);
+      else strobe.push(opt);
+    }
+
+    const mk = (label, arr) => (arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '');
+
+    return (
+      mk('Strobe Patterns', strobe) +
+      mk('Blend Patterns', blend) +
+      mk('Solid Patterns', solid) +
+      (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '')
+    );
+  }
+
+  _ledSelEnsureDefaults(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+
+    if (this.ledSelectionState && typeof this.ledSelectionState.ensureDefaultsForSingleLed === 'function') {
+      try {
+        this.ledSelectionState.ensureDefaultsForSingleLed({ ledCount: lc });
+        return;
+      } catch {}
+    }
+
+    const src = this._ledSelFallback.sourceLed | 0;
+    if (!(src >= 0 && src < lc)) this._ledSelFallback.sourceLed = 0;
+
+    let sel = this._ledSelFallback.selectedLeds;
+    if (!Array.isArray(sel) || sel.length === 0) this._ledSelFallback.selectedLeds = null;
+  }
+
+  _ledSelGetSingleSource(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+
+    if (this.ledSelectionState && typeof this.ledSelectionState.getSingleSource === 'function') {
+      try {
+        const v = this.ledSelectionState.getSingleSource() | 0;
+        return v >= 0 && v < lc ? v : 0;
+      } catch {}
+    }
+
+    const v = this._ledSelFallback.sourceLed | 0;
+    return v >= 0 && v < lc ? v : 0;
+  }
+
+  _ledSelGetSingleSelected(ledCount) {
+    const lc = Math.max(0, ledCount | 0);
+
+    if (this.ledSelectionState && typeof this.ledSelectionState.getSingleSelected === 'function') {
+      try {
+        const a = this.ledSelectionState.getSingleSelected();
+        if (Array.isArray(a) && a.length) return a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
+      } catch {}
+    }
+
+    const a = this._ledSelFallback.selectedLeds;
+    if (!Array.isArray(a) || a.length === 0) return null;
+
+    const out = a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
+    return out.length ? out : null;
+  }
+
+  _ledSelSetFromModal({ ledCount, sourceLed, selectedLeds }) {
+    const lc = Math.max(0, ledCount | 0);
+    const src = sourceLed | 0;
+    const sel = Array.isArray(selectedLeds) ? selectedLeds.map((x) => x | 0) : null;
+
+    if (this.ledSelectionState && typeof this.ledSelectionState.setFromModal === 'function') {
+      try {
+        this.ledSelectionState.setFromModal({ ledCount: lc, sourceLed: src, selectedLeds: sel });
+        return;
+      } catch {}
+    }
+
+    this._ledSelFallback.sourceLed = src >= 0 && src < lc ? src : 0;
+    if (!sel || sel.length === 0) this._ledSelFallback.selectedLeds = null;
+    else this._ledSelFallback.selectedLeds = sel.filter((x) => x >= 0 && x < lc);
+  }
+
+  _ledSelGetSummary({ isMultiMode, ledCount }) {
+    const lc = Math.max(0, ledCount | 0);
+
+    if (this.ledSelectionState && typeof this.ledSelectionState.getSummary === 'function') {
+      try {
+        return String(this.ledSelectionState.getSummary({ isMultiMode: !!isMultiMode, ledCount: lc }));
+      } catch {}
+    }
+
+    if (isMultiMode) return 'Multi';
+    const sel = this._ledSelGetSingleSelected(lc);
+    const n = Array.isArray(sel) ? sel.length : lc;
+    return `${n}/${lc}`;
+  }
+
+  _effectiveSelection(curMode) {
+    const ledCount = this._getLedCountForDevice();
+    const multiIndex = this._getMultiIndex();
+    const isMulti = this._isMultiMode(curMode);
+
+    if (isMulti) {
+      return { isMulti: true, sourceLed: multiIndex, targetLeds: [multiIndex] };
+    }
+
+    this._ledSelEnsureDefaults(ledCount);
+
+    let src = this._ledSelGetSingleSource(ledCount);
+    let sel = this._ledSelGetSingleSelected(ledCount);
+
+    let targetLeds;
+    if (!Array.isArray(sel) || sel.length === 0) {
+      targetLeds = Array.from({ length: ledCount }, (_, i) => i);
+    } else {
+      targetLeds = sel.slice();
+    }
+
+    if (!targetLeds.includes(src)) targetLeds.push(src);
+    targetLeds = targetLeds.filter((x) => x >= 0 && x < ledCount);
+    targetLeds.sort((a, b) => a - b);
+
+    return { isMulti: false, sourceLed: src, targetLeds };
+  }
+
+  _applyColorsetMutation(mutatorFn) {
+    const cur = this._getCurMode();
+    if (!cur) return null;
+
+    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
+    const set = cur.getColorset(sourceLed);
+    if (!set) return null;
+
+    try {
+      mutatorFn(set);
+    } catch (e) {
+      console.error('[ColorPicker] colorset mutation failed:', e);
+      return null;
+    }
+
+    try {
+      for (const led of targetLeds) {
+        cur.setColorset(set, led);
+      }
+    } catch (e) {
+      console.error('[ColorPicker] setColorset apply failed:', e);
+    }
+
+    try {
+      cur.init();
+    } catch {}
+
+    try {
+      const modes = this._getModes();
+      modes?.saveCurMode?.();
+    } catch {}
+
+    return { cur, set, sourceLed, targetLeds };
+  }
+
+  _applyPatternToSelection(patID) {
+    const cur = this._getCurMode();
+    if (!cur || !patID) return;
+
+    const e = this._getEngine();
+    if (!e) return;
+
+    const ledCount = (e.leds().ledCount() | 0) >>> 0;
+    const multiIndex = e.leds().ledMulti() | 0;
+
+    const isSingle = !!this.vortexLib.isSingleLedPatternID?.(patID);
+    const isMultiBefore = this._isMultiMode(cur);
+
+    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
+    const set = cur.getColorset(sourceLed);
+
+    if (isSingle) {
+      if (isMultiBefore) {
+        try {
+          if (typeof cur.clearPattern === 'function') cur.clearPattern(multiIndex);
+        } catch {}
+
+        this._ledSelSetFromModal({ ledCount, sourceLed: 0, selectedLeds: null });
+
+        try {
+          cur.setPattern(patID, ledCount, null, null);
+        } catch {}
+        try {
+          if (set) cur.setColorset(set, ledCount);
+        } catch {}
+      } else {
+        for (const led of targetLeds) {
+          try {
+            cur.setPattern(patID, led, null, null);
+          } catch {}
+          try {
+            if (set) cur.setColorset(set, led);
+          } catch {}
+        }
+      }
+    } else {
+      try {
+        cur.setPattern(patID, multiIndex, null, null);
+      } catch {}
+      try {
+        if (set) cur.setColorset(set, multiIndex);
+      } catch {}
+    }
+
+    try {
+      cur.init();
+    } catch {}
+    try {
+      this._getModes()?.saveCurMode?.();
+    } catch {}
   }
 }
 

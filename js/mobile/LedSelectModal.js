@@ -230,6 +230,7 @@ export default class LedSelectModal {
     this._buildIndicators();
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _bindStageHandlers() {
@@ -445,6 +446,8 @@ export default class LedSelectModal {
 
     const hint = this.dom.$('[data-role="proceedhint"]');
     if (hint) hint.classList.toggle('hidden', this._selected.size !== 0);
+
+
   }
 
   _normalizeSelection() {
@@ -676,6 +679,7 @@ export default class LedSelectModal {
 
     this._normalizeSelection();
     this._syncUI();
+    this._update();
   }
 
   _stageCoords(stage, clientX, clientY) {

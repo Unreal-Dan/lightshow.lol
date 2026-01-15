@@ -9,7 +9,6 @@ import SimpleViews from './SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 
-import LedSelectionState from './LedSelectionState.js';
 import CommunityBrowser from './CommunityBrowser.js';
 
 const ASSETS = {
@@ -51,13 +50,11 @@ export default class VortexEditorMobile {
 
     this.views = new SimpleViews({ basePath: 'js/mobile/views/' });
 
-    this.ledSelectState = new LedSelectionState();
-    this._ledSelFallback = { sourceLed: 0, selectedLeds: null }; // null => all leds (single-led mode)
-
     this.effectsPanel = new ColorPicker({
       vortexLib: this.vortexLib,
       views: this.views,
       basePath: 'js/mobile/views/',
+      host: this._makeColorPickerHost(),
     });
 
     this.communityBrowser = new CommunityBrowser(this);
@@ -94,6 +91,23 @@ export default class VortexEditorMobile {
       location.hostname.endsWith('.local');
   }
 
+  _makeColorPickerHost() {
+    return {
+      getVortex: () => this.vortex,
+      getDeviceType: () => this.deviceType || 'Duo',
+      getDevices: () => this.devices,
+      demoMode: async () => {
+        await this.demoModeOnDevice();
+      },
+      demoColor: async (rgbColor) => {
+        await this.demoColorOnDevice(rgbColor);
+      },
+      notifyFailure: (msg) => {
+        Notification.failure?.(String(msg || ''));
+      },
+    };
+  }
+
   detectMobile() {
     return true;
   }
@@ -126,6 +140,9 @@ export default class VortexEditorMobile {
     const res = await fetch(devicesUrl, { cache: 'no-store' });
     if (!res.ok) throw new Error(`Failed to load devices JSON (${res.status} ${res.statusText}): ${devicesUrl}`);
     this.devices = await res.json();
+
+    // Ensure host sees loaded devices (host getters already reference this.devices, but keep explicit in case you swap host later)
+    this.effectsPanel.setHost(this._makeColorPickerHost());
 
     // ColorPicker mounts itself to <body> in its own implementation
     this.effectsPanel.mount();
@@ -339,9 +356,9 @@ export default class VortexEditorMobile {
 
     this.vortex.setLedCount(this.devices?.[deviceType]?.ledCount ?? 1);
 
-    // Reset mobile LED selection defaults whenever device changes
+    // Reset LED selection defaults whenever device changes (selection state lives inside ColorPicker now)
     const lc = this.vortex.engine().leds().ledCount() | 0;
-    this._ledSelEnsureDefaults(lc);
+    this.effectsPanel.ensureLedSelectionDefaults(lc);
 
     const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(deviceType);
     await this.gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions });
@@ -695,7 +712,7 @@ export default class VortexEditorMobile {
     if (this.effectsPanel.isOpen()) this.effectsPanel.close();
 
     const lc = this.vortex.engine().leds().ledCount() | 0;
-    this._ledSelEnsureDefaults(lc);
+    this.effectsPanel.ensureLedSelectionDefaults(lc);
 
     if (!hasModes) {
       await this.bindEmptyEditorActions(dt);
@@ -1658,500 +1675,19 @@ export default class VortexEditorMobile {
     return this._getModes().curMode();
   }
 
-  _getLedCount() {
-    return this._getEngine().leds().ledCount() | 0;
-  }
-  _getMultiIndex() {
-    return this._getEngine().leds().ledMulti() | 0;
-  }
-  _isMultiMode(curMode) {
-    return !!(curMode && curMode.isMultiLed && curMode.isMultiLed());
-  }
-
-  _escape(str) {
-    return String(str)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
-  _rgbToHex(r, g, b) {
-    const rr = (r & 255) >>> 0;
-    const gg = (g & 255) >>> 0;
-    const bb = (b & 255) >>> 0;
-    return `#${((1 << 24) | (rr << 16) | (gg << 8) | bb).toString(16).slice(1).toUpperCase()}`;
-  }
-
-  _hexToRgb(hex) {
-    const m = String(hex || '').trim().match(/^#?([0-9a-fA-F]{6})$/);
-    if (!m) return { r: 255, g: 0, b: 0 };
-    const v = parseInt(m[1], 16) >>> 0;
-    return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
-  }
-
-  _extractColorsHexFromColorset(set) {
-    const out = [];
-    if (!set) return out;
-    const n = Math.min(8, set.numColors ? (set.numColors() | 0) : 0);
-    for (let i = 0; i < n; i++) {
-      const c = set.get(i);
-      const r = (c?.red ?? 0) & 0xff;
-      const g = (c?.green ?? 0) & 0xff;
-      const b = (c?.blue ?? 0) & 0xff;
-      out.push(this._rgbToHex(r, g, b));
-    }
-    return out;
-  }
-
-  _patternOptionsHtml({ allowMulti }) {
-    const patternEnum = this.vortexLib.PatternID;
-
-    const strobe = [];
-    const blend = [];
-    const solid = [];
-    const multi = [];
-
-    for (let k in patternEnum) {
-      if (!Object.prototype.hasOwnProperty.call(patternEnum, k)) continue;
-      if (k === 'values' || k === 'argCount') continue;
-
-      const pat = patternEnum[k];
-      if (!pat) continue;
-      if (pat === patternEnum.PATTERN_NONE || pat === patternEnum.PATTERN_COUNT) continue;
-
-      let label = '';
-      try {
-        label = this.vortex.patternToString(pat);
-        if (label.startsWith('complementary')) label = 'comp. ' + label.slice(14);
-      } catch {
-        label = k;
-      }
-
-      const val = pat.value ?? -1;
-      const opt = `<option value="${val}">${this._escape(label)}</option>`;
-
-      const isSingle = !!this.vortexLib.isSingleLedPatternID?.(pat);
-
-      if (!isSingle) {
-        if (allowMulti) multi.push(opt);
-        continue;
-      }
-
-      if (label.includes('blend')) blend.push(opt);
-      else if (label.includes('solid')) solid.push(opt);
-      else strobe.push(opt);
-    }
-
-    const mk = (label, arr) => (arr.length ? `<optgroup label="${this._escape(label)}">${arr.join('')}</optgroup>` : '');
-
-    return mk('Strobe Patterns', strobe) + mk('Blend Patterns', blend) + mk('Solid Patterns', solid) + (allowMulti ? mk('Special Patterns (Multi Led)', multi) : '');
-  }
-
-  _ledSelEnsureDefaults(ledCount) {
-    const lc = Math.max(0, ledCount | 0);
-    if (this.ledSelectState && typeof this.ledSelectState.ensureDefaultsForSingleLed === 'function') {
-      try {
-        this.ledSelectState.ensureDefaultsForSingleLed({ ledCount: lc });
-        return;
-      } catch {}
-    }
-
-    const src = this._ledSelFallback.sourceLed | 0;
-    if (!(src >= 0 && src < lc)) this._ledSelFallback.sourceLed = 0;
-
-    let sel = this._ledSelFallback.selectedLeds;
-    if (!Array.isArray(sel) || sel.length === 0) this._ledSelFallback.selectedLeds = null;
-  }
-
-  _ledSelGetSingleSource(ledCount) {
-    const lc = Math.max(0, ledCount | 0);
-    if (this.ledSelectState && typeof this.ledSelectState.getSingleSource === 'function') {
-      try {
-        const v = this.ledSelectState.getSingleSource() | 0;
-        return v >= 0 && v < lc ? v : 0;
-      } catch {}
-    }
-    const v = this._ledSelFallback.sourceLed | 0;
-    return v >= 0 && v < lc ? v : 0;
-  }
-
-  _ledSelGetSingleSelected(ledCount) {
-    const lc = Math.max(0, ledCount | 0);
-    if (this.ledSelectState && typeof this.ledSelectState.getSingleSelected === 'function') {
-      try {
-        const a = this.ledSelectState.getSingleSelected();
-        if (Array.isArray(a) && a.length) return a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
-      } catch {}
-    }
-
-    const a = this._ledSelFallback.selectedLeds;
-    if (!Array.isArray(a) || a.length === 0) return null;
-    const out = a.map((x) => x | 0).filter((x) => x >= 0 && x < lc);
-    return out.length ? out : null;
-  }
-
-  _ledSelSetFromModal({ ledCount, sourceLed, selectedLeds }) {
-    const lc = Math.max(0, ledCount | 0);
-    const src = sourceLed | 0;
-    const sel = Array.isArray(selectedLeds) ? selectedLeds.map((x) => x | 0) : null;
-
-    if (this.ledSelectState && typeof this.ledSelectState.setFromModal === 'function') {
-      try {
-        this.ledSelectState.setFromModal({ ledCount: lc, sourceLed: src, selectedLeds: sel });
-        return;
-      } catch {}
-    }
-
-    this._ledSelFallback.sourceLed = src >= 0 && src < lc ? src : 0;
-    if (!sel || sel.length === 0) this._ledSelFallback.selectedLeds = null;
-    else this._ledSelFallback.selectedLeds = sel.filter((x) => x >= 0 && x < lc);
-  }
-
-  _ledSelGetSummary({ isMultiMode, ledCount }) {
-    const lc = Math.max(0, ledCount | 0);
-    if (this.ledSelectState && typeof this.ledSelectState.getSummary === 'function') {
-      try {
-        return String(this.ledSelectState.getSummary({ isMultiMode: !!isMultiMode, ledCount: lc }));
-      } catch {}
-    }
-
-    if (isMultiMode) return 'Multi';
-    const sel = this._ledSelGetSingleSelected(lc);
-    const n = Array.isArray(sel) ? sel.length : lc;
-    return `${n}/${lc}`;
-  }
-
-  _effectiveSelection(curMode) {
-    const ledCount = this._getLedCount();
-    const multiIndex = this._getMultiIndex();
-    const isMulti = this._isMultiMode(curMode);
-
-    if (isMulti) {
-      return { isMulti: true, sourceLed: multiIndex, targetLeds: [multiIndex] };
-    }
-
-    this._ledSelEnsureDefaults(ledCount);
-
-    let src = this._ledSelGetSingleSource(ledCount);
-    let sel = this._ledSelGetSingleSelected(ledCount);
-
-    let targetLeds;
-    if (!Array.isArray(sel) || sel.length === 0) {
-      targetLeds = Array.from({ length: ledCount }, (_, i) => i);
-    } else {
-      targetLeds = sel.slice();
-    }
-
-    if (!targetLeds.includes(src)) targetLeds.push(src);
-    targetLeds = targetLeds.filter((x) => x >= 0 && x < ledCount);
-    targetLeds.sort((a, b) => a - b);
-
-    return { isMulti: false, sourceLed: src, targetLeds };
-  }
-
-  _applyColorsetMutation(mutatorFn) {
-    const cur = this._getCurMode();
-    if (!cur) return null;
-
-    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
-    const set = cur.getColorset(sourceLed);
-    if (!set) return null;
-
-    try {
-      mutatorFn(set);
-    } catch (e) {
-      console.error('[Mobile] colorset mutation failed:', e);
-      return null;
-    }
-
-    try {
-      for (const led of targetLeds) {
-        cur.setColorset(set, led);
-      }
-    } catch (e) {
-      console.error('[Mobile] setColorset apply failed:', e);
-    }
-
-    try {
-      cur.init();
-    } catch {}
-    try {
-      this._getModes().saveCurMode();
-    } catch {}
-
-    return { cur, set, sourceLed, targetLeds };
-  }
-
-  _applyPatternToSelection(patID) {
-    const cur = this._getCurMode();
-    if (!cur || !patID) return;
-
-    const ledCount = this._getLedCount();
-    const multiIndex = this._getMultiIndex();
-
-    const isSingle = !!this.vortexLib.isSingleLedPatternID?.(patID);
-    const isMultiBefore = this._isMultiMode(cur);
-
-    const { sourceLed, targetLeds } = this._effectiveSelection(cur);
-    const set = cur.getColorset(sourceLed);
-
-    if (isSingle) {
-      if (isMultiBefore) {
-        try {
-          if (typeof cur.clearPattern === 'function') cur.clearPattern(multiIndex);
-        } catch {}
-
-        this._ledSelSetFromModal({ ledCount, sourceLed: 0, selectedLeds: null });
-
-        try {
-          cur.setPattern(patID, ledCount, null, null);
-        } catch {}
-        try {
-          if (set) cur.setColorset(set, ledCount);
-        } catch {}
-      } else {
-        for (const led of targetLeds) {
-          try {
-            cur.setPattern(patID, led, null, null);
-          } catch {}
-          try {
-            if (set) cur.setColorset(set, led);
-          } catch {}
-        }
-      }
-    } else {
-      try {
-        cur.setPattern(patID, multiIndex, null, null);
-      } catch {}
-      try {
-        if (set) cur.setColorset(set, multiIndex);
-      } catch {}
-    }
-
-    try {
-      cur.init();
-    } catch {}
-    try {
-      this._getModes().saveCurMode();
-    } catch {}
-  }
-
   // -----------------------------
-  // Effects panel
+  // Effects panel (delegated to ColorPicker)
   // -----------------------------
 
   async openEffectsPanel(dt) {
     const deviceType = dt || this.selectedDeviceType('Duo');
-    const ledCount = this._getLedCount();
-    const multiIndex = this._getMultiIndex();
-    const curMode = this._getCurMode();
-    if (!curMode) {
-      Notification.failure?.('No active mode');
-      return;
-    }
 
-    const isMulti = this._isMultiMode(curMode);
-    this._ledSelEnsureDefaults(ledCount);
-
-    const deviceMeta = this.devices?.[deviceType] || {};
-
-    const eff = this._effectiveSelection(curMode);
-    const srcLed = eff.sourceLed;
-
-    const set = curMode.getColorset(srcLed);
-    const colors = this._extractColorsHexFromColorset(set);
-
-    const initialSelectedColorIndex = colors.length ? 0 : null;
-    const seedHex = initialSelectedColorIndex != null ? colors[initialSelectedColorIndex] : '#FF0000';
-    const seedRgb = this._hexToRgb(seedHex);
-
-    const allowMulti = deviceType !== 'None' && deviceType !== 'Duo';
-    const patternOptionsHtml = this._patternOptionsHtml({ allowMulti });
-
-    let patternValue = -1;
-    try {
-      patternValue = curMode.getPatternID(srcLed).value | 0;
-    } catch {
-      patternValue = -1;
-    }
-
-    const ledSelectState = {
-      title: 'LEDs',
-      deviceName: deviceType,
-      imageSrc: deviceMeta?.image ?? null,
-      imageSrcAlt: deviceMeta?.altImage ?? null,
-      swapEnabled: !!deviceMeta?.altImage,
-      positionsUrl: `public/data/${String(deviceType).toLowerCase()}-led-positions.json`,
-      positionsUrlAlt: deviceMeta?.altLabel ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json` : null,
-      selectedLeds: isMulti ? [multiIndex] : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
-      sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
-    };
-
-    await this.effectsPanel.openEffects({
-      title: 'Effects',
-      deviceType,
-      ledCount,
-      ledIndex: 0,
-
-      patternValue,
-      patternOptionsHtml,
-
-      colors,
-      selectedColorIndex: initialSelectedColorIndex,
-      rgb: seedRgb,
-
-      ledModalSummary: this._ledSelGetSummary({ isMultiMode: isMulti, ledCount }),
-      ledSelectState,
-
-      onLedSelectApply: async (sourceLed, selectedLeds) => {
-        const cur = this._getCurMode();
-        if (!cur) return null;
-
-        const isM = this._isMultiMode(cur);
-
-        if (!isM) {
-          this._ledSelSetFromModal({ ledCount, sourceLed, selectedLeds });
-        }
-
-        const eff2 = this._effectiveSelection(cur);
-        const src2 = eff2.sourceLed;
-
-        let patVal = -1;
-        try {
-          patVal = cur.getPatternID(src2).value | 0;
-        } catch {
-          patVal = -1;
-        }
-
-        const set2 = cur.getColorset(src2);
-        const cols2 = this._extractColorsHexFromColorset(set2);
-
-        const selIdx = cols2.length ? 0 : null;
-        const rgb2 = cols2.length ? this._hexToRgb(cols2[0]) : { r: 255, g: 0, b: 0 };
-
-        const nextSummary = this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount });
-
-        return {
-          ledModalSummary: nextSummary,
-          ledSelectState: {
-            ...ledSelectState,
-            selectedLeds: eff2.isMulti ? [multiIndex] : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
-            sourceLed: eff2.isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
-          },
-
-          patternValue: patVal,
-          colors: cols2,
-          selectedColorIndex: selIdx,
-          rgb: rgb2,
-        };
-      },
-
-      onPatternChange: async (newPatternValue) => {
-        const patID = this.vortexLib.PatternID.values[String(newPatternValue)];
-        if (!patID) return null;
-
-        this._applyPatternToSelection(patID);
-
-        const cur2 = this._getCurMode();
-        const isM2 = this._isMultiMode(cur2);
-
-        return {
-          patternValue: newPatternValue | 0,
-          ledModalSummary: this._ledSelGetSummary({ isMultiMode: isM2, ledCount }),
-        };
-      },
-
-      onColorsetSelect: async (idx) => {
-        const cur2 = this._getCurMode();
-        if (!cur2) return null;
-
-        const eff2 = this._effectiveSelection(cur2);
-        const set2 = cur2.getColorset(eff2.sourceLed);
-        const cols2 = this._extractColorsHexFromColorset(set2);
-
-        const sel = idx | 0;
-        const hx = cols2[sel] || cols2[0] || '#FF0000';
-        const rgb = this._hexToRgb(hx);
-
-        return {
-          colors: cols2,
-          selectedColorIndex: cols2.length ? Math.max(0, Math.min(sel, cols2.length - 1)) : null,
-          rgb,
-          ledModalSummary: this._ledSelGetSummary({ isMultiMode: eff2.isMulti, ledCount }),
-        };
-      },
-
-      onColorsetAdd: async () => {
-        const res = this._applyColorsetMutation((setX) => {
-          setX.addColor(new this.vortexLib.RGBColor(255, 0, 0));
-        });
-        if (!res) return null;
-
-        const cols2 = this._extractColorsHexFromColorset(res.set);
-        const selectedColorIndex = cols2.length ? cols2.length - 1 : null;
-
-        return {
-          colors: cols2,
-          selectedColorIndex,
-          rgb: { r: 255, g: 0, b: 0 },
-        };
-      },
-
-      onColorsetDelete: async (idx) => {
-        const delIdx = idx | 0;
-
-        const res = this._applyColorsetMutation((setX) => {
-          if ((setX.numColors() | 0) <= 0) return;
-          setX.removeColor(delIdx);
-        });
-        if (!res) return null;
-
-        const cols2 = this._extractColorsHexFromColorset(res.set);
-        const selectedColorIndex = cols2.length ? Math.min(delIdx, cols2.length - 1) : null;
-
-        let rgb = null;
-        if (selectedColorIndex != null) {
-          rgb = this._hexToRgb(cols2[selectedColorIndex] || '#000000');
-        }
-
-        return { colors: cols2, selectedColorIndex, rgb };
-      },
-
-      onColorChange: async (colorIndex, hex, isDragging) => {
-        const { r, g, b } = this._hexToRgb(hex);
-
-        this._applyColorsetMutation((setX) => {
-          const i = colorIndex | 0;
-          if (i < 0 || i >= (setX.numColors() | 0)) return;
-          setX.set(i, new this.vortexLib.RGBColor(r, g, b));
-        });
-
-        if (isDragging) {
-          try {
-            await this.demoColorOnDevice(new this.vortexLib.RGBColor(r, g, b));
-          } catch {}
-        } else {
-          try {
-            await this.demoModeOnDevice();
-          } catch {}
-        }
-      },
-
-      onOff: async () => {
-        this._applyColorsetMutation((setX) => {
-          if ((setX.numColors() | 0) <= 0) {
-            setX.addColor(new this.vortexLib.RGBColor(0, 0, 0));
-          } else {
-            setX.set(0, new this.vortexLib.RGBColor(0, 0, 0));
-          }
-        });
-        try {
-          await this.demoModeOnDevice();
-        } catch {}
-      },
-    });
+    // ColorPicker will:
+    // - read current mode/colorset/pattern from host vortex
+    // - compute allowMulti, led modal state, summary, etc
+    // - apply mutations back into the mode
+    // - call host demoMode/demoColor as needed
+    await this.effectsPanel.openForCurrentMode({ deviceType, title: 'Effects' });
   }
 }
 
