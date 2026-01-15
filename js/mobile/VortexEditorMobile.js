@@ -1175,9 +1175,14 @@ export default class VortexEditorMobile {
         return;
       }
 
-      if (tool === 'transfer' || tool === 'share') {
+      if (tool === 'transfer') {
         if (!this._requireActivePort()) return;
         await this._showTransferModal(dt);
+        return;
+      }
+
+      if (tool === 'community') {
+        await this.gotoCommunityBrowser({ deviceType: dt, backTarget: 'editor' });
         return;
       }
 
