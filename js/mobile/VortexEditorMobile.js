@@ -417,7 +417,7 @@ export default class VortexEditorMobile {
                   ConnStatus.setConnStatus(this, {
                     status: 'connected',
                     title: deviceType,
-                    subtitle: 'Connected (Bluetooth)',
+                    subtitle: 'Connected',
                     deviceType,
                     error: null,
                   });
