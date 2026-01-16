@@ -173,7 +173,7 @@ export function syncConnStatusFromPort(editor, dt) {
     st.status = 'connected';
     st.deviceType = String(deviceType || '');
     st.title = String(deviceType || '');
-    st.subtitle = 'Connected (Bluetooth)';
+    st.subtitle = 'Connected';
   } else if (editor._connStatusLastError) {
     st.status = 'error';
     st.deviceType = String(deviceType || '');
