@@ -10,6 +10,7 @@ import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 
 import CommunityBrowser from './CommunityBrowser.js';
+import * as ConnStatus from './ConnStatus.js';
 
 const ASSETS = {
   styles: [
@@ -393,6 +394,14 @@ export default class VortexEditorMobile {
 
         console.log('[Mobile] Attempting BLE connection for:', deviceType);
 
+        ConnStatus.setConnStatus(this, {
+          status: 'connecting',
+          title: deviceType,
+          subtitle: 'Connecting…',
+          deviceType,
+          error: null,
+        });
+
         await this.dom.busy(
           connectBtn,
           `<i class="fa-solid fa-spinner fa-spin"></i> Connecting…`,
@@ -405,19 +414,31 @@ export default class VortexEditorMobile {
                   completed = true;
                   this.vortexPort.startReading();
                   console.log('[Mobile] BLE connected and greeting received');
+                  ConnStatus.setConnStatus(this, {
+                    status: 'connected',
+                    title: deviceType,
+                    subtitle: 'Connected (Bluetooth)',
+                    deviceType,
+                    error: null,
+                  });
                   await this.gotoModeSource({ deviceType });
                   return;
                 }
 
                 if (status === 'waiting') return;
-                if (status === 'disconnect') return;
+                if (status === 'disconnect') {
+                  ConnStatus.setConnError(this, 'Disconnected', { deviceType });
+                  return;
+                }
 
                 if (status === 'failed') {
                   completed = true;
+                  ConnStatus.setConnError(this, 'Connection failed', { deviceType });
                   await this.gotoModeSource({ deviceType });
                 }
               });
             } catch (err) {
+              ConnStatus.setConnError(this, 'BLE error', { deviceType });
               console.error('BLE connection failed:', err);
               alert('Failed to connect to Bluetooth device.');
             }
@@ -745,6 +766,9 @@ export default class VortexEditorMobile {
     });
 
     this.dom.set(frag);
+
+    await ConnStatus.ensureConnStatusOverlay(this, dt);
+    ConnStatus.syncConnStatusFromPort(this, dt);
 
     const tools = this.dom.$('.m-editor-tools');
     const carousel = this.dom.$('.m-editor-carousel');
