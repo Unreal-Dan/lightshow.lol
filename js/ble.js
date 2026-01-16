@@ -1,3 +1,5 @@
+/* js/mobile/ble.js */
+
 const SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
 const WRITE_CHAR_UUID = "12345678-1234-1234-1234-123456789abd";
 const NOTIFY_CHAR_UUID = "12345678-1234-1234-1234-123456789abe";
@@ -5,19 +7,92 @@ const NOTIFY_CHAR_UUID = "12345678-1234-1234-1234-123456789abe";
 let bleDevice = null;
 let writeCharacteristic = null;
 let notifyCharacteristic = null;
-let isConnected = false;
-let accumulatedData = new Uint8Array(0); // Store binary data
 
-/**
- * Connect to the ESP32 Bluetooth device
- */
+let accumulatedData = new Uint8Array(0);
+
+const disconnectListeners = new Set();
+let disconnectHandlerBound = false;
+
+function _appendAccumulated(chunk) {
+  if (!chunk || !chunk.length) return;
+  const next = new Uint8Array(accumulatedData.length + chunk.length);
+  next.set(accumulatedData, 0);
+  next.set(chunk, accumulatedData.length);
+  accumulatedData = next;
+}
+
+function _cleanup({ keepDevice = false } = {}) {
+  try {
+    if (notifyCharacteristic) {
+      try { notifyCharacteristic.removeEventListener("characteristicvaluechanged", handleNotifications); } catch {}
+    }
+  } catch {}
+
+  writeCharacteristic = null;
+  notifyCharacteristic = null;
+  accumulatedData = new Uint8Array(0);
+
+  if (!keepDevice) {
+    bleDevice = null;
+    disconnectHandlerBound = false;
+  }
+}
+
+function _emitDisconnect(reason = "disconnected") {
+  for (const cb of disconnectListeners) {
+    try { cb(reason); } catch (_) {}
+  }
+}
+
+function _onGattDisconnected() {
+  // Device dropped (power off, out of range, etc.)
+  _cleanup({ keepDevice: true }); // keep bleDevice reference (optional)
+  _emitDisconnect("gattserverdisconnected");
+}
+
+function handleNotifications(event) {
+  try {
+    const v = event?.target?.value;
+    if (!v) return;
+
+    // v is a DataView; copy only the bytes in this view
+    const chunk = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+    _appendAccumulated(chunk);
+  } catch (e) {
+    console.warn("BLE notification handler error:", e);
+  }
+}
+
+export function onDisconnect(cb) {
+  if (typeof cb !== "function") return () => {};
+  disconnectListeners.add(cb);
+  return () => disconnectListeners.delete(cb);
+}
+
+export function isBleConnected() {
+  // source of truth: GATT connection state
+  try {
+    return !!(bleDevice && bleDevice.gatt && bleDevice.gatt.connected);
+  } catch {
+    return false;
+  }
+}
+
 export async function connect() {
   try {
     console.log("Requesting Bluetooth Device...");
     bleDevice = await navigator.bluetooth.requestDevice({
       filters: [{ name: "Vortex Chromadeck" }, { name: "Vortex Spark" }],
-      optionalServices: [SERVICE_UUID]
+      optionalServices: [SERVICE_UUID],
     });
+
+    if (!bleDevice) return false;
+
+    // Bind disconnect event once per device
+    if (!disconnectHandlerBound) {
+      disconnectHandlerBound = true;
+      bleDevice.addEventListener("gattserverdisconnected", _onGattDisconnected);
+    }
 
     console.log("Connecting to GATT Server...");
     const server = await bleDevice.gatt.connect();
@@ -31,84 +106,62 @@ export async function connect() {
     await notifyCharacteristic.startNotifications();
     notifyCharacteristic.addEventListener("characteristicvaluechanged", handleNotifications);
 
-    isConnected = true;
-    console.log("Connected to Bluetooth Vortex Device!");
+    accumulatedData = new Uint8Array(0);
 
+    console.log("Connected to Bluetooth Vortex Device!");
     return true;
   } catch (error) {
     console.error("BLE Connection Error:", error);
+    _cleanup({ keepDevice: false });
     return false;
   }
 }
 
 export async function disconnect() {
   try {
+    // If we're connected, request a disconnect. This will also trigger gattserverdisconnected.
     await Promise.race([
-      new Promise(resolve => {
-        if (bleDevice && bleDevice.gatt.connected) {
-          bleDevice.gatt.disconnect();
-        }
+      new Promise((resolve) => {
+        try {
+          if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+            bleDevice.gatt.disconnect();
+          }
+        } catch {}
         resolve();
       }),
-      new Promise(resolve => setTimeout(resolve, 2000))
+      new Promise((resolve) => setTimeout(resolve, 2000)),
     ]);
     console.log("Disconnected from BLE device.");
   } catch (error) {
     console.error("BLE disconnect error:", error);
   } finally {
-    isConnected = false;
-    bleDevice = null;
-    writeCharacteristic = null;
-    notifyCharacteristic = null;
-    accumulatedData = new Uint8Array(0);
+    _cleanup({ keepDevice: false });
+    _emitDisconnect("manualdisconnect");
   }
 }
 
-/**
- * Handle incoming notifications from ESP32 (BINARY ONLY)
- * @param {Event} event - The characteristic change event
- */
-function handleNotifications(event) {
-    let rawData = new Uint8Array(event.target.value.buffer);
-    accumulatedData = new Uint8Array([...accumulatedData, ...rawData]);
-}
-
-/**
- * Send a command string to the ESP32 over BLE
- * @param {string} command - Command string to send
- */
 export async function sendRaw(data) {
-    if (!writeCharacteristic) {
-        console.error("BLE not connected!");
-        return;
-    }
+  if (!writeCharacteristic || !isBleConnected()) {
+    console.error("BLE not connected!");
+    return;
+  }
+  try {
     await writeCharacteristic.writeValue(data);
+  } catch (e) {
+    // If write fails because device died mid-write, treat it as disconnect-ish.
+    console.warn("BLE write failed:", e);
+    // Let higher layers decide what to do; buffer is kept.
+    // Optionally, you could call disconnect() here, but it's safer to just signal.
+    _emitDisconnect("writefailed");
+  }
 }
 
-/**
- * Check if BLE is connected
- * @returns {boolean} - Connection status
- */
-export function isBleConnected() {
-    return isConnected;
-}
-
-/**
- * Read the accumulated BLE binary data
- * @returns {Uint8Array|null} - Returns accumulated data if available, otherwise null
- */
 export function readBleData() {
-  if (!isBleConnected()) {
-    console.error("BLE is not connected!");
-    return null;
-  }
+  if (!isBleConnected()) return null;
+  if (accumulatedData.length === 0) return null;
 
-  if (accumulatedData.length === 0) {
-    return null;
-  }
-
-  const returnedData = accumulatedData;
-  accumulatedData = new Uint8Array(0);  // Reset buffer
-  return returnedData;
+  const returned = accumulatedData;
+  accumulatedData = new Uint8Array(0);
+  return returned;
 }
 
