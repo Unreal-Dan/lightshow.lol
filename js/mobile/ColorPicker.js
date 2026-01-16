@@ -1517,7 +1517,7 @@ export default class ColorPicker {
           svBox.removeEventListener('pointermove', onMove);
           svBox.removeEventListener('pointerup', onUp);
           svBox.removeEventListener('pointercancel', onUp);
-          this._handleSvPointer(ev, false);
+          this._handleSvPointer(ev, true);
         };
 
         svBox.addEventListener('pointermove', onMove);
@@ -1542,7 +1542,7 @@ export default class ColorPicker {
           hueSlider.removeEventListener('pointermove', onMove);
           hueSlider.removeEventListener('pointerup', onUp);
           hueSlider.removeEventListener('pointercancel', onUp);
-          this._handleHuePointer(ev, false);
+          this._handleHuePointer(ev, true);
         };
 
         hueSlider.addEventListener('pointermove', onMove);
