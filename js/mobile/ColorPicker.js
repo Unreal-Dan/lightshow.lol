@@ -111,6 +111,20 @@ export default class ColorPicker {
     // tap target tracking (touch retargeting fix)
     this._tapTargetEl = null;
     this._tapOnBackdrop = false;
+
+    // =========================================================
+    // Device demo scheduling (color preview -> revert to mode)
+    // =========================================================
+    this._demoIdleMs = 2000;
+
+    this._demoRevertTimer = 0;
+    this._demoLastPreviewAt = 0;
+
+    // Color preview coalescing/throttle (separate from _emit throttle)
+    this._demoColorThrottleMs = 33;
+    this._demoColorLastSendAt = 0;
+    this._demoColorPending = null; // {r,g,b}
+    this._demoColorTimer = 0;
   }
 
   setHost(host) {
@@ -172,6 +186,107 @@ export default class ColorPicker {
     } catch {}
   }
 
+  _demoCancelRevertTimer() {
+    if (this._demoRevertTimer) {
+      clearTimeout(this._demoRevertTimer);
+      this._demoRevertTimer = 0;
+    }
+  }
+
+  _demoCancelColorTimer() {
+    if (this._demoColorTimer) {
+      clearTimeout(this._demoColorTimer);
+      this._demoColorTimer = 0;
+    }
+    this._demoColorPending = null;
+  }
+
+  _demoNowMs() {
+    return performance.now ? performance.now() : Date.now();
+  }
+
+  _demoScheduleRevertToMode() {
+    this._demoCancelRevertTimer();
+
+    const lastAt = (this._demoLastPreviewAt | 0) || Date.now();
+    const delay = this._demoIdleMs;
+
+    this._demoRevertTimer = setTimeout(() => {
+      this._demoRevertTimer = 0;
+
+      const dt = Date.now() - lastAt;
+      if (dt + 8 < this._demoIdleMs) {
+        // another preview happened since scheduling; reschedule from latest timestamp
+        this._demoScheduleRevertToMode();
+        return;
+      }
+
+      // Return to mode demo after inactivity
+      this._demoCancelColorTimer();
+      this._defer(() => this._hostDemoMode());
+    }, delay);
+  }
+
+  _demoSendPendingColorNow() {
+    const p = this._demoColorPending;
+    if (!p) return;
+
+    this._demoColorPending = null;
+    this._demoColorLastSendAt = this._demoNowMs();
+
+    try {
+      const rgb = new this.vortexLib.RGBColor(p.r & 0xff, p.g & 0xff, p.b & 0xff);
+      this._defer(() => this._hostDemoColor(rgb));
+    } catch {}
+  }
+
+  _demoPreviewRgb(r, g, b) {
+    const rr = this._clampByte(r);
+    const gg = this._clampByte(g);
+    const bb = this._clampByte(b);
+
+    this._demoLastPreviewAt = Date.now();
+    this._demoScheduleRevertToMode();
+
+    this._demoColorPending = { r: rr, g: gg, b: bb };
+
+    const now = this._demoNowMs();
+    const dt = now - (this._demoColorLastSendAt || 0);
+
+    if (dt >= this._demoColorThrottleMs) {
+      this._demoSendPendingColorNow();
+      return;
+    }
+
+    if (!this._demoColorTimer) {
+      const wait = Math.max(0, this._demoColorThrottleMs - dt);
+      this._demoColorTimer = setTimeout(() => {
+        this._demoColorTimer = 0;
+        this._demoSendPendingColorNow();
+      }, wait);
+    }
+  }
+
+  _demoPreviewFromState() {
+    const { r, g, b } = this.state || { r: 0, g: 0, b: 0 };
+    this._demoPreviewRgb(r, g, b);
+  }
+
+  _demoModeImmediate() {
+    // Any non-color change should immediately return to mode demo.
+    this._demoCancelRevertTimer();
+    this._demoCancelColorTimer();
+    this._defer(() => this._hostDemoMode());
+  }
+
+  _demoAfterColorsetChange() {
+    if (this.ctx && this.ctx.pickerEnabled && this.ctx.selectedColorIndex != null) {
+      this._demoPreviewFromState();
+    } else {
+      this._demoModeImmediate();
+    }
+  }
+
   async preload() {
     if (this._preloaded) return;
     await this.views.load('color-picker.html');
@@ -209,6 +324,9 @@ export default class ColorPicker {
   }
 
   close() {
+    // Closing should always return to mode demo.
+    this._demoModeImmediate();
+
     if (this._pendingTimer) {
       clearTimeout(this._pendingTimer);
       this._pendingTimer = 0;
@@ -292,7 +410,7 @@ export default class ColorPicker {
     this._ledSelEnsureDefaults(ledCount);
 
     const isMulti = this._isMultiMode(curMode);
-    const deviceMeta = (this._getDevicesJson()?.[dt]) || {};
+    const deviceMeta = this._getDevicesJson()?.[dt] || {};
 
     const eff = this._effectiveSelection(curMode);
     const srcLed = eff.sourceLed | 0;
@@ -326,7 +444,7 @@ export default class ColorPicker {
         : null,
       selectedLeds: isMulti
         ? [multiIndex]
-        : (this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i)),
+        : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
       sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
     };
 
@@ -392,7 +510,7 @@ export default class ColorPicker {
             ...ledSelectState,
             selectedLeds: eff2.isMulti
               ? [mi]
-              : (this._ledSelGetSingleSelected(lc) ?? Array.from({ length: lc }, (_, i) => i)),
+              : this._ledSelGetSingleSelected(lc) ?? Array.from({ length: lc }, (_, i) => i),
             sourceLed: eff2.isMulti ? mi : this._ledSelGetSingleSource(lc),
           },
 
@@ -494,15 +612,9 @@ export default class ColorPicker {
           setX.set(i, new this.vortexLib.RGBColor(r, g, b));
         });
 
-        if (isDragging) {
-          try {
-            await this._hostDemoColor(new this.vortexLib.RGBColor(r, g, b));
-          } catch {}
-        } else {
-          try {
-            await this._hostDemoMode();
-          } catch {}
-        }
+        // Color preview is handled by ColorPicker itself (realtime + 2s revert).
+        // Keep callback focused on mutating the underlying mode.
+        void isDragging;
       },
 
       onOff: async () => {
@@ -513,9 +625,6 @@ export default class ColorPicker {
             setX.set(0, new this.vortexLib.RGBColor(0, 0, 0));
           }
         });
-        try {
-          await this._hostDemoMode();
-        } catch {}
       },
     });
   }
@@ -570,7 +679,7 @@ export default class ColorPicker {
 
     this.ctx.deviceType = String(deviceType || 'Duo');
     this.ctx.ledModalSummary = String(ledModalSummary || 'LEDs');
-    this.ctx.ledSelectState = (ledSelectState && typeof ledSelectState === 'object') ? ledSelectState : null;
+    this.ctx.ledSelectState = ledSelectState && typeof ledSelectState === 'object' ? ledSelectState : null;
 
     this.ctx.selectedColorIndex = selectedColorIndex == null ? null : Math.max(0, selectedColorIndex | 0);
 
@@ -742,6 +851,9 @@ export default class ColorPicker {
   _fastDone() {
     if (!this.root) return;
 
+    // Closing should always return to mode demo.
+    this._demoModeImmediate();
+
     this.root.classList.remove('is-open');
     this.root.style.pointerEvents = 'none';
 
@@ -848,6 +960,7 @@ export default class ColorPicker {
       this._defer(async () => {
         const next = await this.cb.onColorsetDelete(idx);
         await this._applyCtx(next);
+        this._demoAfterColorsetChange();
       });
 
       return;
@@ -872,8 +985,7 @@ export default class ColorPicker {
       return;
     }
 
-    const t =
-      (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) || e.target;
+    const t = (this._tapTargetEl && this.root.contains(this._tapTargetEl) && this._tapTargetEl) || e.target;
 
     this._tapTargetEl = null;
     this._tapOnBackdrop = false;
@@ -935,7 +1047,13 @@ export default class ColorPicker {
 
       if (act === 'off') {
         if (!this.ctx.pickerEnabled) return;
-        if (this.cb.onOff) this._defer(() => this.cb.onOff());
+        if (this.cb.onOff) {
+          this._defer(async () => {
+            await this.cb.onOff();
+            // Off is a change; show the selected color (black) then revert to mode.
+            this._demoPreviewFromState();
+          });
+        }
         this._setRGB(0, 0, 0, true);
         this._emit(false, true);
         return;
@@ -952,6 +1070,7 @@ export default class ColorPicker {
         this._defer(async () => {
           const next = await this.cb.onColorsetDelete(idx);
           await this._applyCtx(next);
+          this._demoAfterColorsetChange();
         });
         return;
       }
@@ -978,7 +1097,7 @@ export default class ColorPicker {
       }
       this.ledSelectModal.mount();
 
-      const st = (this.ctx.ledSelectState && typeof this.ctx.ledSelectState === 'object') ? this.ctx.ledSelectState : {};
+      const st = this.ctx.ledSelectState && typeof this.ctx.ledSelectState === 'object' ? this.ctx.ledSelectState : {};
 
       const total = this.ctx.ledCount | 0;
       const initialSource = Number.isFinite(st.sourceLed) ? (st.sourceLed | 0) : 0;
@@ -986,7 +1105,9 @@ export default class ColorPicker {
       const initialSelected =
         Array.isArray(st.selectedLeds) && st.selectedLeds.length
           ? st.selectedLeds
-          : (total > 0 ? Array.from({ length: total }, (_, i) => i) : []);
+          : total > 0
+            ? Array.from({ length: total }, (_, i) => i)
+            : [];
 
       const restorePickerPointerEvents = () => {
         try {
@@ -1024,11 +1145,15 @@ export default class ColorPicker {
               Array.isArray(selectedLeds) ? selectedLeds : []
             );
             await this._applyCtx(next, { keepPickerSeed: true });
+
+            // Selection change is a change; demo mode immediately.
+            this._demoModeImmediate();
           });
         },
 
         onCancel: () => {
           restorePickerPointerEvents();
+          // Canceling just returns focus; keep whatever is currently demoing.
         },
       });
 
@@ -1055,6 +1180,7 @@ export default class ColorPicker {
         this._defer(async () => {
           const next = await this.cb.onLedChange(led);
           await this._applyCtx(next);
+          this._demoModeImmediate();
         });
         return;
       }
@@ -1101,6 +1227,7 @@ export default class ColorPicker {
         { keepPickerSeed: false }
       );
 
+      this._demoModeImmediate();
       return;
     }
 
@@ -1123,6 +1250,7 @@ export default class ColorPicker {
         this._defer(async () => {
           const next = await this.cb.onColorsetAdd();
           await this._applyCtx(next);
+          this._demoAfterColorsetChange();
         });
 
         return;
@@ -1134,11 +1262,15 @@ export default class ColorPicker {
         const hex = this._extractHexFromCube(cube);
         if (hex) this._seedPickerFromHex(hex);
 
+        // Selecting a color cube should preview the selected color immediately (then revert to mode).
+        if (this.ctx.pickerEnabled) this._demoPreviewFromState();
+
         if (!this.cb.onColorsetSelect) return;
 
         this._defer(async () => {
           const next = await this.cb.onColorsetSelect(idx);
           await this._applyCtx(next, { keepPickerSeed: true });
+          // Keep showing the picked color; revert is already scheduled by preview above.
         });
 
         return;
@@ -1357,6 +1489,9 @@ export default class ColorPicker {
         this._defer(async () => {
           const next = await this.cb.onPatternChange(this.ctx.patternValue);
           await this._applyCtx(next, { keepPickerSeed: true });
+
+          // Pattern change is a change; demo the mode immediately.
+          this._demoModeImmediate();
         });
       });
     }
@@ -1383,7 +1518,6 @@ export default class ColorPicker {
           svBox.removeEventListener('pointerup', onUp);
           svBox.removeEventListener('pointercancel', onUp);
           this._handleSvPointer(ev, false);
-          this._emit(false, true);
         };
 
         svBox.addEventListener('pointermove', onMove);
@@ -1409,7 +1543,6 @@ export default class ColorPicker {
           hueSlider.removeEventListener('pointerup', onUp);
           hueSlider.removeEventListener('pointercancel', onUp);
           this._handleHuePointer(ev, false);
-          this._emit(false, true);
         };
 
         hueSlider.addEventListener('pointermove', onMove);
@@ -1615,6 +1748,9 @@ export default class ColorPicker {
     const { r, g, b } = this.state;
     const hex = this._rgbToHex(r, g, b);
     const idx = this.ctx.selectedColorIndex | 0;
+
+    // Always preview color changes in realtime, then revert to mode after idle.
+    this._demoPreviewRgb(r, g, b);
 
     const now = performance.now ? performance.now() : Date.now();
 
