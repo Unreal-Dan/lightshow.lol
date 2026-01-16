@@ -106,6 +106,11 @@ export default class VortexPort {
       Notification.success("Using BLE for VortexPort...");
       this.bleConnected = await BLE.connect();
       if (this.bleConnected) {
+        if (this._bleDiscUnsub && typeof BLE.onDisconnect === 'function') {
+          this._bleDiscUnsub = BLE.onDisconnect(async () => {
+            try { await this.disconnect(); } catch {}
+          });
+        }
         Notification.success("BLE Connected!");
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
