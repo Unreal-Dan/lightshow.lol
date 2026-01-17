@@ -895,7 +895,7 @@ export default class VortexEditorMobile {
             e?.stopImmediatePropagation?.();
           } catch {}
 
-          if (!this.vortexPort?.isActive?.()) {
+          if (this.vortexPort?.isActive?.()) {
             return;
           }
 
