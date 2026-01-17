@@ -51,7 +51,7 @@
 .m-color-picker-sheet {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 55%;
   transform: translate(-50%, -50%);
 
   width: min(720px, calc(100vw - 20px));
