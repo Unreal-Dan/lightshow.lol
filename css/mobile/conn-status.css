@@ -206,6 +206,13 @@
     0 0 0 3px rgba(255, 255, 255, 0.16);
 }
 
+/* When effects panel is open, prevent click-through to conn status */
+#mobile-app-root.is-effects-open #m-conn-status {
+  pointer-events: none !important;
+  opacity: 0.0;
+  transform: translateY(-2px);
+}
+
 /* Small screens */
 @media (max-height: 640px) {
   #mobile-app-root .m-conn-status,
