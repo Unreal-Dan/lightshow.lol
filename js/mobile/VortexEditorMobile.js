@@ -895,6 +895,10 @@ export default class VortexEditorMobile {
             e?.stopImmediatePropagation?.();
           } catch {}
 
+          if (!this.vortexPort?.isActive?.()) {
+            return;
+          }
+
           const dtNow = this.selectedDeviceType(deviceType);
           const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
 
