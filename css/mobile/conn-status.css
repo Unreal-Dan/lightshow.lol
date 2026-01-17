@@ -1,5 +1,12 @@
 /* css/mobile/conn-status.css */
 
+/* ==========================================================
+   Connection Status Pill (Top Right)
+   - Pill stays fixed top-right
+   - Left icon is BIG Bluetooth
+   - Text still shows device name + connected/disconnected
+========================================================== */
+
 #mobile-app-root .m-conn-status,
 .m-conn-status {
   position: fixed;
@@ -23,8 +30,16 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
-  pointer-events: none;
+  pointer-events: auto;
   user-select: none;
+  cursor: pointer;
+
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.m-conn-status:active {
+  transform: translateY(1px);
 }
 
 .m-conn-status.is-hidden {
@@ -38,42 +53,51 @@
   width: 100%;
 }
 
+/* LEFT ICON AREA: now Bluetooth */
 .m-conn-status__device {
   position: relative;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-}
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
 
-.m-conn-status__device-img {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  object-fit: contain;
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.m-conn-status__bt {
-  position: absolute;
-  right: -6px;
-  bottom: -7px;
-
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-
-  font-size: 11px;
-  line-height: 1;
+/* If your markup still has an <img>, hide it cleanly */
+.m-conn-status__device-img {
+  display: none !important;
 }
 
+/* The bluetooth icon itself (supports either .m-conn-status__bt or a direct <i>) */
+.m-conn-status__bt {
+  position: static;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* In case you put the BT <i> directly inside .m-conn-status__device */
+.m-conn-status__device > i,
+.m-conn-status__device > .m-conn-status__bt > i {
+  font-size: 22px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Text */
 .m-conn-status__text {
   min-width: 0;
   flex: 1 1 auto;
@@ -103,6 +127,7 @@
   text-overflow: ellipsis;
 }
 
+/* Right indicator dot */
 .m-conn-status__ind {
   width: 10px;
   height: 10px;
@@ -160,9 +185,9 @@
     0 0 12px rgba(255, 90, 90, 0.45);
 }
 
-/* Optional: dim when "disconnected" (if you use it) */
+/* Optional: dim when "disconnected" */
 .m-conn-status.is-disconnected {
-  opacity: 0.78;
+  opacity: 0.86;
 }
 
 .m-conn-status.is-disconnected .m-conn-status__ind {
@@ -171,3 +196,44 @@
     0 0 0 3px rgba(140, 140, 140, 0.18),
     0 0 12px rgba(140, 140, 140, 0.25);
 }
+
+/* Focus ring */
+.m-conn-status:focus-visible {
+  outline: none;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 3px rgba(255, 255, 255, 0.16);
+}
+
+/* Small screens */
+@media (max-height: 640px) {
+  #mobile-app-root .m-conn-status,
+  .m-conn-status {
+    top: 10px;
+    right: 10px;
+    padding: 9px 9px;
+    border-radius: 13px;
+  }
+
+  .m-conn-status__device {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .m-conn-status__bt,
+  .m-conn-status__device > i,
+  .m-conn-status__device > .m-conn-status__bt > i {
+    font-size: 21px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #mobile-app-root .m-conn-status,
+  .m-conn-status {
+    transition: none;
+  }
+}
+

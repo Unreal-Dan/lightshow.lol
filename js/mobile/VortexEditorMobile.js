@@ -327,13 +327,7 @@ export default class VortexEditorMobile {
     const mount = this.dom.must('#device-cards-mount', 'device-select.html is missing #device-cards-mount');
     cardFragments.forEach((frag) => mount.appendChild(frag));
 
-    const skipLink = document.createElement('div');
-    skipLink.className = 'skip-to-editor-link';
-    skipLink.innerHTML =
-      `<a href="#" id="skip-to-editor">Skip to Editor ` +
-      `<i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i></a>`;
-    this.dom.$('.container-fluid')?.appendChild(skipLink);
-
+    // setup the goto editor link
     this.dom.onClick(
       '#skip-to-editor',
       async () => {
@@ -375,6 +369,15 @@ export default class VortexEditorMobile {
   async gotoBleConnect({ deviceType, deviceImg, deviceAlt, instructions }) {
     const frag = await this.views.render('ble-connect.html', { deviceType, deviceImg, deviceAlt, instructions });
     this.dom.set(frag);
+
+    // setup the goto editor link
+    this.dom.onClick(
+      '#skip-to-editor',
+      async () => {
+        await this.gotoEditor({ deviceType });
+      },
+      { preventDefault: true }
+    );
 
     this.dom.onTap(
       '#back-btn',
@@ -758,8 +761,11 @@ export default class VortexEditorMobile {
     const modeName = hasModes ? `Mode ${idx + 1}` : 'No modes';
     const modeIndexLabel = hasModes ? `${idx + 1} / ${n}` : 'No modes';
 
+    const deviceIcon = this._getDeviceImgFor(dt);
+
     const frag = await this.views.render('editor.html', {
       deviceType: dt,
+      deviceIcon,
       modeName,
       modeIndexLabel,
       emptyDisplay: hasModes ? 'none' : 'grid',
@@ -769,6 +775,8 @@ export default class VortexEditorMobile {
 
     await ConnStatus.ensureConnStatusOverlay(this, dt);
     ConnStatus.syncConnStatusFromPort(this, dt);
+
+    this._bindEditorTopButtons(dt);
 
     const tools = this.dom.$('.m-editor-tools');
     const carousel = this.dom.$('.m-editor-carousel');
@@ -845,6 +853,65 @@ export default class VortexEditorMobile {
       { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'empty-community', passive: false }
     );
   }
+
+  _bindEditorTopButtons(dt) {
+    const deviceType = dt || this.selectedDeviceType('Duo');
+
+    // Top-left device button -> device select
+    const devBtn = this.dom?.$('#m-editor-device-btn');
+    if (devBtn && devBtn.dataset.boundTopLeft !== '1') {
+      devBtn.dataset.boundTopLeft = '1';
+
+      this.dom.onTap(
+        devBtn,
+        async (e) => {
+          try {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+            e?.stopImmediatePropagation?.();
+          } catch {}
+
+          await this.gotoDeviceSelect();
+        },
+        { preventDefault: true, swallow: true, lockMs: 250, boundKey: 'editor-top-left', passive: false }
+      );
+    }
+
+    // Top-right conn pill (or button) -> BLE connect for selected device
+    const connEl =
+      document.querySelector('.m-conn-status') ||
+      document.getElementById('m-ble-status-btn') ||
+      null;
+
+    if (connEl && connEl.dataset.boundTopRight !== '1') {
+      connEl.dataset.boundTopRight = '1';
+
+      connEl.addEventListener(
+        'click',
+        async (e) => {
+          try {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+            e?.stopImmediatePropagation?.();
+          } catch {}
+
+          const dtNow = this.selectedDeviceType(deviceType);
+          const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
+
+          await this.gotoBleConnect({
+            deviceType: dtNow,
+            deviceImg,
+            deviceAlt,
+            instructions,
+            backTarget: 'editor',
+            afterConnectTarget: 'editor',
+          });
+        },
+        { passive: false }
+      );
+    }
+  }
+
 
   async startEditorLightshow(dt) {
     const canvas = this.dom.must('#mobile-lightshow-canvas', 'editor.html is missing #mobile-lightshow-canvas');
@@ -1606,251 +1673,6 @@ export default class VortexEditorMobile {
       }
       setTimeout(finish, 700);
     });
-  }
-
-  async gotoDevicePushModes({ deviceType, backTarget = 'editor' } = {}) {
-    const dt = deviceType || this.selectedDeviceType('Duo');
-    this.setDeviceType(dt);
-
-    this.stopEditorLightshow();
-    this.clearEditorResizeHandler();
-    if (this.effectsPanel.isOpen()) this.effectsPanel.close();
-
-    const deviceImg = this._getDeviceImgFor(dt);
-    const deviceAlt = dt;
-
-    const frag = await this.views.render('device-modes-send.html', {
-      title: 'Save to device',
-      subtitle: dt,
-      deviceImg,
-      deviceAlt,
-      status: 'Starting…',
-      progressText: '',
-    });
-
-    this.dom.set(frag);
-
-    const backNav = async () => {
-      if (backTarget === 'mode-source') await this.gotoModeSource({ deviceType: dt });
-      else await this.gotoEditor({ deviceType: dt });
-    };
-
-    this.dom.onTap(
-      '#back-btn',
-      async () => {
-        await backNav();
-      },
-      { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'devpush-back', passive: false }
-    );
-
-    this.dom.onTap(
-      '#done-btn',
-      async () => {
-        await backNav();
-      },
-      { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'devpush-done', passive: false }
-    );
-
-    await this._runDevicePushModes(dt);
-  }
-
-  async _runDevicePushModes(dt) {
-    const statusText = this.dom.$('#dev-xfer-status-text');
-    const progressText = this.dom.$('#dev-xfer-progress-text');
-    const bar = this.dom.$('#dev-xfer-progress-bar');
-
-    const setUI = ({ s = null, p = null, pct = null, err = false } = {}) => {
-      try {
-        const wrap = this.dom.$('#dev-xfer-status');
-        if (wrap) wrap.classList.toggle('is-error', !!err);
-      } catch {}
-      if (statusText && s != null) statusText.textContent = String(s);
-      if (progressText && p != null) progressText.textContent = String(p);
-      if (bar && pct != null) {
-        const v = Math.max(0, Math.min(100, Number(pct)));
-        if (Number.isFinite(v)) bar.style.width = `${v}%`;
-      }
-    };
-
-    const hasModes = (this.vortex?.numModes?.() | 0) > 0;
-    if (!hasModes) {
-      setUI({ s: 'Nothing to save.', p: 'No modes in the editor.', pct: 100, err: true });
-      return;
-    }
-
-    if (!this._requireActivePort()) {
-      setUI({ s: 'Not connected.', p: 'Tap Back and connect a device first.', pct: 10, err: true });
-      return;
-    }
-
-    // Prevent demos/timers from racing the transfer
-    this._transferInProgress = true;
-    try {
-      this._clearModeTimers?.();
-    } catch {}
-
-    // Throttled UI via RAF to avoid main-thread starvation
-    let pending = null;
-    let rafScheduled = false;
-    const flush = () => {
-      rafScheduled = false;
-      if (!pending) return;
-      const p = pending;
-      pending = null;
-      try {
-        setUI(p);
-      } catch {}
-    };
-    const scheduleUI = (payload) => {
-      pending = payload;
-      if (rafScheduled) return;
-      rafScheduled = true;
-      requestAnimationFrame(flush);
-    };
-
-    // Optional: pause background reader if VortexPort supports it
-    let pausedReading = false;
-    const tryPauseReading = async () => {
-      try {
-        if (typeof this.vortexPort.pauseReading === 'function') {
-          await this.vortexPort.pauseReading();
-          pausedReading = true;
-          return;
-        }
-        if (typeof this.vortexPort.stopReading === 'function') {
-          await this.vortexPort.stopReading();
-          pausedReading = true;
-          return;
-        }
-      } catch {}
-    };
-    const tryResumeReading = async () => {
-      try {
-        if (!pausedReading) return;
-        if (typeof this.vortexPort.resumeReading === 'function') {
-          await this.vortexPort.resumeReading();
-          return;
-        }
-        if (typeof this.vortexPort.startReading === 'function') {
-          await this.vortexPort.startReading();
-          return;
-        }
-      } catch {}
-    };
-
-    const tryCancelTransfer = async () => {
-      try {
-        if (typeof this.vortexPort.cancelPush === 'function') {
-          await this.vortexPort.cancelPush();
-          return;
-        }
-      } catch {}
-      try {
-        if (typeof this.vortexPort.cancelReading === 'function') {
-          await this.vortexPort.cancelReading();
-          return;
-        }
-      } catch {}
-      try {
-        if (typeof this.vortexPort.disconnect === 'function') {
-          await this.vortexPort.disconnect();
-          return;
-        }
-      } catch {}
-    };
-
-    try {
-      try {
-        this._getModes().initCurMode();
-        this._getModes().saveCurMode();
-      } catch {}
-
-      scheduleUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
-      flush();
-
-      await tryPauseReading();
-
-      const watchdogMs = 12000; // give BLE enough time, but fail deterministically
-      let watchdogTimer = null;
-      let bumpWatchdog = null;
-
-      const watchdogPromise = new Promise((_, reject) => {
-        const arm = () => {
-          if (watchdogTimer) clearTimeout(watchdogTimer);
-          watchdogTimer = setTimeout(async () => {
-            try {
-              scheduleUI({ s: 'Save stalled.', p: 'Timed out waiting for device.', pct: 100, err: true });
-              flush();
-            } catch {}
-            try {
-              await tryCancelTransfer();
-            } catch {}
-            reject(new Error('pushEachToDevice watchdog timeout'));
-          }, watchdogMs);
-        };
-        bumpWatchdog = arm;
-        arm();
-      });
-
-      const progressCb = (o) => {
-        try {
-          bumpWatchdog?.();
-        } catch {}
-
-        const phase = String(o?.phase || '');
-        const total = (o?.total ?? 0) | 0;
-        const idx = (o?.index ?? 0) | 0;
-        const i1 = idx + 1;
-
-        try {
-          if (phase === 'start') scheduleUI({ s: 'Saving modes…', p: 'Starting…', pct: 10, err: false });
-          else if (phase === 'count')
-            scheduleUI({ s: 'Saving modes…', p: total > 0 ? `0 / ${total}` : '', pct: 12, err: false });
-          else if (phase === 'pushing')
-            scheduleUI({
-              s: 'Saving modes…',
-              p: total > 0 ? `Mode ${i1} / ${total}` : `Mode ${i1}`,
-              pct: total > 0 ? Math.min(95, Math.max(12, (i1 / total) * 92)) : 50,
-              err: false,
-            });
-          else if (phase === 'finalizing')
-            scheduleUI({ s: 'Finalizing…', p: total > 0 ? `${total} modes` : '', pct: 98, err: false });
-          else if (phase === 'done')
-            scheduleUI({ s: 'Done.', p: total > 0 ? `${total} modes saved` : 'Saved', pct: 100, err: false });
-          else if (phase === 'error') scheduleUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
-        } catch {}
-      };
-
-      const pushPromise = (async () => {
-        try {
-          bumpWatchdog?.();
-        } catch {}
-        return await this.vortexPort.pushEachToDevice(this.vortexLib, this.vortex, progressCb);
-      })();
-
-      try {
-        await Promise.race([pushPromise, watchdogPromise]);
-      } finally {
-        if (watchdogTimer) {
-          clearTimeout(watchdogTimer);
-          watchdogTimer = null;
-        }
-        try {
-          flush();
-        } catch {}
-      }
-
-      setUI({ s: 'Done.', p: 'Saved.', pct: 100, err: false });
-      Notification.success?.('Saved to device');
-    } catch (err) {
-      console.error('[Mobile] Device push failed:', err);
-      setUI({ s: 'Save failed.', p: 'Tap Back and try again.', pct: 100, err: true });
-    } finally {
-      try {
-        await tryResumeReading();
-      } catch {}
-      this._transferInProgress = false;
-    }
   }
 
   async gotoDuoSend({ deviceType, backTarget = 'editor' } = {}) {

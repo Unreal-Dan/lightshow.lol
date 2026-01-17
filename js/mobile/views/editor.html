@@ -3,9 +3,22 @@
   <div class="m-editor-stage">
     <canvas id="mobile-lightshow-canvas" class="m-editor-canvas"></canvas>
 
-    <div class="m-editor-render-label text-secondary">
-      {{deviceType}} Editor — <span class="m-editor-mode-name">{{modeName}}</span>
-    </div>
+    <!-- Top-left: simulated device icon (tap to go back to device select) -->
+    <button
+      id="m-editor-device-btn"
+      class="m-editor-device-btn"
+      type="button"
+      title="Device"
+      aria-label="Device"
+    >
+      <img
+        id="m-editor-device-img"
+        class="m-editor-device-img"
+        src="{{deviceIcon}}"
+        alt="{{deviceType}}"
+        draggable="false"
+      />
+    </button>
 
     <div class="m-editor-tools" aria-label="Editor tools">
       <button class="m-tool-btn" type="button" title="Colors" data-tool="effects">
