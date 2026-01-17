@@ -895,27 +895,68 @@ export default class VortexEditorMobile {
             e?.stopImmediatePropagation?.();
           } catch {}
 
-          if (this.vortexPort?.isActive?.()) {
-            return;
+          // Debounce while an action is running
+          if (connEl.dataset.busy === '1') return;
+          connEl.dataset.busy = '1';
+
+          try {
+            // If connected, disconnect on tap
+            if (this.vortexPort?.isActive?.()) {
+              try {
+                ConnStatus.setConnStatus(this, {
+                  status: 'connecting',
+                  title: this.selectedDeviceType(deviceType),
+                  subtitle: 'Disconnecting…',
+                  deviceType: this.selectedDeviceType(deviceType),
+                  error: null,
+                });
+              } catch {}
+
+              try {
+                if (typeof this.vortexPort.disconnect === 'function') {
+                  await this.vortexPort.disconnect();
+                } else if (typeof this.vortexPort.cancelReading === 'function') {
+                  await this.vortexPort.cancelReading();
+                } else if (typeof this.vortexPort.stopReading === 'function') {
+                  await this.vortexPort.stopReading();
+                }
+              } catch (err) {
+                console.error('[Mobile] disconnect failed:', err);
+                Notification.failure?.('Failed to disconnect');
+              } finally {
+                try {
+                  ConnStatus.syncConnStatusFromPort(this, this.selectedDeviceType(deviceType));
+                } catch {}
+              }
+
+              return;
+            }
+
+            // Not connected -> go to BLE connect
+            const dtNow = this.selectedDeviceType(deviceType);
+            const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
+
+            await this.gotoBleConnect({
+              deviceType: dtNow,
+              deviceImg,
+              deviceAlt,
+              instructions,
+              backTarget: 'editor',
+              afterConnectTarget: 'editor',
+            });
+          } finally {
+            // short unlock to avoid double-fire on some browsers
+            setTimeout(() => {
+              try {
+                connEl.dataset.busy = '0';
+              } catch {}
+            }, 250);
           }
-
-          const dtNow = this.selectedDeviceType(deviceType);
-          const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
-
-          await this.gotoBleConnect({
-            deviceType: dtNow,
-            deviceImg,
-            deviceAlt,
-            instructions,
-            backTarget: 'editor',
-            afterConnectTarget: 'editor',
-          });
         },
         { passive: false }
       );
     }
   }
-
 
   async startEditorLightshow(dt) {
     const canvas = this.dom.must('#mobile-lightshow-canvas', 'editor.html is missing #mobile-lightshow-canvas');
