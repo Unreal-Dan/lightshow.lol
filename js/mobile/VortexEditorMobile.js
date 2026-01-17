@@ -895,61 +895,45 @@ export default class VortexEditorMobile {
             e?.stopImmediatePropagation?.();
           } catch {}
 
-          // Debounce while an action is running
+          // Debounce
           if (connEl.dataset.busy === '1') return;
           connEl.dataset.busy = '1';
 
           try {
-            // If connected, disconnect on tap
+            const dtNow = this.selectedDeviceType(deviceType);
+
+            // If connected -> disconnect
             if (this.vortexPort?.isActive?.()) {
               try {
                 ConnStatus.setConnStatus(this, {
                   status: 'connecting',
-                  title: this.selectedDeviceType(deviceType),
+                  title: dtNow,
                   subtitle: 'Disconnecting…',
-                  deviceType: this.selectedDeviceType(deviceType),
+                  deviceType: dtNow,
                   error: null,
                 });
               } catch {}
 
               try {
-                if (typeof this.vortexPort.disconnect === 'function') {
-                  await this.vortexPort.disconnect();
-                } else if (typeof this.vortexPort.cancelReading === 'function') {
-                  await this.vortexPort.cancelReading();
-                } else if (typeof this.vortexPort.stopReading === 'function') {
-                  await this.vortexPort.stopReading();
-                }
+                await this.vortexPort.disconnect();
               } catch (err) {
                 console.error('[Mobile] disconnect failed:', err);
                 Notification.failure?.('Failed to disconnect');
-              } finally {
-                try {
-                  ConnStatus.syncConnStatusFromPort(this, this.selectedDeviceType(deviceType));
-                } catch {}
               }
+
+              try {
+                ConnStatus.syncConnStatusFromPort(this, dtNow);
+              } catch {}
 
               return;
             }
 
-            // Not connected -> go to BLE connect
-            const dtNow = this.selectedDeviceType(deviceType);
+            // Not connected -> go to BLE connect screen
             const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
-
-            await this.gotoBleConnect({
-              deviceType: dtNow,
-              deviceImg,
-              deviceAlt,
-              instructions,
-              backTarget: 'editor',
-              afterConnectTarget: 'editor',
-            });
+            await this.gotoBleConnect({ deviceType: dtNow, deviceImg, deviceAlt, instructions });
           } finally {
-            // short unlock to avoid double-fire on some browsers
             setTimeout(() => {
-              try {
-                connEl.dataset.busy = '0';
-              } catch {}
+              try { connEl.dataset.busy = '0'; } catch {}
             }, 250);
           }
         },
