@@ -854,10 +854,45 @@ export default class VortexEditorMobile {
     );
   }
 
+  
+  _isBtConnected() {
+    try {
+      // Treat "BT connected" as: VortexPort is using BLE AND isActive()
+      return !!(this.vortexPort?.useBLE && this.vortexPort?.isActive?.());
+    } catch {
+      return false;
+    }
+  }
+
+  async _disconnectBtWithUi(dtNow) {
+    try {
+      ConnStatus.setConnStatus(this, {
+        status: 'connecting',
+        title: dtNow,
+        subtitle: 'Disconnecting…',
+        deviceType: dtNow,
+        error: null,
+      });
+    } catch {}
+
+    try {
+      await this.vortexPort.disconnect();
+    } catch (err) {
+      console.error('[Mobile] disconnect failed:', err);
+      Notification.failure?.('Failed to disconnect');
+    } finally {
+      try {
+        ConnStatus.syncConnStatusFromPort(this, dtNow);
+      } catch {}
+    }
+  }
+
   _bindEditorTopButtons(dt) {
     const deviceType = dt || this.selectedDeviceType('Duo');
 
-    // Top-left device button -> device select
+    // -----------------------------
+    // Top-left: device select button
+    // -----------------------------
     const devBtn = this.dom?.$('#m-editor-device-btn');
     if (devBtn && devBtn.dataset.boundTopLeft !== '1') {
       devBtn.dataset.boundTopLeft = '1';
@@ -871,18 +906,26 @@ export default class VortexEditorMobile {
             e?.stopImmediatePropagation?.();
           } catch {}
 
+          const dtNow = this.selectedDeviceType(deviceType);
+
+          // Prompt if BT is connected
+          if (this._isBtConnected()) {
+            const ok = window.confirm('Bluetooth is connected. Disconnect Bluetooth and change device?');
+            if (!ok) return;
+
+            await this._disconnectBtWithUi(dtNow);
+          }
+
           await this.gotoDeviceSelect();
         },
         { preventDefault: true, swallow: true, lockMs: 250, boundKey: 'editor-top-left', passive: false }
       );
     }
 
-    // Top-right conn pill (or button) -> BLE connect for selected device
-    const connEl =
-      document.querySelector('.m-conn-status') ||
-      document.getElementById('m-ble-status-btn') ||
-      null;
-
+    // -----------------------------
+    // Top-right: conn status pill
+    // -----------------------------
+    const connEl = document.getElementById('m-conn-status');
     if (connEl && connEl.dataset.boundTopRight !== '1') {
       connEl.dataset.boundTopRight = '1';
 
@@ -902,33 +945,16 @@ export default class VortexEditorMobile {
           try {
             const dtNow = this.selectedDeviceType(deviceType);
 
-            // If connected -> disconnect
-            if (this.vortexPort?.isActive?.()) {
-              try {
-                ConnStatus.setConnStatus(this, {
-                  status: 'connecting',
-                  title: dtNow,
-                  subtitle: 'Disconnecting…',
-                  deviceType: dtNow,
-                  error: null,
-                });
-              } catch {}
+            // If BT connected: prompt to disconnect
+            if (this._isBtConnected()) {
+              const ok = window.confirm('Disconnect Bluetooth?');
+              if (!ok) return;
 
-              try {
-                await this.vortexPort.disconnect();
-              } catch (err) {
-                console.error('[Mobile] disconnect failed:', err);
-                Notification.failure?.('Failed to disconnect');
-              }
-
-              try {
-                ConnStatus.syncConnStatusFromPort(this, dtNow);
-              } catch {}
-
+              await this._disconnectBtWithUi(dtNow);
               return;
             }
 
-            // Not connected -> go to BLE connect screen
+            // Not connected: go to BLE connect for selected device
             const { deviceImg, deviceAlt, instructions } = this.getBleConnectCopy(dtNow);
             await this.gotoBleConnect({ deviceType: dtNow, deviceImg, deviceAlt, instructions });
           } finally {
