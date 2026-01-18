@@ -113,6 +113,6 @@ jobs:
         scp version.js lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/version.js
         ssh lightshow@172.232.170.43 'sudo /usr/bin/mv /home/lightshow/vortex /usr/local/bin/vortex'
         #ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
-        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && git reset --hard && git pull && echo "'"${GITHUB_SHA}"'" > build.txt && chmod +x ./build_css.sh && ./build_css.sh && chmod +x ./add_cache_busters.sh && ./add_cache_busters.sh'
+        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && chmod +x ./tools/deploy.sh && ./tools/deploy.sh'
         #ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
 

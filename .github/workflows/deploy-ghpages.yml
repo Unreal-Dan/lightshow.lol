@@ -112,6 +112,9 @@ jobs:
           ./build_css.sh
           chmod +x ./add_cache_busters.sh
           ./add_cache_busters.sh
+          # NOTE: skip compress because test site and npm slow install
+          #chmod +x ./compress_css.sh
+          #./compress_css.sh
 
       - name: Write build id
         shell: bash
