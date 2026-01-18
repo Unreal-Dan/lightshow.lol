@@ -42,8 +42,6 @@ async function reloadIfNewBuild() {
   }
 }
 
-showReloadNoticeIfNeeded();
-
 if (!(await reloadIfNewBuild())) {
   if (isMobile()) {
     await import(`./mobile/VortexEditorMobile.js?v=__CACHE_BUSTER__`);
@@ -52,3 +50,4 @@ if (!(await reloadIfNewBuild())) {
   }
 }
 
+showReloadNoticeIfNeeded();
