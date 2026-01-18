@@ -1584,6 +1584,8 @@ export default class VortexEditorMobile {
 
         modal.dataset.xferRunning = '1';
 
+        const prePushModeIdx = (this.vortex?.curModeIndex?.() ?? 0) | 0;
+
         const origPushHtml = pushBtn?.innerHTML || '';
         const origPullHtml = pullBtn?.innerHTML || '';
 
@@ -1721,6 +1723,11 @@ export default class VortexEditorMobile {
               flush();
             } catch {}
           }
+
+          // Restore mode index (push flow can reset to mode 0)
+          this.vortex.setCurMode(prePushModeIdx, false);
+          // Now demo the mode we were on before pushing
+          await this.demoModeOnDevice();
 
           // Success: brief terminal state, then close modal
           Notification.success?.('Saved to device');
