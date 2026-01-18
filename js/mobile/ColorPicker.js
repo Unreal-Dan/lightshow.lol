@@ -121,7 +121,7 @@ export default class ColorPicker {
     this._demoLastPreviewAt = 0;
 
     // Color preview coalescing/throttle (separate from _emit throttle)
-    this._demoColorThrottleMs = 33;
+    this._demoColorThrottleMs = 1;
     this._demoColorLastSendAt = 0;
     this._demoColorPending = null; // {r,g,b}
     this._demoColorTimer = 0;
