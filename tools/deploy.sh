@@ -7,14 +7,22 @@ git pull
 # generate the build ID
 echo "'"${GITHUB_SHA}"'" > build.txt 
 
-# combine css into one file
-chmod +x ./tools/build_css.sh 
-./tools/build_css.sh 
+# get directory of deploy script
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
-# add cache busters to all imports
-chmod +x ./tools/add_cache_busters.sh 
-./tools/add_cache_busters.sh
+scripts=(
+  # combine css into one file
+  "build_css.sh"
+  # add cache busters to all imports
+  "add_cache_busters.sh"
+  # compress JS with uglifyjs
+  "compress_js.sh"
+  # compress CSS with uglifycss
+  "compress_css.sh"
+)
 
-# compress JS with uglifyjs
-chmod +x ./tools/compress_js.sh 
-./tools/compress_js.sh
+# run each script
+for script in "${scripts[@]}"; do
+  chmod +x -- "$SCRIPT_DIR/$script"
+  "$SCRIPT_DIR/$s"
+done
