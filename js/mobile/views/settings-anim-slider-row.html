@@ -1,0 +1,21 @@
+<!-- js/mobile/views/settings-anim-slider-row.html -->
+<div id="m-anim-row-{{id}}" class="m-settings-row">
+  <div class="m-settings-row-label">
+    <div class="m-settings-row-title">{{label}}</div>
+    <div class="m-settings-row-subtitle"></div>
+  </div>
+
+  <div class="m-settings-row-control">
+    <input
+      type="range"
+      id="m-anim-slider-{{id}}"
+      data-anim-id="{{id}}"
+      min="{{min}}"
+      max="{{max}}"
+      step="{{step}}"
+      value="0"
+    />
+    <div id="m-anim-value-{{id}}" class="m-settings-value">0</div>
+  </div>
+</div>
+

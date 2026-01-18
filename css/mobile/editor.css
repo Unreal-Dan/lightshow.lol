@@ -6,7 +6,6 @@
    - Carousel actions live INSIDE the pill
    - Consistent button styling
    - Prominent top-left device button
-   - DOES NOT style conn-status / ble status (that's in conn-status.css)
 ============================ */
 
 #mobile-app-root .m-editor {

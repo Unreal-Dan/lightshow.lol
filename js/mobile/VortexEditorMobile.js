@@ -10,6 +10,7 @@ import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 
 import CommunityBrowser from './CommunityBrowser.js';
+import SettingsModal from './SettingsModal.js';
 import * as ConnStatus from './ConnStatus.js';
 
 const ASSETS = {
@@ -61,6 +62,10 @@ export default class VortexEditorMobile {
     });
 
     this.communityBrowser = new CommunityBrowser(this);
+    this.settingsModal = new SettingsModal(this, {
+      views: this.views,
+      basePath: 'js/mobile/views/'
+    });
 
     this._fxFinalizeTimer = null;
     this._fxDemoTimer = null;
@@ -1445,7 +1450,7 @@ export default class VortexEditorMobile {
       }
 
       if (tool === 'settings') {
-        await this._showSettingsMenu(dt);
+        await this.settingsModal.show(dt);
         return;
       }
     };
@@ -1886,54 +1891,6 @@ export default class VortexEditorMobile {
       clearTimeout(this._duoTxLoopTimer);
       this._duoTxLoopTimer = null;
     }
-  }
-
-  async _hideSettingsMenu() {
-    const modalEl = await this._ensureSettingsModal();
-    if (!window.bootstrap || !window.bootstrap.Modal) return;
-    const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-    inst.hide();
-  }
-
-  async _showSettingsMenu(dt) {
-    const modalEl = await this._ensureSettingsModal();
-
-    const titleEl = modalEl.querySelector('#m-settings-title');
-    if (titleEl) titleEl.textContent = `Settings${dt ? ` — ${dt}` : ''}`;
-
-    if (!window.bootstrap || !window.bootstrap.Modal) {
-      Notification.failure('Bootstrap modal is unavailable');
-      return;
-    }
-
-    const inst = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-    inst.show();
-  }
-
-  async _ensureSettingsModal() {
-    if (this._settingsModalEl && document.body.contains(this._settingsModalEl)) return this._settingsModalEl;
-
-    const existing = document.getElementById('m-settings-modal');
-    if (existing) {
-      this._settingsModalEl = existing;
-      this._settingsModalLoaded = true;
-      return existing;
-    }
-
-    if (this._settingsModalLoaded) {
-      throw new Error('settings-modal.html was loaded but #m-settings-modal is missing');
-    }
-
-    const frag = await this.views.render('settings-modal.html', {});
-    document.body.appendChild(frag);
-
-    const el = document.getElementById('m-settings-modal');
-    if (!el) throw new Error('settings-modal.html must contain #m-settings-modal');
-
-    this._settingsModalEl = el;
-    this._settingsModalLoaded = true;
-
-    return el;
   }
 
   // -----------------------------

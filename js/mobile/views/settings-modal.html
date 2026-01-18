@@ -1,59 +1,21 @@
-<!-- /js/mobile/views/settings-modal.html -->
-<div
-  class="modal fade"
-  id="m-settings-modal"
-  tabindex="-1"
-  aria-labelledby="m-settings-title"
-  aria-hidden="true"
->
+<!-- js/mobile/views/settings-modal.html -->
+<div id="m-settings-modal" class="modal fade" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div
-      class="modal-content"
-      style="
-        background: #141414;
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 16px;
-      "
-    >
-      <div
-        class="modal-header"
-        style="border-bottom: 1px solid rgba(255, 255, 255, 0.10);"
-      >
-        <h5 class="modal-title" id="m-settings-title" style="font-weight: 800;">
-          Settings
-        </h5>
-
-        <button
-          type="button"
-          class="btn btn-link"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-          style="color: rgba(255, 255, 255, 0.90); text-decoration: none;"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+    <div class="modal-content m-settings">
+      <div class="modal-header">
+        <h5 class="modal-title" id="m-settings-title">Settings</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <div class="modal-body" style="color: rgba(255, 255, 255, 0.85);">
-        <div style="font-weight: 700; margin-bottom: 6px;">Coming soon</div>
-        <div style="color: rgba(255, 255, 255, 0.70);">
-          This menu will be implemented later.
+      <div class="modal-body">
+        <div id="m-settings-sections" class="m-settings-sections">
+          <div id="m-settings-device-mount"></div>
+          <div id="m-settings-animation-mount"></div>
         </div>
       </div>
 
-      <div
-        class="modal-footer"
-        style="border-top: 1px solid rgba(255, 255, 255, 0.10);"
-      >
-        <button
-          type="button"
-          class="btn btn-outline-light"
-          data-bs-dismiss="modal"
-          style="border-radius: 14px;"
-        >
-          Close
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
