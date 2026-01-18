@@ -37,7 +37,20 @@
     "iconBig": "public/images/chromadeck-logo-square-512.png",
     "label": "Chromadeck",
     "ledCount": 20,
-    "maxModes": 16
+    "maxModes": 16,
+    "lightshowPresets": {
+      "mobile": {
+        "shape": "circle",
+        "tickRate": 3,
+        "trailSize": 80,
+        "dotSize": 3,
+        "blurFac": 1,
+        "circleRadius": 335,
+        "spread": 8,
+        "direction": -1,
+        "orbitSpinMul": -1.0
+      }
+    }
   },
   "Spark": {
     "image": "public/images/spark.png",
@@ -49,7 +62,20 @@
     "altIconBig": "public/images/spark-handle-logo-square-512.png",
     "altLabel": "SparkHandle",
     "ledCount": 6,
-    "maxModes": 16
+    "maxModes": 16,
+    "lightshowPresets": {
+      "mobile": {
+        "shape": "orbit",
+        "tickRate": 3,
+        "trailSize": 80,
+        "dotSize": 8,
+        "blurFac": 1,
+        "circleRadius": 400,
+        "spread": 45,
+        "direction": -1,
+        "orbitSpinMul": -1.0
+      }
+    }
   },
   "Duo": {
     "image": "public/images/duo.png",
@@ -57,7 +83,20 @@
     "iconBig": "public/images/duo-logo-square-512.png",
     "label": "Duo",
     "ledCount": 2,
-    "maxModes": 9
+    "maxModes": 9,
+    "lightshowPresets": {
+      "mobile": {
+        "shape": "circle",
+        "tickRate": 3,
+        "trailSize": 200,
+        "dotSize": 14,
+        "blurFac": 1,
+        "circleRadius": 375,
+        "spread": 50,
+        "direction": -1,
+        "orbitSpinMul": -1.0
+      }
+    }
   }
 }
 

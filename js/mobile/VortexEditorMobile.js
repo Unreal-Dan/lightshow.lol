@@ -1023,24 +1023,47 @@ export default class VortexEditorMobile {
     this.lightshow = new Lightshow(this.vortexLib, this.vortex, canvas);
 
     const isDuo = dt === 'Duo';
-    const isDeck = dt === 'Chromadeck';
     this.lightshow.updateLayout(false);
     this.lightshow.setDuoEditorMode(isDuo);
 
-    const ledCount = this.devices?.[dt]?.ledCount ?? (isDuo ? 2 : 1);
+    const dev = this.devices?.[dt] || null;
+    const preset = dev?.lightshowPresets?.mobile || null;
 
-    Object.assign(this.lightshow, {
-      tickRate: isDuo ? 3 : 3,
+    const ledCount = dev?.ledCount ?? (isDuo ? 2 : 1);
+
+    // Defaults (match your previous behavior)
+    const defaults = {
+      shape: dt === 'Spark' ? 'orbit' : 'circle',
+      tickRate: 3,
       trailSize: isDuo ? 300 : 120,
-      dotSize: isDuo ? 15 : isDeck ? 5 : 8,
+      dotSize: 8,
       blurFac: 1,
-      circleRadius: isDuo ? 180 : isDeck ? 85 : 400,
-      spread: isDuo ? 50 : isDeck ? 10 : 150,
+      circleRadius: 400,
+      spread: 45,
       direction: -1,
+      orbitSpinMul: -1.0,
+    };
+
+    // If we have device preset values, apply them (mobile-only)
+    const cfg = preset ? { ...defaults, ...preset } : defaults;
+
+    // Apply numeric fields safely
+    Object.assign(this.lightshow, {
+      tickRate: cfg.tickRate,
+      trailSize: cfg.trailSize,
+      dotSize: cfg.dotSize,
+      blurFac: cfg.blurFac,
+      circleRadius: cfg.circleRadius,
+      spread: cfg.spread,
+      direction: cfg.direction,
+      orbitSpinMul: cfg.orbitSpinMul,
     });
 
     this.lightshow.setLedCount(ledCount);
-    this.lightshow.setShape(dt === 'Spark' ? 'orbit' : 'circle');
+
+    // Shape is behavior, not just a number
+    this.lightshow.setShape(cfg.shape || defaults.shape);
+
     this.lightshow.angle = 0;
     this.lightshow.resetToCenter();
     this.lightshow.start();

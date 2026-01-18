@@ -412,7 +412,11 @@ export default class Lightshow {
 
     const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
     const ropeRadius = Math.max(40, minR - (500 - parseInt(this.circleRadius)));
-    const orbitRadius = Math.max(45, Math.min(ropeRadius * 0.22, minR * 0.28));
+    // LED ring radius around the orbit puck should scale with spread
+    // (spread is your per-LED spacing knob; map it into a usable pixel radius)
+    const nSpread = Math.max(0, Number(this.spread) || 0);
+    // Base keeps it visible even at spread=0; the multiplier controls how sensitive it feels.
+    const orbitRadius = Math.max(12, 12 + nSpread * 1.0);
 
     const orbitStep = 0.014 * this.direction;
     const spinStep = orbitStep * this.orbitSpinMul;
