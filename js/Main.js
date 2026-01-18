@@ -29,15 +29,13 @@ async function reloadIfNewBuild() {
     if (!build) return false;
 
     const prev = localStorage.getItem(BUILD_KEY);
-
-    if (prev && prev !== build) {
+    if (!prev || prev !== build) {
       localStorage.setItem(BUILD_KEY, build);
       sessionStorage.setItem(RELOAD_FLAG, build);
       location.reload();
       return true;
     }
 
-    if (!prev) localStorage.setItem(BUILD_KEY, build);
     return false;
   } catch (_) {
     return false;
