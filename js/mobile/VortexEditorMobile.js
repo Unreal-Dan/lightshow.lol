@@ -465,6 +465,15 @@ export default class VortexEditorMobile {
       { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'ms-back', passive: false }
     );
 
+    // setup the goto editor link
+    this.dom.onClick(
+      '#skip-to-editor',
+      async () => {
+        await this.gotoEditor({ deviceType });
+      },
+      { preventDefault: true }
+    );
+
     this.dom.onTap(
       '#ms-new-mode',
       async () => {

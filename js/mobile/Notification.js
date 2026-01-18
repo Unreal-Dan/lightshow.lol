@@ -15,59 +15,86 @@ export default class Notification {
   }
 
   static ensureContainer() {
-    if (Notification.container && document.body.contains(Notification.container)) return;
+    let el =
+      document.getElementById('mobile-notification-container') ||
+      document.querySelector('.m-notify-container') ||
+      document.querySelector('.notification-container') ||
+      null;
 
-    const el = document.createElement('div');
+    if (!el) {
+      el = document.createElement('div');
+      document.body.prepend(el);
+    }
+
     el.id = 'mobile-notification-container';
-    el.className = 'm-notify-container';
+    el.classList.add('notification-container');
+    el.classList.add('m-notify-container');
 
-    // Always attach to BODY so fixed positioning works even if app root is transformed
-    document.body.appendChild(el);
+    // Ensure it's actually above the app root in DOM
+    if (el.parentElement !== document.body) {
+      document.body.prepend(el);
+    } else if (document.body.firstElementChild !== el) {
+      document.body.prepend(el);
+    }
+
     Notification.container = el;
+  }
 
-    // If env() top gets ignored, computed top becomes "auto" -> force a sane fallback
+  static _makeWrapper(type) {
+    const wrap = document.createElement('div');
+    wrap.className = `m-notify ${type}`;
+    wrap.dataset.type = type;
+    return wrap;
+  }
+
+  static _wrapRendered(rendered, type) {
+    // If rendered already contains a .m-notify, use it
     try {
-      const cs = window.getComputedStyle(el);
-      if (!cs || cs.top === 'auto') {
-        el.style.top = '12px';
+      if (rendered && rendered.nodeType === 11) {
+        const found = rendered.querySelector?.('.m-notify');
+        if (found) return found;
+      }
+      if (rendered && rendered.nodeType === 1) {
+        if (rendered.classList?.contains('m-notify')) return rendered;
+        const found = rendered.querySelector?.('.m-notify');
+        if (found) return found;
       }
     } catch {}
-  }
 
-  static _coerceToNotifyEl(rendered) {
-    if (!rendered) return null;
+    // Otherwise, wrap whatever was rendered inside a proper bubble
+    const wrap = Notification._makeWrapper(type);
 
-    // DocumentFragment
+    if (!rendered) return wrap;
+
+    // DocumentFragment: move its children into wrapper
     if (rendered.nodeType === 11) {
-      return rendered.querySelector?.('.m-notify') || rendered.firstElementChild || null;
+      while (rendered.firstChild) wrap.appendChild(rendered.firstChild);
+      return wrap;
     }
 
-    // Element
+    // Element: move the element inside wrapper
     if (rendered.nodeType === 1) {
-      if (rendered.classList?.contains('m-notify')) return rendered;
-      return rendered.querySelector?.('.m-notify') || null;
+      wrap.appendChild(rendered);
+      return wrap;
     }
 
-    return null;
+    // Text/other: ignore and return wrapper
+    return wrap;
   }
 
-  static _fallbackEl(message, type) {
-    const el = document.createElement('div');
-    el.className = `m-notify ${type}`;
-    const icon = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
-
-    el.innerHTML = `
-      <div class="m-notify-row">
-        <div class="m-notify-icon" aria-hidden="true">
-          <i class="fa-solid ${icon}"></i>
-        </div>
-        <div class="m-notify-msg"></div>
+  static _fallbackContent(message, type) {
+    const iconClass = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+    const body = document.createElement('div');
+    body.className = 'm-notify-row';
+    body.innerHTML = `
+      <div class="m-notify-icon" aria-hidden="true">
+        <i class="fa-solid ${iconClass}"></i>
       </div>
+      <div class="m-notify-msg"></div>
     `;
-
-    const msgEl = el.querySelector('.m-notify-msg');
+    const msgEl = body.querySelector('.m-notify-msg');
     if (msgEl) msgEl.textContent = String(message ?? '');
-    return el;
+    return body;
   }
 
   static async push(message, type, duration) {
@@ -76,40 +103,40 @@ export default class Notification {
 
     const iconClass = type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
 
-    let notifyEl = null;
-
+    let rendered = null;
     try {
-      const rendered = await Notification.views.render('notification.html', {
+      rendered = await Notification.views.render('notification.html', {
         type,
         iconClass,
         message: String(message ?? ''),
       });
-
-      notifyEl = Notification._coerceToNotifyEl(rendered);
-    } catch {}
-
-    if (!notifyEl) {
-      notifyEl = Notification._fallbackEl(message, type);
+    } catch {
+      rendered = null;
     }
 
-    // Ensure we're appending an actual element node
-    if (!notifyEl || notifyEl.nodeType !== 1) return;
+    let toast = Notification._wrapRendered(rendered, type);
+
+    // If we ended up with an empty wrapper (template failed), inject fallback content
+    try {
+      const hasMsg = toast.querySelector?.('.m-notify-msg');
+      if (!hasMsg) {
+        toast.appendChild(Notification._fallbackContent(message, type));
+      }
+    } catch {
+      toast.appendChild(Notification._fallbackContent(message, type));
+    }
 
     // Newest on top
-    Notification.container.prepend(notifyEl);
+    Notification.container.prepend(toast);
 
-    // Animate in on next frame (more reliable than forcing computedStyle)
+    // Animate in
     requestAnimationFrame(() => {
-      try {
-        notifyEl.classList.add('show');
-      } catch {}
+      try { toast.classList.add('show'); } catch {}
     });
 
-    Notification.queue.unshift({ el: notifyEl, duration: Math.max(0, duration | 0) });
+    Notification.queue.unshift({ el: toast, duration: Math.max(0, duration | 0) });
 
-    if (!Notification.removalRunning) {
-      Notification.runRemovalChain();
-    }
+    if (!Notification.removalRunning) Notification.runRemovalChain();
   }
 
   static runRemovalChain() {
@@ -123,14 +150,10 @@ export default class Notification {
     const { el, duration } = Notification.queue[Notification.queue.length - 1];
 
     setTimeout(() => {
-      try {
-        el.classList.remove('show');
-      } catch {}
+      try { el.classList.remove('show'); } catch {}
 
       setTimeout(() => {
-        try {
-          el.remove();
-        } catch {}
+        try { el.remove(); } catch {}
         Notification.queue.pop();
         Notification.runRemovalChain();
       }, 220);

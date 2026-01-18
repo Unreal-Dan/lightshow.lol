@@ -1,81 +1,166 @@
 /* css/mobile/notification.css */
 
+/* Container: centered, ~1/3 down */
 #mobile-app-root .m-notify-container,
-.m-notify-container {
+.m-notify-container,
+.notification-container {
   position: fixed;
   left: 0;
   right: 0;
 
-  /* Fallback for browsers that ignore env() */
-  top: 12px;
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  top: calc(env(safe-area-inset-top, 0px) + 15vh);
+  top: calc(env(safe-area-inset-top, 0px) + 15svh);
 
-  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 
+  padding: 0 12px;
   z-index: 2147483647;
   pointer-events: none;
 }
 
+/* Bubble: shrink to content */
 #mobile-app-root .m-notify,
 .m-notify {
   pointer-events: auto;
-  width: min(680px, calc(100vw - 24px));
-  margin: 0 auto;
-  border-radius: 14px;
-  padding: 12px 14px;
+
+  /* shrink-to-fit bubble */
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  padding: 12px 18px;
+
   font-size: 15px;
   line-height: 1.25;
   letter-spacing: 0.1px;
 
-  background: rgba(20, 20, 20, 0.92);
-  color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.96);
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 18, 0.88);
+
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 
   opacity: 0;
-  transform: translateY(-6px);
-  transition: opacity 200ms ease, transform 200ms ease;
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  transform: translateY(-10px) scale(0.99);
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
 #mobile-app-root .m-notify.show,
 .m-notify.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-#mobile-app-root .m-notify.success,
-.m-notify.success {
-  border-color: rgba(46, 204, 113, 0.35);
-}
-
-#mobile-app-root .m-notify.failure,
-.m-notify.failure {
-  border-color: rgba(231, 76, 60, 0.42);
-}
-
+/* Center the content (icon + text) and allow wrapping */
 #mobile-app-root .m-notify .m-notify-row,
 .m-notify .m-notify-row {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
-  align-items: flex-start;
+
+  /* allow wrapping while staying centered */
+  flex-wrap: wrap;
+  text-align: center;
 }
 
 #mobile-app-root .m-notify .m-notify-icon,
 .m-notify .m-notify-icon {
   flex: 0 0 auto;
-  margin-top: 1px;
-  opacity: 0.95;
+  opacity: 0.98;
 }
 
 #mobile-app-root .m-notify .m-notify-msg,
 .m-notify .m-notify-msg {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  text-align: center;
   word-break: break-word;
+  max-width: calc(100vw - 24px - 52px); /* keep space for icon */
+}
+
+/* Bigger icon for “bubble” feel */
+#mobile-app-root .m-notify i,
+.m-notify i {
+  font-size: 18px;
+}
+
+/* SUCCESS: green bubble (strong tint) */
+#mobile-app-root .m-notify.success,
+.m-notify.success {
+  border-color: rgba(46, 204, 113, 0.70);
+  background:
+    linear-gradient(180deg, rgba(46, 204, 113, 0.70), rgba(46, 204, 113, 0.28));
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(46, 204, 113, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* FAILURE: red bubble (strong tint) */
+#mobile-app-root .m-notify.failure,
+.m-notify.failure {
+  border-color: rgba(231, 76, 60, 0.78);
+  background:
+    linear-gradient(180deg, rgba(231, 76, 60, 0.74), rgba(231, 76, 60, 0.30));
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(231, 76, 60, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* If something inserts a legacy element directly, style it similarly */
+#mobile-notification-container > *:not(.m-notify),
+.notification-container > *:not(.m-notify) {
+  pointer-events: auto;
+
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  padding: 12px 18px;
+
+  color: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 18, 0.88);
+
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Smaller screens: slightly smaller padding */
+@media (max-width: 420px) {
+  #mobile-app-root .m-notify,
+  .m-notify {
+    padding: 11px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mobile-app-root .m-notify,
+  .m-notify {
+    transition: none;
+  }
 }
 
