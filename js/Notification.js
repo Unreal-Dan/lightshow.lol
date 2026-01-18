@@ -1,80 +1,103 @@
 // Notification.js
+
 class Notification {
   static notificationContainer = null;
-  static notifications = [];         // Will keep track of all active notifications
-  static removalChainRunning = false; // Flag to indicate if removal is in progress
+
+  // Optional: keep the stack from getting ridiculous
+  static maxVisible = 3;
+
+  // Match your CSS transition time
+  static fadeMs = 220;
 
   static initializeContainer() {
-    if (!Notification.notificationContainer) {
-      Notification.notificationContainer = document.createElement("div");
-      Notification.notificationContainer.className = "notification-container";
-      document.body.appendChild(Notification.notificationContainer);
+    let el =
+      document.querySelector('.notification-container') ||
+      document.getElementById('notification-container') ||
+      null;
+
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'notification-container';
+      document.body.appendChild(el);
+    }
+
+    // Normalize identity (helps if something else created it)
+    el.id = 'notification-container';
+    el.classList.add('notification-container');
+
+    Notification.notificationContainer = el;
+  }
+
+  static _iconClass(type) {
+    return type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+  }
+
+  static _trimToMaxVisible() {
+    const c = Notification.notificationContainer;
+    if (!c) return;
+
+    // Remove oldest beyond max (bottom of stack)
+    while (c.children.length > Notification.maxVisible) {
+      const last = c.lastElementChild;
+      if (!last) break;
+      try {
+        last.classList.remove('show');
+      } catch {}
+      setTimeout(() => {
+        try { last.remove(); } catch {}
+      }, Notification.fadeMs);
     }
   }
 
   static createNotification(message, type, duration) {
-    // Create the DOM element
-    const el = document.createElement("div");
-    el.className = `notification ${type}`;
-    el.textContent = message;
+    Notification.initializeContainer();
 
-    // Insert at the top so new ones are above old ones
+    const el = document.createElement('div');
+    el.className = `notification ${type}`;
+
+    el.innerHTML = `
+      <div class="notification-row">
+        <div class="notification-icon" aria-hidden="true">
+          <i class="fa-solid ${Notification._iconClass(type)}"></i>
+        </div>
+        <div class="notification-msg"></div>
+      </div>
+    `;
+
+    const msgEl = el.querySelector('.notification-msg');
+    if (msgEl) msgEl.textContent = String(message ?? '');
+
+    // Newest on top
     Notification.notificationContainer.prepend(el);
 
-    // Force reflow before adding the "show" class
-    // (so the CSS transition can kick in properly)
-    window.getComputedStyle(el).opacity;
-    el.classList.add("show");
+    // Animate in
+    requestAnimationFrame(() => {
+      try { el.classList.add('show'); } catch {}
+    });
 
-    // Keep track of this notification
-    Notification.notifications.unshift({ el, duration });
+    // Enforce max
+    Notification._trimToMaxVisible();
 
-    // If no removal chain is active, start it
-    if (!Notification.removalChainRunning) {
-      Notification.runRemovalChain();
-    }
-  }
+    const ms = Math.max(0, Number(duration) || 0);
 
-  // Sequentially remove the oldest (bottom) notification one at a time
-  static runRemovalChain() {
-    // If no notifications remain, we're done
-    if (Notification.notifications.length === 0) {
-      Notification.removalChainRunning = false;
-      return;
-    }
-
-    Notification.removalChainRunning = true;
-
-    // The bottom-most notification is at the end of the array
-    const { el, duration } = Notification.notifications[Notification.notifications.length - 1];
-
-    // Schedule its removal after "duration"
+    // Per-notification timer (duration always means what you think it means)
     setTimeout(() => {
-      // Start fade-out by removing "show" class
-      el.classList.remove("show");
+      try { el.classList.remove('show'); } catch {}
 
-      // Wait for the fade-out transition to complete before removing from DOM
-      // (300ms matches our CSS transition time, adjust if needed)
       setTimeout(() => {
-        el.remove();
-        // Remove from our array
-        Notification.notifications.pop();
-        // Proceed to the next notification
-        Notification.runRemovalChain();
-      }, 300);
-    }, duration);
+        try { el.remove(); } catch {}
+      }, Notification.fadeMs);
+    }, ms);
   }
 
   static success(message, duration = 2000) {
-    Notification.initializeContainer();
-    Notification.createNotification(message, "success", duration);
-    console.log("[Notif] Success: " + message);
+    Notification.createNotification(message, 'success', duration);
+    console.log('[Notif] Success:', message);
   }
 
   static failure(message, duration = 2000) {
-    Notification.initializeContainer();
-    Notification.createNotification(message, "failure", duration);
-    console.log("[Notif] Failure: " + message);
+    Notification.createNotification(message, 'failure', duration);
+    console.log('[Notif] Failure:', message);
   }
 }
 
