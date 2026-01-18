@@ -1,18 +1,67 @@
 /* css/mobile/settings-modal.css */
 
-/* ------------------------------------------------------------------
-   HARD OVERRIDES vs Bootstrap / other global .modal-content rules
-   (Bootstrap sets .modal-content { background-color:#fff; color:#212529; })
------------------------------------------------------------------- */
+/* ============================
+   Bottom-sheet modal (hard override)
+   - Bottom-docked footer
+   - Only modal-body scrolls
+   - Sheet is resized via CSS var: --m-sheet-h
+============================ */
 
-#m-settings-modal .modal-dialog {
-  width: min(720px, calc(100vw - 24px));
-  margin-left: auto;
-  margin-right: auto;
+#m-settings-modal.modal {
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
+#m-settings-modal.modal.show {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+
+/* Kill Bootstrap dialog transforms (prevents open/close slide weirdness) */
+#m-settings-modal .modal-dialog,
+#m-settings-modal.modal.fade .modal-dialog,
+#m-settings-modal.modal.show .modal-dialog {
+  transform: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+}
+
+#m-settings-modal .modal-dialog.modal-dialog-centered {
+  align-items: flex-end !important;
+  min-height: 0 !important;
+}
+
+#m-settings-modal .modal-dialog {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  pointer-events: none;
+}
+
+/* Backdrop: let lightshow show through */
+.modal-backdrop.show {
+  opacity: 0.28 !important;
+}
+
+/* Content: dark sheet */
 #m-settings-modal .modal-content.m-settings {
-  background-color: rgba(12, 12, 12, 0.92) !important;
+  pointer-events: auto;
+
+  width: 100%;
+
+  /* Sheet height is controlled by SettingsSheet.js via CSS var */
+  height: var(--m-sheet-h, 56svh);
+  height: var(--m-sheet-h, 56vh);
+
+  min-height: 220px;
+  max-height: 100svh;
+  max-height: 100vh;
+
+  border-radius: 20px 20px 0 0 !important;
+  overflow: hidden;
+
+  background: rgba(12, 12, 12, 0.92) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
@@ -20,11 +69,41 @@
 
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+
+  display: flex;
+  flex-direction: column;
+
+  /* Height changes should feel smooth after release; JS can disable during drag */
+  transition: height 160ms ease;
+  will-change: height;
 }
 
+/* Handle bar */
+#m-settings-modal .m-sheet-handle-wrap {
+  width: 100%;
+  padding: 6px 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+#m-settings-modal .m-sheet-handle {
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.35);
+  touch-action: none;
+}
+
+/* Header/footer tighter + sticky feel */
 #m-settings-modal .modal-header,
 #m-settings-modal .modal-footer {
   border-color: rgba(255, 255, 255, 0.10) !important;
+  padding: 12px 14px !important;
+  flex: 0 0 auto;
+  background: rgba(12, 12, 12, 0.92) !important;
 }
 
 #m-settings-modal .modal-title {
@@ -33,52 +112,49 @@
   letter-spacing: 0.2px;
 }
 
-/* Make sure body text inherits white even if Bootstrap sets it */
+/* Body: the ONLY scroller */
 #m-settings-modal .modal-body {
-  color: rgba(255, 255, 255, 0.92) !important;
+  flex: 1 1 auto;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+
+  padding: 12px 14px 16px !important;
+
+  /* extra bottom padding so last row isn't hidden under footer */
+  padding-bottom: calc(16px + 62px) !important;
 }
 
-/* ------------------------------------------------------------------
-   Layout: centered sections + rows (mobile-friendly)
------------------------------------------------------------------- */
+/* ============================
+   Internal layout: slimmer, spaced
+============================ */
 
-#mobile-app-root .m-settings-sections,
 #m-settings-modal .m-settings-sections {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-/* Section container */
-#mobile-app-root .m-settings-section,
 #m-settings-modal .m-settings-section {
-  padding: 6px 0 0;
+  padding: 0;
 }
 
-/* Centered title with chip pinned right */
-#mobile-app-root .m-settings-section-title,
 #m-settings-modal .m-settings-section-title {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 
-  gap: 10px;
+  position: relative;
+  margin: 2px 0 8px;
 
   font-weight: 900;
   letter-spacing: 0.2px;
-
-  margin: 0 0 10px;
-  padding-right: 86px; /* space for chip on the right */
   text-align: center;
+
+  padding: 0 84px;
 }
 
-#mobile-app-root .m-settings-icon,
-#m-settings-modal .m-settings-icon {
-  opacity: 0.9;
-}
-
-#mobile-app-root .m-settings-chip,
 #m-settings-modal .m-settings-chip {
   position: absolute;
   right: 0;
@@ -86,7 +162,7 @@
   transform: translateY(-50%);
 
   font-size: 12px;
-  padding: 4px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
 
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -94,85 +170,72 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-#mobile-app-root .m-settings-chip.is-connected,
 #m-settings-modal .m-settings-chip.is-connected {
   border-color: rgba(46, 204, 113, 0.45);
   background: rgba(46, 204, 113, 0.12);
 }
 
-#mobile-app-root .m-settings-hint,
 #m-settings-modal .m-settings-hint {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 2px 0 12px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0 0 10px;
   text-align: center;
 }
 
-/* Each "row" becomes a centered card with stacked label + controls */
-#mobile-app-root .m-settings-row,
 #m-settings-modal .m-settings-row {
-  width: min(560px, 100%);
+  width: 100%;
+  max-width: 560px;
   margin: 0 auto;
 
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
 
-  padding: 14px 14px;
-  border-radius: 16px;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 14px;
 
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-#mobile-app-root .m-settings-row.is-disabled,
+#m-settings-modal .m-settings-row + .m-settings-row {
+  margin-top: 10px;
+}
+
 #m-settings-modal .m-settings-row.is-disabled {
   opacity: 0.55;
 }
 
-#mobile-app-root .m-settings-row-label,
 #m-settings-modal .m-settings-row-label {
   width: 100%;
   text-align: center;
 }
 
-#mobile-app-root .m-settings-row-title,
 #m-settings-modal .m-settings-row-title {
   font-weight: 900;
   line-height: 1.15;
 }
 
-#mobile-app-root .m-settings-row-subtitle,
 #m-settings-modal .m-settings-row-subtitle {
-  margin-top: 3px;
+  margin-top: 2px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.62);
 }
 
-#mobile-app-root .m-settings-row-control,
 #m-settings-modal .m-settings-row-control {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: 10px;
 }
 
-/* Make sliders look good on dark background */
-#mobile-app-root .m-settings-row-control input[type="range"],
 #m-settings-modal .m-settings-row-control input[type="range"] {
   width: min(420px, 72vw);
+  margin: 0;
 }
 
-/* Brightness slider specific (same as above but keep id hook) */
-#mobile-app-root #m-brightness-slider,
-#m-settings-modal #m-brightness-slider {
-  width: min(420px, 72vw);
-}
-
-#mobile-app-root .m-settings-value,
 #m-settings-modal .m-settings-value {
   font-variant-numeric: tabular-nums;
   min-width: 44px;
@@ -180,13 +243,9 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-/* ------------------------------------------------------------------
-   Animation shapes row: centered pill-ish panel
------------------------------------------------------------------- */
-
-#mobile-app-root .m-settings-shapes,
 #m-settings-modal .m-settings-shapes {
-  width: min(560px, 100%);
+  width: 100%;
+  max-width: 560px;
   margin: 0 auto;
 
   display: flex;
@@ -194,14 +253,15 @@
   flex-wrap: wrap;
   gap: 10px;
 
-  padding: 12px 12px;
-  border-radius: 16px;
+  padding: 6px 6px;
+  border-radius: 14px;
 
   border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
+
+  margin-bottom: 0.5rem;
 }
 
-#mobile-app-root .m-settings-shape-btn,
 #m-settings-modal .m-settings-shape-btn {
   appearance: none;
   -webkit-appearance: none;
@@ -209,71 +269,44 @@
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
 
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.42);
   color: rgba(255, 255, 255, 0.92);
 
   display: grid;
   place-items: center;
 
-  box-shadow:
-    0 10px 26px rgba(0, 0, 0, 0.40),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
   transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
-#mobile-app-root .m-settings-shape-btn i,
 #m-settings-modal .m-settings-shape-btn i {
   font-size: 18px;
 }
 
-#mobile-app-root .m-settings-shape-btn:active,
 #m-settings-modal .m-settings-shape-btn:active {
   transform: translateY(1px);
 }
 
-/* Sliders list */
-#mobile-app-root .m-settings-anim-controls,
-#m-settings-modal .m-settings-anim-controls {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ------------------------------------------------------------------
-   Small screens
------------------------------------------------------------------- */
-
 @media (max-width: 420px) {
-  #mobile-app-root .m-settings-row,
-  #m-settings-modal .m-settings-row {
-    padding: 13px 12px;
+  #m-settings-modal .modal-body {
+    padding: 6px 8px 9px !important;
+    padding-bottom: calc(9px + 62px) !important;
   }
 
-  #mobile-app-root .m-settings-row-control input[type="range"],
+  #m-settings-modal .m-settings-row {
+    padding: 9px 10px;
+  }
+
   #m-settings-modal .m-settings-row-control input[type="range"] {
     width: min(360px, 78vw);
-  }
-
-  #mobile-app-root .m-settings-section-title,
-  #m-settings-modal .m-settings-section-title {
-    padding-right: 78px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #mobile-app-root .m-settings-shape-btn,
-  #m-settings-modal .m-settings-shape-btn {
-    transition: none;
   }
 }
 

@@ -1,6 +1,7 @@
 /* js/mobile/SettingsModal.js */
 
 import Notification from '../Notification.js';
+import SettingsSheet from './SettingsSheet.js';
 
 export default class SettingsModal {
   constructor(editor, { views = null, basePath = 'js/mobile/views/' } = {}) {
@@ -12,10 +13,11 @@ export default class SettingsModal {
     this._loaded = false;
 
     this._boundModal = false;
-    this._boundBrightness = false;
     this._boundAnimation = false;
 
     this._lastBrightnessPreviewAt = 0;
+    this._brightnessPreviewInFlight = false;
+    this._brightnessCommitInFlight = false;
 
     this._animSpecs = [
       { id: 'tickRate', label: 'Speed', min: 1, max: 30, step: 1, get: (ls) => ls.tickRate, set: (ls, v) => (ls.tickRate = v) },
@@ -63,6 +65,26 @@ export default class SettingsModal {
     }
   }
 
+  async _sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  async _waitPortIdle(timeoutMs = 1200) {
+    const vp = this.editor?.vortexPort;
+    const start = Date.now();
+
+    while (Date.now() - start < timeoutMs) {
+      try {
+        if (!vp?.isActive?.()) return false;
+        if (vp.isTransmitting == null) return true;
+      } catch {
+        return false;
+      }
+      await this._sleep(40);
+    }
+    return false;
+  }
+
   async _getDeviceBrightnessSafe() {
     try {
       if (!this._supportsDeviceBrightness()) return 255;
@@ -81,6 +103,9 @@ export default class SettingsModal {
 
     const dt = this._selectedDeviceType('Duo');
     const useChromalink = dt === 'Duo';
+
+    // If demos are mid-flight, wait a beat so the setBrightness call actually runs.
+    await this._waitPortIdle(1400);
 
     await this.editor.vortexPort.setBrightness(this.editor.vortexLib, this.editor.vortex, b, useChromalink);
   }
@@ -105,6 +130,11 @@ export default class SettingsModal {
 
     const el = document.getElementById('m-settings-modal');
     if (!el) throw new Error('settings-modal.html must contain #m-settings-modal');
+
+    if (!this._settingsSheet) {
+      this._settingsSheet = new SettingsSheet({ modalEl: el });
+      this._settingsSheet.bind();
+    }
 
     this._modalEl = el;
     this._loaded = true;
@@ -148,9 +178,7 @@ export default class SettingsModal {
 
   _getAnimSpecsForLightshow(ls) {
     if (!ls) return this._animSpecs;
-
     return this._animSpecs.filter((s) => {
-      // Only show sliders that exist on the current Lightshow instance
       try {
         const v = s.get(ls);
         return v !== undefined;
@@ -169,12 +197,12 @@ export default class SettingsModal {
 
     this._clearMount(mount);
 
-    // Requirement: device brightness section should not show at all if NOT connected.
+    // Requirement: device section not shown at all if NOT connected
     if (!connected) return;
 
     const frag = await this.views.render('settings-device-section.html', {
-      chipText: connected ? 'Connected' : 'Not connected',
-      chipClass: connected ? 'm-settings-chip is-connected' : 'm-settings-chip',
+      chipText: 'Connected',
+      chipClass: 'm-settings-chip is-connected',
       hintStyle: 'display:none;',
       showBrightnessStyle: brightnessSupported ? '' : 'display:none;',
       deviceLabel: dt,
@@ -201,7 +229,8 @@ export default class SettingsModal {
       if (valEl) valEl.textContent = String(b);
     }
 
-    this._bindBrightnessOnce();
+    // IMPORTANT: bind to the CURRENT slider element (it gets re-rendered)
+    this._bindBrightnessForCurrentSlider();
   }
 
   async _renderAnimationSection({ dt }) {
@@ -214,10 +243,7 @@ export default class SettingsModal {
     if (mount.dataset.built === '1') return;
     mount.dataset.built = '1';
 
-    const frag = await this.views.render('settings-animation-section.html', {
-      deviceLabel: dt,
-    });
-
+    const frag = await this.views.render('settings-animation-section.html', { deviceLabel: dt });
     mount.appendChild(frag);
 
     this._bindAnimationOnce();
@@ -246,7 +272,6 @@ export default class SettingsModal {
       controlsMount.appendChild(rowFrag);
     }
 
-    // After rendering, push current values + disabled state
     this._syncAnimationValues();
   }
 
@@ -296,36 +321,48 @@ export default class SettingsModal {
     }
   }
 
-  _bindBrightnessOnce() {
-    if (this._boundBrightness) return;
-    this._boundBrightness = true;
-
+  _bindBrightnessForCurrentSlider() {
     const modalEl = this._modalEl;
     if (!modalEl) return;
 
     const slider = modalEl.querySelector('#m-brightness-slider');
     const valEl = modalEl.querySelector('#m-brightness-value');
-
     if (!slider) return;
+
+    if (slider.dataset.bound === '1') return;
+    slider.dataset.bound = '1';
 
     slider.addEventListener(
       'input',
-      async (e) => {
+      (e) => {
         const v = Number(e.target.value) | 0;
         if (valEl) valEl.textContent = String(v);
 
-        // optional preview while dragging (throttled)
+        // Preview while dragging (throttled, non-blocking)
         const now = Date.now();
-        if (now - this._lastBrightnessPreviewAt < 70) return;
+        if (now - this._lastBrightnessPreviewAt < 90) return;
         this._lastBrightnessPreviewAt = now;
 
-        try {
-          if (!this._supportsDeviceBrightness()) return;
-          if (this.editor?.vortexPort?.isTransmitting != null) return;
+        if (this._brightnessCommitInFlight) return;
+        if (this._brightnessPreviewInFlight) return;
+        if (!this._supportsDeviceBrightness()) return;
 
+        const vp = this.editor?.vortexPort;
+        if (!vp?.isActive?.()) return;
+        if (vp.isTransmitting != null) return;
+
+        this._brightnessPreviewInFlight = true;
+        try {
           const rgb = new this.editor.vortexLib.RGBColor(v, v, 0);
-          await this.editor.vortexPort.demoColor(this.editor.vortexLib, this.editor.vortex, rgb);
-        } catch {}
+          // fire-and-forget so we don't block UI
+          Promise.resolve(vp.demoColor(this.editor.vortexLib, this.editor.vortex, rgb))
+            .catch(() => {})
+            .finally(() => {
+              this._brightnessPreviewInFlight = false;
+            });
+        } catch {
+          this._brightnessPreviewInFlight = false;
+        }
       },
       { passive: true }
     );
@@ -336,6 +373,9 @@ export default class SettingsModal {
         const v = Number(e.target.value) | 0;
         if (valEl) valEl.textContent = String(v);
 
+        if (this._brightnessCommitInFlight) return;
+        this._brightnessCommitInFlight = true;
+
         try {
           await this._setDeviceBrightnessSafe(v);
           await this.editor.demoModeOnDevice?.();
@@ -343,6 +383,8 @@ export default class SettingsModal {
         } catch (err) {
           console.error('[Mobile] setBrightness failed:', err);
           Notification.failure?.('Failed to set brightness');
+        } finally {
+          this._brightnessCommitInFlight = false;
         }
       },
       { passive: true }
@@ -379,7 +421,6 @@ export default class SettingsModal {
       });
     }
 
-    // Slider binding is delegated (works even after we re-render slider rows)
     const controlsMount = modalEl.querySelector('#m-anim-controls-mount');
     if (controlsMount && controlsMount.dataset.bound !== '1') {
       controlsMount.dataset.bound = '1';
@@ -446,9 +487,7 @@ export default class SettingsModal {
 
   async hide() {
     await this.ensure();
-
     if (!this._ensureBootstrap()) return;
-
     const inst = window.bootstrap.Modal.getOrCreateInstance(this._modalEl);
     inst.hide();
   }
