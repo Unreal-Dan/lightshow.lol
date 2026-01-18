@@ -1,3 +1,5 @@
+/* js/Main.js */
+
 function isMobile() {
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) {

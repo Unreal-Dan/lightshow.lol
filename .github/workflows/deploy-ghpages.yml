@@ -113,6 +113,12 @@ jobs:
           chmod +x ./add_cache_busters.sh
           ./add_cache_busters.sh
 
+      - name: Write build id
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ github.sha }}" > lightshow.lol/build.txt
+
       - name: Upload site artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
