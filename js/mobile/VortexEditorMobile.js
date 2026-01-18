@@ -214,7 +214,7 @@ export default class VortexEditorMobile {
     }
   }
 
-  _scheduleModeFinalize(ms = 120) {
+  _scheduleModeFinalize(ms = 10) {
     this._clearModeTimers();
     this._modeFinalizeTimer = setTimeout(() => {
       this._modeFinalizeTimer = null;
@@ -225,7 +225,7 @@ export default class VortexEditorMobile {
     }, ms);
   }
 
-  _scheduleModeDemo(ms = 140) {
+  _scheduleModeDemo(ms = 10) {
     if (this._modeDemoTimer) {
       clearTimeout(this._modeDemoTimer);
       this._modeDemoTimer = null;
@@ -530,7 +530,7 @@ export default class VortexEditorMobile {
       let tries = 0;
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
         if (tries++ > 10) return;
-        await this.sleep(100);
+        await this.sleep(50);
         if (this._transferInProgress) return;
       }
       await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
@@ -540,17 +540,7 @@ export default class VortexEditorMobile {
   }
 
   async demoColorOnDevice(rgbColor) {
-    try {
-      if (typeof this.vortexPort.demoColor === 'function') {
-        await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
-      } else {
-        await this.demoModeOnDevice();
-      }
-    } catch {
-      try {
-        await this.demoModeOnDevice();
-      } catch {}
-    }
+    await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
   }
 
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source', progressEl = null, disableEls = [] } = {}) {
@@ -864,7 +854,8 @@ export default class VortexEditorMobile {
     this.bindEditorTools(dt);
 
     await this.startEditorLightshow(dt);
-    void this.demoModeOnDevice();
+
+    this._scheduleModeDemo(10);
   }
 
   async bindEmptyEditorActions(dt) {
@@ -1115,8 +1106,8 @@ export default class VortexEditorMobile {
 
   async _afterModeChanged(dt, { allowRerenderFallback = true, finalize = true, demo = true } = {}) {
     const updated = this._updateModeHeaderUI();
-    if (finalize) this._scheduleModeFinalize(120);
-    if (demo) this._scheduleModeDemo(160);
+    if (finalize) this._scheduleModeFinalize(10);
+    if (demo) this._scheduleModeDemo(10);
 
     if (!updated && allowRerenderFallback) {
       await this.gotoEditor({ deviceType: dt });

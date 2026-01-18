@@ -115,13 +115,13 @@ export default class ColorPicker {
     // =========================================================
     // Device demo scheduling (color preview -> revert to mode)
     // =========================================================
-    this._demoIdleMs = 2000;
+    this._demoIdleMs = 5000;
 
     this._demoRevertTimer = 0;
     this._demoLastPreviewAt = 0;
 
     // Color preview coalescing/throttle (separate from _emit throttle)
-    this._demoColorThrottleMs = 33;
+    this._demoColorThrottleMs = 1;
     this._demoColorLastSendAt = 0;
     this._demoColorPending = null; // {r,g,b}
     this._demoColorTimer = 0;
