@@ -214,7 +214,7 @@ export default class VortexEditorMobile {
     }
   }
 
-  _scheduleModeFinalize(ms = 120) {
+  _scheduleModeFinalize(ms = 50) {
     this._clearModeTimers();
     this._modeFinalizeTimer = setTimeout(() => {
       this._modeFinalizeTimer = null;
@@ -225,7 +225,7 @@ export default class VortexEditorMobile {
     }, ms);
   }
 
-  _scheduleModeDemo(ms = 140) {
+  _scheduleModeDemo(ms = 100) {
     if (this._modeDemoTimer) {
       clearTimeout(this._modeDemoTimer);
       this._modeDemoTimer = null;
@@ -864,7 +864,8 @@ export default class VortexEditorMobile {
     this.bindEditorTools(dt);
 
     await this.startEditorLightshow(dt);
-    void this.demoModeOnDevice();
+
+    this._scheduleModeDemo(100);
   }
 
   async bindEmptyEditorActions(dt) {
@@ -1115,8 +1116,8 @@ export default class VortexEditorMobile {
 
   async _afterModeChanged(dt, { allowRerenderFallback = true, finalize = true, demo = true } = {}) {
     const updated = this._updateModeHeaderUI();
-    if (finalize) this._scheduleModeFinalize(120);
-    if (demo) this._scheduleModeDemo(160);
+    if (finalize) this._scheduleModeFinalize(50);
+    if (demo) this._scheduleModeDemo(100);
 
     if (!updated && allowRerenderFallback) {
       await this.gotoEditor({ deviceType: dt });
