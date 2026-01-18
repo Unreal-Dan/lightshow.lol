@@ -61,8 +61,8 @@ export default class Lightshow {
 
     // Spring tuning (feel free to tweak)
     // Higher k = stronger pull / faster response; higher damping = less oscillation.
-    this.centerSpringK = 38.0;
-    this.centerSpringDamping = 11.5;
+    this.centerSpringK = 80.0;
+    this.centerSpringDamping = 15.5;
 
     // When released, we pull back to rest center (same spring, target changes)
     // You can optionally make return slower/faster by setting these:
