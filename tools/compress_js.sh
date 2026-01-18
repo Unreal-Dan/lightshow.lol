@@ -7,6 +7,7 @@ for jsFile in ./js/*.js; do
   if [[ "$jsFile" == *"VortexLib.js" ]]; then
     continue
   fi
+  echo "Compressing $jsFile..."
   # compress the JS
   uglifyjs --compress -- $jsFile > $jsFile.bak
   # deploy compressed file
@@ -19,6 +20,7 @@ for jsFile in ./js/mobile/*.js; do
   if [[ "$jsFile" == *"VortexLib.js" ]]; then
     continue
   fi
+  echo "Compressing $jsFile..."
   # compress the JS
   uglifyjs --compress -- $jsFile > $jsFile.bak
   # deploy compressed file
