@@ -169,7 +169,7 @@ export default class VortexEditorMobile {
     const link = document.createElement('link');
     link.id = id;
     link.rel = 'stylesheet';
-    link.href = href;
+    link.href = href + '?v=__CACHE_BUSTER__';
     document.head.appendChild(link);
   }
 
