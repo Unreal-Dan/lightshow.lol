@@ -88,10 +88,7 @@ export default class VortexEditorMobile {
       captured: false,
     };
 
-    this.isLocalServer =
-      location.hostname === 'localhost' ||
-      location.hostname === '127.0.0.1' ||
-      location.hostname.endsWith('.local');
+    this.isLocalServer = (location.hostname !== 'lightshow.lol');
   }
 
   _makeColorPickerHost() {

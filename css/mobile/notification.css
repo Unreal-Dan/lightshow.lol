@@ -5,11 +5,16 @@
   position: fixed;
   left: 0;
   right: 0;
-  top: env(safe-area-inset-top, 0px);
+
+  /* Fallback for browsers that ignore env() */
+  top: 12px;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+
   z-index: 2147483647;
   pointer-events: none;
 }
