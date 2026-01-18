@@ -73,8 +73,8 @@ export default class AnimationPanel extends Panel {
         <button class="animation-button" id="renderBoxButton" title="Box">
           <i class="fa fa-square"></i>
         </button>
-        <button class="animation-button" id="renderCursorButton" title="Cursor">
-          <i class="fa-solid fa-arrow-pointer"></i>
+        <button class="animation-button" id="renderOrbitButton" title="Cursor">
+          <i class="fa-solid fa-satellite"></i>
         </button>
       </div>
       <!-- TODO: make this dropdown visible? -->
@@ -263,7 +263,7 @@ export default class AnimationPanel extends Panel {
       { id: 'renderInfinityButton', shape: 'figure8', label: 'Infinity' },
       { id: 'renderHeartButton', shape: 'heart', label: 'Heart' },
       { id: 'renderBoxButton', shape: 'box', label: 'Box' },
-      { id: 'renderCursorButton', shape: 'cursor', label: 'Cursor' },
+      { id: 'renderOrbitButton', shape: 'orbit', label: 'Orbit' },
     ];
 
     shapes.forEach(({ id, shape, label }) => {
