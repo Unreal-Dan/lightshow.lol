@@ -526,32 +526,21 @@ export default class VortexEditorMobile {
   async demoModeOnDevice() {
     try {
       if (this._transferInProgress) return;
-      return;
 
-      let tries = 0;
-      while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
-        if (tries++ > 10) return;
-        await this.sleep(100);
-        if (this._transferInProgress) return;
-      }
-      await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
+      //let tries = 0;
+      //while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
+      //  if (tries++ > 10) return;
+      //  await this.sleep(100);
+      //  if (this._transferInProgress) return;
+      //}
+      //await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
     } catch (error) {
       Notification.failure('Failed to demo mode (' + error + ')');
     }
   }
 
   async demoColorOnDevice(rgbColor) {
-    try {
-      if (typeof this.vortexPort.demoColor === 'function') {
-        await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
-      } else {
-        await this.demoModeOnDevice();
-      }
-    } catch {
-      try {
-        await this.demoModeOnDevice();
-      } catch {}
-    }
+    await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
   }
 
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source', progressEl = null, disableEls = [] } = {}) {
