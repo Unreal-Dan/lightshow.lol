@@ -311,3 +311,47 @@
   }
 }
 
+/* Keep the modal bottom-aligned EVEN while closing (when .show is removed) */
+#m-settings-modal.modal {
+  padding: 0 !important;
+  overflow: hidden !important;
+
+  /* was only on .modal.show before — move it here */
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+
+/* Optional: prevent “click-through” while it’s closing but still visible */
+#m-settings-modal.modal:not(.show) {
+  pointer-events: none;
+}
+
+/* Keep dialog from doing Bootstrap’s transform animation */
+#m-settings-modal .modal-dialog,
+#m-settings-modal.modal.fade .modal-dialog {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Slide sheet UP on open, DOWN on close */
+#m-settings-modal.modal.fade .modal-content.m-settings {
+  transform: translateY(110%);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+/* When shown, it sits in place */
+#m-settings-modal.modal.show .modal-content.m-settings {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #m-settings-modal.modal.fade .modal-content.m-settings {
+    transition: none;
+  }
+}
+
