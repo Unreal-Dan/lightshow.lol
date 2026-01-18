@@ -5,7 +5,7 @@ echo "Compressing css..."
 for cssFile in ./css/*.css; do
   echo "Compressing $cssFile..."
   # compress the JS
-  uglifycss --compress -- $cssFile > $cssFile.bak
+  uglifycss $cssFile > $cssFile.bak
   # deploy compressed file
   mv $cssFile.bak $cssFile
 done
@@ -14,7 +14,7 @@ done
 for cssFile in ./css/mobile/*.css; do
   echo "Compressing $cssFile..."
   # compress the JS
-  uglifycss --compress -- $cssFile > $cssFile.bak
+  uglifycss $cssFile > $cssFile.bak
   # deploy compressed file
   mv $cssFile.bak $cssFile
 done
