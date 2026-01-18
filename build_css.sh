@@ -1,39 +1,43 @@
 #!/bin/bash
+set -euo pipefail
 
-CSS_DIR="css"
-FILES=("styles.css" "mobile-styles.css")
+FILES=(
+  "css/styles.css"
+  "css/mobile/mobile-styles.css"
+)
 
-for FILE in "${FILES[@]}"; do
-    INPUT_CSS="$CSS_DIR/$FILE"
-    TMP_OUTPUT_CSS="$INPUT_CSS.tmp"
+for INPUT in "${FILES[@]}"; do
+  BASE_DIR="$(dirname "$INPUT")"
+  TMP="$INPUT.tmp"
+  > "$TMP"
 
-    # Start with an empty output file
-    > "$TMP_OUTPUT_CSS"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line//$'\r'/}"
 
-    # Process each line of the input CSS file
-    while IFS= read -r line; do
-        # Match @import url('filename.css')
-        if [[ $line =~ @import[[:space:]]+url\([\'\"]?([^\'\"\)]+)[\'\"]?\) ]]; then
-            # Extract the filename
-            IMPORTED_FILE="${BASH_REMATCH[1]}"
-            FILE_CLEAN="${IMPORTED_FILE//$'\r'/}"  # Remove any carriage returns
+    if [[ "$line" =~ @import[[:space:]]+url\([\'\"]?([^\'\"\)]+)[\'\"]?\) ]]; then
+      IMPORT="${BASH_REMATCH[1]}"
+      IMPORT="${IMPORT//$'\r'/}"
 
-            # Check if the file exists in the expected directory
-            if [[ -f "$CSS_DIR/$FILE_CLEAN" ]]; then
-                echo "Inlining: $CSS_DIR/$FILE_CLEAN"
-                cat "$CSS_DIR/$FILE_CLEAN" >> "$TMP_OUTPUT_CSS"
-                echo "" >> "$TMP_OUTPUT_CSS"  # Add a newline
-            else
-                echo "Warning: $CSS_DIR/$FILE_CLEAN not found!"
-            fi
-        else
-            # Copy non-import lines directly
-            echo "$line" >> "$TMP_OUTPUT_CSS"
-        fi
-    done < "$INPUT_CSS"
+      # only inline local relative imports
+      if [[ "$IMPORT" =~ ^https?:// ]] || [[ "$IMPORT" =~ ^// ]] || [[ "$IMPORT" =~ ^/ ]]; then
+        echo "$line" >> "$TMP"
+        continue
+      fi
 
-    # Overwrite the original file with the new one
-    mv "$TMP_OUTPUT_CSS" "$INPUT_CSS"
-    echo "$FILE building complete"
+      IMPORT_PATH="$BASE_DIR/$IMPORT"
+      if [[ -f "$IMPORT_PATH" ]]; then
+        echo "Inlining: $IMPORT_PATH"
+        cat "$IMPORT_PATH" >> "$TMP"
+        echo "" >> "$TMP"
+      else
+        echo "Warning: $IMPORT_PATH not found!" >&2
+      fi
+    else
+      echo "$line" >> "$TMP"
+    fi
+  done < "$INPUT"
+
+  mv "$TMP" "$INPUT"
+  echo "$(basename "$INPUT") building complete"
 done
 
