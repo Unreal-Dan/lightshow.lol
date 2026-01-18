@@ -15,6 +15,7 @@ if [[ "${_AUTOUPDATED_ONCE:-0}" != "1" ]]; then
   if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
     git -C "$REPO_ROOT" reset --hard "$REMOTE_SHA"
     export _AUTOUPDATED_ONCE=1
+    chmod +x "$SCRIPT_PATH"
     exec "$SCRIPT_PATH" "$@"
   fi
 fi
