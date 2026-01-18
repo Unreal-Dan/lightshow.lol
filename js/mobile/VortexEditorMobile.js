@@ -441,7 +441,7 @@ export default class VortexEditorMobile {
                   ConnStatus.setConnError(this, 'Connection failed', { deviceType });
                   await this.gotoModeSource({ deviceType });
                 }
-              });
+              }, deviceType);
             } catch (err) {
               ConnStatus.setConnError(this, 'BLE error', { deviceType });
               console.error('BLE connection failed:', err);

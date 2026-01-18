@@ -24,7 +24,7 @@ export default class Lightshow {
     // orbit visualization
     this.orbitAngle = 0;
     this.spinAngle = 0;
-    this.orbitSpinMul = -3.0;
+    this.orbitSpinMul = -1.0;
 
     // default shape
     this.currentShape = 'circle';

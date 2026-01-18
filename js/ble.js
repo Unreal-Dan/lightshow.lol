@@ -78,11 +78,18 @@ export function isBleConnected() {
   }
 }
 
-export async function connect() {
+export async function connect(deviceType = null) {
   try {
     console.log("Requesting Bluetooth Device...");
+    const filters = [];
+    if (deviceType === 'Spark' || deviceType == null) {
+      filters.push({ name: 'Vortex Spark' });
+    }
+    if (deviceType === 'Chromadeck' || deviceType === 'Duo' || deviceType == null) {
+      filters.push({ name: 'Vortex Chromadeck' });
+    }
     bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ name: "Vortex Chromadeck" }, { name: "Vortex Spark" }],
+      filters,
       optionalServices: [SERVICE_UUID],
     });
 
