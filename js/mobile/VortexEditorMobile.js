@@ -676,19 +676,49 @@ export default class VortexEditorMobile {
     await this.dom.busy(loadBtn, baseBusyHtml, runCore, { disable: disableList });
   }
 
+  _getMaxModesForDevice(dt) {
+    return this.devices?.[dt]?.maxModes ?? 1;
+  }
+
+  _canAddModeForDevice(dt) {
+    const max = this._getMaxModesForDevice(dt);
+    const cur = this.vortex?.numModes?.() | 0;
+    return cur < max;
+  }
+
+  _notifyMaxModesReached(dt) {
+    const max = this._getMaxModesForDevice(dt);
+    Notification.failure?.(`Max modes reached (${max}) for ${dt}`);
+  }
+
   async startNewModeAndEnterEditor(deviceType) {
-    const before = this.vortex.numModes();
+    const dt = deviceType || this.selectedDeviceType('Duo');
+    this.setDeviceType(dt);
+
+    // NEW: always start fresh
+    try {
+      this.vortex.clearModes();
+    } catch {}
+
+    // Max check (technically always ok after clear, but keep consistent)
+    const max = this._getMaxModesForDevice(dt);
+    if (max <= 0) {
+      Notification.failure?.('This device does not support modes');
+      return;
+    }
+
     if (!this.vortex.addNewMode(false)) return;
 
-    const after = this.vortex.numModes();
-    if (after > before) this.vortex.setCurMode(after - 1, false);
+    try {
+      this.vortex.setCurMode(0, false);
+    } catch {}
 
     try {
       this._getModes().initCurMode();
       this._getModes().saveCurMode();
     } catch {}
 
-    await this.gotoEditor({ deviceType });
+    await this.gotoEditor({ deviceType: dt });
   }
 
   async gotoDuoReceive({ deviceType, preserveModes = false, backTarget = 'mode-source' } = {}) {
@@ -755,9 +785,26 @@ export default class VortexEditorMobile {
 
     const hasModes = (this.vortex.numModes() | 0) > 0;
 
-    const idx = this.vortex.curModeIndex() | 0;
-    const n = this.vortex.numModes() | 0;
+    this._withLightshowPausedSync(() => {
+      // too many modes when entering editor?
+      const maxModes = this._getMaxModesForDevice(deviceType);
+      if (this.vortex.numModes() > maxModes) {
+        while (this.vortex.numModes() > maxModes) {
+          this.vortex.setCurMode(maxModes, false);
+          this.vortex.delCurMode(false);
+        }
+        this.vortex.setCurMode(maxModes, false);
+        try {
+          this._getModes().initCurMode();
+          this._getModes().saveCurMode();
+        } catch {}
+        this._afterModeChanged(deviceType, { finalize: false, demo: true });
+      }
+    });
 
+
+    const n = this.vortex.numModes();
+    const idx = this.vortex.curModeIndex();
     const modeName = hasModes ? `Mode ${idx + 1}` : 'No modes';
     const modeIndexLabel = hasModes ? `${idx + 1} / ${n}` : 'No modes';
 
@@ -813,18 +860,7 @@ export default class VortexEditorMobile {
     this.dom.onTap(
       '#m-start-new-mode',
       async () => {
-        const before = this.vortex.numModes();
-        if (!this.vortex.addNewMode(false)) return;
-
-        const after = this.vortex.numModes();
-        if (after > before) this.vortex.setCurMode(after - 1, false);
-
-        try {
-          this._getModes().initCurMode();
-          this._getModes().saveCurMode();
-        } catch {}
-
-        await this.gotoEditor({ deviceType: dt });
+        await this.startNewModeAndEnterEditor(dt);
       },
       { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'empty-new', passive: false }
     );
@@ -853,7 +889,6 @@ export default class VortexEditorMobile {
       { preventDefault: true, swallow: true, lockMs: 350, boundKey: 'empty-community', passive: false }
     );
   }
-
   
   _isBtConnected() {
     try {
@@ -1094,6 +1129,15 @@ export default class VortexEditorMobile {
       addBtn.classList.add('m-carousel-action-btn');
     }
 
+    try {
+      const max = this._getMaxModesForDevice(this.selectedDeviceType('Duo'));
+      const cur = this.vortex?.numModes?.() | 0;
+      const atMax = cur >= max;
+
+      addBtn.disabled = atMax;
+      addBtn.title = atMax ? `Max modes reached (${max})` : 'Add mode';
+    } catch {}
+
     let delBtn = this.dom.$('#mode-delete');
     if (!delBtn) {
       delBtn = document.createElement('button');
@@ -1215,17 +1259,23 @@ export default class VortexEditorMobile {
   }
 
   async _addModeInEditor(dt) {
+    const deviceType = dt || this.selectedDeviceType('Duo');
+    const max = this._getMaxModesForDevice(deviceType);
+
+    if (!this._canAddModeForDevice(deviceType)) {
+      this._notifyMaxModesReached(deviceType);
+      return;
+    }
+
     const before = this.vortex.numModes() | 0;
     this._clearModeTimers();
 
     try {
       this._withLightshowPausedSync(() => {
-        const ok = this.vortex.addNewMode(false);
-        if (!ok) throw new Error('addNewMode returned false');
-
-        const after = this.vortex.numModes() | 0;
-        if (after > before) this.vortex.setCurMode(after - 1, false);
-
+        if (!this.vortex.addNewMode(false)) {
+          throw new Error('addNewMode returned false');
+        }
+        this.vortex.setCurMode(this.vortex.numModes() - 1, false);
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
@@ -1233,24 +1283,25 @@ export default class VortexEditorMobile {
       });
     } catch (e) {
       console.error('[Mobile] add mode failed:', e);
-      Notification.failure?.('Failed to add mode');
-      void this._restartLightshowAndDemo(dt);
+      Notification.failure?.(String(e?.message || 'Failed to add mode'));
+      void this._restartLightshowAndDemo(deviceType);
       return;
     }
 
     Notification.success?.('Added mode');
-    await this._afterModeChanged(dt, { finalize: false, demo: true });
-    void this._restartLightshowAndDemo(dt);
+    await this._afterModeChanged(deviceType, { finalize: false, demo: true });
+    void this._restartLightshowAndDemo(deviceType);
   }
 
   async _deleteModeInEditor(dt) {
     const n = this.vortex.numModes() | 0;
-    if (n <= 0) return;
-
-    const idx = this.vortex.curModeIndex() | 0;
-    if (idx === 0) {
+    if (n <= 1) {
       Notification.failure?.('Mode 1 cannot be deleted');
       return;
+    }
+    const idx = this.vortex.curModeIndex() | 0;
+    if (idx >= n) {
+      idx = n - 1;
     }
 
     const ok = window.confirm(`Delete Mode ${idx + 1}?`);

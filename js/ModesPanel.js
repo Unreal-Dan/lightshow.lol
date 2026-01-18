@@ -486,27 +486,8 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  getMaxModes(device) {
-    let maxModes = 16;
-    switch (device) {
-      case 'Orbit':
-      case 'Handle':
-      case 'Gloves':
-        // these devices had 14
-        maxModes = 14;
-        break;
-      case 'Duo':
-        // default duo max is 9
-        maxModes = 9;
-        break;
-      case 'Chromadeck':
-      case 'Spark':
-        // 16 modes
-        break;
-      default:
-        break;
-    }
-    return maxModes;
+  getMaxModes(deviceType) {
+    return this.editor.devices?.[deviceType]?.maxModes ?? 1;
   }
 
   addMode() {

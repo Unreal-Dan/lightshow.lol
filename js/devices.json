@@ -4,53 +4,60 @@
     "icon": "public/images/none-logo-square-64.png",
     "iconBig": "public/images/none-logo-square-512.png",
     "label": "None",
-    "ledCount": 1
+    "ledCount": 1,
+    "maxModes": 9
   },
   "Orbit": {
     "image": "public/images/orbit.png",
     "icon": "public/images/orbit-logo-square-64.png",
     "iconBig": "public/images/orbit-logo-square-512.png",
     "label": "Orbit",
-    "ledCount": 28
+    "ledCount": 28,
+    "maxModes": 14
   },
   "Handle": {
     "image": "public/images/handle.png",
     "icon": "public/images/handle-logo-square-64.png",
     "iconBig": "public/images/handle-logo-square-512.png",
     "label": "Handle",
-    "ledCount": 3
+    "ledCount": 3,
+    "maxModes": 14
   },
   "Gloves": {
     "image": "public/images/gloves.png",
     "icon": "public/images/gloves-logo-square-64.png",
     "iconBig": "public/images/gloves-logo-square-512.png",
     "label": "Gloves",
-    "ledCount": 10
+    "ledCount": 10,
+    "maxModes": 14
   },
   "Chromadeck": {
     "image": "public/images/chromadeck.png",
     "icon": "public/images/chromadeck-logo-square-64.png",
     "iconBig": "public/images/chromadeck-logo-square-512.png",
     "label": "Chromadeck",
-    "ledCount": 20
+    "ledCount": 20,
+    "maxModes": 16
   },
   "Spark": {
     "image": "public/images/spark.png",
     "icon": "public/images/spark-logo-square-64.png",
     "iconBig": "public/images/spark-logo-square-512.png",
     "label": "Spark",
-    "ledCount": 6,
     "altImage": "public/images/spark-handle.png",
     "altIcon": "public/images/spark-handle-logo-square-64.png",
     "altIconBig": "public/images/spark-handle-logo-square-512.png",
-    "altLabel": "SparkHandle"
+    "altLabel": "SparkHandle",
+    "ledCount": 6,
+    "maxModes": 16
   },
   "Duo": {
     "image": "public/images/duo.png",
     "icon": "public/images/duo-logo-square-64.png",
     "iconBig": "public/images/duo-logo-square-512.png",
     "label": "Duo",
-    "ledCount": 2
+    "ledCount": 2,
+    "maxModes": 9
   }
 }
 
