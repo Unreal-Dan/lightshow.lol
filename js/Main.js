@@ -1,23 +1,12 @@
 /* js/Main.js */
 
-import Notification from './Notification.js';
+const BUILD_KEY = '__build_id__';
+const RELOAD_FLAG = '__reloaded_for_build__';
 
 function isMobile() {
   const ua = navigator.userAgent || navigator.vendor || window.opera || '';
   if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) return true;
   return window.innerWidth < 1200;
-}
-
-const BUILD_KEY = '__build_id__';
-const RELOAD_FLAG = '__reloaded_for_build__';
-
-function showReloadNoticeIfNeeded() {
-  try {
-    const build = sessionStorage.getItem(RELOAD_FLAG);
-    if (!build) return;
-    sessionStorage.removeItem(RELOAD_FLAG);
-    Notification.success(`Reloaded for new build: ${build}`, 3500);
-  } catch (_) {}
 }
 
 async function reloadIfNewBuild() {
@@ -49,5 +38,3 @@ if (!(await reloadIfNewBuild())) {
     await import(`./VortexEditor.js?v=__CACHE_BUSTER__`);
   }
 }
-
-showReloadNoticeIfNeeded();
