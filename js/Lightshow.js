@@ -121,29 +121,37 @@ export default class Lightshow {
   }
 
   addInteractionListeners() {
-    // Use pointer events on the canvas (works for mouse/touch/pen)
-    // Also prevents the browser from interpreting pan/zoom gestures on the canvas.
+    // Make the canvas a real touch surface (prevents scroll/zoom gestures stealing moves)
     try {
       this.canvas.style.touchAction = 'none';
+      this.canvas.style.webkitUserSelect = 'none';
+      this.canvas.style.userSelect = 'none';
+      this.canvas.style.webkitTouchCallout = 'none';
     } catch {}
 
-    const getCanvasPoint = (e) => {
+    const getCanvasPointFromClient = (clientX, clientY) => {
       const rect = this.canvas.getBoundingClientRect();
-      // client -> canvas pixels (handles CSS scaling)
-      const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
-      const y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
+      const x = (clientX - rect.left) * (this.canvas.width / rect.width);
+      const y = (clientY - rect.top) * (this.canvas.height / rect.height);
       return {
         x: Math.max(0, Math.min(this.canvas.width, x)),
         y: Math.max(0, Math.min(this.canvas.height, y)),
       };
     };
 
-    const onDown = (e) => {
+    // If pointer events are working, we don't want touch handlers to fight them.
+    let pointerDragActive = false;
+
+    // -------------------------
+    // Pointer events (mouse/pen/touch when supported)
+    // -------------------------
+    const onPointerDown = (e) => {
       if (!e) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-      // Only react when pointer is actually on the canvas
-      const p = getCanvasPoint(e);
+      pointerDragActive = true;
+
+      const p = getCanvasPointFromClient(e.clientX, e.clientY);
 
       this._dragging = true;
       this._activePointerId = e.pointerId;
@@ -151,8 +159,7 @@ export default class Lightshow {
       this._dragTarget.x = p.x;
       this._dragTarget.y = p.y;
 
-      // Don’t nuke velocity; we WANT overshoot. Just avoid crazy carry-over if a new drag begins.
-      // Small damp instead of reset:
+      // keep overshoot, but tame start jitter
       this._centerVel.x *= 0.35;
       this._centerVel.y *= 0.35;
 
@@ -165,12 +172,12 @@ export default class Lightshow {
       } catch {}
     };
 
-    const onMove = (e) => {
+    const onPointerMove = (e) => {
       if (!e) return;
       if (!this._dragging) return;
       if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
 
-      const p = getCanvasPoint(e);
+      const p = getCanvasPointFromClient(e.clientX, e.clientY);
       this._dragTarget.x = p.x;
       this._dragTarget.y = p.y;
 
@@ -179,15 +186,16 @@ export default class Lightshow {
       } catch {}
     };
 
-    const onUp = (e) => {
+    const onPointerUp = (e) => {
       if (!e) return;
       if (!this._dragging) return;
       if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
 
       this._dragging = false;
       this._activePointerId = null;
+      pointerDragActive = false;
 
-      // Return target is rest center; center keeps current velocity so it oscillates back.
+      // return to rest center
       this._dragTarget.x = this._restCenter.x;
       this._dragTarget.y = this._restCenter.y;
 
@@ -196,19 +204,85 @@ export default class Lightshow {
       } catch {}
     };
 
-    this.canvas.addEventListener('pointerdown', onDown, { passive: false });
-    this.canvas.addEventListener('pointermove', onMove, { passive: false });
-    this.canvas.addEventListener('pointerup', onUp, { passive: false });
-    this.canvas.addEventListener('pointercancel', onUp, { passive: false });
-    this.canvas.addEventListener('lostpointercapture', onUp, { passive: false });
+    this.canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
+    this.canvas.addEventListener('pointermove', onPointerMove, { passive: false });
+    this.canvas.addEventListener('pointerup', onPointerUp, { passive: false });
+    this.canvas.addEventListener('pointercancel', onPointerUp, { passive: false });
+    this.canvas.addEventListener('lostpointercapture', onPointerUp, { passive: false });
 
-    // Keep centers consistent on resize (caller also does resetToCenter sometimes)
+    // -------------------------
+    // Touch fallback (fixes mobile where pointermove is unreliable / eaten)
+    // -------------------------
+    let touchActive = false;
+
+    const onTouchStart = (e) => {
+      if (!e) return;
+      if (pointerDragActive) return; // pointer is handling it
+
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      touchActive = true;
+      this._dragging = true;
+      this._activePointerId = null;
+
+      const p = getCanvasPointFromClient(t.clientX, t.clientY);
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      this._centerVel.x *= 0.35;
+      this._centerVel.y *= 0.35;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    const onTouchMove = (e) => {
+      if (!e) return;
+      if (pointerDragActive) return;
+      if (!touchActive || !this._dragging) return;
+
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      const p = getCanvasPointFromClient(t.clientX, t.clientY);
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    const onTouchEnd = (e) => {
+      if (pointerDragActive) return;
+      if (!touchActive) return;
+
+      touchActive = false;
+      this._dragging = false;
+
+      this._dragTarget.x = this._restCenter.x;
+      this._dragTarget.y = this._restCenter.y;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    this.canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    this.canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    this.canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    this.canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+    // Resize hook (same as before)
     this._resizeListener = () => {
       const isMobile = window.innerWidth < 1200;
       this.updateLayout(isMobile);
     };
     window.addEventListener('resize', this._resizeListener, { passive: true });
   }
+  
 
   _updateSpringCenter() {
     const now = performance.now();
