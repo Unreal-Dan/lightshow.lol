@@ -99,19 +99,26 @@ export default class VortexPort {
     return this.useBLE ? BLE.isBleConnected() : this.portActive;
   }
 
-  async requestDevice(callback) {
+  async requestDevice(callback, deviceType = null) {
     this.deviceCallback = callback;
 
     if (this.useBLE) {
-      Notification.success("Using BLE for VortexPort...");
-      this.bleConnected = await BLE.connect();
+      //Notification.success("Using BLE for VortexPort...");
+      this.bleConnected = await BLE.connect(deviceType);
       if (this.bleConnected) {
-        Notification.success("BLE Connected!");
+        if (!this._bleDiscUnsub && typeof BLE.onDisconnect === 'function') {
+          this._bleDiscUnsub = BLE.onDisconnect(async () => {
+            try { await this.disconnect(); } catch {}
+          });
+        }
+        //Notification.success("BLE Connected!");
         if (this.deviceCallback && typeof this.deviceCallback === 'function') {
           this.deviceCallback('waiting');
         }
       } else {
         Notification.failure("BLE Connection Failed");
+        this.deviceCallback('failed');
+        return;
       }
     } else {
       try {
@@ -135,7 +142,7 @@ export default class VortexPort {
     await this.beginConnection();
   }
 
-  async beginConnection(){
+  async beginConnection() {
     if (!this.useBLE && !this.serialPort) {
       return;
     }
@@ -407,6 +414,45 @@ export default class VortexPort {
     }
   }
 
+  async listenVL(vortexLib, vortex) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      throw new Error('Already transmitting: ' + this.isTransmitting);
+    }
+
+    console.log("Listening...");
+    if (this.debugLogging) console.log("listenVL Start");
+    this.isTransmitting = 'listenVL'; // Set the transmitting flag
+
+    try {
+      await this.cancelReading();
+      // send the Listen verb
+      await this.sendCommand(this.EDITOR_VERB_LISTEN_VL);
+      // expect the mode to come next
+      const rawVL = await this.readByteStream(vortexLib);
+      // then the ack should come
+      //await this.expectData(this.EDITOR_VERB_LISTEN_VL_ACK);
+      let stream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromRawData(rawVL, stream);
+      if (!stream.checkCRC()) {
+        throw new Error('Invalid CRC on received stream');
+      }
+      //vortex.clearModes();
+      const added = vortex.addNewMode(stream, true);
+      if (!added) {
+        throw new Error('Failed to add received mode');
+      }
+      if (this.debugLogging) console.log("listenVL Done");
+    } catch (error) {
+      console.error('Error during listenVL:', error);
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+    }
+  }
+
   async demoColor(vortexLib, vortex, color) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -545,42 +591,76 @@ export default class VortexPort {
     return brightness;
   }
 
-  async pushEachToDevice(vortexLib, vortex) {
+  async pushEachToDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
     if (this.isTransmitting) {
       throw new Error('Already transmitting:' + this.isTransmitting);
     }
+
+    // Fast/non-blocking progress: only keep the latest update and flush it later.
+    // No requestAnimationFrame; don't do real work in the hot send/ack path.
+    let pending = null;
+    let scheduled = false;
+
+    const reportFast = (info) => {
+      if (typeof onProgress !== 'function') return;
+      pending = info;
+      if (scheduled) return;
+      scheduled = true;
+
+      setTimeout(() => {
+        scheduled = false;
+        const p = pending;
+        pending = null;
+        try { onProgress(p); } catch (_) {}
+      }, 0);
+    };
+
     if (this.debugLogging) console.log("pushEachToDevice Start");
     this.isTransmitting = 'pushEachToDevice'; // Set the transmitting flag
     try {
+      reportFast({ phase: 'start' });
+
       // Unserialize the stream of data
       const modes = new vortexLib.ByteStream();
       if (!vortex.getModes(modes)) {
         throw new Error('Failed to get cur mode');
       }
+
       await this.cancelReading();
+
       await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+
       const numModes = vortex.numModes();
+      reportFast({ phase: 'count', total: numModes });
+
       const numModesBuf = new vortexLib.ByteStream();
       numModesBuf.serialize8(numModes);
-      numModesBuf.recalcCRC();
+      numModesBuf.recalcCRC(true);
+
       await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
       await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+
       vortex.setCurMode(0, false);
+
       for (let i = 0; i < numModes; ++i) {
+        reportFast({ phase: 'pushing', index: i, total: numModes });
+
         const modeBuf = new vortexLib.ByteStream();
         vortex.getCurMode(modeBuf);
+
         await this.sendRaw(this.constructCustomBuffer(vortexLib, modeBuf));
         await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+
         vortex.nextMode(false);
       }
-      // these aren't really working... oh well it works good without them
-      //await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
-      //await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_DONE);
+
+      reportFast({ phase: 'done', total: numModes });
     } catch (error) {
+      reportFast({ phase: 'error', error });
       console.error('Error during pushToDevice:', error);
     } finally {
       this.startReading();
@@ -589,7 +669,7 @@ export default class VortexPort {
     }
   }
 
-  async pushToDevice(vortexLib, vortex) {
+  async pushToDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
@@ -598,7 +678,7 @@ export default class VortexPort {
     }
     // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
-      return await this.pushEachToDevice(vortexLib, vortex);
+      return await this.pushEachToDevice(vortexLib, vortex, onProgress);
     }
     if (this.debugLogging) console.log("pushToDevice Start");
     this.isTransmitting = 'pushToDevice'; // Set the transmitting flag
@@ -622,45 +702,87 @@ export default class VortexPort {
     }
   }
 
-  async pullEachFromDevice(vortexLib, vortex) {
-    if (!this.isActive()) {
-      throw new Error('Port not active');
-    }
-    if (this.isTransmitting) {
-      throw new Error('Already transmitting:' + this.isTransmitting);
-    }
-    if (this.debugLogging) console.log("pullEachFromDevice Start");
-    this.isTransmitting = 'pullEachFromDevice'; // Set the transmitting flag
+  async pullEachFromDevice(vortexLib, vortex, onProgress = null) {
+    if (!this.isActive()) throw new Error('Port not active');
+    if (this.isTransmitting) throw new Error('Already transmitting:' + this.isTransmitting);
+
+    // Fast/non-blocking progress: only keep the latest update and paint it later.
+    // This avoids doing any real work between readByteStream() and ACK.
+    let pending = null;
+    let scheduled = false;
+
+    const reportFast = (info) => {
+      if (typeof onProgress !== 'function') return;
+      pending = info;
+      if (scheduled) return;
+      scheduled = true;
+
+      const sched =
+        typeof requestAnimationFrame === 'function'
+        ? (fn) => requestAnimationFrame(fn)
+        : (fn) => setTimeout(fn, 0);
+
+      sched(() => {
+        scheduled = false;
+        const p = pending;
+        pending = null;
+        try { onProgress(p); } catch (_) {}
+      });
+    };
+
+    if (this.debugLogging) console.log('pullEachFromDevice Start');
+    this.isTransmitting = 'pullEachFromDevice';
+
     try {
-      // Unserialize the stream of data
       await this.cancelReading();
+
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
+
       const numModesBuf = await this.readByteStream(vortexLib);
-      let numModesStream = new vortexLib.ByteStream();
-      vortexLib.createByteStreamFromRawData(numModesBuf, numModesStream);
-      // this is quite dumb, idk I guess header is 12 bytes so 13th byte is the one data byte
-      let numModes = numModesBuf['12'];
+      const numModes = (numModesBuf['12'] | 0);
+
+      reportFast({ phase: 'count', total: numModes });
+
       await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+
       vortex.clearModes();
+
+      // Max throughput: read+ACK loop first, then add modes afterward.
+      const modeBufs = new Array(numModes);
+
       for (let i = 0; i < numModes; ++i) {
+        reportFast({ phase: 'pulling', index: i, total: numModes });
+
         const modeBuf = await this.readByteStream(vortexLib);
-        // Call the Wasm function
-        let modeStream = new vortexLib.ByteStream();
-        vortexLib.createByteStreamFromRawData(modeBuf, modeStream);
-        vortex.addNewMode(modeStream, true);
+        // ACK as soon as possible (no extra work before this await)
         await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+
+        modeBufs[i] = modeBuf;
       }
+
+      reportFast({ phase: 'finalizing', total: numModes });
+
       await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+
+      // Add modes after the device is fully done sending (keeps read+ACK loop hottest)
+      for (let i = 0; i < numModes; ++i) {
+        const modeStream = new vortexLib.ByteStream();
+        vortexLib.createByteStreamFromRawData(modeBufs[i], modeStream);
+        vortex.addNewMode(modeStream, true);
+      }
+
+      reportFast({ phase: 'done', total: numModes });
     } catch (error) {
+      reportFast({ phase: 'error', error });
       console.error('Error during pullFromDevice:', error);
     } finally {
       this.startReading();
-      this.isTransmitting = null; // Reset the transmitting flag
-      if (this.debugLogging) console.log("pullEachFromDevice End");
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log('pullEachFromDevice End');
     }
   }
 
-  async pullFromDevice(vortexLib, vortex) {
+  async pullFromDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
     }
@@ -669,7 +791,7 @@ export default class VortexPort {
     }
     // 1.3.0+ use new push pull logic
     if (this.useNewPushPull) {
-      return await this.pullEachFromDevice(vortexLib, vortex);
+      return await this.pullEachFromDevice(vortexLib, vortex, onProgress);
     }
     if (this.debugLogging) console.log("pullFromDevice Start");
     this.isTransmitting = 'pullFromDevice'; // Set the transmitting flag

@@ -1,9 +1,30 @@
 <!-- /js/mobile/views/device-select.html -->
-<div class="container-fluid py-4">
-  <div class="text-center mb-4">
-    <h1 class="mobile-title mb-2">Select your device</h1>
-    <div class="mobile-subtitle text-secondary">Programming modes on mobile</div>
-  </div>
+<div id="device-select-page">
+  <div class="container-fluid py-4">
+    <div class="device-select-hero text-center">
+      <h1 class="mobile-title mb-2">Select your device</h1>
+      <div class="device-select-subtitle text-secondary">
+        Choose the device you’re connecting to.
+      </div>
+    </div>
 
-  <div class="row g-4 justify-content-center device-select-row" id="device-cards-mount"></div>
+    <div class="row g-4 justify-content-center device-select-row" id="device-cards-mount">
+      <!-- cards go here -->
+    </div>
+
+    <div class="device-select-footer text-center">
+      <div class="device-select-hint">
+        <i class="fa-brands fa-bluetooth-b me-2"></i>
+        Bluetooth is required to connect.
+      </div>
+    </div>
+
+    <div class="skip-to-editor-link text-center mt-3">
+      <a href="#" id="skip-to-editor">
+        Skip to Editor
+        <i class="fa-solid fa-arrow-right-long" style="margin-left: 0.4em;"></i>
+      </a>
+    </div>
+  </div>
 </div>
+

@@ -1,0 +1,524 @@
+/* css/mobile/led-select.css */
+
+/* Root overlay: keep it in the DOM, but hidden by default */
+#mobile-app-root .m-led-select,
+.m-led-select {
+  position: fixed;
+  inset: 0;
+  z-index: 1000001;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translateZ(0);
+}
+
+/* Open state */
+#mobile-app-root .m-led-select.is-open,
+.m-led-select.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Backdrop full-screen */
+#mobile-app-root .m-led-backdrop,
+.m-led-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+
+  padding: 12px;
+  pointer-events: auto;
+}
+
+/* Bottom sheet */
+#mobile-app-root .m-led-sheet,
+.m-led-sheet {
+  width: min(680px, 100%);
+  max-height: min(92vh, 820px);
+
+  background: rgba(18, 18, 18, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  position: relative;
+}
+
+/* Header */
+#mobile-app-root .m-led-header,
+.m-led-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#mobile-app-root .m-led-title,
+.m-led-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+#mobile-app-root .m-led-header-right,
+.m-led-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#mobile-app-root .m-led-summary,
+.m-led-summary {
+  font-size: 12px;
+  opacity: 0.9;
+  color: #fff;
+  white-space: nowrap;
+}
+
+#mobile-app-root .m-led-iconbtn,
+.m-led-iconbtn {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Controls row */
+#mobile-app-root .m-led-controls,
+.m-led-controls {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#mobile-app-root .m-led-btn,
+.m-led-btn {
+  border: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+
+  font-weight: 600;
+  font-size: 13px;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Legend (leave as-is) */
+#mobile-app-root .m-led-legend,
+.m-led-legend {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#mobile-app-root .m-led-legend-item,
+.m-led-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+#mobile-app-root .m-led-legend-dot,
+.m-led-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+}
+
+#mobile-app-root .m-led-legend-dot.is-selected,
+.m-led-legend-dot.is-selected {
+  border-color: rgba(255, 255, 0, 0.9);
+}
+
+#mobile-app-root .m-led-legend-dot.is-source,
+.m-led-legend-dot.is-source {
+  border-color: rgba(0, 255, 0, 0.9);
+}
+
+/* Stage */
+#mobile-app-root .m-led-stage,
+.m-led-stage {
+  position: relative;
+  padding: 12px;
+  overflow: auto;
+  flex: 1;
+
+  touch-action: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Device image mode */
+#mobile-app-root .m-led-device,
+.m-led-device {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+#mobile-app-root .m-led-device.hidden,
+.m-led-device.hidden {
+  display: none;
+}
+
+#mobile-app-root .m-led-device img,
+.m-led-device img {
+  display: block;
+  width: 100%;
+  height: auto;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-led-overlay,
+.m-led-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+/* Swap button (optional) */
+#mobile-app-root .m-led-swap,
+.m-led-swap {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Utilities */
+#mobile-app-root .hidden,
+.hidden {
+  display: none !important;
+}
+
+/* =========================================================
+   LED indicators on image (NO GLOW, SOLID, LEGEND-LIKE)
+========================================================= */
+
+/* Base: solid dark “button” that covers the black square on the image */
+#mobile-app-root .m-led-indicator,
+.m-led-indicator {
+  position: absolute;
+
+  width: 30px;
+  height: 30px;
+
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+
+  /* Unselected: thinner gray ring */
+  border: 6px solid rgba(255, 255, 255, 1);
+
+  /* Unselected: gray LED-like depth */
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.10) 18%,
+      rgba(255, 255, 255, 0.04) 34%,
+      rgba(0,   0,   0,   0.22) 58%,
+      rgba(0,   0,   0,   0.58) 100%),
+    radial-gradient(circle at 50% 62%,
+      #7a7a7a 0%,
+      #3a3a3a 55%,
+      #161616 100%);
+
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.18),
+    inset 0 -2px 4px rgba(0,0,0,0.65);
+
+  pointer-events: auto;
+  box-sizing: border-box;
+
+  cursor: pointer;
+  transition: transform 70ms linear, border-color 70ms linear, background-color 70ms linear;
+}
+
+
+#mobile-app-root .m-led-indicator:active,
+.m-led-indicator:active {
+  transform: translate(-50%, -50%) scale(0.92);
+}
+
+/* Selected: yellow ring + LED-like depth (same size/color, just shaded) */
+#mobile-app-root .m-led-indicator.is-selected,
+.m-led-indicator.is-selected {
+  border: 6px solid #ffff00;
+
+  /* LED look: bright core + darker edge + specular highlight */
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #ffff00 0%,
+      #cfcf00 55%,
+      #8a8a00 100%);
+
+  box-shadow:
+    0 0 10px 1px #ffff00f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
+}
+
+/* Source: green ring + LED-like depth (same size/color, just shaded) */
+#mobile-app-root .m-led-indicator.is-source,
+.m-led-indicator.is-source {
+  border: 6px solid #17b803;
+
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #17b803 0%,
+      #129102 55%,
+      #0a4f01 100%);
+
+  box-shadow:
+    0 0 10px 1px #17b803f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
+}
+
+/* Source+Selected: keep it identical to source (green wins) */
+#mobile-app-root .m-led-indicator.is-source.is-selected,
+.m-led-indicator.is-source.is-selected {
+  border: 6px solid #17b803;
+
+  background:
+    radial-gradient(circle at 32% 28%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.18) 18%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(0,   0,   0,   0.18) 58%,
+      rgba(0,   0,   0,   0.52) 100%),
+    radial-gradient(circle at 50% 62%,
+      #17b803 0%,
+      #129102 55%,
+      #0a4f01 100%);
+
+  box-shadow:
+    0 0 10px 1px #17b803f2,
+    inset 0 1px 2px rgba(255,255,255,0.22),
+    inset 0 -2px 4px rgba(0,0,0,0.55);
+}
+
+
+/* Keep them manageable on tiny screens */
+@media (max-width: 360px) {
+  #mobile-app-root .m-led-indicator,
+  .m-led-indicator {
+    width: 26px;
+    height: 26px;
+    border-width: 4px;
+  }
+
+  #mobile-app-root .m-led-indicator::after,
+  .m-led-indicator::after {
+    inset: 4px;
+  }
+}
+
+/* Grid fallback (match the same semantics: dark tile, yellow/green outline) */
+#mobile-app-root .m-led-grid,
+.m-led-grid {
+  width: min(620px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 8px;
+}
+
+#mobile-app-root .m-led-grid-item,
+.m-led-grid-item {
+  border: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+
+  background: #0b0b0b;
+  color: #fff;
+
+  font-weight: 800;
+
+  border: 2px solid rgba(255, 255, 255, 0.22);
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#mobile-app-root .m-led-grid-item.is-selected,
+.m-led-grid-item.is-selected {
+  outline: 4px solid rgba(255, 255, 0, 0.95);
+}
+
+#mobile-app-root .m-led-grid-item.is-source,
+.m-led-grid-item.is-source {
+  outline: 4px solid rgba(0, 255, 0, 0.95);
+}
+
+/* Drag selection box */
+#mobile-app-root .m-led-selection-box,
+.m-led-selection-box {
+  position: absolute;
+  border: 2px dashed rgba(0, 255, 255, 0.95);
+  background: rgba(0, 255, 255, 0.14);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* Footer */
+#mobile-app-root .m-led-footer,
+.m-led-footer {
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  display: flex;
+  justify-content: flex-end;
+}
+
+#mobile-app-root .m-led-done,
+.m-led-done {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+
+  background: rgba(0, 255, 0, 0.20);
+  color: #fff;
+
+  font-weight: 800;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Done button normal */
+#mobile-app-root .m-led-done,
+.m-led-done {
+  border: 1px solid green;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 255, 0, 0.20);
+  color: #fff;
+  font-weight: 800;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Disabled Done: gray + no taps */
+#mobile-app-root .m-led-done:disabled,
+.m-led-done:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  opacity: 1;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+/* Subtle "drag to box select" hint inside the LED stage */
+#mobile-app-root .m-led-stage,
+.m-led-stage {
+  position: relative; /* ensure absolute hint anchors correctly */
+}
+
+/* hint container */
+#mobile-app-root .m-led-gesture-hint,
+.m-led-gesture-hint {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  color: rgba(255, 255, 255, 0.40);
+  opacity: 0.75;
+
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  z-index: 50; /* above device image, below nothing interactive */
+}
+
+/* finger icon */
+#mobile-app-root .m-led-gesture-hint i,
+.m-led-gesture-hint i {
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(40px) rotate(-10deg);
+}
+
+/* dashed box being "drawn" */
+#mobile-app-root .m-led-gesture-box,
+.m-led-gesture-box {
+  position: relative;
+  width: 38px;
+  height: 28px;
+
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+
+  background: rgba(0, 0, 0, 0.18);
+  transform: translateY(10px) translateX(10px);
+}
+

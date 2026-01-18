@@ -1,0 +1,357 @@
+/* css/mobile/settings-modal.css */
+
+/* ============================
+   Bottom-sheet modal (hard override)
+   - Bottom-docked footer
+   - Only modal-body scrolls
+   - Sheet is resized via CSS var: --m-sheet-h
+============================ */
+
+#m-settings-modal.modal {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#m-settings-modal.modal.show {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+
+/* Kill Bootstrap dialog transforms (prevents open/close slide weirdness) */
+#m-settings-modal .modal-dialog,
+#m-settings-modal.modal.fade .modal-dialog,
+#m-settings-modal.modal.show .modal-dialog {
+  transform: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+}
+
+#m-settings-modal .modal-dialog.modal-dialog-centered {
+  align-items: flex-end !important;
+  min-height: 0 !important;
+}
+
+#m-settings-modal .modal-dialog {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  pointer-events: none;
+}
+
+/* Backdrop: let lightshow show through */
+.modal-backdrop.show {
+  opacity: 0.28 !important;
+}
+
+/* Content: dark sheet */
+#m-settings-modal .modal-content.m-settings {
+  pointer-events: auto;
+
+  width: 100%;
+
+  /* Sheet height is controlled by SettingsSheet.js via CSS var */
+  height: var(--m-sheet-h, 56svh);
+  height: var(--m-sheet-h, 56vh);
+
+  min-height: 220px;
+  max-height: 100svh;
+  max-height: 100vh;
+
+  border-radius: 20px 20px 0 0 !important;
+  overflow: hidden;
+
+  background: rgba(12, 12, 12, 0.92) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.65) !important;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  display: flex;
+  flex-direction: column;
+
+  /* Height changes should feel smooth after release; JS can disable during drag */
+  transition: height 160ms ease;
+  will-change: height;
+}
+
+/* Handle bar */
+#m-settings-modal .m-sheet-handle-wrap {
+  width: 100%;
+  padding: 10px 0 16px;
+  background: #1d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+#m-settings-modal .m-sheet-handle {
+  width: 52px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.35);
+  touch-action: none;
+}
+
+/* Header/footer tighter + sticky feel */
+#m-settings-modal .modal-header,
+#m-settings-modal .modal-footer {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  padding: 0px 14px 12px 14px !important;
+  flex: 0 0 auto;
+  background: rgba(12, 12, 12, 0.92) !important;
+}
+
+#m-settings-modal .modal-title {
+  color: rgba(255, 255, 255, 0.94) !important;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+/* Body: the ONLY scroller */
+#m-settings-modal .modal-body {
+  flex: 1 1 auto;
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+
+  padding: 12px 14px 16px !important;
+
+  /* extra bottom padding so last row isn't hidden under footer */
+  padding-bottom: calc(16px + 62px) !important;
+}
+
+/* ============================
+   Internal layout: slimmer, spaced
+============================ */
+
+#m-settings-modal .m-settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#m-settings-modal .m-settings-section {
+  padding: 0;
+}
+
+#m-settings-modal .m-settings-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  margin: 2px 0 8px;
+
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  text-align: center;
+
+  padding: 0 84px;
+}
+
+#m-settings-modal .m-settings-chip {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+#m-settings-modal .m-settings-chip.is-connected {
+  border-color: rgba(46, 204, 113, 0.45);
+  background: rgba(46, 204, 113, 0.12);
+}
+
+#m-settings-modal .m-settings-hint {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+#m-settings-modal .m-settings-row {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#m-settings-modal .m-settings-row + .m-settings-row {
+  margin-top: 10px;
+}
+
+#m-settings-modal .m-settings-row.is-disabled {
+  opacity: 0.55;
+}
+
+#m-settings-modal .m-settings-row-label {
+  width: 100%;
+  text-align: center;
+}
+
+#m-settings-modal .m-settings-row-title {
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+#m-settings-modal .m-settings-row-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+#m-settings-modal .m-settings-row-control {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+#m-settings-modal .m-settings-row-control input[type="range"] {
+  width: min(420px, 72vw);
+  margin: 0;
+}
+
+#m-settings-modal .m-settings-value {
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+#m-settings-modal .m-settings-shapes {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  padding: 6px 6px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.03);
+
+  margin-bottom: 0.5rem;
+}
+
+#m-settings-modal .m-settings-shape-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(255, 255, 255, 0.92);
+
+  display: grid;
+  place-items: center;
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+
+#m-settings-modal .m-settings-shape-btn i {
+  font-size: 18px;
+}
+
+#m-settings-modal .m-settings-shape-btn:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 420px) {
+  #m-settings-modal .modal-body {
+    padding: 6px 8px 9px !important;
+    padding-bottom: calc(9px + 62px) !important;
+  }
+
+  #m-settings-modal .m-settings-row {
+    padding: 9px 10px;
+  }
+
+  #m-settings-modal .m-settings-row-control input[type="range"] {
+    width: min(360px, 78vw);
+  }
+}
+
+/* Keep the modal bottom-aligned EVEN while closing (when .show is removed) */
+#m-settings-modal.modal {
+  padding: 0 !important;
+  overflow: hidden !important;
+
+  /* was only on .modal.show before — move it here */
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+}
+
+/* Optional: prevent “click-through” while it’s closing but still visible */
+#m-settings-modal.modal:not(.show) {
+  pointer-events: none;
+}
+
+/* Keep dialog from doing Bootstrap’s transform animation */
+#m-settings-modal .modal-dialog,
+#m-settings-modal.modal.fade .modal-dialog {
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Slide sheet UP on open, DOWN on close */
+#m-settings-modal.modal.fade .modal-content.m-settings {
+  transform: translateY(110%);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+/* When shown, it sits in place */
+#m-settings-modal.modal.show .modal-content.m-settings {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #m-settings-modal.modal.fade .modal-content.m-settings {
+    transition: none;
+  }
+}
+

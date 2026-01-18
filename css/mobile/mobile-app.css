@@ -1,22 +1,51 @@
-/* /css/mobile/mobile-app.css */
+/* css/mobile/mobile-app.css */
 
-/* Page + root */
+/* ============================
+   Global Mobile App Styles
+============================ */
+
+/* Root & Scroll Behavior */
 html, body {
-  height: 100%;
-  background: #0b0b0b;
-}
-
-body {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
   margin: 0;
+  padding: 0;
+  background: #0b0b0b;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+  font-size: 1rem;
 }
 
 #mobile-app-root {
-  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+  width: 100%;
   background: #0b0b0b;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+#mobile-app-root .mobile-title {
+  font-size: clamp(1.5rem, 1.6rem + 0.4vw, 2rem);
+  font-weight: 800;
+  text-align: center;
+  margin-top: 1rem;
+  text-align: center;
   color: #fff;
 }
 
-/* Typography tweaks (Bootstrap uses system stack; we keep it) */
+#mobile-app-root .mobile-subtitle {
+  font-size: clamp(0.95rem, 1rem + 0.25vw, 1.125rem);
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Typography */
 #mobile-app-root h1,
 #mobile-app-root h2,
 #mobile-app-root h3,
@@ -26,86 +55,12 @@ body {
   color: #fff;
 }
 
-/* Make Bootstrap "text-secondary" readable on dark */
+/* Secondary text (from Bootstrap) */
 #mobile-app-root .text-secondary {
   color: rgba(255, 255, 255, 0.74) !important;
 }
 
-/* ---------------------------------------
-   Device tiles (3 primary choices)
---------------------------------------- */
-
-/* Make sure buttons never inherit dark text */
-#mobile-app-root .mobile-device-card {
-  appearance: none;
-  -webkit-appearance: none;
-
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 22px;
-
-  padding: 22px;
-  text-align: center;
-  color: #fff !important;
-
-  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
-}
-
-#mobile-app-root .mobile-device-card:active {
-  transform: translateY(1px);
-}
-
-#mobile-app-root .mobile-device-card.is-selected {
-  border-color: rgba(13, 110, 253, 0.95);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
-  background: rgba(13, 110, 253, 0.12);
-}
-
-/* Card inner layout (icon on top, huge) */
-#mobile-app-root .device-card-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-
-/* Icon container */
-#mobile-app-root .mobile-device-icon-wrap {
-  width: clamp(140px, 22vh, 240px);
-  height: clamp(140px, 22vh, 240px);
-  border-radius: 28px;
-
-  display: grid;
-  place-items: center;
-
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-/* Icon */
-#mobile-app-root .mobile-device-icon {
-  width: clamp(110px, 16vh, 190px);
-  height: clamp(110px, 16vh, 190px);
-  object-fit: contain;
-  display: block;
-}
-
-/* Labels */
-#mobile-app-root .device-card-label {
-  font-size: clamp(24px, 3.2vh, 38px);
-  font-weight: 800;
-  line-height: 1.1;
-  color: #fff;
-}
-
-#mobile-app-root .device-card-subtitle {
-  font-size: clamp(16px, 2.0vh, 24px);
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.72);
-}
-
-/* Buttons */
+/* Bootstrap Button Overrides */
 #mobile-app-root .btn-primary {
   border-radius: 14px;
   font-weight: 700;
@@ -116,108 +71,57 @@ body {
   padding-bottom: 12px;
 }
 
-/* Back link button */
+/* Link-style buttons */
 #mobile-app-root .btn-link {
   color: rgba(255, 255, 255, 0.80);
   text-decoration: none;
+  text-align: center;
 }
 
-#mobile-app-root .btn-link:active,
-#mobile-app-root .btn-link:hover {
+#mobile-app-root .btn-link:hover,
+#mobile-app-root .btn-link:active {
   color: #fff;
 }
 
-/* Make Bootstrap alert look okay on dark */
+/* Alerts (Bootstrap override) */
 #mobile-app-root .alert {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.90);
 }
 
-/* Optional: prevent tap highlight + accidental selection */
-#mobile-app-root, #mobile-app-root * {
+/* Tap highlight / selection handling */
+#mobile-app-root,
+#mobile-app-root * {
   -webkit-tap-highlight-color: transparent;
-}
-
-#mobile-app-root button {
   user-select: none;
+  -webkit-user-select: none;
 }
 
-/* ------------------------------------------------------------
-   Responsive layout: portrait stacks, landscape lines up
-   NOTE: your device-select view uses .device-select-row
------------------------------------------------------------- */
-
-/* Portrait (hotdog): stack 3 tiles vertically, make them tall */
-@media (orientation: portrait) {
-  #mobile-app-root .device-select-row > [class*="col-"] {
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Use screen height so the 3 buttons feel BIG */
-  #mobile-app-root .mobile-device-card {
-    min-height: clamp(210px, 24vh, 340px);
-  }
-
-  /* Give more breathing room */
-  #mobile-app-root .container-fluid {
-    padding-top: 18px !important;
-    padding-bottom: 18px !important;
-  }
+/* Utility: Mobile Device Icon */
+.mobile-device-icon {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  max-width: 100%;
+  display: block;
 }
 
-/* Extra-tall portrait (super hotdog): even bigger */
-@media (orientation: portrait) and (max-aspect-ratio: 3/7) {
-  #mobile-app-root .mobile-device-card {
-    min-height: clamp(240px, 28vh, 420px);
-  }
-
-  #mobile-app-root .mobile-device-icon-wrap {
-    width: clamp(160px, 24vh, 280px);
-    height: clamp(160px, 24vh, 280px);
-  }
-
-  #mobile-app-root .mobile-device-icon {
-    width: clamp(125px, 18vh, 220px);
-    height: clamp(125px, 18vh, 220px);
-  }
+#mobile-app-root .mobile-fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0b0b0b;
+  overflow: hidden;
 }
 
-/* Landscape (hamburger): line up 3 tiles across */
-@media (orientation: landscape) {
-  #mobile-app-root .device-select-row > [class*="col-"] {
-    flex: 0 0 33.3333% !important;
-    width: 33.3333% !important;
-    max-width: 33.3333% !important;
-  }
-
-  /* Landscape is shorter: shrink a bit so it fits */
-  #mobile-app-root .container-fluid {
-    padding-top: 12px !important;
-    padding-bottom: 12px !important;
-  }
-
-  #mobile-app-root .mobile-device-card {
-    padding: 16px;
-  }
-
-  #mobile-app-root .mobile-device-icon-wrap {
-    width: clamp(96px, 16vh, 160px);
-    height: clamp(96px, 16vh, 160px);
-  }
-
-  #mobile-app-root .mobile-device-icon {
-    width: clamp(74px, 11vh, 120px);
-    height: clamp(74px, 11vh, 120px);
-  }
-
-  #mobile-app-root .device-card-label {
-    font-size: clamp(18px, 3.2vh, 28px);
-  }
-
-  #mobile-app-root .device-card-subtitle {
-    font-size: clamp(12px, 2.0vh, 18px);
-  }
+#mobile-app-root .mobile-fullscreen-inner {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow-y: auto;
 }

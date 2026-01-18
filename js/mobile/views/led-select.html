@@ -1,0 +1,60 @@
+<!-- js/mobile/views/led-select.html -->
+
+<div class="m-led-backdrop">
+  <div class="m-led-sheet">
+    <div class="m-led-header">
+      <div class="m-led-title">{{title}}</div>
+      <div class="m-led-header-right">
+        <div class="m-led-summary" data-role="summary"></div>
+        <button type="button" class="m-led-iconbtn" data-act="cancel" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="m-led-controls">
+      <button type="button" class="m-led-btn" data-act="all">All</button>
+      <button type="button" class="m-led-btn" data-act="none">None</button>
+      <button type="button" class="m-led-btn" data-act="invert">Invert</button>
+      <button type="button" class="m-led-btn" data-act="evens">Evens</button>
+      <button type="button" class="m-led-btn" data-act="odds">Odds</button>
+    </div>
+
+    <div class="m-led-legend">
+      <div class="m-led-legend-item">
+        <div class="m-led-legend-dot is-source"></div>
+        <span>Source</span>
+      </div>
+      <div class="m-led-legend-item">
+        <div class="m-led-legend-dot is-selected"></div>
+        <span>Selected</span>
+      </div>
+      <div class="m-led-legend-item">
+        <div class="m-led-legend-dot"></div>
+        <span>Unselected</span>
+      </div>
+    </div>
+
+    <div class="m-led-stage" data-role="stage">
+      <div class="m-led-gesture-hint" aria-hidden="true">
+        <div class="m-led-gesture-box"></div>
+        <i class="fa-regular fa-hand-point-up"></i>
+      </div>
+      <div class="m-led-device" data-role="device">
+        <img data-role="deviceimg" alt="Device" />
+        <div class="m-led-overlay" data-role="overlay"></div>
+
+        <button type="button" class="m-led-swap {{hasSwap}}" data-act="swap" aria-label="Swap image">
+          <i class="fa-solid fa-right-left"></i>
+        </button>
+      </div>
+
+      <div class="m-led-grid hidden" data-role="grid"></div>
+    </div>
+
+    <div class="m-led-footer">
+      <button type="button" class="m-led-done" data-act="done">Done</button>
+    </div>
+  </div>
+</div>
+

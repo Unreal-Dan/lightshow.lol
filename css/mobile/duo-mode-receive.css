@@ -1,25 +1,40 @@
-/* /css/mobile/duo-receive.css */
+/* css/mobile/duo-mode-receive.css */
+
+/* ============================
+   Duo Mode Receive Styles
+============================ */
 
 #mobile-app-root .duo-rx-inner {
-  gap: 14px;
+  gap: 16px;
 }
 
+/* Slightly more breathing room above title and below card */
+#mobile-app-root .duo-rx-header {
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+/* Card Container */
 #mobile-app-root .duo-rx-card {
-  width: min(560px, 100%);
-  margin: 0 auto;
   border-radius: 22px;
   padding: 16px;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
 
+/* Hero Section (Bluetooth icon + Device image) */
 #mobile-app-root .duo-rx-hero {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 10px;
 }
 
+/* Bluetooth Circle Icon */
 #mobile-app-root .duo-rx-icon {
   width: clamp(64px, 11vmin, 92px);
   height: clamp(64px, 11vmin, 92px);
@@ -31,10 +46,11 @@
 }
 
 #mobile-app-root .duo-rx-icon i {
-  font-size: clamp(30px, 6vmin, 44px);
+  font-size: clamp(1rem, 1.05rem + 0.25vw, 1.25rem);
   color: rgba(255, 255, 255, 0.92);
 }
 
+/* Device Image */
 #mobile-app-root .duo-rx-device {
   width: clamp(180px, 34vmin, 320px);
   height: clamp(180px, 34vmin, 320px);
@@ -53,23 +69,50 @@
   display: block;
 }
 
+/* Text Content */
 #mobile-app-root .duo-rx-title {
-  font-size: clamp(18px, 3.0vmin, 24px);
+  font-size: clamp(1.2rem, 1.25rem + 0.3vw, 1.5rem);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 6px;
   text-align: center;
 }
 
 #mobile-app-root .duo-rx-body {
-  font-size: clamp(14px, 2.4vmin, 18px);
+  font-size: clamp(0.95rem, 1rem + 0.25vw, 1.125rem);
   line-height: 1.25;
   text-align: center;
-  margin-bottom: 14px;
+  color: rgba(255, 255, 255, 0.74);
 }
 
-#mobile-app-root .duo-rx-actions {
-  display: grid;
-  gap: 10px;
+/* Status Row */
+#mobile-app-root .duo-rx-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+#mobile-app-root .duo-rx-status .spinner-border {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+#mobile-app-root .duo-rx-status-text {
+  font-size: clamp(0.9rem, 0.95rem + 0.2vw, 1.05rem);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+#mobile-app-root .duo-rx-status.is-error .spinner-border {
+  display: none;
+}
+
+/* Upside-down Duo icon inside the existing duo-rx-icon circle */
+#mobile-app-root .duo-rx-duo-icon {
+  width: 75%;
+  height: 75%;
+  object-fit: contain;
+  display: block;
+  transform: rotate(180deg);
 }
 

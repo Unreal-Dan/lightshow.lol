@@ -1,0 +1,93 @@
+/* css/mobile/transfer-modal.css */
+
+/* Dark theme for Bootstrap modal content */
+#mobile-app-root #m-transfer-modal .modal-content,
+#m-transfer-modal .modal-content {
+  background: #0b0b0b;
+  color: #f1f1f1;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* Darken the backdrop a bit */
+#mobile-app-root #m-transfer-modal.modal,
+#m-transfer-modal.modal {
+  --bs-modal-backdrop-bg: #000;
+  --bs-modal-backdrop-opacity: 0.65;
+}
+
+/* Header + separator */
+#mobile-app-root #m-transfer-modal .modal-header,
+#m-transfer-modal .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 14px 16px;
+}
+
+#mobile-app-root #m-transfer-modal .modal-title,
+#m-transfer-modal .modal-title {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+/* Body spacing */
+#mobile-app-root #m-transfer-modal .modal-body,
+#m-transfer-modal .modal-body {
+  padding: 14px 16px 16px;
+}
+
+/* Close button should be visible on dark background */
+#mobile-app-root #m-transfer-modal .btn-close,
+#m-transfer-modal .btn-close {
+  filter: invert(1) grayscale(1);
+  opacity: 0.85;
+}
+
+#mobile-app-root #m-transfer-modal .btn-close:hover,
+#m-transfer-modal .btn-close:hover {
+  opacity: 1;
+}
+
+/* Subtitle + footnote */
+#mobile-app-root .m-transfer-subtitle,
+.m-transfer-subtitle {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.70) !important;
+}
+
+#mobile-app-root .m-transfer-footnote,
+.m-transfer-footnote {
+  font-size: 0.9rem;
+  line-height: 1.25;
+  margin-top: 0.75rem;
+  color: rgba(255, 255, 255, 0.60) !important;
+}
+
+/* Buttons: slightly taller + nicer on mobile dark UI */
+#mobile-app-root #m-transfer-modal .btn,
+#m-transfer-modal .btn {
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+/* Make secondary button look good on dark background */
+#mobile-app-root #m-transfer-modal .btn-secondary,
+#m-transfer-modal .btn-secondary {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f1f1;
+}
+
+#mobile-app-root #m-transfer-modal .btn-secondary:hover,
+#m-transfer-modal .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Disabled states read well on dark */
+#mobile-app-root #m-transfer-modal .btn:disabled,
+#m-transfer-modal .btn:disabled {
+  opacity: 0.55;
+}
+

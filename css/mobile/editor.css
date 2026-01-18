@@ -1,67 +1,110 @@
-/* /css/mobile/editor.css */
+/* css/mobile/editor.css */
+
+/* ============================
+   Mobile Editor View Styles (NEW)
+   - Stable layout (no shifting)
+   - Carousel actions live INSIDE the pill
+   - Consistent button styling
+   - Prominent top-left device button
+============================ */
 
 #mobile-app-root .m-editor {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100svh;
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0b0b0b;
+  touch-action: manipulation;
 }
 
 #mobile-app-root .m-editor-stage {
   position: relative;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   overflow: hidden;
 }
 
-/* Canvas fullscreen */
-#mobile-app-root .m-editor-stage {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-  overflow: hidden;
-}
-
+/* Canvas (fullscreen render target) */
 #mobile-app-root .m-editor-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+  z-index: 0;
 }
 
-/* Overlay label (top-left-ish) */
-#mobile-app-root .m-editor-render-label {
-  position: absolute;
-  left: 12px;
-  top: 12px;
-  z-index: 6;
-
-  font-size: clamp(14px, 2.2vmin, 18px);
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.10);
-}
-
-/* Placeholder render surface */
+/* Render surface (placeholder background) */
 #mobile-app-root .m-editor-render {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,0.06), rgba(0,0,0,0) 60%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.06),
+    rgba(0, 0, 0, 0) 60%
+  );
+  z-index: 1;
+  pointer-events: none;
 }
 
-#mobile-app-root .m-editor-render-label {
-  font-size: clamp(14px, 2.2vmin, 18px);
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.10);
+/* Shared button styling (EDITOR buttons only) */
+#mobile-app-root .m-tool-btn,
+#mobile-app-root .m-carousel-btn,
+#mobile-app-root .m-carousel-action-btn,
+#mobile-app-root #mode-add,
+#mobile-app-root #mode-delete,
+#mobile-app-root .m-editor-device-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
+
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 
-#mobile-app-root .m-editor-mode-name {
-  color: rgba(255,255,255,0.92);
-  font-weight: 700;
+/* Icon sizing */
+#mobile-app-root .m-tool-btn i,
+#mobile-app-root .m-carousel-btn i,
+#mobile-app-root .m-carousel-action-btn i,
+#mobile-app-root #mode-add i,
+#mobile-app-root #mode-delete i {
+  font-size: 18px;
+}
+
+#mobile-app-root .m-tool-btn:active,
+#mobile-app-root .m-carousel-btn:active,
+#mobile-app-root .m-carousel-action-btn:active,
+#mobile-app-root #mode-add:active,
+#mobile-app-root #mode-delete:active,
+#mobile-app-root .m-editor-device-btn:active {
+  transform: translateY(1px);
+}
+
+#mobile-app-root .m-tool-btn:disabled,
+#mobile-app-root .m-carousel-btn:disabled,
+#mobile-app-root .m-carousel-action-btn:disabled,
+#mobile-app-root #mode-add:disabled,
+#mobile-app-root #mode-delete:disabled,
+#mobile-app-root .m-editor-device-btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* Right-side tool strip */
@@ -76,24 +119,17 @@
 }
 
 #mobile-app-root .m-tool-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.90);
-  display: grid;
-  place-items: center;
+  background: rgba(0, 0, 0, 0.58);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-#mobile-app-root .m-tool-btn:active {
-  transform: translateY(1px);
-}
-
-#mobile-app-root .m-tool-btn i {
-  font-size: 20px;
+/* Disabled state (when no modes) */
+#mobile-app-root .m-editor-disabled {
+  opacity: 0.50;
+  pointer-events: none;
+  filter: grayscale(0.15);
 }
 
 /* Bottom mode carousel */
@@ -106,42 +142,236 @@
   align-items: center;
   gap: 12px;
   z-index: 5;
+  max-width: calc(100vw - 24px);
+  padding: 0;
 }
 
+/* Prev/Next buttons */
 #mobile-app-root .m-carousel-btn {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.90);
-  display: grid;
-  place-items: center;
+  background: rgba(0, 0, 0, 0.38);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
+/* Pill (title + value) */
 #mobile-app-root .m-carousel-pill {
-  min-width: min(260px, 60vw);
+  position: relative;
+  min-width: min(300px, 66vw);
+  max-width: min(420px, calc(100vw - 24px - 52px - 52px - 24px));
   padding: 10px 14px;
+  padding-right: 98px; /* reserved space for inline actions */
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.40);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.52);
   text-align: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
 }
 
 #mobile-app-root .m-carousel-title {
-  font-size: 12px;
-  color: rgba(255,255,255,0.70);
+  color: rgba(255, 255, 255, 0.70);
   line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 #mobile-app-root .m-carousel-value {
   font-size: clamp(16px, 2.6vmin, 20px);
-  font-weight: 800;
-  color: rgba(255,255,255,0.92);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
   line-height: 1.15;
 }
 
+/* Inline actions inside the pill (Add/Delete) */
+#mobile-app-root .m-carousel-actions {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  pointer-events: auto;
+}
 
+/* Smaller buttons inside pill so they don't feel cramped */
+#mobile-app-root .m-carousel-action-btn,
+#mobile-app-root #mode-add,
+#mobile-app-root #mode-delete {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#mobile-app-root .m-carousel-action-btn i,
+#mobile-app-root #mode-add i,
+#mobile-app-root #mode-delete i {
+  font-size: 16px;
+}
+
+/* Delete styling (subtle danger, not ugly) */
+#mobile-app-root .m-carousel-action-btn.is-danger,
+#mobile-app-root #mode-delete {
+  border-color: rgba(255, 80, 80, 0.26);
+  background: rgba(255, 80, 80, 0.10);
+  color: rgba(255, 210, 210, 0.95);
+}
+
+#mobile-app-root .m-carousel-action-btn.is-danger:active,
+#mobile-app-root #mode-delete:active {
+  background: rgba(255, 80, 80, 0.16);
+}
+
+/* Legacy wrapper (if it still exists) — keep it from affecting layout */
+#mobile-app-root .m-mode-crud {
+  display: contents;
+}
+
+/* If display:contents isn't supported, keep it compact and aligned */
+@supports not (display: contents) {
+  #mobile-app-root .m-mode-crud {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    height: 52px;
+  }
+}
+
+/* ============================
+   Top-left Device Button (prominent)
+============================ */
+
+#mobile-app-root .m-editor-device-btn {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+
+  width: 86px;
+  height: 86px;
+  border-radius: 26px;
+
+  background: rgba(0, 0, 0, 0.54);
+  border-color: rgba(255, 255, 255, 0.18);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  overflow: hidden;
+}
+
+#mobile-app-root .m-editor-device-btn:hover {
+  background: rgba(0, 0, 0, 0.60);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+#mobile-app-root .m-editor-device-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 4px rgba(255, 255, 255, 0.16);
+}
+
+/* Big icon with padding so it reads as a "control" not just an image */
+#mobile-app-root .m-editor-device-img {
+  width: 66px;
+  height: 66px;
+  border-radius: 20px;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Subtle glow ring to make it stand out */
+#mobile-app-root .m-editor-device-btn::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.00) 60%
+  );
+  opacity: 0.95;
+}
+
+#mobile-app-root .m-editor-device-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+}
+
+/* Slightly tighter bottom spacing on very small screens */
+@media (max-height: 640px) {
+  #mobile-app-root .m-editor-carousel {
+    bottom: 10px;
+    gap: 10px;
+  }
+
+  #mobile-app-root .m-tool-btn,
+  #mobile-app-root .m-carousel-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  #mobile-app-root .m-editor-tools {
+    right: 8px;
+    gap: 8px;
+  }
+
+  #mobile-app-root .m-carousel-pill {
+    min-width: min(280px, 68vw);
+    padding-right: 92px;
+  }
+
+  #mobile-app-root .m-carousel-action-btn,
+  #mobile-app-root #mode-add,
+  #mobile-app-root #mode-delete {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
+  #mobile-app-root .m-editor-device-btn {
+    width: 78px;
+    height: 78px;
+    border-radius: 24px;
+  }
+
+  #mobile-app-root .m-editor-device-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  #mobile-app-root .m-tool-btn,
+  #mobile-app-root .m-carousel-btn,
+  #mobile-app-root .m-carousel-action-btn,
+  #mobile-app-root #mode-add,
+  #mobile-app-root #mode-delete,
+  #mobile-app-root .m-editor-device-btn {
+    transition: none;
+  }
+}
 

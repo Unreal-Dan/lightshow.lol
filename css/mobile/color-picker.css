@@ -1,0 +1,622 @@
+/* css/mobile/color-picker.css */
+
+/* =========================================================
+   Mobile Color Picker (ported to <body> or inside app root)
+   Works whether the picker is inside #mobile-app-root OR
+   portaled to <body>.
+========================================================= */
+
+/* -----------------------------
+   Overlay mount / visibility
+----------------------------- */
+#mobile-app-root .m-color-picker,
+.m-color-picker {
+  display: none;
+}
+
+#mobile-app-root .m-color-picker.is-open,
+.m-color-picker.is-open {
+  display: block;
+  position: fixed;
+  inset: 0;
+
+  /* IMPORTANT:
+     Keep this high so it sits above the app,
+     but BELOW LedSelectModal (1000001). */
+  z-index: 1000000;
+
+  /* IMPORTANT:
+     DO NOT use backdrop-filter here.
+     On mobile Safari this can composite ABOVE other fixed siblings
+     regardless of z-index. */
+  background: rgba(0, 0, 0, 0.40);
+
+  padding:
+    max(10px, env(safe-area-inset-top))
+    max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom))
+    max(10px, env(safe-area-inset-left));
+
+  overflow: hidden;
+
+  /* Helps stabilize stacking on mobile */
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+/* -----------------------------
+   Sheet container
+----------------------------- */
+#mobile-app-root .m-color-picker-sheet,
+.m-color-picker-sheet {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+
+  width: min(720px, calc(100vw - 20px));
+  max-height: min(90dvh, calc(100vh - 20px));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 14px;
+
+  border-radius: 16px;
+  background: rgba(10, 10, 10, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  box-shadow:
+    0 18px 64px rgba(0, 0, 0, 0.70),
+    0 2px 0 rgba(255, 255, 255, 0.06) inset;
+
+  font-size: 16px;
+
+  /* keep above the overlay backdrop */
+  z-index: 1;
+}
+
+/* =========================================================
+   Header
+========================================================= */
+#mobile-app-root .m-color-picker-header,
+.m-color-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  position: sticky;
+  top: 0;
+
+  margin: -2px 0 10px 0;
+  padding: 4px 0 10px 0;
+
+  /* IMPORTANT: no backdrop-filter here either */
+  background: rgba(10, 10, 10, 0.94);
+
+  z-index: 2;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-color-picker-title,
+.m-color-picker-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+#mobile-app-root .m-color-picker-actions,
+.m-color-picker-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-btn,
+.m-cp-btn {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   Top bar: LED + Pattern
+========================================================= */
+#mobile-app-root .m-cp-topbar,
+.m-cp-topbar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* LED toggle */
+#mobile-app-root .m-cp-leds,
+.m-cp-leds {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-ledbtn,
+.m-cp-ledbtn {
+  width: 44px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  display: grid;
+  place-items: center;
+  opacity: 0.65;
+  padding: 0;
+}
+
+#mobile-app-root .m-cp-ledbtn i,
+.m-cp-ledbtn i {
+  font-size: 1.15rem;
+}
+
+#mobile-app-root .m-cp-ledbtn.is-active,
+.m-cp-ledbtn.is-active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.10);
+  outline: 2px solid rgba(255, 255, 255, 0.35);
+  outline-offset: 2px;
+}
+
+#mobile-app-root .m-cp-ledbtn.hidden,
+.m-cp-ledbtn.hidden {
+  display: none;
+}
+
+/* Pattern dropdown */
+#mobile-app-root .m-cp-pattern select,
+.m-cp-pattern select {
+  width: 100%;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 7px 10px;
+  font-size: 0.98rem;
+}
+
+/* =========================================================
+   Common labels
+========================================================= */
+#mobile-app-root .m-cp-label,
+.m-cp-label {
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
+}
+
+/* =========================================================
+   Colorset row
+========================================================= */
+#mobile-app-root .m-cp-colorset,
+.m-cp-colorset {
+  margin-top: 12px;
+}
+
+#mobile-app-root .m-cp-colorset-row,
+.m-cp-colorset-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* Normalize cube sizing for BOTH div + button cubes */
+#mobile-app-root .m-color-cube,
+.m-color-cube {
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  position: relative;
+
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0;
+}
+
+/* Buttons can get weird intrinsic sizing; clamp them */
+#mobile-app-root .m-cp-colorset-row button.m-color-cube,
+.m-cp-colorset-row button.m-color-cube {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  line-height: 1;
+  background-clip: padding-box;
+}
+
+#mobile-app-root .m-color-cube.is-empty,
+.m-color-cube.is-empty {
+  opacity: 0.22;
+}
+
+#mobile-app-root .m-color-cube.is-add,
+.m-color-cube.is-add {
+  color: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.55rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#mobile-app-root .m-color-cube.is-add.is-busy,
+.m-color-cube.is-add.is-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+#mobile-app-root .m-color-cube.is-selected,
+.m-color-cube.is-selected {
+  outline: 3px solid rgba(255, 255, 255, 0.70);
+  outline-offset: 2px;
+}
+
+/* Hint text */
+#mobile-app-root .m-cp-hint,
+.m-cp-hint {
+  margin-top: 10px;
+  font-size: 0.98rem;
+  opacity: 0.85;
+  display: none;
+}
+
+/* Disable picker when no selected color */
+#mobile-app-root .m-cp-body.is-disabled,
+.m-cp-body.is-disabled {
+  opacity: 0.35;
+  pointer-events: auto;
+}
+
+/* =========================================================
+   Picker layout (SV + Hue)
+========================================================= */
+#mobile-app-root .m-color-picker-grid,
+.m-color-picker-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 12px;
+}
+
+#mobile-app-root .m-cp-sv,
+.m-cp-sv,
+#mobile-app-root .m-cp-hue,
+.m-cp-hue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+#mobile-app-root .m-cp-sv .m-cp-label,
+.m-cp-sv .m-cp-label,
+#mobile-app-root .m-cp-hue .m-cp-label,
+.m-cp-hue .m-cp-label {
+  text-align: center;
+}
+
+#mobile-app-root .m-cp-svbox,
+.m-cp-svbox {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  border: 1px solid #282828;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#mobile-app-root .m-cp-svsel,
+.m-cp-svsel {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55);
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+#mobile-app-root .m-cp-hueslider,
+.m-cp-hueslider {
+  width: 44px;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 14px;
+  border: 1px solid #242424;
+  background: linear-gradient(
+    to bottom,
+    #ff0000,
+    #ffff00,
+    #00ff00,
+    #00ffff,
+    #0000ff,
+    #ff00ff,
+    #ff0000
+  );
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+#mobile-app-root .m-cp-huesel,
+.m-cp-huesel {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px);
+}
+
+/* =========================================================
+   Preview
+========================================================= */
+#mobile-app-root .m-cp-row,
+.m-cp-row {
+  margin-top: 12px;
+}
+
+#mobile-app-root .m-cp-preview,
+.m-cp-preview {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+#mobile-app-root .m-cp-preview-swatch,
+.m-cp-preview-swatch {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #000;
+}
+
+#mobile-app-root .m-cp-preview-hex label,
+.m-cp-preview-hex label {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
+  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-preview-hex input,
+.m-cp-preview-hex input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 10px 10px;
+  font-size: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* =========================================================
+   Sliders
+========================================================= */
+#mobile-app-root .m-cp-sliders,
+.m-cp-sliders {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+#mobile-app-root .m-cp-slider,
+.m-cp-slider {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.20);
+  border-radius: 14px;
+  padding: 10px 10px 12px 10px;
+}
+
+#mobile-app-root .m-cp-slider-head,
+.m-cp-slider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+#mobile-app-root .m-cp-slider-head span,
+.m-cp-slider-head span {
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+#mobile-app-root .m-cp-slider-head input,
+.m-cp-slider-head input {
+  width: 92px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 7px 9px;
+  font-size: 1rem;
+}
+
+#mobile-app-root .m-cp-slider input[type="range"],
+.m-cp-slider input[type="range"] {
+  width: 100%;
+}
+
+#mobile-app-root .m-cp-hsv-row,
+.m-cp-hsv-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+#mobile-app-root .m-cp-hsv,
+.m-cp-hsv {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.20);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+#mobile-app-root .m-cp-hsv label,
+.m-cp-hsv label {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  opacity: 0.88;
+  margin-bottom: 6px;
+}
+
+#mobile-app-root .m-cp-hsv input,
+.m-cp-hsv input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  padding: 10px 10px;
+  font-size: 1rem;
+}
+
+/* =========================================================
+   Responsive tweaks
+========================================================= */
+@media (min-width: 520px) {
+  #mobile-app-root .m-cp-sliders,
+  .m-cp-sliders {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #mobile-app-root .m-cp-hsv-row,
+  .m-cp-hsv-row {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-height: 560px) {
+  #mobile-app-root .m-color-picker-sheet,
+  .m-color-picker-sheet {
+    max-height: min(92dvh, calc(100vh - 12px));
+  }
+
+  #mobile-app-root .m-cp-svbox,
+  .m-cp-svbox {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* =========================================================
+   Long-press delete "armed" state
+========================================================= */
+#mobile-app-root .m-color-cube.is-delete-armed,
+.m-color-cube.is-delete-armed {
+  animation: m-cube-delete-flash 0.55s ease-in-out infinite;
+  outline: 3px solid rgba(255, 60, 60, 0.95);
+  outline-offset: 2px;
+  position: relative;
+}
+
+@keyframes m-cube-delete-flash {
+  0%   { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
+  50%  { box-shadow: 0 0 0 4px rgba(255,60,60,0.35); }
+  100% { box-shadow: 0 0 0 rgba(255,60,60,0.00); }
+}
+
+#mobile-app-root .m-color-cube.is-delete-armed::after,
+.m-color-cube.is-delete-armed::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 7px rgba(255, 0, 0, 0.95),
+    0 0 30px rgba(255, 0, 0, 0.85);
+  animation: mcp-delete-pulse 0.45s ease-in-out infinite;
+}
+
+@keyframes mcp-delete-pulse {
+  0%   { transform: scale(0.98); opacity: 0.55; }
+  50%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(0.98); opacity: 0.55; }
+}
+
+#mobile-app-root .m-color-cube.is-selected,
+.m-color-cube.is-selected {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.95),
+    0 0 14px rgba(255, 255, 255, 0.22);
+  transition: box-shadow 60ms linear, transform 60ms linear;
+}
+
+#mobile-app-root .m-color-cube.is-deleting,
+.m-color-cube.is-deleting {
+  opacity: 0.25;
+  transform: scale(0.92);
+  transition: opacity 120ms linear, transform 120ms ease-out;
+}
+
+/* Spark/Chromadeck LED modal button */
+.m-cp-ledmodalbtn {
+  border: 0;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 12px;
+  height: 42px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.m-cp-ledmodaltext {
+  font-size: 13px;
+  opacity: 0.95;
+  white-space: nowrap;
+}
+
+#mobile-app-root .m-cp-leds.hidden,
+.m-cp-leds.hidden {
+  display: none !important;
+}
+
+#mobile-app-root .m-cp-ledmodalbtn.hidden,
+.m-cp-ledmodalbtn.hidden {
+  display: none !important;
+}
+
+#mobile-app-root .hidden,
+.hidden {
+  display: none !important;
+}
+

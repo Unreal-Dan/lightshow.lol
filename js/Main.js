@@ -1,7 +1,4 @@
 function isMobile() {
-  // bypass mobile check for now
-  return false;
-
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
     return true;

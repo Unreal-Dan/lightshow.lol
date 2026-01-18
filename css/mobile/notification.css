@@ -1,0 +1,154 @@
+/* css/mobile/notification.css */
+
+/* Container: centered, ~15% down */
+#mobile-app-root .m-notify-container,
+.m-notify-container,
+.notification-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+
+  top: calc(env(safe-area-inset-top, 0px) + 15vh);
+  top: calc(env(safe-area-inset-top, 0px) + 15svh);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  padding: 0 12px;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   Bubble base: support BOTH mobile (.m-notify) and desktop (.notification)
+------------------------------------------------------------ */
+#mobile-app-root .m-notify,
+.m-notify,
+.notification-container .notification {
+  pointer-events: auto;
+
+  width: fit-content;
+  max-width: calc(100vw - 24px);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  padding: 12px 18px;
+
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: 0.1px;
+
+  color: rgba(255, 255, 255, 0.96);
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(18, 18, 18, 0.88);
+
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  opacity: 0;
+  transform: translateY(-10px) scale(0.99);
+  transition: opacity 180ms ease, transform 180ms ease;
+
+  text-align: center;
+}
+
+/* Show state */
+#mobile-app-root .m-notify.show,
+.m-notify.show,
+.notification-container .notification.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Keep icon + text on the same row */
+#mobile-app-root .m-notify .m-notify-row,
+.m-notify .m-notify-row,
+.notification-container .notification-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  flex-wrap: nowrap;     /* IMPORTANT: don't let icon wrap to its own line */
+  white-space: normal;   /* allow text to wrap inside the msg element */
+}
+
+/* Let the text wrap (but not the icon) */
+#mobile-app-root .m-notify .m-notify-msg,
+.m-notify .m-notify-msg,
+.notification-container .notification-msg {
+  flex: 1 1 auto;
+  min-width: 0; /* IMPORTANT: allows wrapping instead of pushing icon down */
+  max-width: calc(100vw - 24px - 56px);
+  text-align: left; /* optional; remove if you want centered text */
+}
+
+/* Keep icon fixed-size */
+#mobile-app-root .m-notify .m-notify-icon,
+.m-notify .m-notify-icon,
+.notification-container .notification-icon {
+  flex: 0 0 auto;
+}
+
+
+#mobile-app-root .m-notify i,
+.m-notify i {
+  font-size: 18px;
+}
+
+/* ------------------------------------------------------------
+   Colored bubbles (WORKS for both class systems)
+------------------------------------------------------------ */
+
+/* Success */
+#mobile-app-root .m-notify.success,
+.m-notify.success,
+.notification-container .notification.success {
+  border-color: rgba(46, 204, 113, 0.78);
+  background: linear-gradient(180deg, rgba(46, 204, 113, 0.76), rgba(46, 204, 113, 0.30));
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    0 0 28px rgba(46, 204, 113, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Failure */
+#mobile-app-root .m-notify.failure,
+.m-notify.failure,
+.notification-container .notification.failure {
+  border-color: rgba(231, 76, 60, 0.84);
+  background: linear-gradient(180deg, rgba(231, 76, 60, 0.80), rgba(231, 76, 60, 0.32));
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(231, 76, 60, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Small screens */
+@media (max-width: 420px) {
+  #mobile-app-root .m-notify,
+  .m-notify,
+  .notification-container .notification {
+    padding: 11px 16px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mobile-app-root .m-notify,
+  .m-notify,
+  .notification-container .notification {
+    transition: none;
+  }
+}
+

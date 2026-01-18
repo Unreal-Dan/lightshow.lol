@@ -29,6 +29,11 @@
   border: 1px solid #454545;
 }
 
+#listenVLButton {
+  transform: scale(-1, -1);
+  display: inline-block;
+}
+
 #modesListScrollContainer {
   height: 200px;
   overflow-y: scroll;

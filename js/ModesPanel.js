@@ -23,6 +23,9 @@ export default class ModesPanel extends Panel {
         <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>
           <i class="fa-solid fa-satellite-dish"></i>
         </button>
+        <button id="listenVLButton" class="mode-list-btn" title="Receive Mode from Duo" disabled>
+          <i class="fa-solid fa-satellite-dish"></i>
+        </button>
       </div>
       <div id="modesListScrollContainer">
         <div id="modesListContainer">
@@ -55,6 +58,7 @@ export default class ModesPanel extends Panel {
     pullButton.addEventListener('click', async () => this.pullFromDevice());
 
     const transmitButton = document.getElementById('transmitVLButton');
+    const listenVLButton = document.getElementById('listenVLButton');
 
     this.transmitActive = false;
     this.transmitInterval = null;
@@ -101,6 +105,11 @@ export default class ModesPanel extends Panel {
       }
     });
 
+    listenVLButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.editor.listenVL();
+    });
+
     document.addEventListener('patternChange', () => this.refresh(true));
 
     this.refreshModeList();
@@ -134,6 +143,10 @@ export default class ModesPanel extends Panel {
     if (transmitVL) {
       transmitVL.disabled = false;
     }
+    const listenVL = document.getElementById('listenVLButton');
+    if (listenVL) {
+      listenVL.disabled = false;
+    }
     const connectDevice = document.getElementById('connectDeviceButton');
     if (connectDevice) {
       connectDevice.disabled = true;
@@ -153,6 +166,10 @@ export default class ModesPanel extends Panel {
     const transmitVL = document.getElementById('transmitVLButton');
     if (transmitVL) {
       transmitVL.disabled = true;
+    }
+    const listenVL = document.getElementById('listenVLButton');
+    if (listenVL) {
+      listenVL.disabled = true;
     }
     const connectDevice = document.getElementById('connectDeviceButton');
     if (connectDevice) {
@@ -291,6 +308,7 @@ export default class ModesPanel extends Panel {
     const device = this.editor.devicePanel.selectedDevice;
     const shouldDisable = (!this.editor.vortexPort.isActive() || device === 'None' || isMultiLed); 
     document.getElementById('transmitVLButton').disabled = shouldDisable;
+    document.getElementById('listenVLButton').disabled = shouldDisable;
 
     if (refresh) {
       this.editor.ledSelectPanel.refreshLedList();
@@ -468,27 +486,8 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  getMaxModes(device) {
-    let maxModes = 16;
-    switch (device) {
-      case 'Orbit':
-      case 'Handle':
-      case 'Gloves':
-        // these devices had 14
-        maxModes = 14;
-        break;
-      case 'Duo':
-        // default duo max is 9
-        maxModes = 9;
-        break;
-      case 'Chromadeck':
-      case 'Spark':
-        // 16 modes
-        break;
-      default:
-        break;
-    }
-    return maxModes;
+  getMaxModes(deviceType) {
+    return this.editor.devices?.[deviceType]?.maxModes ?? 1;
   }
 
   addMode() {

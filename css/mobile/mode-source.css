@@ -1,9 +1,26 @@
-/* /css/mobile/mode-source.css */
+/* css/mobile/mode-source.css */
 
+/* =============================
+   Mode Source Screen Styles
+============================= */
+
+/* Action Buttons */
 #mobile-app-root .mode-source-actions {
-  width: min(560px, 100%);
-  margin: 0 auto;
+  width: 100%;
   display: grid;
   gap: 12px;
+  margin-top: 20px;
+}
+
+/* Back link */
+#mobile-app-root .btn-link {
+  color: rgba(255, 255, 255, 0.80);
+  text-align: center;
+  text-decoration: none;
+}
+
+#mobile-app-root .btn-link:hover,
+#mobile-app-root .btn-link:active {
+  color: #fff;
 }
 

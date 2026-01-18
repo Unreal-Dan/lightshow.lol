@@ -3,25 +3,38 @@
   <div class="m-editor-stage">
     <canvas id="mobile-lightshow-canvas" class="m-editor-canvas"></canvas>
 
-    <div class="m-editor-render-label text-secondary">
-      Duo editor (placeholder UI) — Mode: <span class="m-editor-mode-name">{{modeName}}</span>
-    </div>
+    <!-- Top-left: simulated device icon (tap to go back to device select) -->
+    <button
+      id="m-editor-device-btn"
+      class="m-editor-device-btn"
+      type="button"
+      title="Device"
+      aria-label="Device"
+    >
+      <img
+        id="m-editor-device-img"
+        class="m-editor-device-img"
+        src="{{deviceIcon}}"
+        alt="{{deviceType}}"
+        draggable="false"
+      />
+    </button>
 
     <div class="m-editor-tools" aria-label="Editor tools">
-      <button class="m-tool-btn" type="button" title="Colors" data-tool="colors">
+      <button class="m-tool-btn" type="button" title="Colors" data-tool="effects">
         <i class="fa-solid fa-palette"></i>
       </button>
-      <button class="m-tool-btn" type="button" title="Patterns" data-tool="patterns">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+      <button class="m-tool-btn" type="button" title="Push / Pull" data-tool="transfer">
+        <i class="fa-solid fa-satellite-dish"></i>
       </button>
-      <button class="m-tool-btn" type="button" title="Speed" data-tool="speed">
-        <i class="fa-solid fa-gauge-high"></i>
-      </button>
-      <button class="m-tool-btn" type="button" title="Save/Share" data-tool="share">
+
+      <button class="m-tool-btn" type="button" title="Community Modes" data-tool="community">
         <i class="fa-solid fa-share-nodes"></i>
       </button>
-      <button class="m-tool-btn" type="button" title="Back" id="editor-back-btn">
-        <i class="fa-solid fa-arrow-left"></i>
+
+      <button class="m-tool-btn" type="button" title="Settings" data-tool="settings">
+        <i class="fa-solid fa-gear"></i>
       </button>
     </div>
 

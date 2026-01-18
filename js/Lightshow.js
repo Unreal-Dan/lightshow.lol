@@ -2,104 +2,319 @@
 export default class Lightshow {
   static instanceCount = 0;
 
-  // constructor for draw6
   constructor(vortexLib, vortex, canvas, modeData = null, configurableSectionCount = 100) {
     this.id = Lightshow.instanceCount++;
     this.canvas = canvas;
-    if (!this.canvas) {
-      throw new Error(`Canvas not found`);
-    }
+    if (!this.canvas) throw new Error(`Canvas not found`);
+
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight;
+
     this.ctx = this.canvas.getContext('2d');
+
     this.dotSize = 25;
     this.blurFac = 5;
     this.circleRadius = 400;
     this.tickRate = 1;
     this.trailSize = 100;
     this.spread = 15;
+
     this.angle = 0;
-    this.currentShape = 'circle'; // Default shape
+
+    // orbit visualization
+    this.orbitAngle = 0;
+    this.spinAngle = 0;
+    this.orbitSpinMul = -1.0;
+
+    // default shape
+    this.currentShape = 'circle';
     this.direction = 1;
+
     this.vortexLib = vortexLib;
     this.vortex = vortex;
+
     this.animationFrameId = null;
     this.configurableSectionCount = configurableSectionCount;
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;
+
     this.boundDraw = this.draw.bind(this);
+
     this.ctx.fillStyle = 'rgba(0, 0, 0)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
     this.modeData = modeData;
     this.applyModeData();
 
-    // turn this on/off to only draw 2 leds at a time
+    // Duo editor mode draws only 2 leds on flash canvas
     this.duoEditorMode = false;
 
-    this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Center default
-    this.targetPosition = { x: this.cursorPosition.x, y: this.cursorPosition.y };
-    this.velocity = { x: 0, y: 0 };
-    this.friction = 0.8; // Friction for glide effect
-    this.isDragging = false;
+    // --- Springy center (works for ALL shapes) ---
+    // rest center is the "spinning" center; spring center is where shapes are drawn
+    this._restCenter = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
+    this._center = { x: this._restCenter.x, y: this._restCenter.y };
+    this._centerVel = { x: 0, y: 0 };
 
-    // Event listeners for desktop and mobile
+    // Drag target (pointer position while dragging)
+    this._dragging = false;
+    this._dragTarget = { x: this._restCenter.x, y: this._restCenter.y };
+    this._activePointerId = null;
+
+    // Spring tuning (feel free to tweak)
+    // Higher k = stronger pull / faster response; higher damping = less oscillation.
+    this.centerSpringK = 80.0;
+    this.centerSpringDamping = 15.5;
+
+    // When released, we pull back to rest center (same spring, target changes)
+    // You can optionally make return slower/faster by setting these:
+    this.returnSpringK = 30.0;
+    this.returnSpringDamping = 10.0;
+
+    // dt tracking
+    this._lastFrameAt = 0;
+
+    // Interaction listeners (pointer events; desktop + mobile)
     this.addInteractionListeners();
 
-    // Initialize histories for each LED
+    // Histories
     this.updateHistories();
 
-    // Determine the initial layout and apply it
+    // Initial layout
     const isMobile = window.innerWidth < 1200;
     this.updateLayout(isMobile);
   }
 
   updateLayout(isMobile) {
     if (isMobile) {
-      // Mobile layout: canvas takes up the top half of the screen
       this.canvas.width = window.innerWidth;
-      this.canvas.height = Math.floor(window.innerHeight * 0.40);
-      this.resetToCenter(); // Adjust the canvas to reflect the new size
+      this.canvas.height = Math.floor(window.innerHeight * 0.4);
     } else {
-      // Desktop layout: canvas takes up the entire screen
       this.canvas.width = window.innerWidth;
       this.canvas.height = window.innerHeight;
-      this.resetToCenter(); // Adjust the canvas to reflect the new size
+    }
+
+    this._recomputeCenters();
+    this.resetToCenter();
+  }
+
+  _recomputeCenters() {
+    this.sectionWidth = this.canvas.width / this.configurableSectionCount;
+
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+
+    this._restCenter.x = cx;
+    this._restCenter.y = cy;
+
+    // If not currently dragging, keep the spring center glued to rest center on resize
+    if (!this._dragging) {
+      this._center.x = cx;
+      this._center.y = cy;
+      this._centerVel.x = 0;
+      this._centerVel.y = 0;
+      this._dragTarget.x = cx;
+      this._dragTarget.y = cy;
+    } else {
+      // If dragging during resize, clamp drag target into canvas bounds
+      this._dragTarget.x = Math.max(0, Math.min(this.canvas.width, this._dragTarget.x));
+      this._dragTarget.y = Math.max(0, Math.min(this.canvas.height, this._dragTarget.y));
     }
   }
 
   addInteractionListeners() {
-    // Mouse interactions
-    window.addEventListener('mousemove', (event) => {
-      this.targetPosition.x = event.clientX;
-      this.targetPosition.y = event.clientY;
-    });
+    // Make the canvas a real touch surface (prevents scroll/zoom gestures stealing moves)
+    try {
+      this.canvas.style.touchAction = 'none';
+      this.canvas.style.webkitUserSelect = 'none';
+      this.canvas.style.userSelect = 'none';
+      this.canvas.style.webkitTouchCallout = 'none';
+    } catch {}
 
-    window.addEventListener('mousedown', (event) => {
-      this.isDragging = true;
-      this.velocity = { x: 0, y: 0 }; // Reset momentum
-    });
+    const getCanvasPointFromClient = (clientX, clientY) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (clientX - rect.left) * (this.canvas.width / rect.width);
+      const y = (clientY - rect.top) * (this.canvas.height / rect.height);
+      return {
+        x: Math.max(0, Math.min(this.canvas.width, x)),
+        y: Math.max(0, Math.min(this.canvas.height, y)),
+      };
+    };
 
-    window.addEventListener('mouseup', () => {
-      this.isDragging = false; // Release drag
-    });
+    // If pointer events are working, we don't want touch handlers to fight them.
+    let pointerDragActive = false;
 
-    // Touch interactions for mobile
-    window.addEventListener('touchstart', (event) => {
-      const touch = event.touches[0];
-      this.targetPosition.x = touch.clientX;
-      this.targetPosition.y = touch.clientY;
-      this.isDragging = true;
-      this.velocity = { x: 0, y: 0 };
-    });
+    // -------------------------
+    // Pointer events (mouse/pen/touch when supported)
+    // -------------------------
+    const onPointerDown = (e) => {
+      if (!e) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-    window.addEventListener('touchmove', (event) => {
-      const touch = event.touches[0];
-      this.targetPosition.x = touch.clientX;
-      this.targetPosition.y = touch.clientY;
-    });
+      pointerDragActive = true;
 
-    window.addEventListener('touchend', () => {
-      this.isDragging = false;
-    });
+      const p = getCanvasPointFromClient(e.clientX, e.clientY);
+
+      this._dragging = true;
+      this._activePointerId = e.pointerId;
+
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      // keep overshoot, but tame start jitter
+      this._centerVel.x *= 0.35;
+      this._centerVel.y *= 0.35;
+
+      try {
+        this.canvas.setPointerCapture?.(e.pointerId);
+      } catch {}
+
+      try {
+        e.preventDefault?.();
+      } catch {}
+    };
+
+    const onPointerMove = (e) => {
+      if (!e) return;
+      if (!this._dragging) return;
+      if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
+
+      const p = getCanvasPointFromClient(e.clientX, e.clientY);
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      try {
+        e.preventDefault?.();
+      } catch {}
+    };
+
+    const onPointerUp = (e) => {
+      if (!e) return;
+      if (!this._dragging) return;
+      if (this._activePointerId != null && e.pointerId !== this._activePointerId) return;
+
+      this._dragging = false;
+      this._activePointerId = null;
+      pointerDragActive = false;
+
+      // return to rest center
+      this._dragTarget.x = this._restCenter.x;
+      this._dragTarget.y = this._restCenter.y;
+
+      try {
+        e.preventDefault?.();
+      } catch {}
+    };
+
+    this.canvas.addEventListener('pointerdown', onPointerDown, { passive: false });
+    this.canvas.addEventListener('pointermove', onPointerMove, { passive: false });
+    this.canvas.addEventListener('pointerup', onPointerUp, { passive: false });
+    this.canvas.addEventListener('pointercancel', onPointerUp, { passive: false });
+    this.canvas.addEventListener('lostpointercapture', onPointerUp, { passive: false });
+
+    // -------------------------
+    // Touch fallback (fixes mobile where pointermove is unreliable / eaten)
+    // -------------------------
+    let touchActive = false;
+
+    const onTouchStart = (e) => {
+      if (!e) return;
+      if (pointerDragActive) return; // pointer is handling it
+
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      touchActive = true;
+      this._dragging = true;
+      this._activePointerId = null;
+
+      const p = getCanvasPointFromClient(t.clientX, t.clientY);
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      this._centerVel.x *= 0.35;
+      this._centerVel.y *= 0.35;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    const onTouchMove = (e) => {
+      if (!e) return;
+      if (pointerDragActive) return;
+      if (!touchActive || !this._dragging) return;
+
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+
+      const p = getCanvasPointFromClient(t.clientX, t.clientY);
+      this._dragTarget.x = p.x;
+      this._dragTarget.y = p.y;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    const onTouchEnd = (e) => {
+      if (pointerDragActive) return;
+      if (!touchActive) return;
+
+      touchActive = false;
+      this._dragging = false;
+
+      this._dragTarget.x = this._restCenter.x;
+      this._dragTarget.y = this._restCenter.y;
+
+      try {
+        e.preventDefault();
+      } catch {}
+    };
+
+    this.canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    this.canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    this.canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+    this.canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+    // Resize hook (same as before)
+    this._resizeListener = () => {
+      const isMobile = window.innerWidth < 1200;
+      this.updateLayout(isMobile);
+    };
+    window.addEventListener('resize', this._resizeListener, { passive: true });
+  }
+  
+
+  _updateSpringCenter() {
+    const now = performance.now();
+    if (!this._lastFrameAt) this._lastFrameAt = now;
+
+    let dt = (now - this._lastFrameAt) / 1000;
+    this._lastFrameAt = now;
+
+    // clamp dt to avoid huge jumps if tab was backgrounded
+    if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+    if (dt > 0.05) dt = 0.05;
+
+    const targetX = this._dragging ? this._dragTarget.x : this._restCenter.x;
+    const targetY = this._dragging ? this._dragTarget.y : this._restCenter.y;
+
+    const k = this._dragging ? this.centerSpringK : this.returnSpringK;
+    const d = this._dragging ? this.centerSpringDamping : this.returnSpringDamping;
+
+    // Spring force: a = k*(target - pos) - d*vel
+    const ax = (targetX - this._center.x) * k - this._centerVel.x * d;
+    const ay = (targetY - this._center.y) * k - this._centerVel.y * d;
+
+    this._centerVel.x += ax * dt;
+    this._centerVel.y += ay * dt;
+
+    this._center.x += this._centerVel.x * dt;
+    this._center.y += this._centerVel.y * dt;
+
+    // keep center within reasonable bounds (small overshoot is fine; prevent going miles away)
+    const pad = 80;
+    this._center.x = Math.max(-pad, Math.min(this.canvas.width + pad, this._center.x));
+    this._center.y = Math.max(-pad, Math.min(this.canvas.height + pad, this._center.y));
   }
 
   setLedCount(count) {
@@ -124,48 +339,38 @@ export default class Lightshow {
     this.histories = this.histories.map(() => []);
   }
 
-  // Method to update histories based on the LED count
   updateHistories() {
     const ledCount = this.ledCount();
     this.histories = [];
-    for (let i = 0; i < ledCount; i++) {
-      this.histories.push([]);
-    }
+    for (let i = 0; i < ledCount; i++) this.histories.push([]);
   }
 
   applyModeData() {
-    if (!this.modeData) {
-      return;
-    }
-    var set = new this.vortexLib.Colorset();
-    this.modeData.colorset.forEach(hexCode => {
+    if (!this.modeData) return;
+
+    const set = new this.vortexLib.Colorset();
+    this.modeData.colorset.forEach((hexCode) => {
       const normalizedHex = hexCode.replace('0x', '#');
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(normalizedHex);
       if (result) {
-        set.addColor(new this.vortexLib.RGBColor(
-          parseInt(result[1], 16),
-          parseInt(result[2], 16),
-          parseInt(result[3], 16)
-        ));
+        set.addColor(
+          new this.vortexLib.RGBColor(parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16))
+        );
       }
     });
-    // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.vortex.engine().modes().curMode();
-    if (!demoMode) {
-      return;
-    }
-    // set the colorset of the demo mode
+
+    const demoMode = this.vortex.engine().modes().curMode();
+    if (!demoMode) return;
+
     demoMode.setColorset(set, this.ledCount());
-    // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
-    // with null args and null colorset (so they are defaulted and won't change)
-    let patID = this.vortexLib.intToPatternID(this.modeData.pattern_id);
+
+    const patID = this.vortexLib.intToPatternID(this.modeData.pattern_id);
     demoMode.setPattern(patID, this.ledCount(), null, null);
-    let args = new this.vortexLib.PatternArgs();
-    for (let i = 0; i < this.modeData.args.length; ++i) {
-      args.addArgs(this.modeData.args[i]);
-    }
+
+    const args = new this.vortexLib.PatternArgs();
+    for (let i = 0; i < this.modeData.args.length; ++i) args.addArgs(this.modeData.args[i]);
     this.vortex.setPatternArgs(this.ledCount(), args, false);
-    // re-initialize the demo mode so it takes the new args into consideration
+
     demoMode.init();
   }
 
@@ -192,91 +397,67 @@ export default class Lightshow {
     return this.vortex.engine().leds().ledCount();
   }
 
-  // function to set the shape
   setShape(shape) {
     if (this.currentShape === shape) {
-      this.direction *= -1; // Reverse direction for the same shape
+      this.direction *= -1;
     } else {
       this.currentShape = shape;
     }
-
-    if (shape === 'cursor') {
-      this.enableCursorFollow();
-    } else {
-      this.disableCursorFollow();
-    }
   }
 
-  enableCursorFollow() {
-    if (!this.cursorMoveListener) {
-      this.cursorPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Default center
-      this.cursorMoveListener = (event) => {
-        this.cursorPosition.x = event.clientX;
-        this.cursorPosition.y = event.clientY;
-      };
-      window.addEventListener('mousemove', this.cursorMoveListener);
-    }
-  }
+  feedOrbitPoints() {
+    // Use spring center instead of fixed canvas center
+    const pivotX = this._center.x;
+    const pivotY = this._center.y;
 
-  disableCursorFollow() {
-    if (this.cursorMoveListener) {
-      window.removeEventListener('mousemove', this.cursorMoveListener);
-      this.cursorMoveListener = null;
-    }
-    this.targetPosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-    this.velocity = { x: 0, y: 0 };
-    this.cursorPosition = { x: this.targetPosition.x, y: this.targetPosition.y };
-  }
+    const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
+    const ropeRadius = Math.max(40, minR - (500 - parseInt(this.circleRadius)));
+    // LED ring radius around the orbit puck should scale with spread
+    // (spread is your per-LED spacing knob; map it into a usable pixel radius)
+    const nSpread = Math.max(0, Number(this.spread) || 0);
+    // Base keeps it visible even at spread=0; the multiplier controls how sensitive it feels.
+    const orbitRadius = Math.max(12, 12 + nSpread * 1.0);
 
+    const orbitStep = 0.014 * this.direction;
+    const spinStep = orbitStep * this.orbitSpinMul;
 
-  feedCursorPoints() {
-    const { x: currentX, y: currentY } = this.cursorPosition;
-
-    const frac = (this.tickRate / 300);
-
-    // Apply velocity for smooth movement
-    this.velocity.x += (this.targetPosition.x - currentX) * (frac * 3); // Acceleration toward target
-    this.velocity.y += (this.targetPosition.y - currentY) * (frac * 3);
-
-    // constant fraction of tickrate used to effect velocity
-    const ratio = frac + this.friction;
-
-    this.velocity.x *= this.friction; // Apply friction but effected by speed
-    this.velocity.y *= this.friction;
-
-    this.cursorPosition.x += this.velocity.x;
-    this.cursorPosition.y += this.velocity.y;
-
-    const { x: cursorX, y: cursorY } = this.cursorPosition;
-
-    for (let i = 0; i < (this.tickRate / 2); i++) {
+    for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
+      if (!leds) continue;
 
-      while (this.histories.length < leds.length) {
-        this.histories.push([]);
-      }
+      while (this.histories.length < leds.length) this.histories.push([]);
 
-      leds.forEach((col, index) => {
-        const angle = (Math.PI * 2 * index) / leds.length;
-        const radius = 30 + index * this.spread;
+      this.orbitAngle += orbitStep;
+      this.spinAngle += spinStep;
 
-        const x = cursorX + radius * Math.cos(angle);
-        const y = cursorY + radius * Math.sin(angle);
+      if (this.orbitAngle >= 2 * Math.PI) this.orbitAngle -= 2 * Math.PI;
+      else if (this.orbitAngle < 0) this.orbitAngle += 2 * Math.PI;
 
+      if (this.spinAngle >= 2 * Math.PI) this.spinAngle -= 2 * Math.PI;
+      else if (this.spinAngle < 0) this.spinAngle += 2 * Math.PI;
+
+      const cx = pivotX + ropeRadius * Math.cos(this.orbitAngle);
+      const cy = pivotY + ropeRadius * Math.sin(this.orbitAngle);
+
+      const n = leds.length || 1;
+
+      for (let index = 0; index < n; index++) {
+        let col = leds[index];
         if (!col) col = { red: 0, green: 0, blue: 0 };
 
+        const a = this.spinAngle + (Math.PI * 2 * index) / n;
+        const x = cx + orbitRadius * Math.cos(a);
+        const y = cy + orbitRadius * Math.sin(a);
+
         this.histories[index].push({ x, y, color: col });
-      });
+      }
     }
   }
 
-
-
-
   draw() {
+    // Update springy center once per frame (affects all shapes)
+    this._updateSpringCenter();
+
     switch (this.currentShape) {
       case 'circle':
         this.feedCirclePoints();
@@ -290,13 +471,14 @@ export default class Lightshow {
       case 'box':
         this.feedBoxPoints();
         break;
-      case 'cursor':
-        this.feedCursorPoints();
+      case 'orbit':
+        this.feedOrbitPoints();
         break;
       default:
         console.warn('Unknown shape:', this.currentShape);
         return;
     }
+
     this.drawHistories();
   }
 
@@ -309,17 +491,14 @@ export default class Lightshow {
     }
 
     this.histories.forEach((history, historyIndex) => {
-      if (this.duoEditorMode && historyIndex > 1) {
-        return;
-      }
+      if (this.duoEditorMode && historyIndex > 1) return;
+
       for (let index = history.length - 1; index >= 0; index--) {
         const point = history[index];
-        if (!point.color.red && !point.color.green && !point.color.blue) {
-          continue;
-        }
+        if (!point.color.red && !point.color.green && !point.color.blue) continue;
 
         const gradient = this.ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, this.dotSize);
-        const innerAlpha = (1 - ((history.length - 1 - index) / history.length)).toFixed(2);
+        const innerAlpha = (1 - (history.length - 1 - index) / history.length).toFixed(2);
         const outerAlpha = this.blurFac !== 0 ? (innerAlpha / this.blurFac).toFixed(2) : innerAlpha;
 
         gradient.addColorStop(0, `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, ${innerAlpha})`);
@@ -332,127 +511,104 @@ export default class Lightshow {
         this.ctx.fill();
 
         if (this.duoEditorMode && this.flashCtx && index === history.length - 1 && historyIndex < 2) {
-          const point = history[index];
-          if (!point.color.red && !point.color.green && !point.color.blue) {
-            this.flashCtx.fillStyle = `rgba(0, 0, 0, 1)`;
-          } else {
-            this.flashCtx.fillStyle = `rgba(${point.color.red}, ${point.color.green}, ${point.color.blue}, 1)`;
-          }
+          const p = history[index];
+          if (!p.color.red && !p.color.green && !p.color.blue) this.flashCtx.fillStyle = `rgba(0, 0, 0, 1)`;
+          else this.flashCtx.fillStyle = `rgba(${p.color.red}, ${p.color.green}, ${p.color.blue}, 1)`;
 
-          if (historyIndex === 0) {
-            this.flashCtx.fillRect(100, 1, 100, 60);
-          } else {
-            this.flashCtx.fillRect(130, 55, 40, 25);
-          }
+          if (historyIndex === 0) this.flashCtx.fillRect(100, 1, 100, 60);
+          else this.flashCtx.fillRect(130, 55, 40, 25);
         }
       }
     });
 
-    // Ensure histories do not exceed the trail size
-    this.histories.forEach(history => {
-      while (history.length > this.trailSize) {
-        history.shift();
-      }
+    this.histories.forEach((history) => {
+      while (history.length > this.trailSize) history.shift();
     });
 
-    if (!this._pause) {
-      requestAnimationFrame(this.draw.bind(this));
-    }
+    if (!this._pause) requestAnimationFrame(this.draw.bind(this));
   }
 
   feedCirclePoints() {
-    const centerX = (this.canvas.width / 2);
-    const centerY = this.canvas.height / 2;
-    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
+    const centerX = this._center.x;
+    const centerY = this._center.y;
+
+    const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
+    const baseRadius = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
+      if (!leds) continue;
 
-      // Ensure histories array has sub-arrays for each LED
-      while (this.histories.length < leds.length) {
-        this.histories.push([]);
-      }
+      while (this.histories.length < leds.length) this.histories.push([]);
 
-      this.angle += ((0.02) * this.direction);
-      if (this.angle >= 2 * Math.PI) {
-        this.angle = 0;
-      }
+      this.angle += 0.02 * this.direction;
+      if (this.angle >= 2 * Math.PI) this.angle = 0;
 
       leds.forEach((col, index) => {
-        let radius = baseRadius + index * this.spread; // Adjust this value to control the distance between rings
+        const radius = baseRadius + index * this.spread;
         const x = centerX + radius * Math.cos(this.angle);
         const y = centerY + radius * Math.sin(this.angle);
-        if (!col) {
-          col = { red: 0, green: 0, blue: 0 };
-        }
+
+        if (!col) col = { red: 0, green: 0, blue: 0 };
         this.histories[index].push({ x, y, color: col });
       });
     }
   }
 
   feedHeartPoints() {
-    const centerX = (this.canvas.width / 2);
-    const centerY = this.canvas.height / 2;
-    const scale = (this.circleRadius / 20) + 1;
+    const centerX = this._center.x;
+    const centerY = this._center.y;
+
+    const scale = this.circleRadius / 20 + 1;
 
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
+      if (!leds) continue;
 
-      // Ensure histories array has sub-arrays for each LED
-      while (this.histories.length < leds.length) {
-        this.histories.push([]);
-      }
+      while (this.histories.length < leds.length) this.histories.push([]);
 
-      this.angle += (0.05 * this.direction); // Adjust this value to control the speed of the heart shape
-      if (this.angle >= 2 * Math.PI) {
-        this.angle = 0;
-      }
+      this.angle += 0.05 * this.direction;
+      if (this.angle >= 2 * Math.PI) this.angle = 0;
 
       leds.forEach((col, index) => {
-        const radiusScale = 1 + index * this.spread / 100; // Modify this line to use spread to adjust the scale
+        const radiusScale = 1 + (index * this.spread) / 100;
         const t = this.angle;
+
         const x = centerX + scale * radiusScale * 16 * Math.pow(Math.sin(t), 3);
-        const y = centerY - scale * radiusScale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-        if (!col) {
-          col = { red: 0, green: 0, blue: 0 };
-        }
+        const y =
+          centerY -
+          scale * radiusScale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+
+        if (!col) col = { red: 0, green: 0, blue: 0 };
         this.histories[index].push({ x, y, color: col });
       });
     }
   }
 
   feedBoxPoints() {
-    const centerX = (this.canvas.width / 2);
-    const centerY = (this.canvas.height / 2);
-    const baseBoxSize = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));  // Start with a reasonable base size for visibility
+    const centerX = this._center.x;
+    const centerY = this._center.y;
+
+    const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
+    const baseBoxSize = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
+      if (!leds) continue;
 
       leds.forEach((col, index) => {
-        const boxSize = baseBoxSize + index * this.spread;  // Actual size of the square for this LED
+        const boxSize = baseBoxSize + index * this.spread;
         const halfBoxSize = boxSize / 2;
-        const fullPerimeter = 4 * boxSize;  // Total perimeter of the square
+        const fullPerimeter = 4 * boxSize;
 
-        this.angle += (this.direction * (0.01 / leds.length) * (360 / fullPerimeter));  // Increment angle proportionally to the perimeter
-        if (this.angle >= 1) {  // Normalize the angle to prevent overflow
-          this.angle = 0;
-        } else if (this.angle < 0) {
-          this.angle = 1;
-        }
+        this.angle += this.direction * (0.01 / leds.length) * (360 / fullPerimeter);
+        if (this.angle >= 1) this.angle = 0;
+        else if (this.angle < 0) this.angle = 1;
 
-        const perimeterPosition = (this.angle * fullPerimeter) % fullPerimeter;  // Current position on the perimeter
+        const perimeterPosition = (this.angle * fullPerimeter) % fullPerimeter;
 
-        let x = centerX, y = centerY;
+        let x = centerX,
+          y = centerY;
         if (perimeterPosition < boxSize) {
           x = centerX - halfBoxSize + perimeterPosition;
           y = centerY - halfBoxSize;
@@ -467,42 +623,37 @@ export default class Lightshow {
           y = centerY + halfBoxSize - (perimeterPosition - 3 * boxSize);
         }
 
-        if (!col) {
-          col = { red: 0, green: 0, blue: 0 };
-        }
+        if (!col) col = { red: 0, green: 0, blue: 0 };
+        if (!this.histories[index]) this.histories[index] = [];
         this.histories[index].push({ x, y, color: col });
       });
     }
   }
 
   feedFigure8Points() {
-    const centerX = (this.canvas.width / 2);
-    const centerY = this.canvas.height / 2;
-    let baseRadius = Math.min(centerX, centerY) - (500 - parseInt(this.circleRadius));
+    const centerX = this._center.x;
+    const centerY = this._center.y;
+
+    const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
+    const baseRadius = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
-      if (!leds) {
-        continue;
-      }
+      if (!leds) continue;
 
-      // Ensure histories array has sub-arrays for each LED
-      while (this.histories.length < leds.length) {
-        this.histories.push([]);
-      }
+      while (this.histories.length < leds.length) this.histories.push([]);
 
-      this.angle += (0.02 * this.direction);
-      if (this.angle >= 2 * Math.PI) {
-        this.angle = 0;
-      }
+      this.angle += 0.02 * this.direction;
+      if (this.angle >= 2 * Math.PI) this.angle = 0;
 
       leds.forEach((col, index) => {
-        let radius = baseRadius + index * this.spread; // Adjust this value to control the distance between rings
-        const x = centerX + (radius * Math.sin(this.angle)) / (1 + Math.cos(this.angle) * Math.cos(this.angle));
-        const y = centerY + (radius * Math.sin(this.angle) * Math.cos(this.angle)) / (1 + Math.cos(this.angle) * Math.cos(this.angle));
-        if (!col) {
-          col = { red: 0, green: 0, blue: 0 };
-        }
+        const radius = baseRadius + index * this.spread;
+        const denom = 1 + Math.cos(this.angle) * Math.cos(this.angle);
+
+        const x = centerX + (radius * Math.sin(this.angle)) / denom;
+        const y = centerY + (radius * Math.sin(this.angle) * Math.cos(this.angle)) / denom;
+
+        if (!col) col = { red: 0, green: 0, blue: 0 };
         this.histories[index].push({ x, y, color: col });
       });
     }
@@ -510,9 +661,7 @@ export default class Lightshow {
 
   start() {
     this._pause = false;
-    if (!this.animationFrameId) {
-      this.animationFrameId = requestAnimationFrame(this.boundDraw);
-    }
+    if (!this.animationFrameId) this.animationFrameId = requestAnimationFrame(this.boundDraw);
   }
 
   stop() {
@@ -523,84 +672,59 @@ export default class Lightshow {
     }
   }
 
-  // get the pattern
   getPattern() {
     const demoMode = this.vortex.engine().modes().curMode();
     return demoMode.getPattern(0);
   }
 
-  // set the pattern
   setPattern(patternIDValue, targetLeds) {
-    // the selected dropdown pattern
     const selectedPattern = this.vortexLib.PatternID.values[patternIDValue];
-    let demoMode = this.vortex.engine().modes().curMode();
-    targetLeds.forEach(ledIndex => {
-      // set the pattern of the demo mode to the selected dropdown pattern on all LED positions
-      // with null args and null colorset (so they are defaulted and won't change)
+    const demoMode = this.vortex.engine().modes().curMode();
+    targetLeds.forEach((ledIndex) => {
       demoMode.setPattern(selectedPattern, ledIndex, null, null);
     });
-    // re-initialize the demo mode so it takes the new args into consideration
     demoMode.init();
-    // save
     this.vortex.engine().modes().saveCurMode();
   }
 
-  // get colorset
   getColorset(led = this.vortex.engine().leds().ledAny()) {
     const demoMode = this.vortex.engine().modes().curMode();
-    if (!demoMode) {
-      return new this.vortexLib.Colorset();
-    }
+    if (!demoMode) return new this.vortexLib.Colorset();
     return demoMode.getColorset(led);
   }
 
-  // update colorset
   setColorset(colorset, targetLeds) {
-    // grab the 'preview' mode for the current mode (randomizer)
-    let demoMode = this.vortex.engine().modes().curMode();
-    if (!demoMode) {
-      return;
-    }
-    // set the colorset of the demo mode
-    targetLeds.forEach(ledIndex => {
+    const demoMode = this.vortex.engine().modes().curMode();
+    if (!demoMode) return;
+
+    targetLeds.forEach((ledIndex) => {
       demoMode.setColorset(colorset, ledIndex);
     });
-    // re-initialize the demo mode because num colors may have changed
     demoMode.init();
-    // save
     this.vortex.engine().modes().saveCurMode();
   }
 
-  // add a color to the colorset
   addColor(r, g, b, targetLeds, sourceLed) {
-    // there's two ways we could do this, we could actually add a color to each
-    // colorset regardless of whats there... or we could add a color to the displayed
-    // colorset (first selected led) then set that colorset on the rest thereby overwriting
-    // I think the more intuitive approach is the latter which overwrites
-    let set = this.getColorset(sourceLed);
+    const set = this.getColorset(sourceLed);
     set.addColor(new this.vortexLib.RGBColor(r, g, b));
-    targetLeds.forEach(ledIndex => {
+    targetLeds.forEach((ledIndex) => {
       this.setColorset(set, [ledIndex]);
     });
   }
 
-  // delete a color from the colorset
   delColor(index, targetLeds, sourceLed) {
-    let set = this.getColorset(sourceLed);
-    if (set.numColors() <= 1) {
-      return;
-    }
+    const set = this.getColorset(sourceLed);
+    if (set.numColors() <= 1) return;
     set.removeColor(index);
-    targetLeds.forEach(ledIndex => {
+    targetLeds.forEach((ledIndex) => {
       this.setColorset(set, [ledIndex]);
     });
   }
 
-  // update a color in the colorset
-  updateColor(index, r, g, b, targetLeds,  sourceLed) {
-    let set = this.getColorset(sourceLed);
+  updateColor(index, r, g, b, targetLeds, sourceLed) {
+    const set = this.getColorset(sourceLed);
     set.set(index, new this.vortexLib.RGBColor(r, g, b));
-    targetLeds.forEach(ledIndex => {
+    targetLeds.forEach((ledIndex) => {
       this.setColorset(set, [ledIndex]);
     });
   }
@@ -608,55 +732,42 @@ export default class Lightshow {
   randomizeColorset(targetLeds) {
     this.vortex.openRandomizer(true);
     let numCmds = 3;
+
     if (targetLeds.length > 0) {
       this.vortex.clearMenuTargetLeds();
-      targetLeds.forEach(led => {
-        // by adding or setting our own target leds it will skip led selection in the menu
-        this.vortex.addMenuTargetLeds(led);
-      });
+      targetLeds.forEach((led) => this.vortex.addMenuTargetLeds(led));
     } else {
-      // otherwise input long click to select all leds
       this.vortex.longClick(0);
       numCmds++;
     }
-    // select colorset
+
     this.vortex.longClick(0);
-    // randomize
     this.vortex.shortClick(0);
-    // save
     this.vortex.longClick(0);
-    // need to run 1 tick per command
-    for (let i = 0; i < numCmds; ++i) {
-      this.vortexLib.RunTick(this.vortex);
-    }
+
+    for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
   }
 
   randomizePattern(targetLeds) {
     this.vortex.openRandomizer(true);
     let numCmds = 4;
+
     if (targetLeds.length > 0) {
       this.vortex.clearMenuTargetLeds();
-      targetLeds.forEach(led => {
-        // by adding or setting our own target leds it will skip led selection in the menu
-        this.vortex.addMenuTargetLeds(led);
-      });
+      targetLeds.forEach((led) => this.vortex.addMenuTargetLeds(led));
     } else {
-      // otherwise input long click to select all leds
       this.vortex.longClick(0);
       numCmds++;
     }
-    // select pattern
+
     this.vortex.shortClick(0);
     this.vortex.longClick(0);
-    // randomize
     this.vortex.shortClick(0);
-    // save
     this.vortex.longClick(0);
-    // need to run 1 tick per command
-    for (let i = 0; i < numCmds; ++i) {
-      this.vortexLib.RunTick(this.vortex);
-    }
+
+    for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
   }
 }
+
