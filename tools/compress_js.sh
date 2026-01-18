@@ -8,7 +8,7 @@ for jsFile in ./js/*.js; do
     continue
   fi
   # compress the JS
-  uglifyjs --compress $jsFile > $jsFile.bak
+  uglifyjs --compress -- $jsFile > $jsFile.bak
   # deploy compressed file
   mv $jsFile.bak $jsFile
 done
@@ -20,7 +20,7 @@ for jsFile in ./js/mobile/*.js; do
     continue
   fi
   # compress the JS
-  uglifyjs --compress $jsFile > $jsFile.bak
+  uglifyjs --compress -- $jsFile > $jsFile.bak
   # deploy compressed file
   mv $jsFile.bak $jsFile
 done
