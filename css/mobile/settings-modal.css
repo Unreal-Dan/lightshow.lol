@@ -81,7 +81,8 @@
 /* Handle bar */
 #m-settings-modal .m-sheet-handle-wrap {
   width: 100%;
-  padding: 6px 0 4px;
+  padding: 10px 0 16px;
+  background: #1d;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -101,7 +102,7 @@
 #m-settings-modal .modal-header,
 #m-settings-modal .modal-footer {
   border-color: rgba(255, 255, 255, 0.10) !important;
-  padding: 12px 14px !important;
+  padding: 0px 14px 12px 14px !important;
   flex: 0 0 auto;
   background: rgba(12, 12, 12, 0.92) !important;
 }

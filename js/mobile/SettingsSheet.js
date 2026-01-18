@@ -80,7 +80,7 @@ export default class SettingsSheet {
     wrap.appendChild(bar);
 
     this._content.insertBefore(wrap, this._content.firstChild);
-    this._bindHandle(bar);
+    this._bindHandle(wrap);
   }
 
   _bindHandle(handleEl) {

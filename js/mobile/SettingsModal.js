@@ -460,9 +460,6 @@ export default class SettingsModal {
 
     const dt = deviceType || this._selectedDeviceType('Duo');
 
-    const titleEl = modalEl.querySelector('#m-settings-title');
-    if (titleEl) titleEl.textContent = `Settings — ${dt}`;
-
     const connected = this._isConnected();
     const brightnessSupported = this._supportsDeviceBrightness();
 
