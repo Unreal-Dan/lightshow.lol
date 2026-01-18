@@ -102,7 +102,7 @@ export default class VortexEditorMobile {
       getDeviceType: () => this.deviceType || 'Duo',
       getDevices: () => this.devices,
       demoMode: async () => {
-        //await this.demoModeOnDevice();
+        await this.demoModeOnDevice();
       },
       demoColor: async (rgbColor) => {
         await this.demoColorOnDevice(rgbColor);
