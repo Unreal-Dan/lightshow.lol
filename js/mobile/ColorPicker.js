@@ -115,7 +115,7 @@ export default class ColorPicker {
     // =========================================================
     // Device demo scheduling (color preview -> revert to mode)
     // =========================================================
-    this._demoIdleMs = 2000;
+    this._demoIdleMs = 5000;
 
     this._demoRevertTimer = 0;
     this._demoLastPreviewAt = 0;
@@ -246,7 +246,7 @@ export default class ColorPicker {
     const bb = this._clampByte(b);
 
     this._demoLastPreviewAt = Date.now();
-    //this._demoScheduleRevertToMode();
+    this._demoScheduleRevertToMode();
 
     this._demoColorPending = { r: rr, g: gg, b: bb };
 
