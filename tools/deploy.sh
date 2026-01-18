@@ -8,13 +8,13 @@ git pull
 echo "'"${GITHUB_SHA}"'" > build.txt 
 
 # combine css into one file
-chmod +x ./build_css.sh 
-./build_css.sh 
+chmod +x ./tools/build_css.sh 
+./tools/build_css.sh 
 
 # add cache busters to all imports
-chmod +x ./add_cache_busters.sh 
-./add_cache_busters.sh
+chmod +x ./tools/add_cache_busters.sh 
+./tools/add_cache_busters.sh
 
 # compress JS with uglifyjs
-chmod +x ./compress_js.sh 
-./compress_js.sh
+chmod +x ./tools/compress_js.sh 
+./tools/compress_js.sh
