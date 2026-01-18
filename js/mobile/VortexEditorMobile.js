@@ -102,7 +102,7 @@ export default class VortexEditorMobile {
       getDeviceType: () => this.deviceType || 'Duo',
       getDevices: () => this.devices,
       demoMode: async () => {
-        await this.demoModeOnDevice();
+        //await this.demoModeOnDevice();
       },
       demoColor: async (rgbColor) => {
         await this.demoColorOnDevice(rgbColor);
@@ -527,13 +527,13 @@ export default class VortexEditorMobile {
     try {
       if (this._transferInProgress) return;
 
-      //let tries = 0;
-      //while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
-      //  if (tries++ > 10) return;
-      //  await this.sleep(100);
-      //  if (this._transferInProgress) return;
-      //}
-      //await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
+      let tries = 0;
+      while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
+        if (tries++ > 10) return;
+        await this.sleep(50);
+        if (this._transferInProgress) return;
+      }
+      await this.vortexPort.demoCurMode(this.vortexLib, this.vortex);
     } catch (error) {
       Notification.failure('Failed to demo mode (' + error + ')');
     }
