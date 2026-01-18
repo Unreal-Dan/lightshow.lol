@@ -526,6 +526,7 @@ export default class VortexEditorMobile {
   async demoModeOnDevice() {
     try {
       if (this._transferInProgress) return;
+      return;
 
       let tries = 0;
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
