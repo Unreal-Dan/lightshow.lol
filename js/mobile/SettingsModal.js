@@ -402,6 +402,16 @@ export default class SettingsModal {
     if (shapesRow && shapesRow.dataset.bound !== '1') {
       shapesRow.dataset.bound = '1';
 
+      const setAnimSlider = (id, value) => {
+        const slider = modalEl.querySelector(`#m-anim-slider-${id}`);
+        if (!slider) return;
+
+        slider.value = String(value);
+
+        // Let your existing delegated handler update LS + the value label
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+
       shapesRow.querySelectorAll('[data-shape]').forEach((btn) => {
         btn.addEventListener(
           'click',
@@ -413,6 +423,10 @@ export default class SettingsModal {
 
             try {
               ls.setShape(shape);
+              if (shape === 'heart') setAnimSlider('circleRadius', 45);
+              else if (shape === 'orbit') setAnimSlider('circleRadius', 400);
+              else if (shape === 'circle') setAnimSlider('circleRadius', 355);
+              else setAnimSlider('circleRadius', 385);
               ls.angle = 0;
             } catch {}
           },
