@@ -1070,19 +1070,24 @@ export default class VortexEditorMobile {
     const modeIndexLabel = `${idx + 1} / ${n}`;
 
     const nameEl = this._findFirst(['#m-mode-name', '#mode-name', '[data-role="mode-name"]']);
-    const idxEl = this._findFirst(['#m-mode-index', '#mode-index-label', '[data-role="mode-index"]']);
+    const idxEl  = this._findFirst(['#m-mode-index', '#mode-index-label', '[data-role="mode-index"]']);
 
     if (nameEl) nameEl.textContent = modeName;
     if (idxEl) idxEl.textContent = modeIndexLabel;
 
+    const carouselValueEl = this.dom?.$?.('.m-carousel-value') || document.querySelector('.m-carousel-value');
+    if (carouselValueEl) carouselValueEl.textContent = modeIndexLabel;
+
+    // optional: if you ever want the title to show the current mode name
+    // const carouselTitleEl = this.dom?.$?.('.m-carousel-title') || document.querySelector('.m-carousel-title');
+    // if (carouselTitleEl) carouselTitleEl.textContent = modeName;
+
     const modeTitleEl = this._findFirst(['#m-mode-title', '[data-role="mode-title"]']);
     if (modeTitleEl) {
-      try {
-        modeTitleEl.textContent = this.vortex.getModeName();
-      } catch {}
+      try { modeTitleEl.textContent = this.vortex.getModeName(); } catch {}
     }
 
-    return !!(nameEl || idxEl || modeTitleEl);
+    return !!(nameEl || idxEl || modeTitleEl || carouselValueEl);
   }
 
   async _afterModeChanged(dt, { allowRerenderFallback = true, finalize = true, demo = true } = {}) {
@@ -1112,7 +1117,7 @@ export default class VortexEditorMobile {
       return;
     }
 
-    await this._afterModeChanged(dt, { finalize: false, demo: true });
+    await this._afterModeChanged(dt, { allowRerenderFallback: false, finalize: false, demo: true });
   }
 
   _ensureModeCrudButtonsExist() {

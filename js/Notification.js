@@ -36,13 +36,24 @@ class Notification {
     const c = Notification.notificationContainer;
     if (!c) return;
 
-    // Remove oldest beyond max (bottom of stack)
-    while (c.children.length > Notification.maxVisible) {
-      const last = c.lastElementChild;
+    const isClosing = (el) => el && el.dataset && el.dataset.closing === '1';
+
+    // count only items not already scheduled for removal
+    let visible = 0;
+    for (const child of c.children) {
+      if (!isClosing(child)) visible++;
+    }
+
+    while (visible > Notification.maxVisible) {
+      // find the oldest *non-closing* (bottom)
+      const kids = Array.from(c.children);
+      const last = kids.reverse().find((el) => !isClosing(el));
       if (!last) break;
-      try {
-        last.classList.remove('show');
-      } catch {}
+
+      last.dataset.closing = '1';
+      visible--;
+
+      try { last.classList.remove('show'); } catch {}
       setTimeout(() => {
         try { last.remove(); } catch {}
       }, Notification.fadeMs);
@@ -82,11 +93,9 @@ class Notification {
 
     // Per-notification timer (duration always means what you think it means)
     setTimeout(() => {
+      try { el.dataset.closing = '1'; } catch {}
       try { el.classList.remove('show'); } catch {}
-
-      setTimeout(() => {
-        try { el.remove(); } catch {}
-      }, Notification.fadeMs);
+      setTimeout(() => { try { el.remove(); } catch {} }, Notification.fadeMs);
     }, ms);
   }
 
