@@ -223,21 +223,6 @@ export default class SettingsSheet {
 
     const st = this._body.scrollTop || 0;
     const dyDown = t.clientY - this._drag.startY;
-
-    // Only convert to sheet resize when at top and pulling down
-    if (st <= 0 && dyDown > 0) {
-      this._drag.mode = 'sheet';
-
-      try {
-        e.preventDefault();
-      } catch {}
-
-      // during touch resize, kill easing
-      this._content.style.transition = 'none';
-
-      const next = this._drag.startHeight - dyDown;
-      this._setHeight(this._clamp(next, this._minHeight(), this._maxHeight()), false);
-    }
   }
 
   _onTouchEndBody() {
