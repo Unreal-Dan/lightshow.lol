@@ -287,13 +287,13 @@ export default class VortexEditorMobile {
       return {
         deviceImg: 'public/images/chromadeck-logo-square-512.png',
         deviceAlt: 'Chromadeck',
-        instructions: 'Unplug the Chromadeck and switch it off and back on, then tap Connect below.',
+        instructions: 'First tap Connect below then unplug the Chromadeck and switch it off and back on',
       };
     }
     return {
       deviceImg: 'public/images/spark-logo-square-512.png',
       deviceAlt: 'Spark',
-      instructions: 'Unplug the Spark and open the Bluetooth menu, then tap Connect below.',
+      instructions: 'Tap connect below, unplug the Spark and turn it off. Hold the button and turn the Spark on.',
     };
   }
 
