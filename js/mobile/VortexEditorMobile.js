@@ -21,7 +21,7 @@ const ASSETS = {
   ],
   scripts: [{ id: 'bootstrap-js', src: 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js' }],
   data: {
-    devices: 'js/devices.json',
+    devices: 'js/devices.json?v=__CACHE_BUSTER__',
   },
 };
 
@@ -178,7 +178,7 @@ export default class VortexEditorMobile {
       if (document.getElementById(id)) return resolve();
       const script = document.createElement('script');
       script.id = id;
-      script.src = src;
+      script.src = src + '?v=__CACHE_BUSTER__';
       script.onload = resolve;
       script.onerror = reject;
       document.head.appendChild(script);
