@@ -1446,7 +1446,7 @@ export default class VortexEditorMobile {
       if (tool === 'transfer') {
         if (!this.vortexPort?.isActive?.()) {
           Notification.failure('Connect a device to transfer modes');
-          return false;
+          return;
         }
         await this._showTransferModal(dt);
         return;
