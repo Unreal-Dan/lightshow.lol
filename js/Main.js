@@ -7,8 +7,8 @@ function isMobile() {
 }
 
 if (isMobile()) {
-    await import('./mobile/VortexEditorMobile.js');
+    await import('./mobile/VortexEditorMobile.js?v=__CACHE_BUSTER__');
 } else {
-    await import('./VortexEditor.js');
+    await import('./VortexEditor.js?v=__CACHE_BUSTER__');
 }
 
