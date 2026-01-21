@@ -408,6 +408,18 @@ export default class ColorPicker {
     const multiIndex = leds.ledMulti() | 0;
 
     this._ledSelEnsureDefaults(ledCount);
+    const isDuo = (dt === 'Duo');
+
+    let singleSelected = this._ledSelGetSingleSelected(ledCount);
+    let singleSource = this._ledSelGetSingleSource(ledCount);
+
+    if (isDuo) {
+      singleSelected = [0];
+      singleSource = 0;
+      this._ledSelSetFromModal({ ledCount, sourceLed: 0, selectedLeds: [0] });
+    } else if (!singleSelected) {
+      singleSelected = Array.from({ length: ledCount }, (_, i) => i);
+    }
 
     const isMulti = this._isMultiMode(curMode);
     const deviceMeta = this._getDevicesJson()?.[dt] || {};
@@ -442,10 +454,8 @@ export default class ColorPicker {
       positionsUrlAlt: deviceMeta?.altLabel
         ? `public/data/${String(deviceMeta.altLabel).toLowerCase()}-led-positions.json`
         : null,
-      selectedLeds: isMulti
-        ? [multiIndex]
-        : this._ledSelGetSingleSelected(ledCount) ?? Array.from({ length: ledCount }, (_, i) => i),
-      sourceLed: isMulti ? multiIndex : this._ledSelGetSingleSource(ledCount),
+      selectedLeds: isMulti ? [multiIndex] : singleSelected,
+      sourceLed: isMulti ? multiIndex : singleSource,
     };
 
     await this.openEffects({
