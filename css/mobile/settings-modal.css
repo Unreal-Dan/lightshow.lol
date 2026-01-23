@@ -285,7 +285,8 @@
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
-  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  position: relative;
 }
 
 #m-settings-modal .m-settings-shape-btn i {
@@ -294,6 +295,65 @@
 
 #m-settings-modal .m-settings-shape-btn:active {
   transform: translateY(1px);
+}
+
+/* ============================
+   Shape selection + direction highlights
+============================ */
+
+/* Selected (forward) */
+#m-settings-modal .m-settings-shape-btn.is-selected {
+  border-color: rgba(0, 198, 255, 0.78);
+  background: rgba(0, 198, 255, 0.10);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.38),
+    0 0 0 2px rgba(0, 198, 255, 0.30),
+    0 0 18px rgba(0, 198, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+#m-settings-modal .m-settings-shape-btn.is-selected i {
+  transform: translateY(-0.25px);
+}
+
+/* Selected + reverse (second-tap) */
+#m-settings-modal .m-settings-shape-btn.is-selected.is-reverse {
+  border-color: rgba(255, 180, 0, 0.82);
+  background: rgba(255, 180, 0, 0.12);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.38),
+    0 0 0 2px rgba(255, 180, 0, 0.28),
+    0 0 18px rgba(255, 180, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* Small corner indicator */
+#m-settings-modal .m-settings-shape-btn.is-selected::after {
+  content: '↻';
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 12px;
+  line-height: 1;
+
+  background: rgba(0, 198, 255, 0.18);
+  border: 1px solid rgba(0, 198, 255, 0.45);
+  color: rgba(255, 255, 255, 0.92);
+
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+#m-settings-modal .m-settings-shape-btn.is-selected.is-reverse::after {
+  content: '↺';
+  background: rgba(255, 180, 0, 0.20);
+  border: 1px solid rgba(255, 180, 0, 0.50);
 }
 
 @media (max-width: 420px) {

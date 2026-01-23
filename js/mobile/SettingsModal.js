@@ -19,6 +19,12 @@ export default class SettingsModal {
     this._brightnessPreviewInFlight = false;
     this._brightnessCommitInFlight = false;
 
+    // UI state for shape selection + direction highlight
+    this._animUi = {
+      shape: '',
+      reverse: false,
+    };
+
     this._animSpecs = [
       { id: 'tickRate', label: 'Speed', min: 1, max: 30, step: 1, get: (ls) => ls.tickRate, set: (ls, v) => (ls.tickRate = v) },
       { id: 'trailSize', label: 'Trail', min: 1, max: 300, step: 1, get: (ls) => ls.trailSize, set: (ls, v) => (ls.trailSize = v) },
@@ -188,6 +194,121 @@ export default class SettingsModal {
     });
   }
 
+  _getAnimShapeFromLightshow(ls) {
+    if (!ls) return '';
+    try {
+      const gs = ls.getShape?.();
+      if (gs != null) return String(gs || '').trim();
+    } catch {}
+    try {
+      const s =
+        ls.shape ??
+        ls.currentShape ??
+        ls.animShape ??
+        ls._shape ??
+        ls._animShape ??
+        ls.previewShape ??
+        '';
+      return String(s || '').trim();
+    } catch {
+      return '';
+    }
+  }
+
+  _getAnimReverseFromLightshow(ls) {
+    if (!ls) return null;
+
+    const tryVal = (v) => {
+      if (v == null) return null;
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'number' && Number.isFinite(v)) return v < 0;
+      if (typeof v === 'string') {
+        const s = v.trim().toLowerCase();
+        if (!s) return null;
+        if (s === 'reverse' || s === 'reversed' || s === 'back' || s === 'backward') return true;
+        if (s === 'forward' || s === 'fwd' || s === 'front') return false;
+      }
+      return null;
+    };
+
+    try {
+      // common-ish names people use
+      const r =
+        tryVal(ls.reverse) ??
+        tryVal(ls.isReverse) ??
+        tryVal(ls.reversed) ??
+        tryVal(ls.direction) ??
+        tryVal(ls.dir) ??
+        tryVal(ls._reverse) ??
+        tryVal(ls._direction);
+
+      if (r !== null) return r;
+    } catch {}
+
+    // Heuristic fallback: if there is a signed step/velocity, negative implies reverse
+    try {
+      const h =
+        tryVal(ls.angleStep) ??
+        tryVal(ls.angleVel) ??
+        tryVal(ls.angularVel) ??
+        tryVal(ls.angularVelocity);
+      if (h !== null) return h;
+    } catch {}
+
+    return null;
+  }
+
+  _syncAnimShapeUiFromLightshow() {
+    const ls = this.editor.lightshow || null;
+    if (!ls) return;
+
+    const shape = this._getAnimShapeFromLightshow(ls);
+    if (shape) this._animUi.shape = shape;
+
+    const rev = this._getAnimReverseFromLightshow(ls);
+    if (rev !== null) this._animUi.reverse = !!rev;
+  }
+
+  _applyAnimShapeUiToButtons() {
+    const modalEl = this._modalEl;
+    if (!modalEl) return;
+
+    const shapesRow = modalEl.querySelector('#m-anim-shapes-row');
+    if (!shapesRow) return;
+
+    const selectedShape = String(this._animUi.shape || '');
+    const reverse = !!this._animUi.reverse;
+
+    shapesRow.querySelectorAll('[data-shape]').forEach((btn) => {
+      const s = String(btn.dataset.shape || '');
+      const isSel = !!selectedShape && s === selectedShape;
+
+      // cache base title once
+      if (!btn.dataset.baseTitle) {
+        btn.dataset.baseTitle = String(btn.getAttribute('title') || '');
+      }
+
+      btn.classList.toggle('is-selected', isSel);
+      btn.classList.toggle('is-reverse', isSel && reverse);
+
+      // a11y-ish state
+      btn.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+
+      // Title suffix so you can see reverse vs forward on long-press / hover
+      const baseTitle = String(btn.dataset.baseTitle || '').trim();
+      if (isSel && baseTitle) {
+        btn.setAttribute('title', `${baseTitle}${reverse ? ' (Reverse)' : ' (Forward)'}`);
+      } else if (baseTitle) {
+        btn.setAttribute('title', baseTitle);
+      }
+    });
+  }
+
+  _syncAnimShapeButtons() {
+    this._syncAnimShapeUiFromLightshow();
+    this._applyAnimShapeUiToButtons();
+  }
+
   async _renderDeviceSection({ dt, connected, brightnessSupported }) {
     const modalEl = this._modalEl;
     if (!modalEl) return;
@@ -247,6 +368,9 @@ export default class SettingsModal {
     mount.appendChild(frag);
 
     this._bindAnimationOnce();
+
+    // ensure selection highlight is correct as soon as it's in DOM
+    this._syncAnimShapeButtons();
   }
 
   async _renderAnimationSliders() {
@@ -319,6 +443,9 @@ export default class SettingsModal {
         else valEl.textContent = String(Number(v) | 0);
       }
     }
+
+    // keep selection highlight in sync even if something else changed shape/direction
+    this._syncAnimShapeButtons();
   }
 
   _bindBrightnessForCurrentSlider() {
@@ -413,26 +540,52 @@ export default class SettingsModal {
       };
 
       shapesRow.querySelectorAll('[data-shape]').forEach((btn) => {
+        // cache base title once so we can restore it after adding direction suffixes
+        if (!btn.dataset.baseTitle) btn.dataset.baseTitle = String(btn.getAttribute('title') || '');
+
         btn.addEventListener(
           'click',
           () => {
             const ls = this.editor.lightshow;
             if (!ls) return;
+
             const shape = String(btn.dataset.shape || '');
             if (!shape) return;
 
+            const isSameShape = String(this._animUi.shape || '') === shape;
+
             try {
+              // Calling setShape twice (same shape) is what flips direction in your lightshow,
+              // so we keep calling it every tap.
               ls.setShape(shape);
+
+              // keep your existing radius presets
               if (shape === 'heart') setAnimSlider('circleRadius', 45);
               else if (shape === 'orbit') setAnimSlider('circleRadius', 400);
               else if (shape === 'circle') setAnimSlider('circleRadius', 355);
               else setAnimSlider('circleRadius', 385);
+
+              // reset phase
               ls.angle = 0;
             } catch {}
+
+            // Update UI state:
+            // - selecting a new shape sets forward highlight
+            // - tapping same shape toggles reverse highlight (to match direction flip)
+            if (isSameShape) this._animUi.reverse = !this._animUi.reverse;
+            else {
+              this._animUi.shape = shape;
+              this._animUi.reverse = false;
+            }
+
+            this._applyAnimShapeUiToButtons();
           },
           { passive: true }
         );
       });
+
+      // initial highlight once bound
+      this._syncAnimShapeButtons();
     }
 
     const controlsMount = modalEl.querySelector('#m-anim-controls-mount');
@@ -462,6 +615,10 @@ export default class SettingsModal {
 
           const valEl = modalEl.querySelector(`#m-anim-value-${id}`);
           if (valEl) valEl.textContent = spec.step < 1 ? String(num) : String(num | 0);
+
+          // in case sliders indirectly affect shape/direction (some modes do),
+          // keep the button highlight synced
+          this._syncAnimShapeButtons();
         },
         { passive: true }
       );
@@ -480,6 +637,9 @@ export default class SettingsModal {
     await this._renderDeviceSection({ dt, connected, brightnessSupported });
     await this._renderAnimationSection({ dt });
     await this._renderAnimationSliders();
+
+    // final pass to ensure shape highlight is correct after everything is rendered
+    this._syncAnimShapeButtons();
   }
 
   async show(deviceType = null) {
