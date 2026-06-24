@@ -1,40 +1,23 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
+import SimpleViews from './SimpleViews.js';
 
 export default class ChromalinkPanel extends Panel {
   constructor(editor) {
-    const content = `
-      <div id="chromalinkOptions">
-        <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo">Connect Duo</button>
-        <div id="chromalinkDetails" style="display: none;">
-          <div class="duo-device-info">
-            <img src="./public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
-            <div id="duoInfo">
-              <p id="deviceUpdateLabel"><strong>Device:</strong> Duo</p>
-              <p id="deviceVersionLabel"><strong>Version:</strong> <span id="duoVersion"></span></p>
-              <p id="deviceLatestVersionLabel"><strong>Modes:</strong> <span id="duoModes"></span></p>
-            </div>
-          </div>
-        </div>
-        <button id="chromalinkFlash" class="chromalink-button" title="Flash a custom Duo firmware">Flash Custom Firmware</button>
-        <button id="chromalinkUpdate" class="chromalink-button" title="Flash latest Duo firmware">Update Firmware</button>
-        <div class="chromalink-update-progress-container">
-          <div id="firmwareProgress" class="chromalink-update-progress-bar">
-            <div id="firmwareProgressBar"></div>
-          </div>
-        </div>
-        <input type="file" id="firmwareFileInput" accept=".bin" style="display:none;" />
-      </div>
-    `;
-    super(editor, 'chromalinkPanel', content, 'Chromalink Duo');
+    super(editor, 'chromalinkPanel', '', 'Chromalink Duo');
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;
     this.confirmationModal = new Modal('duo-flash-confirmation');
+    this._views = new SimpleViews({ basePath: 'js/views/' });
   }
 
-  initialize() {
+  async initialize() {
+    const frag = await this._views.render('chromalink-panel.html');
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.appendChild(frag);
+
     const connectButton = document.getElementById('chromalinkConnect');
     const firmwareFileInput = document.getElementById('firmwareFileInput');
     const flashButton = document.getElementById('chromalinkFlash');
@@ -281,4 +264,3 @@ export default class ChromalinkPanel extends Panel {
     }
   }
 }
-

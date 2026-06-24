@@ -1,0 +1,26 @@
+<div id="modeButtonsSection">
+  <button id="addModeButton" class="mode-list-btn" title="New Random Mode">
+    <i class="fas fa-plus-circle"></i>
+  </button>
+  <button id="importModeButton" class="mode-list-btn" title="Paste JSON mode">
+    <i class="fa-solid fa-paste"></i>
+  </button>
+  <button id="pullFromDeviceButton" class="mode-list-btn" title="Load Modes from Device" disabled>
+    <i class="fa-solid fa-upload fa-flip-vertical"></i>
+  </button>
+  <button id="pushToDeviceButton" class="mode-list-btn" title="Save Modes to Device" disabled>
+    <i class="fa-solid fa-download fa-flip-vertical"></i>
+  </button>
+  <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>
+    <i class="fa-solid fa-satellite-dish"></i>
+  </button>
+  <button id="listenVLButton" class="mode-list-btn" title="Receive Mode from Duo" disabled>
+    <i class="fa-solid fa-satellite-dish"></i>
+  </button>
+</div>
+<div id="modesListScrollContainer">
+  <div id="modesListContainer">
+    <!-- Dynamic list of modes will be populated here -->
+  </div>
+  <div id="emptyModesLabel" class="empty-modes-label" style="display: none;">Add Modes to Begin</div>
+</div>

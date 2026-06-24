@@ -1,3 +1,17 @@
+// View template reference: js/views/modal.html
+
+const MODAL_TEMPLATE = (id) => `
+<div id="modal_${id}" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <span class="modal-title" style="font-size: 20px; font-weight: bold;"></span>
+    <div class="modal-blurb"></div>
+    <input type="text" id="modalInput_${id}">
+    <div class="modal-buttons"></div>
+  </div>
+</div>
+`;
+
 export default class Modal {
   // Track the currently open modal
   static activeModal = null;
@@ -11,17 +25,7 @@ export default class Modal {
   }
 
   createModal(id) {
-    const html = `
-      <div id="modal_${id}" class="modal">
-        <div class="modal-content">
-          <span class="close">&times;</span>
-          <span class="modal-title" style="font-size: 20px; font-weight: bold;"></span>
-          <div class="modal-blurb"></div>
-          <input type="text" id="modalInput_${id}">
-          <div class="modal-buttons"></div>
-        </div>
-      </div>
-    `;
+    const html = MODAL_TEMPLATE(id);
     document.body.insertAdjacentHTML('beforeend', html);
     this.modalId = id;
     this.cacheElements(id);

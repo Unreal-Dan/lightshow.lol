@@ -3,39 +3,13 @@ import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
+import SimpleViews from './SimpleViews.js';
 
 export default class ModesPanel extends Panel {
   constructor(editor) {
-    const content = `
-      <div id="modeButtonsSection">
-        <button id="addModeButton" class="mode-list-btn" title="New Random Mode">
-          <i class="fas fa-plus-circle"></i>
-        </button>
-        <button id="importModeButton" class="mode-list-btn" title="Paste JSON mode">
-          <i class="fa-solid fa-paste"></i>
-        </button>
-        <button id="pullFromDeviceButton" class="mode-list-btn" title="Load Modes from Device" disabled>
-          <i class="fa-solid fa-upload fa-flip-vertical"></i>
-        </button>
-        <button id="pushToDeviceButton" class="mode-list-btn" title="Save Modes to Device" disabled>
-          <i class="fa-solid fa-download fa-flip-vertical"></i>
-        </button>
-        <button id="transmitVLButton" class="mode-list-btn" title="Transmit Mode to Duo" disabled>
-          <i class="fa-solid fa-satellite-dish"></i>
-        </button>
-        <button id="listenVLButton" class="mode-list-btn" title="Receive Mode from Duo" disabled>
-          <i class="fa-solid fa-satellite-dish"></i>
-        </button>
-      </div>
-      <div id="modesListScrollContainer">
-        <div id="modesListContainer">
-          <!-- Dynamic list of modes will be populated here -->
-        </div>
-        <div id="emptyModesLabel" class="empty-modes-label" style="display: none;">Add Modes to Begin</div>
-      </div>
-    `;
-    super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
+    super(editor, 'modesPanel', '', editor.detectMobile() ? 'Modes' : 'Modes List');
     this.editor = editor;
+    this.views = new SimpleViews({ basePath: 'js/views/' });
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.shareModal = new Modal('share');
@@ -44,7 +18,11 @@ export default class ModesPanel extends Panel {
     this.conversionModal = new Modal('conversion');
   }
 
-  initialize() {
+  async initialize() {
+    const panelHtml = await this.views.render('modes-panel.html');
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.append(panelHtml);
+
     const addModeButton = document.getElementById('addModeButton');
     addModeButton.addEventListener('click', () => this.addMode());
 
@@ -181,8 +159,8 @@ export default class ModesPanel extends Panel {
     // nothing really to do at this step
   }
 
-  refresh(fromEvent = false) {
-    this.refreshModeList(fromEvent);
+  async refresh(fromEvent = false) {
+    await this.refreshModeList(fromEvent);
   }
 
   refreshOtherPanels() {
@@ -194,10 +172,9 @@ export default class ModesPanel extends Panel {
     modesListContainer.innerHTML = '';
   }
 
-  refreshModeList(fromEvent = false) {
+  async refreshModeList(fromEvent = false) {
     const modesListContainer = document.getElementById('modesListContainer');
     this.clearModeList();
-    // make sure the 'empty label' never shows
     const emptyLabel = document.getElementById('emptyModesLabel');
     emptyLabel.style.display = 'none';
     let cur = this.editor.vortex.engine().modes().curMode();
@@ -205,37 +182,33 @@ export default class ModesPanel extends Panel {
       this.editor.vortex.setCurMode(0, false);
       cur = this.editor.vortex.engine().modes().curMode();
       if (!cur) {
-        // actually show the label, there's no modes
         emptyLabel.style.display = 'block';
         this.editor.ledSelectPanel.refreshLedList();
         return;
       }
     }
-    this.forEachMode((index, mode, curSel) => { 
-      let isSelected = (index == curSel);
-      const modeDiv = document.createElement('div');
-      modeDiv.className = 'mode-entry';
-      modeDiv.setAttribute('mode-index', index);
+    const curSel = this.editor.vortex.engine().modes().curModeIndex();
+    this.editor.vortex.setCurMode(0, false);
+    const frags = [];
+    for (let i = 0; i < this.editor.vortex.numModes(); ++i) {
+      const mode = this.editor.vortex.engine().modes().curMode();
+      const isSelected = (i === curSel);
+      const frag = await this.views.render('mode-entry.html', {
+        index: i + 1,
+        name: this.editor.vortex.getModeName(),
+        btnDisplay: isSelected ? 'flex' : 'none'
+      });
+      const modeDiv = frag.firstChild;
+      modeDiv.setAttribute('mode-index', i);
       if (isSelected) {
         modeDiv.classList.add('selected');
       }
-      modeDiv.innerHTML = `
-        <span class="mode-name">Mode ${index + 1} - ${this.editor.vortex.getModeName()}</span>
-        <div style="display:flex">
-        <div class="mode-btn-container" style="display: ${isSelected ? 'flex' : 'none'};">
-          <button class="share-mode-btn mode-btn" title="Share Mode"><i class="fas fa-share-alt"></i></button>
-          <button class="link-mode-btn mode-btn" title="Get Link"><i class="fas fa-link"></i></button>
-          <button class="export-mode-btn mode-btn" title="Copy Mode"><i class="fa-solid fa-copy"></i></button>
-        </div>
-        <button class="delete-mode-btn mode-btn" title="Delete Mode">&times;</button>
-        </div>
-      `;
-      modesListContainer.appendChild(modeDiv);
-    });
+      frags.push(frag);
+      this.editor.vortex.nextMode(false);
+    }
+    this.editor.vortex.setCurMode(curSel, false);
+    frags.forEach(f => modesListContainer.appendChild(f));
     this.attachModeEventListeners();
-
-
-
   }
 
   hasMultiLedPatterns() {

@@ -3,29 +3,15 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
+import SimpleViews from './SimpleViews.js';
 
 export default class UpdatePanel extends Panel {
   constructor(editor) {
-    const content = `
-      <div id="updateOptions">
-        <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
-
-        <div class="update-progress-container">
-          <div id="overallProgress" class="progress-bar">
-            <div id="overallProgressBar"></div>
-          </div>
-        </div>
-
-        <div>
-          <span id="updateProgress" style="margin-top: 10px;"></span>
-        </div>
-      </div>
-    `;
-
-    super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
+    super(editor, 'updatePanel', '', 'Device Updates', { showCloseButton: true });
 
     this.editor = editor;
     this.vortexPort = editor.vortexPort;
+    this._views = new SimpleViews({ basePath: 'js/views/' });
 
     // this.serialPort is a local copy of the vortexport.serialport if it's
     // open yet, but most likely it's not so this will probably just be null.
@@ -47,9 +33,12 @@ export default class UpdatePanel extends Panel {
     this.confirmationModal = new Modal('flash-confirmation');
   }
 
-  initialize() {
-    this.toggleCollapse(false);
-    this.hide();
+  async initialize() {
+    const frag = await this._views.render('update-panel.html');
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.appendChild(frag);
+
+    // Flash button events are bound per-device in displayFirmwareUpdateInfo
   }
 
   async onDeviceConnect(deviceName, deviceVersion) {
@@ -348,81 +337,72 @@ export default class UpdatePanel extends Panel {
     }
   }
 
-  displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
+  async displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
     const lowerDevice = device.toLowerCase();
     const deviceIconUrl = `./public/images/${lowerDevice}-logo-square-64.png`;
 
-    let content = `
-      <div class="device-update-labels">
-        <div>
-          <p id="deviceUpdateLabel"><strong>Device:</strong> ${device}</p>
-          <p id="deviceVersionLabel"><strong>Current Version:</strong> ${currentVersion}</p>
-          <p id="deviceLatestVersionLabel"><strong>Latest Version:</strong> ${latestVersion}</p>
-        </div>
-        <div>
-          <img src="${deviceIconUrl}" alt="${device} Icon" class="device-icon">
-        </div>
-      </div>
-    `;
+    let statusBlock = '';
+    let actionButtons = '';
 
     if (currentVersion === latestVersion) {
-      const updatePanelContent = document.getElementById('updateOptions');
-      updatePanelContent.innerHTML = `
-        <h3 id="updateTitle">${device} Firmware</h3>
-        <fieldset>
-          <div class="firmware-notification">
-            ${content}
-            <p>Your firmware is up-to-date.</p>
+      statusBlock = '<p>Your firmware is up-to-date.</p>';
+    } else {
+      if (lowerDevice === 'duo') {
+        actionButtons = `
+          <div class="firmware-buttons">
+            <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
           </div>
-        </fieldset>
-      `;
+        `;
+      } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
+        actionButtons = `
+          <div class="firmware-buttons">
+            <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
+            <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          </div>
+        `;
+      } else if (['chromadeck', 'spark'].includes(lowerDevice)) {
+        const local = this.isLocalServer();
+        const hint = local
+          ? `<div class="text-secondary" style="margin-top: 6px;">Local server detected — flashing from <code>../public/data/</code></div>`
+          : '';
+
+        actionButtons = `
+          <button id="updateFlash" class="update-button">Update Firmware Now</button>
+          ${hint}
+          <div class="update-progress-container">
+            <div id="overallProgress" class="update-progress-bar">
+              <div id="overallProgressBar"></div>
+            </div>
+          </div>
+          <div class="update-status-container">
+            <span id="updateProgress"></span>
+          </div>
+        `;
+      }
+    }
+
+    const title = currentVersion === latestVersion
+      ? `${device} Firmware`
+      : 'Firmware Update Required';
+
+    const updatePanelContent = document.getElementById('updateOptions');
+    const frag = await this._views.render('firmware-info.html', {
+      title,
+      device,
+      currentVersion,
+      latestVersion,
+      deviceIconUrl,
+      statusBlock,
+      actionButtons,
+    });
+    updatePanelContent.innerHTML = '';
+    updatePanelContent.appendChild(frag);
+
+    if (currentVersion === latestVersion) {
       Notification.success(`${device} ${currentVersion} is up-to-date.`);
       this.show();
       return;
     }
-
-    if (lowerDevice === 'duo') {
-      content += `
-        <div class="firmware-buttons">
-          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
-        </div>
-      `;
-    } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
-      content += `
-        <div class="firmware-buttons">
-          <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
-          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
-        </div>
-      `;
-    } else if (['chromadeck', 'spark'].includes(lowerDevice)) {
-      const local = this.isLocalServer();
-      const hint = local
-        ? `<div class="text-secondary" style="margin-top: 6px;">Local server detected — flashing from <code>../public/data/</code></div>`
-        : '';
-
-      content += `
-        <button id="updateFlash" class="update-button">Update Firmware Now</button>
-        ${hint}
-        <div class="update-progress-container">
-          <div id="overallProgress" class="update-progress-bar">
-            <div id="overallProgressBar"></div>
-          </div>
-        </div>
-        <div class="update-status-container">
-          <span id="updateProgress"></span>
-        </div>
-      `;
-    }
-
-    const updatePanelContent = document.getElementById('updateOptions');
-    updatePanelContent.innerHTML = `
-      <h3 id="updateTitle">Firmware Update Required</h3>
-      <fieldset>
-        <div class="firmware-notification">
-          ${content}
-        </div>
-      </fieldset>
-    `;
 
     if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
       const flashButton = document.getElementById('updateFlash');

@@ -1,33 +1,25 @@
 import Panel from './Panel.js';
+import SimpleViews from './SimpleViews.js';
 
 export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
-    const initialHTML = `
-      <div id="community-browser-container">
-        <input type="text" id="vcb-search-box" placeholder="Search modes..." />
-        <div id="vcb-filter-container">
-          <!-- This is where filter buttons will appear -->
-        </div>
-        <div id="vcb-modes-container">
-          <!-- This is where mode items will appear -->
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button id="vcb-prev-btn">Prev</button>
-          <span id="vcb-page-label">Page 1 / ?</span>
-          <button id="vcb-next-btn">Next</button>
-        </div>
-      </div>
-    `;
-    super(editor, 'communityBrowserPanel', initialHTML, 'Community Modes');
+    super(editor, 'communityBrowserPanel', '', 'Community Modes');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
+    this._views = new SimpleViews({ basePath: 'js/views/' });
 
     this.currentPage = 1;
     this.pageSize = 999;
     this.modesCache = {};
     this.totalPages = 1;
     this.activeFilters = new Set(); // Stores active device filters
+  }
+
+  async initialize() {
+    const frag = await this._views.render('community-browser-panel.html');
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.appendChild(frag);
 
     this.pageLabel = this.contentContainer.querySelector('#vcb-page-label');
     this.modesContainer = this.contentContainer.querySelector('#vcb-modes-container');
@@ -57,9 +49,7 @@ export default class CommunityBrowserPanel extends Panel {
         }
       });
     }
-  }
 
-  initialize() {
     // Create filter button container
     // Loop through devices and create filter buttons dynamically
     Object.entries(this.editor.devices).forEach(([deviceName, deviceData]) => {
@@ -209,4 +199,3 @@ export default class CommunityBrowserPanel extends Panel {
     this.applyFilters();
   }
 }
-

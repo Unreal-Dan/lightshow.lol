@@ -5,7 +5,7 @@ import Lightshow from '../Lightshow.js';
 import VortexPort from '../VortexPort.js';
 import Notification from '../Notification.js';
 
-import SimpleViews from './SimpleViews.js';
+import SimpleViews from '../SimpleViews.js';
 import SimpleDom from './SimpleDom.js';
 import ColorPicker from './ColorPicker.js';
 

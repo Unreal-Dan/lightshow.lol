@@ -132,6 +132,9 @@ export default class VortexEditor {
     // Load dependencies
     await this.loadAssets();
 
+    // Pre-load view templates
+    Notification.init();
+
     // Start the lightshow
     this.lightshow.start();
 
@@ -166,7 +169,7 @@ export default class VortexEditor {
     });
 
     // Initialize Panels
-    this.panels.forEach((panel) => panel.initialize());
+    await Promise.all(this.panels.map((panel) => panel.initialize()));
 
     if (!this.detectMobile()) {
       // position the panels
@@ -201,7 +204,7 @@ export default class VortexEditor {
         }
         const deviceVersions = await this.getLatestFirmwareVersions(device);
         const latestVersion = deviceVersions.firmware.version;
-        this.updatePanel.displayFirmwareUpdateInfo(device, 'N/A',
+        await this.updatePanel.displayFirmwareUpdateInfo(device, 'N/A',
           latestVersion, 'https://vortex.community/downloads');
         this.updatePanel.show();
       }
@@ -572,7 +575,7 @@ export default class VortexEditor {
     const latestVersion = deviceVersions.firmware.version;
     const downloadUrl = deviceVersions.firmware.fileUrl;
     console.log(`Comparing ${latestVersion} with ${downloadUrl} for ${device}...`);
-    this.updatePanel.displayFirmwareUpdateInfo(device, version, latestVersion, downloadUrl);
+    await this.updatePanel.displayFirmwareUpdateInfo(device, version, latestVersion, downloadUrl);
   }
 
   async pushToDevice() {

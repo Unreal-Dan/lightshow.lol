@@ -1,27 +1,19 @@
 import Panel from './Panel.js';
+import SimpleViews from './SimpleViews.js';
 
 export default class AboutPanel extends Panel {
   constructor(editor) {
-    const content = `
-      <div class="about-panel-content">
-        <label class="about-label">Made with Vortex Engine</label>
-        <div class="action-buttons">
-          <button id="githubLinkButton" class="icon-button" aria-label="View on Github">
-            <i class="fab fa-github" title="View on Github"></i>
-          </button>
-          <button id="patternHelpButton" class="icon-button" aria-label="Help">
-            <i class="fas fa-question-circle" title="Help"></i>
-          </button>
-        </div>
-      </div>
-    `;
-    super(editor, 'aboutPanel', content, 'Help & About');
+    super(editor, 'aboutPanel', '', 'Help & About');
     this.editor = editor;
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
+    this._views = new SimpleViews({ basePath: 'js/views/' });
   }
 
-  initialize() {
+  async initialize() {
+    const frag = await this._views.render('about-panel.html');
+    this.contentContainer.innerHTML = '';
+    this.contentContainer.appendChild(frag);
     this.addClickListener('patternHelpButton', this.showHelp);
     this.addClickListener('githubLinkButton', this.gotoGithub);
   }
@@ -47,4 +39,3 @@ export default class AboutPanel extends Panel {
     }
   }
 }
-

@@ -1,0 +1,17 @@
+<h3 id="updateTitle">{{title}}</h3>
+<fieldset>
+  <div class="firmware-notification">
+    <div class="device-update-labels">
+      <div>
+        <p id="deviceUpdateLabel"><strong>Device:</strong> {{device}}</p>
+        <p id="deviceVersionLabel"><strong>Current Version:</strong> {{currentVersion}}</p>
+        <p id="deviceLatestVersionLabel"><strong>Latest Version:</strong> {{latestVersion}}</p>
+      </div>
+      <div>
+        <img src="{{deviceIconUrl}}" alt="{{device}} Icon" class="device-icon">
+      </div>
+    </div>
+    {{{statusBlock}}}
+    {{{actionButtons}}}
+  </div>
+</fieldset>

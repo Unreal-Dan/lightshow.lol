@@ -1,13 +1,23 @@
 // Notification.js
+// View template reference: js/views/notification.html
+
+import SimpleViews from './SimpleViews.js';
 
 class Notification {
   static notificationContainer = null;
-
-  // Optional: keep the stack from getting ridiculous
   static maxVisible = 3;
-
-  // Match your CSS transition time
   static fadeMs = 220;
+  static _template = null;
+  static _initPromise = null;
+
+  static async init() {
+    if (Notification._initPromise) return Notification._initPromise;
+    Notification._initPromise = (async () => {
+      const views = new SimpleViews({ basePath: 'js/views/' });
+      Notification._template = await views.load('notification.html');
+    })();
+    return Notification._initPromise;
+  }
 
   static initializeContainer() {
     let el =
@@ -21,7 +31,6 @@ class Notification {
       document.body.appendChild(el);
     }
 
-    // Normalize identity (helps if something else created it)
     el.id = 'notification-container';
     el.classList.add('notification-container');
 
@@ -38,14 +47,12 @@ class Notification {
 
     const isClosing = (el) => el && el.dataset && el.dataset.closing === '1';
 
-    // count only items not already scheduled for removal
     let visible = 0;
     for (const child of c.children) {
       if (!isClosing(child)) visible++;
     }
 
     while (visible > Notification.maxVisible) {
-      // find the oldest *non-closing* (bottom)
       const kids = Array.from(c.children);
       const last = kids.reverse().find((el) => !isClosing(el));
       if (!last) break;
@@ -60,13 +67,13 @@ class Notification {
     }
   }
 
-  static createNotification(message, type, duration) {
-    Notification.initializeContainer();
-
-    const el = document.createElement('div');
-    el.className = `notification ${type}`;
-
-    el.innerHTML = `
+  static _renderRow(type) {
+    if (Notification._template) {
+      return Notification._template
+        .replace(/\{\{iconClass\}\}/g, Notification._iconClass(type))
+        .replace(/\{\{message\}\}/g, '');
+    }
+    return `
       <div class="notification-row">
         <div class="notification-icon" aria-hidden="true">
           <i class="fa-solid ${Notification._iconClass(type)}"></i>
@@ -74,24 +81,28 @@ class Notification {
         <div class="notification-msg"></div>
       </div>
     `;
+  }
+
+  static createNotification(message, type, duration) {
+    Notification.initializeContainer();
+
+    const el = document.createElement('div');
+    el.className = `notification ${type}`;
+    el.innerHTML = Notification._renderRow(type);
 
     const msgEl = el.querySelector('.notification-msg');
     if (msgEl) msgEl.textContent = String(message ?? '');
 
-    // Newest on top
     Notification.notificationContainer.prepend(el);
 
-    // Animate in
     requestAnimationFrame(() => {
       try { el.classList.add('show'); } catch {}
     });
 
-    // Enforce max
     Notification._trimToMaxVisible();
 
     const ms = Math.max(0, Number(duration) || 0);
 
-    // Per-notification timer (duration always means what you think it means)
     setTimeout(() => {
       try { el.dataset.closing = '1'; } catch {}
       try { el.classList.remove('show'); } catch {}
@@ -111,4 +122,3 @@ class Notification {
 }
 
 export default Notification;
-
