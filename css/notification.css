@@ -24,6 +24,21 @@
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+.notification-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.notification-icon {
+  flex: 0 0 auto;
+}
+
+.notification-msg {
+  text-align: left;
+}
+
 /* When "show" is added, fade in */
 .notification.show {
   opacity: 1;
