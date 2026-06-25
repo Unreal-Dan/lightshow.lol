@@ -106,13 +106,15 @@ export default class AnimationPanel extends Panel {
   static generateControlsContent(controls) {
     return controls.map(control => `
       <div id="${control.id}_div">
-        <input 
-          class="animation-slider"
-          type="${control.type}" 
-          id="${control.id}" 
-          min="${control.min}" 
-          max="${control.max}" 
-          value="${control.default}">
+        <div class="animation-slider-wrapper">
+          <input 
+            class="animation-slider"
+            type="${control.type}" 
+            id="${control.id}" 
+            min="${control.min}" 
+            max="${control.max}" 
+            value="${control.default}">
+        </div>
         <label for="${control.id}">${control.label}</label>
       </div>
     `).join('');
@@ -151,9 +153,74 @@ export default class AnimationPanel extends Panel {
     // Attach event listeners to controls
     this.controls.forEach(control => {
       const element = this.panel.querySelector(`#${control.id}`);
-      element.addEventListener('input', event => {
-        control.update(event.target.value);
+      if (!element) return;
+
+      const getRect = () => element.getBoundingClientRect();
+
+      const updateValue = (clientX) => {
+        const rect = getRect();
+        const min = parseFloat(element.min);
+        const max = parseFloat(element.max);
+        const val = Math.round(((clientX - rect.left) / rect.width) * (max - min) + min);
+        element.value = Math.max(min, Math.min(max, val));
+      };
+
+      const updateFill = () => {
+        const min = parseFloat(element.min);
+        const max = parseFloat(element.max);
+        const percent = ((parseFloat(element.value) - min) / (max - min)) * 100;
+        element.style.setProperty('--slider-fill', `${percent}%`);
+      };
+
+      const commitValue = () => {
+        control.update(element.value);
+        updateFill();
+      };
+
+      let dragActive = false;
+
+      const onDragEnd = () => {
+        if (!dragActive) return;
+        dragActive = false;
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup', onDragEnd);
+      };
+
+      const onDragMove = (e) => {
+        if (!dragActive) return;
+        e.preventDefault();
+        updateValue(e.clientX);
+        commitValue();
+      };
+
+      element.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        updateValue(e.clientX);
+        commitValue();
+        dragActive = true;
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
       });
+
+      element.addEventListener('input', () => {
+        if (dragActive) return;
+        commitValue();
+      });
+
+      element.addEventListener('change', () => {
+        if (dragActive) return;
+        commitValue();
+      });
+    });
+
+    // Set initial fill values
+    this.controls.forEach(control => {
+      const element = this.panel.querySelector(`#${control.id}`);
+      if (!element) return;
+      const min = parseFloat(element.min);
+      const max = parseFloat(element.max);
+      const percent = ((parseFloat(element.value) - min) / (max - min)) * 100;
+      element.style.setProperty('--slider-fill', `${percent}%`);
     });
 
     // Attach event listener to preset dropdown

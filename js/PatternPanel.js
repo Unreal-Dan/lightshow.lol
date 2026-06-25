@@ -87,15 +87,13 @@ export default class PatternPanel extends Panel {
 
   handleModeChange(event) {
     console.log(`${this.panel.title} Handling: [${event.type}]`);
-    const selectedLeds = event.detail;
     this.populatePatternDropdown();
     this.refresh();
-    //this.editor.demoModeOnDevice();
   }
 
   handleLedsChange(event) {
     console.log(`${this.panel.title} Handling: [${event.type}]`);
-    const { targetLeds, mainSelectedLed } = event.detail;
+    const { mainSelectedLed } = event.detail;
     this.populatePatternDropdown();
     this.refresh(mainSelectedLed);
   }
@@ -277,7 +275,6 @@ export default class PatternPanel extends Panel {
   refreshPatternArgs(sourceLed = null) {
     const mainLed = this.getMainSelectedLed();
     if (mainLed === null) {
-      // this shouldn't happen but just in case
       return;
     }
     const paramsDiv = document.getElementById('patternParams');
@@ -299,13 +296,13 @@ export default class PatternPanel extends Panel {
     const isMobile = this.editor.detectMobile(); // Check for mobile layout
 
     for (let i = 0; i < 7; i++) {
-      const container = document.createElement('div');
-      container.className = 'control-line';
       const isDisabled = i >= numOfParams;
+
+      const container = document.createElement('div');
+      container.className = `control-line${isDisabled ? ' disabled' : ''}`;
 
       const sliderContainer = document.createElement('div');
       sliderContainer.className = 'control-slider-container';
-      if (isDisabled) sliderContainer.classList.add('disabled');
 
       const label = document.createElement('span');
       label.className = 'control-label';
@@ -340,16 +337,80 @@ export default class PatternPanel extends Panel {
         slider.disabled = true;
       }
 
-      // Sync slider and input values
-      slider.addEventListener('input', (e) => {
-        input.value = e.target.value;
-        this.updatePatternArg(i, e.target.value);
-        this.updateSliderFill(slider); // Update gradient
+      const syncViz = () => {
+        input.value = slider.value;
+        this.updateSliderFill(slider);
+      };
+
+      // Custom drag handler to bypass Firefox's broken range drag coordinate calculation
+      let dragActive = false;
+
+      const setSliderValue = (clientX) => {
+        const rect = slider.getBoundingClientRect();
+        let val = Math.round(((clientX - rect.left) / rect.width) * 255);
+        val = Math.max(0, Math.min(255, val));
+        slider.value = val;
+        return val;
+      };
+
+      const onDragEnd = () => {
+        if (!dragActive) return;
+        dragActive = false;
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup', onDragEnd);
+      };
+
+      const onDragMove = (e) => {
+        if (!dragActive) return;
+        e.preventDefault();
+        setSliderValue(e.clientX);
+        input.value = slider.value;
+        this.updateSliderFill(slider);
+        this.updatePatternArg(i, slider.value);
+      };
+
+      slider.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        // Set value at click position immediately
+        setSliderValue(e.clientX);
+        input.value = slider.value;
+        this.updateSliderFill(slider);
+        this.updatePatternArg(i, slider.value);
+        // Enter drag mode
+        dragActive = true;
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
       });
-      input.addEventListener('input', (e) => {
-        slider.value = e.target.value;
-        this.updatePatternArg(i, e.target.value);
-        this.updateSliderFill(slider); // Update gradient
+
+      // Handle non-mouse changes (keyboard, accessibility)
+      slider.addEventListener('input', () => {
+        if (dragActive) return;
+        syncViz();
+        this.updatePatternArg(i, slider.value);
+      });
+
+      slider.addEventListener('change', () => {
+        syncViz();
+        this.updatePatternArg(i, slider.value);
+      });
+
+      const clampAndCommit = (val, updateInput) => {
+        if (isNaN(val)) val = 0;
+        val = Math.max(0, Math.min(255, val));
+        if (updateInput) input.value = val;
+        slider.value = val;
+        this.updatePatternArg(i, val);
+        this.updateSliderFill(slider);
+      };
+
+      input.addEventListener('input', () => {
+        const val = parseInt(input.value, 10);
+        if (isNaN(val)) return;
+        clampAndCommit(val, false);
+      });
+
+      input.addEventListener('change', () => {
+        clampAndCommit(parseInt(input.value, 10), true);
       });
 
       if (isMobile) {
@@ -363,9 +424,9 @@ export default class PatternPanel extends Panel {
         container.appendChild(label);
         container.appendChild(mobileContainer);
       } else {
-        // Desktop layout: Inline label, slider, and input
-        sliderContainer.append(label, slider);
-        container.append(sliderContainer, input);
+        // Desktop layout: label | slider | input
+        sliderContainer.appendChild(slider);
+        container.append(label, sliderContainer, input);
       }
 
       paramsDiv.appendChild(container);
@@ -375,8 +436,8 @@ export default class PatternPanel extends Panel {
 
   updateSliderFill(slider) {
     const value = slider.value;
-    const max = slider.max || 255; // Default max to 255
-    const percent = (value / max) * 100; // Calculate fill percentage
+    const max = slider.max || 255;
+    const percent = (value / max) * 100;
     slider.style.setProperty('--slider-fill', `${percent}%`);
   }
 

@@ -9,8 +9,77 @@
   transition: transform 0.4s ease; /* Sliding animation */
 }
 
+#animationControls > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  height: 24px;
+}
+
+.animation-slider-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
 .animation-slider {
-  width: 80%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: transparent;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  margin: 0;
+}
+
+.animation-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, #5a7a9a var(--slider-fill), #2c2c2c var(--slider-fill));
+  border: none;
+  border-radius: 3px;
+}
+
+.animation-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to bottom, #e8e4df, #cdc9c4);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid #888;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  margin-top: -5px;
+}
+
+.animation-slider::-moz-range-track {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(to right, #5a7a9a var(--slider-fill), #2c2c2c var(--slider-fill));
+  border: none;
+  border-radius: 3px;
+}
+
+.animation-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to bottom, #e8e4df, #cdc9c4);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid #888;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+#animationControls label {
+  color: #b0aca8;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .animation-button {
