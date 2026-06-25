@@ -188,14 +188,17 @@ export default class ColorPickerPanel extends Panel {
       this.setHueSlider(h);
       this.setHueIndicator(h);
 
+      // Release the guard before the async callback so subsequent user
+      // interactions (clicking another slider, SV box, hue slider) are
+      // not silently swallowed during the await.
+      this.preventPropagation = false;
+
       // Trigger external callback
       await updateColorCallback(
         this.selectedIndex,
         `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`,
         isDragging
       );
-
-      this.preventPropagation = false;
     };
 
     // Handler functions for different input changes
