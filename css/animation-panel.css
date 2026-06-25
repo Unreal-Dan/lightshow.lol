@@ -14,7 +14,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 5px;
-  height: 24px;
+  height: 28px;
 }
 
 .animation-slider-wrapper {
@@ -78,7 +78,8 @@
 
 #animationControls label {
   color: #b0aca8;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
