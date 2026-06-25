@@ -37,106 +37,148 @@
 .control-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-  height: 30px; /* Consistent height for rows */
-}
-
-.control-slider-container {
-  position: relative;
-  flex: 5;
-  height: 100%;
-  display: flex;
-  align-items: center; /* Align slider and label vertically */
-  overflow: hidden; /* Prevent overlapping visuals */
+  gap: 8px;
+  margin-bottom: 5px;
+  height: 24px;
 }
 
 .control-label {
-  position: absolute;
-  z-index: 2;
-  font-weight: bold;
-  color: #d8d4cf;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%); /* Center vertically */
-  pointer-events: none; /* Ensure it doesn’t interfere with slider interaction */
+  flex: 0 0 auto;
+  color: #b0aca8;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.control-slider-container {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
 }
 
 .control-slider {
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e 50%, #3e3e3e 50%); /* Placeholder gradient */
-  margin-right: 0;
+  margin: 0;
+  padding: 0;
   outline: none;
-  position: relative;
-  border-top-left-radius: 4px; /* Ensure full rounding */
-  border-bottom-left-radius: 4px; /* Ensure full rounding */
-  position: relative; /* Needed for ::before */
+  background: transparent;
+  cursor: pointer;
+  border: none;
 }
 
 .control-slider::-webkit-slider-runnable-track {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill)); /* Dynamic fill */
+  height: 6px;
+  background: linear-gradient(to right, #5a7a9a var(--slider-fill), #2c2c2c var(--slider-fill));
   border: none;
+  border-radius: 3px;
 }
 
 .control-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 2px;
-  height: 100%;
-  background: #111; /* The draggable "line" */
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to bottom, #e8e4df, #cdc9c4);
+  border-radius: 50%;
   cursor: pointer;
-  z-index: 3; /* Ensure it's above the slider track */
+  border: 1px solid #888;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  margin-top: -5px;
+}
+
+.control-slider::-webkit-slider-thumb:hover {
+  background: linear-gradient(to bottom, #f0ece7, #d5d1cc);
+}
+
+.control-slider::-webkit-slider-thumb:active {
+  background: linear-gradient(to bottom, #cdc9c4, #b8b4af);
 }
 
 .control-slider::-moz-range-track {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #5e5e5e var(--slider-fill), #3e3e3e var(--slider-fill));
+  height: 6px;
+  background: linear-gradient(to right, #5a7a9a var(--slider-fill), #2c2c2c var(--slider-fill));
   border: none;
+  border-radius: 3px;
 }
 
 .control-slider::-moz-range-thumb {
-  width: 2px;
-  height: 100%;
-  background: #111;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to bottom, #e8e4df, #cdc9c4);
+  border-radius: 50%;
   cursor: pointer;
-  border: none;
+  border: 1px solid #888;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.control-slider::-moz-range-thumb:hover {
+  background: linear-gradient(to bottom, #f0ece7, #d5d1cc);
+}
+
+.control-slider::-moz-range-thumb:active {
+  background: linear-gradient(to bottom, #cdc9c4, #b8b4af);
+}
+
+.control-slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(90, 122, 154, 0.4);
+}
+
+.control-slider:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(90, 122, 154, 0.4);
 }
 
 .control-input {
-  flex: 1;
-  height: 30px;
-  background: #292c2e;
+  flex: 0 0 42px;
+  height: 22px;
+  min-width: 0;
+  background: #222426;
   color: #d8d4cf;
-  border: none;
+  border: 1px solid #3a3c3e;
   text-align: center;
   margin: 0;
-  padding: 0;
-  border: 1px solid black;
-  border-top-right-radius: 5px;
-  border-bottom-right-radius: 5px;
+  padding: 1px 2px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
 }
 
 .control-input:focus {
   outline: none;
+  border-color: #5a7a9a;
+  background: #2a2d30;
 }
 
-.control-slider-container.disabled .control-slider.disabled {
-  background: #111111;
+.control-input::-webkit-outer-spin-button,
+.control-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.control-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.control-line.disabled {
+  opacity: 0.35;
   pointer-events: none;
 }
 
-.control-slider-container.disabled .control-label {
-  color: #333;
+.control-line.disabled .control-label {
+  color: #555;
 }
 
 .control-input.disabled {
-  background: #1e1e1e;
+  opacity: 0.35;
   pointer-events: none;
 }
 

@@ -329,20 +329,31 @@ export default class ColorPickerPanel extends Panel {
     );
 
     const handleRgbSliderMouseDown = (event, slider, handler) => {
-      let isDragging = false;
+      event.preventDefault();
 
-      const handleRgbDrag = () => {
-        isDragging = true; // Now dragging
-        handler(true); // Call handler with dragging state
+      const setValueFromY = (clientY) => {
+        const rect = slider.getBoundingClientRect();
+        const val = Math.round((1 - (clientY - rect.top) / rect.height) * 255);
+        slider.value = Math.max(0, Math.min(255, val));
       };
 
-      const stopRgbDragging = () => {
+      let isDragging = false;
+
+      const handleRgbDrag = (e) => {
+        isDragging = true;
+        setValueFromY(e.clientY);
+        handler(true);
+      };
+
+      const stopRgbDragging = (e) => {
         document.removeEventListener('mousemove', handleRgbDrag);
         document.removeEventListener('mouseup', stopRgbDragging);
-        handler(false); // Final update when dragging stops
+        setValueFromY(e.clientY);
+        handler(false);
       };
 
       // Immediate update on click
+      setValueFromY(event.clientY);
       handler(false);
 
       document.addEventListener('mousemove', handleRgbDrag);
@@ -420,9 +431,17 @@ export default class ColorPickerPanel extends Panel {
 
     const handleRgbSliderTouchStart = (event, slider, handler) => {
       event.preventDefault();
+
+      const setValueFromY = (clientY) => {
+        const rect = slider.getBoundingClientRect();
+        const val = Math.round((1 - (clientY - rect.top) / rect.height) * 255);
+        slider.value = Math.max(0, Math.min(255, val));
+      };
+
       let isDragging = false;
       const handleTouchMove = (moveEvent) => {
         isDragging = true;
+        setValueFromY(moveEvent.touches[0].clientY);
         handler(true);
       };
       const stopTouchDragging = () => {
@@ -430,6 +449,8 @@ export default class ColorPickerPanel extends Panel {
         document.removeEventListener('touchend', stopTouchDragging);
         handler(false);
       };
+
+      setValueFromY(event.touches[0].clientY);
       handler(false); // Immediate update on touch start
       document.addEventListener('touchmove', handleTouchMove);
       document.addEventListener('touchend', stopTouchDragging, { once: true });
