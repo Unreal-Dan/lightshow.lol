@@ -485,8 +485,8 @@ export default class LedSelectPanel extends Panel {
     this.selectionBox.classList.add('selection-box');
     document.body.appendChild(this.selectionBox);
 
-    this.selectionBox.style.left = `${this.startX}px`;
-    this.selectionBox.style.top = `${this.startY}px`;
+    this.selectionBox.style.left = `${this.startX + window.scrollX}px`;
+    this.selectionBox.style.top = `${this.startY + window.scrollY}px`;
   }
 
   onMouseMove(event) {
@@ -498,8 +498,8 @@ export default class LedSelectPanel extends Panel {
 
     this.selectionBox.style.width = `${Math.abs(this.currentX - this.startX)}px`;
     this.selectionBox.style.height = `${Math.abs(this.currentY - this.startY)}px`;
-    this.selectionBox.style.left = `${Math.min(this.currentX, this.startX)}px`;
-    this.selectionBox.style.top = `${Math.min(this.currentY, this.startY)}px`;
+    this.selectionBox.style.left = `${Math.min(this.currentX, this.startX) + window.scrollX}px`;
+    this.selectionBox.style.top = `${Math.min(this.currentY, this.startY) + window.scrollY}px`;
   }
 
   handleClickOnLed(indicator, event) {
@@ -706,8 +706,8 @@ export default class LedSelectPanel extends Panel {
     this.selectionBox.classList.add('selection-box');
     document.body.appendChild(this.selectionBox);
 
-    this.selectionBox.style.left = `${this.startX}px`;
-    this.selectionBox.style.top = `${this.startY}px`;
+    this.selectionBox.style.left = `${this.startX + window.scrollX}px`;
+    this.selectionBox.style.top = `${this.startY + window.scrollY}px`;
   }
 
   onTouchMove(event) {
@@ -719,8 +719,8 @@ export default class LedSelectPanel extends Panel {
 
     this.selectionBox.style.width = `${Math.abs(this.currentX - this.startX)}px`;
     this.selectionBox.style.height = `${Math.abs(this.currentY - this.startY)}px`;
-    this.selectionBox.style.left = `${Math.min(this.currentX, this.startX)}px`;
-    this.selectionBox.style.top = `${Math.min(this.currentY, this.startY)}px`;
+    this.selectionBox.style.left = `${Math.min(this.currentX, this.startX) + window.scrollX}px`;
+    this.selectionBox.style.top = `${Math.min(this.currentY, this.startY) + window.scrollY}px`;
   }
 
   onTouchEnd(event) {
