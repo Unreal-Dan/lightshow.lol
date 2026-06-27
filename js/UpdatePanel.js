@@ -3,6 +3,7 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class UpdatePanel extends Panel {
   constructor(editor) {
@@ -25,7 +26,7 @@ export default class UpdatePanel extends Panel {
     super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
 
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/update-panel';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/update-panel');
     this.vortexPort = editor.vortexPort;
 
     // this.serialPort is a local copy of the vortexport.serialport if it's
@@ -385,14 +386,14 @@ export default class UpdatePanel extends Panel {
     if (lowerDevice === 'duo') {
       content += `
         <div class="firmware-buttons">
-          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          <a href="${wikiUrl('/' + lowerDevice + '_upgrade_guide.html')}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
     } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
       content += `
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
-          <a href="https://stoneorbits.github.io/VortexEngine/${lowerDevice}_upgrade_guide.html" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          <a href="${wikiUrl('/' + lowerDevice + '_upgrade_guide.html')}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
     } else if (['chromadeck', 'spark'].includes(lowerDevice)) {

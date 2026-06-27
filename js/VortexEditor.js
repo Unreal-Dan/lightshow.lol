@@ -19,6 +19,7 @@ import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
 import ContextMenu from './ContextMenu.js';
 import { VERSION } from './version.js';  // Adjust path if needed
+import { wikiUrl } from './wiki-url.js';
 
 import * as BLE from './ble.js'; // Import BLE module
 
@@ -703,7 +704,7 @@ export default class VortexEditor {
     }
   }
 
-  showHelpPopup(url = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/') {
+  showHelpPopup(url = wikiUrl('/lightshow-lol/')) {
     const existing = document.querySelector('.help-popup-overlay');
     if (existing) existing.remove();
 

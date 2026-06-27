@@ -3,6 +3,7 @@ import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class ModesPanel extends Panel {
   constructor(editor) {
@@ -36,7 +37,7 @@ export default class ModesPanel extends Panel {
     `;
     super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/modes-list';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/modes-list');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.shareModal = new Modal('share');
