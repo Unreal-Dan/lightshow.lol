@@ -718,22 +718,16 @@ export default class VortexEditor {
     header.innerHTML = '<span>Help</span><span class="help-popup-close">&times;</span>';
     header.querySelector('.help-popup-close').onclick = () => overlay.remove();
 
-    const content = document.createElement('div');
-    content.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;color:#e0ddd9;';
-    content.innerHTML = `
-      <p style="margin:0;font-size:15px;text-align:center;opacity:0.85;">
-        Open the wiki page in a new tab to view help documentation.
-      </p>
-      <a href="${url}" target="_blank" rel="noopener"
-         style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;
-                background:#3a3a3c;color:#e0ddd9;border-radius:6px;
-                text-decoration:none;font-size:15px;font-weight:600;">
-        <i class="fas fa-external-link-alt"></i> Open Wiki
-      </a>
-    `;
+    const iframe = document.createElement('iframe');
+    iframe.src = url;
+    iframe.style.cssText = 'flex:1;width:100%;border:none;background:#1e1e1e;';
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    iframe.addEventListener('load', () => {
+      iframe.style.opacity = '1';
+    });
 
     popup.appendChild(header);
-    popup.appendChild(content);
+    popup.appendChild(iframe);
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 

@@ -64,8 +64,8 @@
 }
 
 .help-popup {
-  width: min(95vw, 400px);
-  height: auto;
+  width: min(90vw, 1000px);
+  height: min(85vh, 750px);
   background: #1e1e1e;
   border: 1px solid #555;
   border-radius: 8px;
