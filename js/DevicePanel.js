@@ -51,6 +51,7 @@ export default class DevicePanel extends Panel {
             // </div>
     super(editor, 'devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/device-controls';
     this.selectedDevice = 'None';
     this.multiLedWarningModal = new Modal('multiLedWarning');
   }

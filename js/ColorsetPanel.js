@@ -2,27 +2,50 @@ import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ColorPickerPanel from './ColorPickerPanel.js';
+import ContextMenu from './ContextMenu.js';
 
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
-    //<div id="colorset-selected-leds" class="selected-leds-bar"></div>
     const content = `
-      <div id="colorset-status" style="display: ${editor.detectMobile() ? 'none' : ''};">
-        <button id="colorset-preset-one" class="preset-button" title="Randomize One Color"></button>
-        <button id="colorset-preset-two" class="preset-button" title="Randomize Two Colors"></button>
-        <button id="colorset-preset-three" class="preset-button" title="Randomize Three Colors"></button>
-        <button id="colorset-preset-four" class="preset-button" title="Randomize Four Colors"></button>
-        <button id="colorset-preset-rainbow" class="preset-button" title="Randomize Rainbow"></button>
-        <button id="colorset-preset-grayscale" class="preset-button" title="Randomize Grayscale"></button>
-        <button id="colorset-preset-pastel" class="preset-button" title="Randomize Pastels"></button>
-        <button id="colorset-preset-dark" class="preset-button" title="Randomize Dark Colors"></button>
-      </div>
-      <hr id="patternDivider" style="display: ${editor.detectMobile() ? 'none' : ''};">
       <div id="colorset" class="color-row"></div>
+      <hr id="colorsetDivider">
+      <button id="toggleColorsetGenerator" class="icon-button" title="Show/Hide Generator">
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+      <div id="colorsetGenerator" class="hidden">
+        <div class="gen-row">
+          <div class="gen-half">
+            <input type="range" id="genNumColors" class="control-slider" min="1" max="8" value="8">
+            <input type="number" id="genNumColorsInput" class="control-input" value="8" min="1" max="8">
+          </div>
+          <div class="gen-half">
+            <span class="gen-label" style="min-width:auto;">Style</span>
+            <select id="genStyle" class="gen-select">
+              <option value="rainbow">Rainbow</option>
+              <option value="random">Random</option>
+              <option value="pastel">Pastel</option>
+              <option value="dark">Dark</option>
+              <option value="grayscale">Grayscale</option>
+              <option value="vibrant">Vibrant</option>
+              <option value="warm">Warm</option>
+              <option value="cool">Cool</option>
+            </select>
+          </div>
+        </div>
+        <div class="gen-row">
+          <span class="gen-label">Brightness</span>
+          <div class="control-slider-container">
+            <input type="range" id="genBrightness" class="control-slider" min="10" max="100" value="100">
+          </div>
+          <input type="number" id="genBrightnessInput" class="control-input" value="100" min="10" max="100">
+        </div>
+        <button id="generateColorsetBtn" class="gen-button">Generate</button>
+      </div>
       <div id="colorPickerMountMobile" style="display: ${editor.detectMobile() ? 'block' : 'none'};"></div>
     `;
     super(editor, 'colorsetPanel', content, 'Colorset');
     this.editor = editor
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/colorset';
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.selectedColorIndex = null;
@@ -31,16 +54,80 @@ export default class ColorsetPanel extends Panel {
 
   initialize() {
     this.refresh();
-    // Add event listeners for preset buttons
-    document.getElementById('colorset-preset-rainbow').addEventListener('click', () => this.applyPreset('rainbow'));
-    document.getElementById('colorset-preset-grayscale').addEventListener('click', () => this.applyPreset('grayscale'));
-    document.getElementById('colorset-preset-pastel').addEventListener('click', () => this.applyPreset('pastel'));
-    document.getElementById('colorset-preset-dark').addEventListener('click', () => this.applyPreset('dark'));
-    document.getElementById('colorset-preset-one').addEventListener('click', () => this.applyPreset('one'));
-    document.getElementById('colorset-preset-two').addEventListener('click', () => this.applyPreset('two'));
-    document.getElementById('colorset-preset-three').addEventListener('click', () => this.applyPreset('three'));
-    document.getElementById('colorset-preset-four').addEventListener('click', () => this.applyPreset('four'));
-    // Listen for the modeChange event
+
+    document.getElementById('toggleColorsetGenerator').addEventListener('click', () => this.toggleGenerator());
+    document.getElementById('generateColorsetBtn').addEventListener('click', () => this.generateColorset());
+
+    const setupSlider = (slider, input, min, max, fillParent) => {
+      const range = max - min;
+      const updateFill = () => { fillParent.style.setProperty('--slider-fill', `${((parseInt(slider.value, 10) - min) / range) * 100}%`); };
+      const setValue = (clientX) => {
+        const rect = slider.getBoundingClientRect();
+        let val = Math.round(((clientX - rect.left) / rect.width) * range) + min;
+        val = Math.max(min, Math.min(max, val));
+        slider.value = val;
+        input.value = val;
+        updateFill();
+      };
+
+      let dragActive = false;
+      const onDragEnd = () => {
+        if (!dragActive) return;
+        dragActive = false;
+        document.removeEventListener('mousemove', onDragMove);
+        document.removeEventListener('mouseup', onDragEnd);
+      };
+      const onDragMove = (e) => {
+        if (!dragActive) return;
+        e.preventDefault();
+        setValue(e.clientX);
+      };
+
+      slider.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        setValue(e.clientX);
+        dragActive = true;
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
+      });
+
+      slider.addEventListener('input', () => {
+        if (dragActive) return;
+        input.value = slider.value;
+        updateFill();
+      });
+
+      slider.addEventListener('change', () => {
+        input.value = slider.value;
+        updateFill();
+      });
+
+      input.addEventListener('input', () => {
+        let v = parseInt(input.value, 10);
+        if (isNaN(v)) v = min;
+        v = Math.max(min, Math.min(max, v));
+        input.value = v;
+        slider.value = v;
+        updateFill();
+      });
+
+      updateFill();
+    };
+
+    setupSlider(
+      document.getElementById('genNumColors'),
+      document.getElementById('genNumColorsInput'),
+      1, 8,
+      document.getElementById('genNumColors').parentElement
+    );
+
+    setupSlider(
+      document.getElementById('genBrightness'),
+      document.getElementById('genBrightnessInput'),
+      10, 100,
+      document.getElementById('genBrightness').parentElement
+    );
+
     document.addEventListener('modeChange', (event) => {
       console.log(`${this.panel.title} Handling: [${event.type}]`);
       this.refresh();
@@ -52,6 +139,36 @@ export default class ColorsetPanel extends Panel {
     });
   }
 
+  toggleGenerator() {
+    const panel = document.getElementById('colorsetPanel');
+    const gen = document.getElementById('colorsetGenerator');
+    const btn = document.getElementById('toggleColorsetGenerator');
+    const icon = btn.querySelector('i');
+
+    const previousHeight = panel.offsetHeight;
+    const snappedPanels = this.getSnappedPanels();
+
+    const isHidden = gen.classList.toggle('hidden');
+    icon.classList.toggle('fa-chevron-down', isHidden);
+    icon.classList.toggle('fa-chevron-up', !isHidden);
+
+    const heightChange = panel.offsetHeight - previousHeight;
+    snappedPanels.forEach((otherPanel) => {
+      otherPanel.moveSnappedPanels(heightChange);
+      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
+      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
+    });
+  }
+
+  generateColorset() {
+    const numColors = parseInt(document.getElementById('genNumColors').value, 10);
+    const style = document.getElementById('genStyle').value;
+    const brightness = parseInt(document.getElementById('genBrightness').value, 10);
+    const styles = ['rainbow', 'pastel', 'dark', 'vibrant', 'warm', 'cool', 'grayscale'];
+    const actualStyle = style === 'random' ? styles[Math.floor(Math.random() * styles.length)] : style;
+    this.applyPreset(actualStyle, numColors, brightness);
+  }
+
   getTargetLeds() {
     return this.editor.ledSelectPanel.getSelectedLeds();
   }
@@ -60,76 +177,100 @@ export default class ColorsetPanel extends Panel {
     return this.editor.ledSelectPanel.getMainSelectedLed();
   }
 
-  applyPreset(preset) {
+  applyPreset(preset, numColors, brightness = 100) {
     const cur = this.lightshow.vortex.engine().modes().curMode();
     if (!cur) return;
 
     const set = cur.getColorset(this.getMainSelectedLed());
     set.clear();
-    let numCols = ((Math.random() * 100) % 8);
 
     switch (preset) {
     case 'rainbow':
-      if (numCols < 5) {
-        numCols = 4 + (numCols % 4);
-      }
-      for (let i = 0; i < numCols; i++) {
-        const hue = (i / numCols) * 360;
-        const rgb = this.hslToRgb(hue, 1, 0.5); // Full saturation, medium lightness
+      for (let i = 0; i < numColors; i++) {
+        const hue = (i / numColors) * 360;
+        const rgb = this.hslToRgb(hue, 1, 0.5);
         set.addColor(new this.lightshow.vortexLib.RGBColor(rgb.r, rgb.g, rgb.b));
       }
       break;
     case 'grayscale':
-      for (let i = 0; i < numCols; i++) {
+      for (let i = 0; i < numColors; i++) {
         const gray = Math.floor(Math.random() * 256);
         set.addColor(new this.lightshow.vortexLib.RGBColor(gray, gray, gray));
       }
       break;
     case 'pastel':
-      for (let i = 0; i < numCols; i++) {
-        const pastel = {
+      for (let i = 0; i < numColors; i++) {
+        const c = {
           r: Math.floor(Math.random() * 128 + 127),
           g: Math.floor(Math.random() * 128 + 127),
           b: Math.floor(Math.random() * 128 + 127),
         };
-        set.addColor(new this.lightshow.vortexLib.RGBColor(pastel.r, pastel.g, pastel.b));
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
       }
       break;
     case 'dark':
-      for (let i = 0; i < numCols; i++) {
-        const dark = {
+      for (let i = 0; i < numColors; i++) {
+        const c = {
           r: Math.floor(Math.random() * 128),
           g: Math.floor(Math.random() * 128),
           b: Math.floor(Math.random() * 128),
         };
-        set.addColor(new this.lightshow.vortexLib.RGBColor(dark.r, dark.g, dark.b));
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
       }
       break;
-    case 'one':
-      const color = this.getRandomColor();
-      set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
-      break;
-    case 'two':
-      for (let i = 0; i < 2; i++) {
-        const color = this.getRandomColor();
-        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+    case 'vibrant':
+      for (let i = 0; i < numColors; i++) {
+        const c = {
+          r: Math.random() < 0.5 ? Math.floor(Math.random() * 128 + 128) : Math.floor(Math.random() * 56),
+          g: Math.random() < 0.5 ? Math.floor(Math.random() * 128 + 128) : Math.floor(Math.random() * 56),
+          b: Math.random() < 0.5 ? Math.floor(Math.random() * 128 + 128) : Math.floor(Math.random() * 56),
+        };
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
       }
       break;
-    case 'three':
-      for (let i = 0; i < 3; i++) {
-        const color = this.getRandomColor();
-        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+    case 'warm':
+      for (let i = 0; i < numColors; i++) {
+        const c = {
+          r: Math.floor(Math.random() * 128 + 128),
+          g: Math.floor(Math.random() * 128),
+          b: Math.floor(Math.random() * 64),
+        };
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
       }
       break;
-    case 'four':
-      for (let i = 0; i < 4; i++) {
-        const color = this.getRandomColor();
-        set.addColor(new this.lightshow.vortexLib.RGBColor(color.r, color.g, color.b));
+    case 'cool':
+      for (let i = 0; i < numColors; i++) {
+        const c = {
+          r: Math.floor(Math.random() * 64),
+          g: Math.floor(Math.random() * 128 + 64),
+          b: Math.floor(Math.random() * 128 + 128),
+        };
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
       }
       break;
     default:
+      for (let i = 0; i < numColors; i++) {
+        const c = this.getRandomColor();
+        set.addColor(new this.lightshow.vortexLib.RGBColor(c.r, c.g, c.b));
+      }
       break;
     }
+
+    if (brightness < 100) {
+      const scale = brightness / 100;
+      const cols = [];
+      for (let i = 0; i < set.numColors(); i++) {
+        const c = set.get(i);
+        cols.push(new this.lightshow.vortexLib.RGBColor(
+          Math.round(c.red * scale),
+          Math.round(c.green * scale),
+          Math.round(c.blue * scale)
+        ));
+      }
+      set.clear();
+      cols.forEach(c => set.addColor(c));
+    }
+
     for (let i = 0; i < this.getTargetLeds().length; ++i) {
       cur.setColorset(set, this.getTargetLeds()[i]);
     }
@@ -233,31 +374,38 @@ export default class ColorsetPanel extends Panel {
   // Paste color from clipboard
   paste() {
     navigator.clipboard.readText().then((hexValue) => {
-      if (!/^#?[0-9A-Fa-f]{6}$/.test(hexValue)) {
-        Notification.failure("Invalid color format");
-        return;
-      }
-
-      const cur = this.lightshow.vortex.engine().modes().curMode();
-      if (!cur) return;
-
-      const set = cur.getColorset(this.getMainSelectedLed());
-      if (!set || this.selectedColorIndex >= set.numColors()) return;
-
-      const { r, g, b } = this.hexToRGB(hexValue);
-      const newColor = new this.lightshow.vortexLib.RGBColor(r, g, b);
-
-      set.set(this.selectedColorIndex, newColor);
-      this.getTargetLeds().forEach(led => cur.setColorset(set, led));
-
-      cur.init();
-      this.lightshow.vortex.engine().modes().saveCurMode();
-      this.refresh();
-
-      Notification.success("Pasted color successfully");
+      this.pasteText(hexValue);
     }).catch(() => {
       Notification.failure("Failed to paste color");
     });
+  }
+
+  pasteText(data) {
+    if (!data) return;
+    if (!/^#?[0-9A-Fa-f]{6}$/.test(data)) {
+      if (this.editor.modesPanel) {
+        this.editor.modesPanel.pasteText(data);
+      }
+      return;
+    }
+
+    const cur = this.lightshow.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const set = cur.getColorset(this.getMainSelectedLed());
+    if (!set || this.selectedColorIndex >= set.numColors()) return;
+
+    const { r, g, b } = this.hexToRGB(data);
+    const newColor = new this.lightshow.vortexLib.RGBColor(r, g, b);
+
+    set.set(this.selectedColorIndex, newColor);
+    this.getTargetLeds().forEach(led => cur.setColorset(set, led));
+
+    cur.init();
+    this.lightshow.vortex.engine().modes().saveCurMode();
+    this.refresh();
+
+    Notification.success("Pasted color successfully");
   }
 
   showEmptyPanel() {
@@ -481,10 +629,34 @@ export default class ColorsetPanel extends Panel {
           });
         }
 
-        // Right-click to delete
+        // Right-click context menu
         container.addEventListener('contextmenu', (e) => {
           e.preventDefault();
-          this.delColor(i);
+          e.stopPropagation();
+          this.selectColor(i, container);
+          const menu = ContextMenu.getInstance();
+          menu.show(e.clientX, e.clientY, [
+            {
+              label: 'Copy Color',
+              action: () => this.copy()
+            },
+            { separator: true },
+            {
+              label: 'Delete Color',
+              danger: true,
+              action: () => this.delColor(i)
+            },
+            { separator: true },
+            {
+              label: 'Paste',
+              action: () => this.paste()
+            },
+            { separator: true },
+            {
+              label: 'Help',
+              action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl)
+            }
+          ]);
         });
 
         container.addEventListener('pointerdown', handlePointerDown);
@@ -596,6 +768,14 @@ export default class ColorsetPanel extends Panel {
 
     mount.innerHTML = '';
     mount.appendChild(wrapper);
+  }
+
+  getCopyOptions() {
+    if (this.selectedColorIndex === null) return [];
+    return [{
+      label: 'Copy Color',
+      action: () => this.copy()
+    }];
   }
 
   onActive() {

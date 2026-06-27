@@ -5,27 +5,42 @@
   z-index: 3;
 }
 
-#githubLink {
-  font-size: 18px;
-  background: none;
-  padding: 0;
-  margin: 0;
+.about-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
 }
 
-.about-panel-content {
-  display: flex;
+.pill-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.about-label {
-  font-size: 16px;
+  gap: 5px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
   color: #d8d4cf;
+  background: #222426;
+  border: 1px solid #3a3c3e;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  width: auto;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.action-buttons {
-  display: flex;
-  gap: 10px;
+.pill-btn i {
+  font-size: 13px;
 }
 
+.pill-btn:hover {
+  background: #2a2d30;
+  color: #fff;
+  border-color: #5a7a9a;
+}
 
+.pill-btn:hover {
+  background: #444;
+  color: #fff;
+  border-color: #777;
+}

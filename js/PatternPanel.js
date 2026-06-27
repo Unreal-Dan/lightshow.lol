@@ -19,6 +19,7 @@ export default class PatternPanel extends Panel {
     `;
     super(editor, 'patternPanel', content, 'Pattern');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/pattern';
   }
 
   initialize() {

@@ -58,15 +58,14 @@ i {
   height: 32px;
   border: none;
   border-radius: 4px;
-  background-color: #333;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   background: none;
   color: inherit;
   font-size: 20px;
   cursor: pointer;
-  padding: 5px;
-  transition: background-color 0.2s;
+  padding: 0;
   transition: transform 0.2s, color 0.2s;
 }
 

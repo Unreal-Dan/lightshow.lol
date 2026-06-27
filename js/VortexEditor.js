@@ -17,6 +17,7 @@ import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
+import ContextMenu from './ContextMenu.js';
 import { VERSION } from './version.js';  // Adjust path if needed
 
 import * as BLE from './ble.js'; // Import BLE module
@@ -190,6 +191,56 @@ export default class VortexEditor {
 
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
+
+    // Right-click context menu on canvas
+    this.canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const menu = ContextMenu.getInstance();
+      const items = [];
+      const curMode = this.vortex.engine().modes().curMode();
+
+      if (curMode) {
+        const mainLed = this.ledSelectPanel.getMainSelectedLed();
+        items.push({
+          label: 'Copy Mode',
+          action: () => this.modesPanel.copyMode()
+        });
+        if (mainLed !== null) {
+          items.push({
+            label: 'Copy Colorset',
+            action: () => this.modesPanel.copyColorset()
+          });
+          items.push({
+            label: 'Copy Pattern',
+            action: () => this.modesPanel.copyPattern()
+          });
+        }
+        items.push({ separator: true });
+        items.push({
+          label: 'Get Link',
+          action: () => this.modesPanel.showLinkModeModal()
+        });
+        items.push({
+          label: 'Share Mode',
+          action: () => this.modesPanel.shareModeToCommunity()
+        });
+        items.push({ separator: true });
+      }
+      items.push({
+        label: 'Paste',
+        action: () => this.modesPanel.paste()
+      });
+
+      items.push({ separator: true });
+      items.push({
+        label: 'Help',
+        action: () => this.showHelpPopup()
+      });
+
+      if (items.length > 0) {
+        menu.show(e.clientX, e.clientY, items);
+      }
+    });
 
     // Keydown event to show updatePanel
     document.addEventListener('keydown', async (event) => {
@@ -650,6 +701,45 @@ export default class VortexEditor {
     } catch (error) {
       Notification.failure("Failed to demo mode (" + error + ")");
     }
+  }
+
+  showHelpPopup(url = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/') {
+    const existing = document.querySelector('.help-popup-overlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'help-popup-overlay';
+
+    const popup = document.createElement('div');
+    popup.className = 'help-popup';
+
+    const header = document.createElement('div');
+    header.className = 'help-popup-header';
+    header.innerHTML = '<span>Help</span><span class="help-popup-close">&times;</span>';
+    header.querySelector('.help-popup-close').onclick = () => overlay.remove();
+
+    const content = document.createElement('div');
+    content.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;color:#e0ddd9;';
+    content.innerHTML = `
+      <p style="margin:0;font-size:15px;text-align:center;opacity:0.85;">
+        Open the wiki page in a new tab to view help documentation.
+      </p>
+      <a href="${url}" target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;
+                background:#3a3a3c;color:#e0ddd9;border-radius:6px;
+                text-decoration:none;font-size:15px;font-weight:600;">
+        <i class="fas fa-external-link-alt"></i> Open Wiki
+      </a>
+    `;
+
+    popup.appendChild(header);
+    popup.appendChild(content);
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
   }
 }
 
