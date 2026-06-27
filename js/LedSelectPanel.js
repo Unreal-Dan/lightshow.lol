@@ -63,6 +63,7 @@ export default class LedSelectPanel extends Panel {
     ledsFieldset.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
+    window.addEventListener('blur', () => this._cancelDrag());
     ledsFieldset.addEventListener('touchstart', (event) => this.onTouchStart(event), { passive: true });
     ledsFieldset.addEventListener('touchmove', (event) => this.onTouchMove(event), { passive: true });
     ledsFieldset.addEventListener('touchend', (event) => this.onTouchEnd(event));
@@ -462,10 +463,20 @@ export default class LedSelectPanel extends Panel {
     this.handleLedSelectionChange();
   }
 
+  _cancelDrag() {
+    if (this.selectionBox) {
+      document.body.removeChild(this.selectionBox);
+      this.selectionBox = null;
+    }
+    this.isDragging = false;
+  }
+
   // Mouse handling for LED selection box
   onMouseDown(event) {
     if (event.button !== 0) return; // left mouse
     event.preventDefault();
+
+    this._cancelDrag();
 
     // ignore clicks on the swap device image button which is in the led select
     // area when the spark is the selected device
@@ -694,6 +705,7 @@ export default class LedSelectPanel extends Panel {
 
   onTouchStart(event) {
     event.preventDefault();
+    this._cancelDrag();
     const touch = event.touches[0];
     this.isDragging = true;
     this.startX = touch.clientX;
