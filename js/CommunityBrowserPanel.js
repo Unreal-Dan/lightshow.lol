@@ -1,4 +1,5 @@
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
@@ -20,7 +21,7 @@ export default class CommunityBrowserPanel extends Panel {
     `;
     super(editor, 'communityBrowserPanel', initialHTML, 'Community Modes');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/vortex-community/';
+    this.wikiUrl = wikiUrl('/vortex-community/');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
 

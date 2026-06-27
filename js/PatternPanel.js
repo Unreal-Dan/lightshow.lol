@@ -1,4 +1,5 @@
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class PatternPanel extends Panel {
   constructor(editor) {
@@ -19,7 +20,7 @@ export default class PatternPanel extends Panel {
     `;
     super(editor, 'patternPanel', content, 'Pattern');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/pattern';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/pattern');
   }
 
   initialize() {

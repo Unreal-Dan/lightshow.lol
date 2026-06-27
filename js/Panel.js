@@ -1,5 +1,6 @@
 /* Panel.js */
 import ContextMenu from './ContextMenu.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class Panel {
   static panels = []; // Static list to track all panels
@@ -13,7 +14,7 @@ export default class Panel {
     this.panel.title = title;
     this.panel.editor = editor;
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/';
+    this.wikiUrl = wikiUrl('/lightshow-lol/');
 
     const { showCloseButton = false } = options;
 

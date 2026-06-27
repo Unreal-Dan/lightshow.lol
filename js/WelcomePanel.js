@@ -1,5 +1,6 @@
 /* WelcomePanel.js */
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 
 // Newest entries FIRST — add new items at the top so they appear first in the list
 const FEATURES = [
@@ -41,7 +42,7 @@ export default class WelcomePanel extends Panel {
         </div>
       </div>
 
-      <a href="https://stoneorbits.github.io/VortexEngine/lightshow-lol/" target="_blank" class="wiki-button">
+      <a href="${wikiUrl('/lightshow-lol/')}" target="_blank" class="wiki-button">
         <span>See Wiki</span>
         <span class="arrow">→</span>
       </a>
@@ -55,7 +56,7 @@ export default class WelcomePanel extends Panel {
     this.welcomeToken = 'showNewWelcome-v2';
     localStorage.removeItem('showNewWelcome');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/getting-started';
+    this.wikiUrl = wikiUrl('/lightshow-lol/getting-started');
   }
 
   static getSeen() {

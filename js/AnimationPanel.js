@@ -1,4 +1,5 @@
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class AnimationPanel extends Panel {
   constructor(editor) {
@@ -98,7 +99,7 @@ export default class AnimationPanel extends Panel {
     super(editor, 'animationPanel', content, 'Animation');
 
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/animation';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/animation');
     this.lightshow = editor.lightshow;
     this.controls = controls;
     this.isVisible = true;

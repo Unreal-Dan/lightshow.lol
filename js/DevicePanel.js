@@ -1,6 +1,7 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from  './Modal.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class DevicePanel extends Panel {
   constructor(editor) {
@@ -51,7 +52,7 @@ export default class DevicePanel extends Panel {
             // </div>
     super(editor, 'devicePanel', content, editor.detectMobile() ? 'Device' : 'Device Controls');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/device-controls';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/device-controls');
     this.selectedDevice = 'None';
     this.multiLedWarningModal = new Modal('multiLedWarning');
   }

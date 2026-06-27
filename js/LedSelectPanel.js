@@ -1,6 +1,7 @@
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class LedSelectPanel extends Panel {
   constructor(editor) {
@@ -42,7 +43,7 @@ export default class LedSelectPanel extends Panel {
     `;
     super(editor, 'ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/led-selection';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/led-selection');
   }
 
   initialize() {

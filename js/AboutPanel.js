@@ -1,8 +1,8 @@
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 
 const COMMUNITY_URL = 'https://vortex.community';
 const GITHUB_URL = 'https://github.com/StoneOrbits/VortexEngine';
-const WIKI_URL = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/';
 
 export default class AboutPanel extends Panel {
   constructor(editor) {
@@ -21,7 +21,7 @@ export default class AboutPanel extends Panel {
     `;
     super(editor, 'aboutPanel', content, 'Help & About');
     this.editor = editor;
-    this.wikiUrl = WIKI_URL;
+    this.wikiUrl = wikiUrl('/lightshow-lol/');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
   }

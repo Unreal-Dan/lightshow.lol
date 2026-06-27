@@ -3,6 +3,7 @@ import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ColorPickerPanel from './ColorPickerPanel.js';
 import ContextMenu from './ContextMenu.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
@@ -45,7 +46,7 @@ export default class ColorsetPanel extends Panel {
     `;
     super(editor, 'colorsetPanel', content, 'Colorset');
     this.editor = editor
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/colorset';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/colorset');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.selectedColorIndex = null;

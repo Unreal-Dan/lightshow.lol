@@ -1,6 +1,7 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class ChromalinkPanel extends Panel {
   constructor(editor) {
@@ -29,7 +30,7 @@ export default class ChromalinkPanel extends Panel {
     `;
     super(editor, 'chromalinkPanel', content, 'Chromalink Duo');
     this.editor = editor;
-    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/chromalink-duo';
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/chromalink-duo');
     this.vortexPort = editor.vortexPort;
     this.isConnected = false;
     this.confirmationModal = new Modal('duo-flash-confirmation');
