@@ -25,6 +25,7 @@ export default class UpdatePanel extends Panel {
     super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
 
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/update-panel';
     this.vortexPort = editor.vortexPort;
 
     // this.serialPort is a local copy of the vortexport.serialport if it's

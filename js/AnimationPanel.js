@@ -98,6 +98,7 @@ export default class AnimationPanel extends Panel {
     super(editor, 'animationPanel', content, 'Animation');
 
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/animation';
     this.lightshow = editor.lightshow;
     this.controls = controls;
     this.isVisible = true;
@@ -142,6 +143,10 @@ export default class AnimationPanel extends Panel {
           const element = this.panel.querySelector(`#${id}`);
           element.value = value;
           control.update(value);
+          const min = parseFloat(element.min);
+          const max = parseFloat(element.max);
+          const percent = ((parseFloat(value) - min) / (max - min)) * 100;
+          element.style.setProperty('--slider-fill', `${percent}%`);
         }
       });
     }

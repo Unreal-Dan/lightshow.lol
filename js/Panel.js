@@ -1,4 +1,6 @@
 /* Panel.js */
+import ContextMenu from './ContextMenu.js';
+
 export default class Panel {
   static panels = []; // Static list to track all panels
   static topZIndex = 3; // Initialize the top Z-Index to the default panel Z-Index
@@ -10,6 +12,8 @@ export default class Panel {
     this.panel.className = 'draggable-panel';
     this.panel.title = title;
     this.panel.editor = editor;
+    this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/';
 
     const { showCloseButton = false } = options;
 
@@ -50,6 +54,15 @@ export default class Panel {
 
     this.initDraggable();
 
+    this.panel.addEventListener('contextmenu', (e) => {
+      const items = this.getContextMenuItems();
+      if (items.length > 0) {
+        e.preventDefault();
+        const menu = ContextMenu.getInstance();
+        menu.show(e.clientX, e.clientY, items);
+      }
+    });
+
     this.initGlobalListeners();
 
     // all panels subscribe to this event?
@@ -68,17 +81,51 @@ export default class Panel {
     Panel.globalListenersInitialized = true;
     document.addEventListener('keydown', (event) => {
       if (event.ctrlKey && event.key === 'c') {
-        if (Panel.selectedPanel && Panel.selectedPanel.canCopy()) {
-          Panel.selectedPanel.copy();
-          event.preventDefault();
-        }
-      } else if (event.ctrlKey && event.key === 'v') {
-        if (Panel.selectedPanel && Panel.selectedPanel.canPaste()) {
-          Panel.selectedPanel.paste();
-          event.preventDefault();
+        event.preventDefault();
+        this.showCopyContextMenu(event);
+      }
+    });
+    document.addEventListener('paste', (event) => {
+      const text = event.clipboardData.getData('text/plain');
+      if (!text) return;
+      event.preventDefault();
+      let handled = false;
+      if (Panel.selectedPanel && Panel.selectedPanel.canPaste()) {
+        Panel.selectedPanel.pasteText(text);
+        handled = true;
+      }
+      if (!handled) {
+        for (const panel of Panel.panels) {
+          if (typeof panel.pasteText === 'function') {
+            panel.pasteText(text);
+            break;
+          }
         }
       }
     });
+  }
+
+  showCopyContextMenu(event) {
+    const menu = ContextMenu.getInstance();
+    const items = [];
+
+    for (const panel of Panel.panels) {
+      if (typeof panel.getCopyOptions === 'function') {
+        const panelOptions = panel.getCopyOptions();
+        if (panelOptions.length > 0) {
+          if (items.length > 0) {
+            items.push({ separator: true });
+          }
+          items.push(...panelOptions);
+        }
+      }
+    }
+
+    if (items.length > 0) {
+      let x = event.clientX || ContextMenu.lastMouseX;
+      let y = event.clientY || ContextMenu.lastMouseY;
+      menu.show(x, y, items);
+    }
   }
 
   // Method to handle selection
@@ -101,6 +148,19 @@ export default class Panel {
   // Copy method to be overridden in derived panels
   copy() {
     console.warn("Copy not implemented for this panel.");
+  }
+
+  // Returns context menu items for copy operations
+  getCopyOptions() {
+    return [];
+  }
+
+  // Returns right-click context menu items for this panel
+  getContextMenuItems() {
+    return [{
+      label: 'Help',
+      action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl)
+    }];
   }
 
   // Paste method to be overridden in derived panels
@@ -250,25 +310,17 @@ export default class Panel {
   }
 
   moveSnappedPanels(heightChange) {
-    const rect = this.panel.getBoundingClientRect();
     const snappedPanels = this.getSnappedPanels();
 
     for (const otherPanel of snappedPanels) {
-      if (otherPanel === this) continue; // Skip self
+      if (otherPanel === this) continue;
 
       const otherRect = otherPanel.panel.getBoundingClientRect();
-
-      // Calculate the new position for the snapped panel
       const currentTop = parseFloat(otherPanel.panel.style.top || otherRect.top);
       const newTop = currentTop + heightChange;
 
-      // Recursively move panels snapped to this one
       otherPanel.moveSnappedPanels(heightChange);
-
       otherPanel.panel.style.top = `${newTop}px`;
-
-      // Return immediately after finding a snapped panel
-      return;
     }
   }
 

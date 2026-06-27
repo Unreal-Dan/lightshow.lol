@@ -42,13 +42,36 @@ export default class LedSelectPanel extends Panel {
     `;
     super(editor, 'ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/led-selection';
   }
 
   initialize() {
     // Event listeners for LED list and controls
     const ledList = document.getElementById('ledList');
-    ledList.addEventListener('change', () => this.handleLedSelectionChange());
-    ledList.addEventListener('click', () => this.handleLedSelectionChange());
+    ledList.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+    ledList.addEventListener('click', (e) => {
+      const option = e.target;
+      if (option.tagName !== 'OPTION') return;
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+      const clickedIdx = Array.from(ledList.options).indexOf(option);
+      if (isShift && this._lastLedListClickIdx !== undefined) {
+        const lo = Math.min(this._lastLedListClickIdx, clickedIdx);
+        const hi = Math.max(this._lastLedListClickIdx, clickedIdx);
+        for (let i = 0; i < ledList.options.length; i++) {
+          ledList.options[i].selected = (i >= lo && i <= hi);
+        }
+      } else if (isCtrl) {
+        option.selected = !option.selected;
+      } else {
+        for (let o of ledList.options) o.selected = false;
+        option.selected = true;
+      }
+      this._lastLedListClickIdx = clickedIdx;
+      this.handleLedSelectionChange();
+    });
 
     document.getElementById('selectAllLeds').addEventListener('click', () => this.selectAllLeds());
     document.getElementById('selectNoneLeds').addEventListener('click', () => this.selectNoneLeds());

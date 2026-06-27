@@ -3,12 +3,11 @@
   z-index: 3;
 }
 
-#colorset-status {
-  display: flex;
-  justify-content: right;
-  align-items: center;
-  padding: 5px 10px;
-  color: #fff;
+#colorsetDivider {
+  margin-left: 10px;
+  margin-right: 10px;
+  border-color: rgba(0, 0, 0, 0.3);
+  margin-bottom: 0;
 }
 
 #colorset {
@@ -18,14 +17,14 @@
   padding: 10px;
   gap: 6px;
   overflow-x: auto;
-  flex-wrap: nowrap; /* Prevent wrapping */
-  min-height: 52px; /* Consistent container height */
+  flex-wrap: nowrap;
+  min-height: 52px;
 }
 
 /* Color Cube Styling */
 .color-cube {
-  width: 32px; /* Consistent width */
-  height: 32px; /* Consistent height */
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   background: #333;
   box-shadow: 0 0 10px #222;
@@ -64,63 +63,149 @@
   box-shadow: none;
 }
 
-
-#colorset-randomize {
-  font-size: 22px;
-  padding: 1px;
-  margin-left: 5px;
-  margin-right: 5px;
-}
-
-
-#colorset-controls {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 5px;
-  gap: 10px;
-}
-
-.preset-button {
-  font-size: 22px;
-  width: 32px;
-  height: 32px;
-  border: 2px solid #555;
-  background-size: cover;
-  background-position: center;
+/* Generator section */
+#toggleColorsetGenerator {
+  margin: 0 auto;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin-right: 8px;
+  margin-bottom: -10px;
 }
 
-.preset-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+#toggleColorsetGenerator:hover {
+  background: transparent;
 }
 
-#colorset-preset-rainbow {
-  background: linear-gradient(135deg, red, orange, yellow, green, blue, indigo, violet);
+#colorsetGenerator {
+  padding: 10px;
 }
-#colorset-preset-grayscale {
-  background: linear-gradient(135deg, #000, #333, #666, #999, #ccc, #eee, #fff);
+
+/* — Colors slider (white/gray, with tick marks) — */
+
+#genNumColors::-webkit-slider-runnable-track {
+  background: 
+    linear-gradient(to right, #ccc var(--slider-fill), #555 var(--slider-fill));
 }
-#colorset-preset-pastel {
-  background: linear-gradient(135deg, #FFB3BA, #FFDFBA, #FFFFBA, #BAFFC9, #BAE1FF);
+
+#genNumColors::-moz-range-track {
+  background: 
+    linear-gradient(to right, #ccc var(--slider-fill), #555 var(--slider-fill));
 }
-#colorset-preset-dark {
-  background: linear-gradient(135deg, #200, #444, #006);
+
+#genNumColors::-webkit-slider-thumb {
+  background: linear-gradient(to bottom, #fff, #bbb);
+  border-color: #999;
 }
-#colorset-preset-one {
-  background: red;
+
+#genNumColors::-moz-range-thumb {
+  background: linear-gradient(to bottom, #fff, #bbb);
+  border-color: #999;
 }
-#colorset-preset-two {
-  background: linear-gradient(90deg, red 50%, #00a2e8 50%);
+
+#genNumColors:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(150, 150, 150, 0.4);
 }
-#colorset-preset-three {
-  background: linear-gradient(90deg, red 0%, red 33.33%, green 33.33%, green 66.66%, #00a2e8 66.66%, #00a2e8 100%);
+
+#genNumColors:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(150, 150, 150, 0.4);
 }
-#colorset-preset-four {
-  background: linear-gradient(90deg, red 0%, red 25%, green 25%, green 50%, #00a2e8 50%, #00a2e8 75%, orange 75%, orange 100%);
+
+/* — Brightness slider (yellowish) — */
+
+#genBrightness::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, #e8b830 var(--slider-fill), #555 var(--slider-fill));
+}
+
+#genBrightness::-moz-range-track {
+  background: linear-gradient(to right, #e8b830 var(--slider-fill), #555 var(--slider-fill));
+}
+
+#genBrightness::-webkit-slider-thumb {
+  background: linear-gradient(to bottom, #f5d060, #d4a020);
+  border-color: #e8b830;
+}
+
+#genBrightness::-moz-range-thumb {
+  background: linear-gradient(to bottom, #f5d060, #d4a020);
+  border-color: #e8b830;
+}
+
+#genBrightness:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(232, 184, 48, 0.4);
+}
+
+#genBrightness:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(232, 184, 48, 0.4);
+}
+
+#colorsetGenerator .control-input {
+  border-color: #555;
+  color: #e8e4df;
+}
+
+#colorsetGenerator .control-input:focus {
+  border-color: #cc4400;
+  background: #2a2d30;
+}
+
+.gen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gen-label {
+  color: #d8d4cf;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 60px;
+}
+
+.gen-half {
+  flex: 0 0 calc(50% - 4px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gen-select {
+  background: #222426;
+  color: #d8d4cf;
+  border: 1px solid #3a3c3e;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+}
+
+.gen-select:focus {
+  outline: none;
+  border-color: #5a7a9a;
+}
+
+.gen-button {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+  background: #cc4400;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gen-button:hover {
+  background: #dd5500;
+}
+
+.hidden {
+  display: none;
 }
 
 .colorset-empty-label {
@@ -128,6 +213,5 @@
   color: #454545;
   font-size: 24px;
   margin: 0 auto;
-  display: none; /* Initially hidden */
+  display: none;
 }
-

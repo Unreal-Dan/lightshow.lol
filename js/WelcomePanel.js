@@ -1,44 +1,121 @@
 /* WelcomePanel.js */
 import Panel from './Panel.js';
 
+// Newest entries FIRST — add new items at the top so they appear first in the list
+const FEATURES = [
+  { key: 'welcome-panel', html: '<strong>Improved Welcome Panel</strong> — This panel now tracks which updates you\'ve seen. Click entries to mark them as read. View it again next time to see new updates.' },
+  { key: 'context-menus', html: '<strong>Right-click Context Menus</strong> — Right-click anywhere (canvas, panel, color swatch) for instant copy, paste, share, help, and more.' },
+  { key: 'copy-paste', html: '<strong>Smarter Copy & Paste</strong> — Copy modes, colorsets, or patterns. Paste auto-detects whatever is on your clipboard.' },
+  { key: 'wiki-help', html: '<strong>Inline Wiki Help</strong> — Right-click any panel and select <b>Help</b> to open its wiki page right inside the editor as an overlay popup. No tab-switching!' },
+  { key: 'ios-support', html: '<strong>iOS Mobile Support</strong> — iOS users can now connect to devices using a WebBluetooth-enabled browser from the App Store, like Bluefy.' },
+  { key: 'firefox-ui', html: '<strong>Firefox Support & UI Fixes</strong> — Numerous UI bug fixes across the editor. Firefox now supports WebSerial for device connectivity, and major Firefox-specific bugs have been resolved.' },
+  { key: 'wiki-updates', html: '<strong>Wiki Updates</strong> — Several new wiki pages have been added, many existing pages have been improved and refactored, and all broken links have been cleaned up and fixed.' },
+  { key: 'colorset-controls', html: '<strong>Improved Colorset Generator</strong> — Revamped randomization controls: slider + number for color count, style dropdown, and a brightness slider. Old quick-preset buttons removed in favor of a cleaner layout.' },
+];
+
 export default class WelcomePanel extends Panel {
   constructor(editor) {
+    const seen = WelcomePanel.getSeen();
+
+    let featuresHtml = '';
+    for (const f of FEATURES) {
+      const isSeen = seen.has(f.key);
+      const badgeHtml = isSeen ? '' : '<div class="feature-badge pulse">NEW</div>';
+      const seenClass = isSeen ? ' seen' : '';
+      featuresHtml += `
+        <div class="feature-box${seenClass}" data-key="${f.key}">
+          ${badgeHtml}
+          <div>${f.html}</div>
+        </div>`;
+    }
+
     let content = `
-      <h1>Welcome to lightshow.lol</h1>
-      <p>Hello! If you found this website then you're likely a flow artist or glover. If you have no idea what that means, then welcome to your first lightshow!
-      This website is an ongoing development designed for both enjoyment and as a tool to control Vortex Lightshow Devices.</p>
+      <h1 class="welcome-title">Welcome to lightshow.lol</h1>
+      <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
+      <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
 
-      <h2>New Updates</h2>
-      <p>Lots of new updates are being deployed lately, explore the new UI and keep an eye out for new features. See the 
-      <a href="https://github.com/Unreal-Dan/lightshow.lol" target="_blank">Github</a> to share suggestions or report any bugs.</p>
+      <div class="features-container">
+        <div class="features-container-title">News & Updates</div>
+        <div class="feature-scroll">
+          ${featuresHtml}
+        </div>
+      </div>
 
-      <h2>The Wiki</h2>
-      <p>If you're new or just want to dive deeper, check out the Vortex Engine Wiki for guides, tips, and instructions:</p>
-      <a href="https://stoneorbits.github.io/VortexEngine/lightshow_lol.html" target="_blank" class="wiki-button">
-        <span>Learn More</span>
+      <a href="https://stoneorbits.github.io/VortexEngine/lightshow-lol/" target="_blank" class="wiki-button">
+        <span>See Wiki</span>
         <span class="arrow">→</span>
       </a>
       <div class="checkbox-container">
-        <label><input type="checkbox" id="doNotShowAgain"> Do not show this again</label>
+        <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
       </div>
+      <button class="close-welcome-btn">Close</button>
     `;
 
-
-    //if (editor.detectMobile()) {
-    //  content = `
-    //  <div style="margin: 0 auto;">
-    //    <h1 style="color:orange;text-align:center;">⚠ <b style="color:red;">Warning</b> ⚠<br></h1>
-    //    <h3 style="color:yellow;text-align:center;">The Mobile Layout is under construction!</h3>
-    //  </div>
-    //  ` + content;
-    //}
-
-    super(editor, 'welcomePanel', content, 'Welcome', { showCloseButton: true });
-    this.welcomeToken = 'showNewWelcome';
+    super(editor, 'welcomePanel', content, '', { showCloseButton: true });
+    this.welcomeToken = 'showNewWelcome-v2';
+    localStorage.removeItem('showNewWelcome');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/getting-started';
+  }
+
+  static getSeen() {
+    try {
+      const raw = localStorage.getItem('seenFeatures');
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  static markSeen(key) {
+    const seen = WelcomePanel.getSeen();
+    seen.add(key);
+    localStorage.setItem('seenFeatures', JSON.stringify([...seen]));
+  }
+
+  startAutoScroll() {
+    this.stopAutoScroll();
+    this.scrollInterval = setInterval(() => {
+      if (this.scrollEl) {
+        this.scrollEl.scrollTop += 1;
+      }
+    }, 80);
+  }
+
+  stopAutoScroll() {
+    if (this.scrollInterval) {
+      clearInterval(this.scrollInterval);
+      this.scrollInterval = null;
+    }
   }
 
   initialize() {
+    const boxes = this.panel.querySelectorAll('.feature-box:not(.seen)');
+    for (const box of boxes) {
+      const key = box.dataset.key;
+      box.addEventListener('click', () => {
+        WelcomePanel.markSeen(key);
+        box.classList.add('seen');
+        const badge = box.querySelector('.feature-badge');
+        if (badge) badge.remove();
+      });
+    }
+
+    this.scrollEl = this.panel.querySelector('.feature-scroll');
+    this.scrollInterval = null;
+    this.startAutoScroll();
+
+    this.scrollEl.addEventListener('mouseenter', () => {
+      this.stopAutoScroll();
+      this.scrollEl.scrollTop = 0;
+    });
+    this.scrollEl.addEventListener('mouseleave', () => {
+      this.startAutoScroll();
+    });
+
+    const closeBtn = this.panel.querySelector('.close-welcome-btn');
+    closeBtn.addEventListener('click', () => this.hide());
+
     const doNotShowCheckbox = this.panel.querySelector('#doNotShowAgain');
     doNotShowCheckbox.addEventListener('change', (event) => {
       localStorage.setItem(this.welcomeToken, !event.target.checked);
@@ -58,28 +135,22 @@ export default class WelcomePanel extends Panel {
     const tabContainer = document.querySelector('.mobile-panel-content');
     if (!tabContainer) return;
 
-    // Append the panel to the mobile panel container
     tabContainer.appendChild(this.panel);
 
-    // Remove unnecessary borders and set transparent background
     this.panel.style.border = 'none';
     this.panel.style.backgroundColor = 'transparent';
 
-    // Get the height available for the panel
     const viewportHeight = window.innerHeight;
     const tabContainerRect = tabContainer.getBoundingClientRect();
     const availableHeight = viewportHeight - tabContainerRect.top;
 
-    // Set the panel height to fit the remaining space
     this.panel.style.height = `${availableHeight}px`;
 
-    // Ensure the content container takes up the remaining space inside the panel
     this.contentContainer.style.flex = '1';
     this.contentContainer.style.display = 'flex';
     this.contentContainer.style.flexDirection = 'column';
     this.contentContainer.style.overflowY = 'auto';
 
-    // Ensure the panel is visible
     this.show();
   }
 }

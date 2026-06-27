@@ -26,6 +26,7 @@ export default class DuoEditorPanel extends Panel {
     `;
     super(editor, 'duoEditorPanel', content, 'Duo Editor');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/chromalink-duo';
     this.selectedLeds = ['0']; // LED 0 selected by default
     this.mainSelectedLed = '0';
   }

@@ -20,6 +20,7 @@ export default class CommunityBrowserPanel extends Panel {
     `;
     super(editor, 'communityBrowserPanel', initialHTML, 'Community Modes');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/vortex-community/';
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
 

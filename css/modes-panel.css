@@ -128,18 +128,20 @@
 }
 
 .delete-mode-btn {
-  position: relative;
-  top: -4px; /* it's a button so it has extra space on the top */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: transparent;
   border: none;
   color: #aaa;
-  float: right;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: bold;
   user-select: none;
   width: auto;
   margin: 0;
-  padding: 1px 6px;
+  padding: 0 6px;
+  position: relative;
+  top: -3px;
 }
 
 .delete-mode-btn:hover, .delete-mode-btn:focus {

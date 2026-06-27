@@ -36,6 +36,7 @@ export default class ModesPanel extends Panel {
     `;
     super(editor, 'modesPanel', content, editor.detectMobile() ? 'Modes' : 'Modes List');
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/modes-list';
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.shareModal = new Modal('share');
@@ -335,7 +336,13 @@ export default class ModesPanel extends Panel {
 
   // Copy selected mode data
   copy() {
-    if (this.selectedModeIndex === undefined) {
+    this.copyMode();
+  }
+
+  copyMode() {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) {
+      Notification.failure("No mode to copy");
       return;
     }
     const modeData = this.editor.vortex.printModeJson(false);
@@ -346,19 +353,269 @@ export default class ModesPanel extends Panel {
     });
   }
 
-  // Paste copied mode data
+  copyColorset() {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed === null) {
+      Notification.failure("Select an LED first");
+      return;
+    }
+
+    const set = cur.getColorset(mainLed);
+    const colors = [];
+    for (let i = 0; i < set.numColors(); i++) {
+      const col = set.get(i);
+      const hex = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+      colors.push(hex);
+    }
+
+    const data = JSON.stringify({ type: "colorset", colors });
+    navigator.clipboard.writeText(data).then(() => {
+      Notification.success("Copied colorset to clipboard");
+    }).catch(() => {
+      Notification.failure("Failed to copy colorset");
+    });
+  }
+
+  copyPattern() {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed === null) {
+      Notification.failure("Select an LED first");
+      return;
+    }
+
+    const patID = cur.getPatternID(mainLed);
+    const set = cur.getColorset(mainLed);
+    const colors = [];
+    for (let i = 0; i < set.numColors(); i++) {
+      const col = set.get(i);
+      const hex = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1).toUpperCase()}`;
+      colors.push(hex);
+    }
+
+    const args = [];
+    for (let i = 0; i < 7; i++) {
+      args.push(cur.getArg(i, mainLed) || 0);
+    }
+
+    const data = JSON.stringify({
+      type: "pattern",
+      pattern_id: patID.value,
+      args
+    });
+    navigator.clipboard.writeText(data).then(() => {
+      Notification.success("Copied pattern to clipboard");
+    }).catch(() => {
+      Notification.failure("Failed to copy pattern");
+    });
+  }
+
+  static detectClipboardData(data) {
+    if (/^#?[0-9A-Fa-f]{6}$/.test(data)) {
+      return { type: 'color', value: data };
+    }
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && parsed.type === 'colorset' && Array.isArray(parsed.colors)) {
+        return { type: 'colorset', value: parsed };
+      }
+      if (parsed && parsed.type === 'pattern' && parsed.pattern_id !== undefined) {
+        return { type: 'pattern', value: parsed };
+      }
+      if (parsed && (parsed.single_pats || parsed.multi_pat)) {
+        return { type: 'mode', value: parsed };
+      }
+      return { type: 'unknown', value: parsed };
+    } catch {
+      return { type: 'unknown', value: data };
+    }
+  }
+
+  // Paste copied data - intelligently handles all formats
   paste() {
     navigator.clipboard.readText().then((data) => {
-      if (/^#?[0-9A-Fa-f]{6}$/.test(data)) {
+      this.pasteText(data);
+    }).catch(() => {
+      Notification.failure("Failed to read clipboard");
+    });
+  }
+
+  pasteText(data) {
+    if (!data) return;
+    const detected = ModesPanel.detectClipboardData(data);
+    switch (detected.type) {
+      case 'color':
         if (this.editor.colorsetPanel) {
           this.editor.colorsetPanel.paste();
-          return;
         }
-      }
-      this.importModeFromData(JSON.parse(data), true);
-    }).catch(() => {
-      Notification.failure("Failed to paste mode");
+        break;
+      case 'colorset':
+        this.pasteColorset(detected.value);
+        break;
+      case 'pattern':
+        this.pastePattern(detected.value);
+        break;
+      case 'mode':
+        this.importModeFromData(detected.value, true);
+        break;
+      default:
+        try {
+          this.decodeAndImportMode(data, true);
+        } catch {
+          Notification.failure("Unrecognized clipboard data");
+        }
+    }
+  }
+
+  pasteColorset(data) {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed === null) {
+      Notification.failure("Select an LED first");
+      return;
+    }
+
+    const set = new this.editor.vortexLib.Colorset();
+    data.colors.forEach(hex => {
+      const h = hex.replace(/^#/, '');
+      const bigint = parseInt(h, 16);
+      set.addColor(new this.editor.vortexLib.RGBColor(
+        (bigint >> 16) & 255,
+        (bigint >> 8) & 255,
+        bigint & 255
+      ));
     });
+
+    const targetLeds = this.editor.ledSelectPanel.getSelectedLeds();
+    targetLeds.forEach(led => cur.setColorset(set, led));
+    cur.init();
+    this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.colorsetPanel.refresh();
+    this.editor.demoModeOnDevice();
+    Notification.success("Pasted colorset");
+  }
+
+  pastePattern(data) {
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return;
+
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed === null) {
+      Notification.failure("Select an LED first");
+      return;
+    }
+
+    const patID = this.editor.vortexLib.intToPatternID(data.pattern_id);
+    const args = new this.editor.vortexLib.PatternArgs();
+    data.args.forEach(arg => args.addArgs(arg));
+
+    const targetLeds = this.editor.ledSelectPanel.getSelectedLeds();
+    targetLeds.forEach(led => {
+      const colorset = data.colorset
+        ? (() => {
+            const set = new this.editor.vortexLib.Colorset();
+            data.colorset.forEach(hex => {
+              const h = hex.replace(/^#/, '');
+              const bigint = parseInt(h, 16);
+              set.addColor(new this.editor.vortexLib.RGBColor(
+                (bigint >> 16) & 255,
+                (bigint >> 8) & 255,
+                bigint & 255
+              ));
+            });
+            return set;
+          })()
+        : cur.getColorset(led);
+      cur.setPattern(patID, led, args, colorset);
+    });
+    cur.init();
+    this.editor.vortex.engine().modes().saveCurMode();
+    this.refresh();
+    this.editor.patternPanel.refresh();
+    this.editor.colorsetPanel.refresh();
+    this.editor.demoModeOnDevice();
+    Notification.success("Pasted pattern");
+  }
+
+  getCopyOptions() {
+    const options = [];
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return options;
+
+    options.push({
+      label: 'Copy Mode',
+      action: () => this.copyMode()
+    });
+
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed !== null) {
+      options.push({ separator: true });
+      options.push({
+        label: 'Copy Colorset',
+        action: () => this.copyColorset()
+      });
+      options.push({
+        label: 'Copy Pattern',
+        action: () => this.copyPattern()
+      });
+    }
+
+    return options;
+  }
+
+  getContextMenuItems() {
+    const items = [];
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (cur) {
+      items.push({
+        label: 'Copy Mode',
+        action: () => this.copyMode()
+      });
+      const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+      if (mainLed !== null) {
+        items.push({
+          label: 'Copy Colorset',
+          action: () => this.copyColorset()
+        });
+        items.push({
+          label: 'Copy Pattern',
+          action: () => this.copyPattern()
+        });
+      }
+      items.push({ separator: true });
+      items.push({
+        label: 'Get Link',
+        action: () => this.showLinkModeModal()
+      });
+      items.push({
+        label: 'Share Mode',
+        action: () => this.shareModeToCommunity()
+      });
+      items.push({ separator: true });
+      items.push({
+        label: 'Paste',
+        action: () => this.paste()
+      });
+      items.push({ separator: true });
+      items.push({
+        label: 'Delete Mode',
+        danger: true,
+        action: () => this.deleteMode(this.editor.vortex.curModeIndex())
+      });
+      items.push({ separator: true });
+    }
+    items.push({
+      label: 'Help',
+      action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl)
+    });
+    return items;
   }
 
   attachModeEventListeners() {

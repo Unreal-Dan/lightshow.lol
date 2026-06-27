@@ -1,0 +1,100 @@
+/* context-menu.css */
+.context-menu {
+  position: fixed;
+  z-index: 10000;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 180px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  color: #e0ddd9;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+}
+
+.context-menu-item:hover {
+  background-color: #3a6ea5;
+  color: #fff;
+}
+
+.context-menu-item.disabled {
+  color: #666;
+  cursor: default;
+}
+
+.context-menu-item.disabled:hover {
+  background-color: transparent;
+  color: #666;
+}
+
+.context-menu-item.danger {
+  color: #e07474;
+}
+
+.context-menu-item.danger:hover {
+  background-color: #8b3a3a;
+  color: #fff;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: #444;
+  margin: 4px 8px;
+}
+
+/* Help popup */
+.help-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-popup {
+  width: min(95vw, 400px);
+  height: auto;
+  background: #1e1e1e;
+  border: 1px solid #555;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.help-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+  font-size: 16px;
+  font-weight: bold;
+  color: #e0ddd9;
+}
+
+.help-popup-close {
+  cursor: pointer;
+  font-size: 22px;
+  color: #999;
+  line-height: 1;
+}
+
+.help-popup-close:hover {
+  color: #fff;
+}
+

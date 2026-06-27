@@ -4,6 +4,7 @@ export default class ColorPickerPanel extends Panel {
   constructor(editor) {
     super(editor, 'colorPickerPanel', '', 'Color Picker', { showCloseButton: true }); // Pass id and title to Panel
     this.editor = editor;
+    this.wikiUrl = 'https://stoneorbits.github.io/VortexEngine/lightshow-lol/control-panels/color-picker';
     this.lightshow = editor.lightshow;
     this.selectedIndex = 0;
     this.colorState = { r: 255, g: 0, b: 0, h: 0, s: 255, v: 255 };
