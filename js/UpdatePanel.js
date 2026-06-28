@@ -9,7 +9,7 @@ export default class UpdatePanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="updateOptions">
-        <button id="updateFlash" class="update-button">Flash ESP32 Firmware</button>
+        <button id="updateFlash" class="update-button">Flash ESP31 Firmware</button>
 
         <div class="update-progress-container">
           <div id="overallProgress" class="progress-bar">
@@ -18,7 +18,7 @@ export default class UpdatePanel extends Panel {
         </div>
 
         <div>
-          <span id="updateProgress" style="margin-top: 10px;"></span>
+          <span id="updateProgress" style="margin-top: 9px;"></span>
         </div>
       </div>
     `;
@@ -158,10 +158,17 @@ export default class UpdatePanel extends Panel {
     }
 
     const firmwareData = await apiResponse.json();
-    const firmwareZipUrl = firmwareData.firmware?.fileUrl;
+    let firmwareZipUrl = firmwareData.firmware?.fileUrl;
     if (!firmwareZipUrl) {
       throw new Error('Firmware file URL not found in API response');
     }
+
+    // The downloads JSON still points at vortex.community.
+    // Rewrite it to the new host.
+    firmwareZipUrl = firmwareZipUrl.replace(
+      /^https?:\/\/vortex\.community/i,
+      'https://lightshow.lol/community'
+    );
 
     // Fetch the firmware zip
     const zipResponse = await fetch(firmwareZipUrl, { cache: 'no-store' });
