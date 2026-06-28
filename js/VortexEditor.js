@@ -572,7 +572,7 @@ export default class VortexEditor {
 
   importModeDataFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedData = urlParams.get('data');
+    const encodedData = urlParams.get('import') || urlParams.get('data');
 
     if (encodedData) {
       this.modesPanel.importModeFromLink(encodedData);
