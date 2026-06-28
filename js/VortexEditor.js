@@ -262,11 +262,20 @@ export default class VortexEditor {
     // detect the postmessage from vortex community to send over a mode
     window.addEventListener('message', (event) => {
       console.log('Received message:', event);
-      if (event.origin !== 'https://vortex.community') {
+      const allowed = ['https://vortex.community'];
+      if (this.isLocalServer) allowed.push('http://localhost:3000');
+      if (!allowed.includes(event.origin)) {
         console.warn('Rejected message from unauthorized origin:', event.origin);
         return;
       }
       let { type, data } = event.data;
+
+      if (this._importingFromUrl && type === 'mode') {
+        console.log('Skipping postMessage — mode already imported from URL');
+        this._importingFromUrl = false;
+        return;
+      }
+
       try {
         // Decode Base64 URL-safe format
         data = data.replace(/-/g, '+').replace(/_/g, '/');
@@ -572,10 +581,20 @@ export default class VortexEditor {
 
   importModeDataFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    const encodedData = urlParams.get('data');
+    const encodedData = urlParams.get('import') || urlParams.get('data');
 
     if (encodedData) {
+      // Remove import params from URL so a refresh doesn't re-import
+      urlParams.delete('import');
+      urlParams.delete('data');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams}${window.location.hash}`
+        : `${window.location.pathname}${window.location.hash}`;
+      history.replaceState({}, '', newUrl);
+
+      this._importingFromUrl = true;
       this.modesPanel.importModeFromLink(encodedData);
+      setTimeout(() => { this._importingFromUrl = false; }, 5000);
     }
   }
 

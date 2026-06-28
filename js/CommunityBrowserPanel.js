@@ -138,6 +138,10 @@ export default class CommunityBrowserPanel extends Panel {
   importMode(mode) {
     const patternSets = mode.patternSets;
     const ledPatternOrder = mode.ledPatternOrder;
+    if (!patternSets || !ledPatternOrder) {
+      Notification.failure("Cannot import — mode data is incomplete");
+      return;
+    }
     const patternSetMap = {};
     patternSets.forEach(ps => {
       patternSetMap[ps._id] = ps.data;

@@ -807,7 +807,7 @@ export default class ModesPanel extends Panel {
         .replace(/=+$/, ''); // Remove padding
 
         // Generate the link
-        const lightshowUrl = `https://lightshow.lol/importMode?data=${compressedBase64}`;
+        const lightshowUrl = `https://lightshow.lol/?import=${compressedBase64}`;
 
         // Show the modal
         this.shareModal.show({
