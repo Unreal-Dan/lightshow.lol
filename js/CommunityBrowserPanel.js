@@ -101,7 +101,7 @@ export default class CommunityBrowserPanel extends Panel {
           // Keep local server behavior unchanged
           response = await fetch(`public/data/modeData${pageNumber > 1 ? '2' : ''}.json?v=${new Date().getTime()}`);
         } else {
-          response = await fetch(`https://vortex.community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}&v=${new Date().getTime()}`, {
+          response = await fetch(`https://lightshow.lol/community/modes/json?page=${pageNumber}&pageSize=${this.pageSize}&v=${new Date().getTime()}`, {
             method: 'GET',
             credentials: 'include'
           });
