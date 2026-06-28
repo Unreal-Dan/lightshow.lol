@@ -2,8 +2,10 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 
-// Newest entries FIRST — add new items at the top so they appear first in the list
+const WELCOME_VERSION = 'showNewWelcome-v3';
+
 const FEATURES = [
+  { key: 'vortex-community-migration', html: '<strong>Vortex Community Moved</strong> — The community website vortex.community has been moved to the new home: lightshow.lol/community' },
   { key: 'welcome-panel', html: '<strong>Improved Welcome Panel</strong> — This panel now tracks which updates you\'ve seen. Click entries to mark them as read. View it again next time to see new updates.' },
   { key: 'context-menus', html: '<strong>Right-click Context Menus</strong> — Right-click anywhere (canvas, panel, color swatch) for instant copy, paste, share, help, and more.' },
   { key: 'copy-paste', html: '<strong>Smarter Copy & Paste</strong> — Copy modes, colorsets, or patterns. Paste auto-detects whatever is on your clipboard.' },
@@ -23,6 +25,7 @@ export default class WelcomePanel extends Panel {
       const isSeen = seen.has(f.key);
       const badgeHtml = isSeen ? '' : '<div class="feature-badge pulse">NEW</div>';
       const seenClass = isSeen ? ' seen' : '';
+
       featuresHtml += `
         <div class="feature-box${seenClass}" data-key="${f.key}">
           ${badgeHtml}
@@ -30,7 +33,7 @@ export default class WelcomePanel extends Panel {
         </div>`;
     }
 
-    let content = `
+    const content = `
       <h1 class="welcome-title">Welcome to lightshow.lol</h1>
       <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
       <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
@@ -46,17 +49,18 @@ export default class WelcomePanel extends Panel {
         <span>See Wiki</span>
         <span class="arrow">→</span>
       </a>
+
       <div class="checkbox-container">
         <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
       </div>
+
       <button class="close-welcome-btn">Close</button>
     `;
 
     super(editor, 'welcomePanel', content, '', { showCloseButton: true });
-    this.welcomeToken = 'showNewWelcome-v2';
-    localStorage.removeItem('showNewWelcome');
+
+    this.welcomeToken = WELCOME_VERSION;
     this.editor = editor;
-    this.wikiUrl = wikiUrl('/lightshow-lol/getting-started');
   }
 
   static getSeen() {
@@ -77,9 +81,7 @@ export default class WelcomePanel extends Panel {
   startAutoScroll() {
     this.stopAutoScroll();
     this.scrollInterval = setInterval(() => {
-      if (this.scrollEl) {
-        this.scrollEl.scrollTop += 1;
-      }
+      if (this.scrollEl) this.scrollEl.scrollTop += 1;
     }, 80);
   }
 
@@ -92,24 +94,27 @@ export default class WelcomePanel extends Panel {
 
   initialize() {
     const boxes = this.panel.querySelectorAll('.feature-box:not(.seen)');
+
     for (const box of boxes) {
       const key = box.dataset.key;
+
       box.addEventListener('click', () => {
         WelcomePanel.markSeen(key);
         box.classList.add('seen');
+
         const badge = box.querySelector('.feature-badge');
         if (badge) badge.remove();
       });
     }
 
     this.scrollEl = this.panel.querySelector('.feature-scroll');
-    this.scrollInterval = null;
     this.startAutoScroll();
 
     this.scrollEl.addEventListener('mouseenter', () => {
       this.stopAutoScroll();
       this.scrollEl.scrollTop = 0;
     });
+
     this.scrollEl.addEventListener('mouseleave', () => {
       this.startAutoScroll();
     });
@@ -118,17 +123,16 @@ export default class WelcomePanel extends Panel {
     closeBtn.addEventListener('click', () => this.hide());
 
     const doNotShowCheckbox = this.panel.querySelector('#doNotShowAgain');
+
     doNotShowCheckbox.addEventListener('change', (event) => {
-      localStorage.setItem(this.welcomeToken, !event.target.checked);
+      localStorage.setItem(this.welcomeToken, (!event.target.checked).toString());
     });
 
     const showWelcome = localStorage.getItem(this.welcomeToken) !== 'false';
-    if (!showWelcome) {
-      this.hide();
-    }
+    if (!showWelcome) this.hide();
+
     if (this.editor.detectMobile()) {
-      const checkboxContainer = this.panel.querySelector('.checkbox-container');
-      checkboxContainer.style.display = 'none';
+      this.panel.querySelector('.checkbox-container').style.display = 'none';
     }
   }
 
@@ -142,8 +146,8 @@ export default class WelcomePanel extends Panel {
     this.panel.style.backgroundColor = 'transparent';
 
     const viewportHeight = window.innerHeight;
-    const tabContainerRect = tabContainer.getBoundingClientRect();
-    const availableHeight = viewportHeight - tabContainerRect.top;
+    const rect = tabContainer.getBoundingClientRect();
+    const availableHeight = viewportHeight - rect.top;
 
     this.panel.style.height = `${availableHeight}px`;
 
