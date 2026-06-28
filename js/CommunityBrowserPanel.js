@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import Notification from './Notification.js';
 
 export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
