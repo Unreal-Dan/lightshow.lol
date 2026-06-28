@@ -53,3 +53,7 @@
   color: #FF0000;
 }
 
+.notification.warning {
+  color: #FFA500;
+}
+

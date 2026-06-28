@@ -488,7 +488,7 @@ export default class VortexEditor {
       return true
     }
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200) {
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
       this.detectedMobile = true;
     }
     return this.detectedMobile;
