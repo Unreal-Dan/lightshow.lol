@@ -262,7 +262,9 @@ export default class VortexEditor {
     // detect the postmessage from vortex community to send over a mode
     window.addEventListener('message', (event) => {
       console.log('Received message:', event);
-      if (event.origin !== 'https://vortex.community') {
+      const allowed = ['https://vortex.community'];
+      if (this.isLocalServer) allowed.push('http://localhost:3000');
+      if (!allowed.includes(event.origin)) {
         console.warn('Rejected message from unauthorized origin:', event.origin);
         return;
       }
