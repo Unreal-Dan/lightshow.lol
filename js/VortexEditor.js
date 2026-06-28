@@ -269,6 +269,13 @@ export default class VortexEditor {
         return;
       }
       let { type, data } = event.data;
+
+      if (this._importingFromUrl && type === 'mode') {
+        console.log('Skipping postMessage — mode already imported from URL');
+        this._importingFromUrl = false;
+        return;
+      }
+
       try {
         // Decode Base64 URL-safe format
         data = data.replace(/-/g, '+').replace(/_/g, '/');
@@ -577,7 +584,17 @@ export default class VortexEditor {
     const encodedData = urlParams.get('import') || urlParams.get('data');
 
     if (encodedData) {
+      // Remove import params from URL so a refresh doesn't re-import
+      urlParams.delete('import');
+      urlParams.delete('data');
+      const newUrl = urlParams.toString()
+        ? `${window.location.pathname}?${urlParams}${window.location.hash}`
+        : `${window.location.pathname}${window.location.hash}`;
+      history.replaceState({}, '', newUrl);
+
+      this._importingFromUrl = true;
       this.modesPanel.importModeFromLink(encodedData);
+      setTimeout(() => { this._importingFromUrl = false; }, 5000);
     }
   }
 
