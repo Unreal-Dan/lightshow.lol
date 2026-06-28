@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 
-const COMMUNITY_URL = 'https://vortex.community';
+const COMMUNITY_URL = 'https://lightshow.lol/community';
 const GITHUB_URL = 'https://github.com/StoneOrbits/VortexEngine';
 
 export default class AboutPanel extends Panel {

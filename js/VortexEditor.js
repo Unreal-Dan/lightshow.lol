@@ -254,7 +254,7 @@ export default class VortexEditor {
         const deviceVersions = await this.getLatestFirmwareVersions(device);
         const latestVersion = deviceVersions.firmware.version;
         this.updatePanel.displayFirmwareUpdateInfo(device, 'N/A',
-          latestVersion, 'https://vortex.community/downloads');
+          latestVersion, 'https://lightshow.lol/community/downloads');
         this.updatePanel.show();
       }
     });

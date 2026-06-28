@@ -149,7 +149,7 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchRemoteFirmwareZip(targetDevice) {
-    const firmwareApiUrl = `https://vortex.community/downloads/json/${targetDevice}`;
+    const firmwareApiUrl = `https://lightshow.lol/community/downloads/json/${targetDevice}`;
 
     // Fetch firmware metadata
     const apiResponse = await fetch(firmwareApiUrl, { cache: 'no-store' });

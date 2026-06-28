@@ -192,7 +192,7 @@ export default class ChromalinkPanel extends Panel {
       return 'public/data/VortexEngine-duo-1.4.34.bin';
     }
     // fetch the firmware url from vortex community downloads json api
-    const apiResponse = await fetch('https://vortex.community/downloads/json/duo');
+    const apiResponse = await fetch('https://lightshow.lol/community/downloads/json/duo');
     if (!apiResponse.ok) throw new Error('Failed to fetch firmware metadata');
     const responseData = await apiResponse.json();
     return responseData.firmware?.fileUrl;
