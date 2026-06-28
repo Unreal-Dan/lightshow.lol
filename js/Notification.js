@@ -29,9 +29,7 @@ class Notification {
   }
 
   static _iconClass(type) {
-    if (type === 'success') return 'fa-circle-check';
-    if (type === 'warning') return 'fa-triangle-exclamation';
-    return 'fa-triangle-exclamation';
+    return type === 'success' ? 'fa-circle-check' : 'fa-triangle-exclamation';
   }
 
   static _trimToMaxVisible() {
@@ -109,11 +107,6 @@ class Notification {
   static failure(message, duration = 2000) {
     Notification.createNotification(message, 'failure', duration);
     console.log('[Notif] Failure:', message);
-  }
-
-  static warning(message, duration = 4000) {
-    Notification.createNotification(message, 'warning', duration);
-    console.log('[Notif] Warning:', message);
   }
 }
 
