@@ -74,7 +74,7 @@ export default class AnimationPanel extends Panel {
         <button class="animation-button" id="renderBoxButton" title="Box">
           <i class="fa fa-square"></i>
         </button>
-        <button class="animation-button" id="renderOrbitButton" title="Cursor">
+        <button class="animation-button" id="renderOrbitButton" title="Orbit">
           <i class="fa-solid fa-satellite"></i>
         </button>
       </div>
