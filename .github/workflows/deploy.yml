@@ -100,19 +100,17 @@ jobs:
     - name: Setup SSH Agent
       uses: webfactory/ssh-agent@v0.5.3
       with:
-        ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+        ssh-private-key: ${{ secrets.NEW_DEPLOY_KEY }}
 
     - name: Add Linode to known_hosts
-      run: ssh-keyscan 172.232.170.43 >> ~/.ssh/known_hosts
+      run: ssh-keyscan 198.74.48.18 >> ~/.ssh/known_hosts
 
     - name: Deploy to Linode
       run: |
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/VortexLib.js
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/VortexLib.wasm
-        scp VortexEngine/VortexEngine/VortexCLI/vortex lightshow@172.232.170.43:/home/lightshow/vortex
-        scp version.js lightshow@172.232.170.43:/home/lightshow/lightshow.lol/js/version.js
-        ssh lightshow@172.232.170.43 'sudo /usr/bin/mv /home/lightshow/vortex /usr/local/bin/vortex'
-        #ssh lightshow@172.232.170.43 'sudo systemctl stop lightshow.lol'
-        ssh lightshow@172.232.170.43 'cd /home/lightshow/lightshow.lol && chmod +x ./tools/deploy.sh && ./tools/deploy.sh'
-        #ssh lightshow@172.232.170.43 'sudo systemctl start lightshow.lol'
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js vortex@198.74.48.18:/home/vortex/lightshow.lol/js/VortexLib.js
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm vortex@198.74.48.18:/home/vortex/lightshow.lol/js/VortexLib.wasm
+        scp VortexEngine/VortexEngine/VortexCLI/vortex vortex@198.74.48.18:/home/vortex/vortex
+        scp version.js vortex@198.74.48.18:/home/vortex/lightshow.lol/js/version.js
+        ssh vortex@198.74.48.18 'sudo mv /home/vortex/vortex /usr/local/bin/vortex'
+        ssh vortex@198.74.48.18 'cd /home/vortex/lightshow.lol && chmod +x ./tools/deploy.sh && ./tools/deploy.sh'
 
