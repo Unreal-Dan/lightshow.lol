@@ -182,7 +182,7 @@ export default class CommunityBrowser {
       response = await fetch(`public/data/modeData${suffix}.json?v=${v}`);
     } else {
       response = await fetch(
-        `https://vortex.community/modes/json?page=${page}&pageSize=${this._pageSize}&v=${v}`,
+        `https://lightshow.lol/community/modes/json?page=${page}&pageSize=${this._pageSize}&v=${v}`,
         { method: 'GET', credentials: 'include' }
       );
     }
