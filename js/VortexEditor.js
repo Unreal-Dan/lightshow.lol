@@ -488,7 +488,7 @@ export default class VortexEditor {
       return true
     }
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || window.innerWidth < 1200) {
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
       this.detectedMobile = true;
     }
     return this.detectedMobile;
@@ -738,8 +738,24 @@ export default class VortexEditor {
   }
 }
 
+function isZoomedIn() {
+  const dpr = window.devicePixelRatio;
+  const nearestInteger = Math.round(dpr);
+  if (Math.abs(dpr - nearestInteger) / nearestInteger < 0.02) {
+    if (nearestInteger >= 2 && window.innerWidth) {
+      if (window.innerWidth < 1000) return true;
+      if (window.screen && window.innerWidth < window.screen.width * 0.55) return true;
+    }
+    return false;
+  }
+  return true;
+}
+
 async function boot() {
   try {
+    if (isZoomedIn()) {
+      Notification.warning('Page zoom is not at 100% — reset zoom to 100% and refresh for the best experience', 30000);
+    }
     const vortexLib = await VortexLib();
     const vortexEditor = new VortexEditor(vortexLib);
     await vortexEditor.initialize();
