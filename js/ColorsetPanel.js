@@ -186,13 +186,19 @@ export default class ColorsetPanel extends Panel {
     set.clear();
 
     switch (preset) {
-    case 'rainbow':
+    case 'rainbow': {
+      const hueOffset = Math.random() * (360 / numColors);
+      const sat = 255;
+      const lig = 255;
+      const offset = hueOffset + (Math.random() - 0.5) * 5;
       for (let i = 0; i < numColors; i++) {
-        const hue = (i / numColors) * 360;
-        const rgb = this.hslToRgb(hue, 1, 0.5);
+        const hue = ((i / numColors) * 360 + offset) % 360;
+        console.log(hue);
+        const rgb = this.hslToRgb(hue, sat, lig);
         set.addColor(new this.lightshow.vortexLib.RGBColor(rgb.r, rgb.g, rgb.b));
       }
       break;
+    }
     case 'grayscale':
       for (let i = 0; i < numColors; i++) {
         const gray = Math.floor(Math.random() * 256);

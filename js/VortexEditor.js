@@ -723,7 +723,7 @@ export default class VortexEditor {
     }
   }
 
-  showHelpPopup(url = wikiUrl('/lightshow-lol/')) {
+  showHelpPopup(url = wikiUrl('/lightshow-lol/'), title = 'Help') {
     const existing = document.querySelector('.help-popup-overlay');
     if (existing) existing.remove();
 
@@ -735,13 +735,13 @@ export default class VortexEditor {
 
     const header = document.createElement('div');
     header.className = 'help-popup-header';
-    header.innerHTML = '<span>Help</span><span class="help-popup-close">&times;</span>';
+    header.innerHTML = `<span>${title}</span><span class="help-popup-close">&times;</span>`;
     header.querySelector('.help-popup-close').onclick = () => overlay.remove();
 
     const iframe = document.createElement('iframe');
     iframe.src = url;
     iframe.style.cssText = 'flex:1;width:100%;border:none;background:#1e1e1e;';
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
     iframe.addEventListener('load', () => {
       iframe.style.opacity = '1';
     });

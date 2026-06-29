@@ -785,8 +785,8 @@ export default class ModesPanel extends Panel {
       shareUrl = `http://localhost:3000/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
     }
 
-    // Open the URL in a new tab
-    window.open(shareUrl, '_blank');
+    // Open the URL in an inline iframe popup
+    this.editor.showHelpPopup(shareUrl, 'Share Mode');
   }
 
   showLinkModeModal() {
