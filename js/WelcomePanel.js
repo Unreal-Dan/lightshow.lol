@@ -5,7 +5,7 @@ import { wikiUrl } from './wiki-url.js';
 const WELCOME_VERSION = 'showNewWelcome-v4';
 
 const FEATURES = [
-  { key: 'vortex-community-overhaul', html: '<strong>Vortex Community Overhaul</strong> — The entirety of Vortex Community has been overhauled and almost every UI has been rewritten or improved.'k },
+  { key: 'vortex-community-overhaul', html: '<strong>Vortex Community Overhaul</strong> — The entirety of Vortex Community has been overhauled and almost every UI has been rewritten or improved.' },
   { key: 'led-selection-refresh', html: '<strong>Led Select Refresh</strong> — The Led Selection Panel has been refreshed and uses new assets for the device previews' },
   { key: 'community-browser', html: '<strong>Community Browser Redesign</strong> — The Community Browser panel has been redesigned and includes Patterns and Modes now, still a work in progress.' },
   { key: 'share-mode-inline', html: '<strong>Share Modes Inline</strong> — Share modes in an overlay panel directly on lightshow.lol without leaving to another tab' },
