@@ -4,6 +4,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
 export default class UpdatePanel extends Panel {
   constructor(editor) {
@@ -149,7 +150,7 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchRemoteFirmwareZip(targetDevice) {
-    const firmwareApiUrl = `https://lightshow.lol/community/downloads/json/${targetDevice}`;
+    const firmwareApiUrl = communityUrl(`/community/downloads/json/${targetDevice}`);
 
     // Fetch firmware metadata
     const apiResponse = await fetch(firmwareApiUrl, { cache: 'no-store' });
@@ -165,9 +166,10 @@ export default class UpdatePanel extends Panel {
 
     // The downloads JSON still points at vortex.community.
     // Rewrite it to the new host.
+    const communityOrigin = new URL(communityUrl()).origin;
     firmwareZipUrl = firmwareZipUrl.replace(
       /^https?:\/\/vortex\.community/i,
-      'https://lightshow.lol/community'
+      communityOrigin + '/community'
     );
 
     // Fetch the firmware zip

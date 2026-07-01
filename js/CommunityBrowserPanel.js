@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 import Notification from './Notification.js';
 
 export default class CommunityBrowserPanel extends Panel {
@@ -35,13 +36,6 @@ export default class CommunityBrowserPanel extends Panel {
     this._setupTabs();
     this._setupModesSearch();
     this._setupPatsSearch();
-  }
-
-  get _baseUrl() {
-    if (this.editor.isLocalServer) {
-      return 'http://localhost:3000';
-    }
-    return 'https://lightshow.lol';
   }
 
   _setupTabs() {
@@ -107,7 +101,7 @@ export default class CommunityBrowserPanel extends Panel {
 
   async _fetchModes() {
     try {
-      const res = await fetch(`${this._baseUrl}/community/modes/json?page=1&pageSize=999&v=${Date.now()}`, {
+      const res = await fetch(communityUrl(`/community/modes/json?page=1&pageSize=999&v=${Date.now()}`), {
         credentials: 'include'
       });
       const data = await res.json();
@@ -120,7 +114,7 @@ export default class CommunityBrowserPanel extends Panel {
 
   async _fetchPats() {
     try {
-      const res = await fetch(`${this._baseUrl}/community/pats/json?page=1&pageSize=999&v=${Date.now()}`, {
+      const res = await fetch(communityUrl(`/community/pats/json?page=1&pageSize=999&v=${Date.now()}`), {
         credentials: 'include'
       });
       const data = await res.json();

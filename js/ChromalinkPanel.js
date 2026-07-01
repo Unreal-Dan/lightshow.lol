@@ -2,6 +2,7 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
 export default class ChromalinkPanel extends Panel {
   constructor(editor) {
@@ -192,7 +193,7 @@ export default class ChromalinkPanel extends Panel {
       return 'public/data/VortexEngine-duo-1.4.34.bin';
     }
     // fetch the firmware url from vortex community downloads json api
-    const apiResponse = await fetch('https://lightshow.lol/community/downloads/json/duo');
+    const apiResponse = await fetch(communityUrl('/community/downloads/json/duo'));
     if (!apiResponse.ok) throw new Error('Failed to fetch firmware metadata');
     const responseData = await apiResponse.json();
     return responseData.firmware?.fileUrl;

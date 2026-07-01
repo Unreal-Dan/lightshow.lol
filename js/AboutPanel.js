@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
-const COMMUNITY_URL = 'https://lightshow.lol/community';
 const GITHUB_URL = 'https://github.com/StoneOrbits/VortexEngine';
 
 export default class AboutPanel extends Panel {
@@ -45,7 +45,7 @@ export default class AboutPanel extends Panel {
   }
 
   gotoCommunity() {
-    window.open(COMMUNITY_URL, '_blank');
+    window.open(communityUrl('/community'), '_blank');
   }
 
   gotoGithub() {

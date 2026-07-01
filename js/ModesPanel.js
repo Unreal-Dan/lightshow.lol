@@ -4,6 +4,7 @@ import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
 export default class ModesPanel extends Panel {
   constructor(editor) {
@@ -779,11 +780,7 @@ export default class ModesPanel extends Panel {
     const modeData = JSON.parse(modeJson);
     const base64EncodedData = btoa(JSON.stringify(modeData));
 
-    // Construct the URL with the mode data
-    let shareUrl = `https://lightshow.lol/community/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
-    if (this.editor.isLocalServer) {
-      shareUrl = `http://localhost:3000/upload/json?data=${encodeURIComponent(base64EncodedData)}`;
-    }
+    const shareUrl = communityUrl(`/community/upload/json?data=${encodeURIComponent(base64EncodedData)}`);
 
     // Open the URL in an inline iframe popup
     this.editor.showHelpPopup(shareUrl, 'Share Mode');
