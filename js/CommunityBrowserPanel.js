@@ -41,7 +41,7 @@ export default class CommunityBrowserPanel extends Panel {
     if (this.editor.isLocalServer) {
       return 'http://localhost:3000';
     }
-    return 'https://lightshow.lol/community';
+    return 'https://lightshow.lol';
   }
 
   _setupTabs() {
@@ -107,7 +107,7 @@ export default class CommunityBrowserPanel extends Panel {
 
   async _fetchModes() {
     try {
-      const res = await fetch(`${this._baseUrl}/modes/json?page=1&pageSize=999&v=${Date.now()}`, {
+      const res = await fetch(`${this._baseUrl}/community/modes/json?page=1&pageSize=999&v=${Date.now()}`, {
         credentials: 'include'
       });
       const data = await res.json();
@@ -120,7 +120,7 @@ export default class CommunityBrowserPanel extends Panel {
 
   async _fetchPats() {
     try {
-      const res = await fetch(`${this._baseUrl}/pats/json?page=1&pageSize=999&v=${Date.now()}`, {
+      const res = await fetch(`${this._baseUrl}/community/pats/json?page=1&pageSize=999&v=${Date.now()}`, {
         credentials: 'include'
       });
       const data = await res.json();
