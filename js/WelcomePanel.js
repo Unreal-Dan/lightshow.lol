@@ -2,9 +2,13 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 
-const WELCOME_VERSION = 'showNewWelcome-v3';
+const WELCOME_VERSION = 'showNewWelcome-v4';
 
 const FEATURES = [
+  { key: 'vortex-community-overhaul', html: '<strong>Vortex Community Overhaul</strong> — The entirety of Vortex Community has been overhauled and almost every UI has been rewritten or improved.'k },
+  { key: 'led-selection-refresh', html: '<strong>Led Select Refresh</strong> — The Led Selection Panel has been refreshed and uses new assets for the device previews' },
+  { key: 'community-browser', html: '<strong>Community Browser Redesign</strong> — The Community Browser panel has been redesigned and includes Patterns and Modes now, still a work in progress.' },
+  { key: 'share-mode-inline', html: '<strong>Share Modes Inline</strong> — Share modes in an overlay panel directly on lightshow.lol without leaving to another tab' },
   { key: 'vortex-community-migration', html: '<strong>Vortex Community Moved</strong> — The community website vortex.community has been moved to the new home: lightshow.lol/community' },
   { key: 'welcome-panel', html: '<strong>Improved Welcome Panel</strong> — This panel now tracks which updates you\'ve seen. Click entries to mark them as read. View it again next time to see new updates.' },
   { key: 'context-menus', html: '<strong>Right-click Context Menus</strong> — Right-click anywhere (canvas, panel, color swatch) for instant copy, paste, share, help, and more.' },
