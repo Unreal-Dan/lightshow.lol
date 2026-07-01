@@ -293,6 +293,8 @@ export default class CommunityBrowserPanel extends Panel {
       vortex.engine().modes().saveCurMode();
 
       this.editor.modesPanel.refreshModeList();
+      this.editor.patternPanel.refresh();
+      this.editor.colorsetPanel.refresh();
       Notification.success('Pattern imported');
     } catch (err) {
       console.error('Failed to import pattern:', err);
