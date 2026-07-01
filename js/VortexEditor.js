@@ -308,7 +308,7 @@ export default class VortexEditor {
 
         if (type === 'mode') {
           try {
-            this.modesPanel.importModeFromData(modeJson, false);
+            this.modesPanel.importModeFromData(modeJson, true);
             console.log('Mode loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading mode via postMessage:', error);
@@ -316,8 +316,8 @@ export default class VortexEditor {
         }
         if (type === 'pattern') {
           try {
-            this.modesPanel.importPatternFromData(modeJson, false);
-            console.log('Mode loaded successfully via postMessage');
+            this.modesPanel.importPatternFromData(modeJson, true);
+            console.log('Pattern loaded successfully via postMessage');
           } catch (error) {
             console.error('Error loading pattern via postMessage:', error);
           }
@@ -327,6 +327,38 @@ export default class VortexEditor {
         console.error('Error decoding or decompressing mode data:', error);
       }
     });
+
+    // Set window name so VortexCommunity can focus this tab
+    window.name = 'lightshowTab';
+
+    // BroadcastChannel for same-origin cross-tab communication with VortexCommunity
+    try {
+      const bridge = new BroadcastChannel('vortex-bridge');
+      bridge.addEventListener('message', (e) => {
+        const { type, data } = e.data;
+        switch (type) {
+          case 'ping':
+            bridge.postMessage({ type: 'pong' });
+            break;
+          case 'importMode':
+            if (data) {
+              this.modesPanel.importModeFromData(data, true);
+              Notification.success('Mode imported from Community');
+            }
+            break;
+          case 'importPattern':
+            if (data) {
+              this.modesPanel.importPatternFromData(data, true);
+              Notification.success('Pattern imported from Community');
+            }
+            break;
+        }
+      });
+      bridge.postMessage({ type: 'ready' });
+      this._bridge = bridge;
+    } catch (e) {
+      console.log('BroadcastChannel not supported, cross-tab bridge unavailable');
+    }
 
     window.addEventListener('resize', () => {
       // TODO: Responsive layout

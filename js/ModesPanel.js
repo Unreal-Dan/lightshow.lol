@@ -939,7 +939,8 @@ export default class ModesPanel extends Panel {
   }
 
   async finalizeModeImport(deviceName, modeData, addNew) {
-    if (!this.editor.devicePanel.isSelectionLocked()) {
+    const currentDevice = this.editor.devicePanel.selectedDevice;
+    if (!this.editor.devicePanel.isSelectionLocked() && deviceName !== currentDevice) {
       this.lightshow.setLedCount(modeData.num_leds);
       await this.editor.devicePanel.updateSelectedDevice(deviceName, true);
     }
