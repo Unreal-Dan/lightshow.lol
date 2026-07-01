@@ -22,6 +22,8 @@
   border-bottom: 1px solid #3e4446;
   cursor: move;
   border-radius: 5px;
+  position: relative;
+  z-index: 1;
 }
 
 .collapse-btn {
@@ -54,13 +56,12 @@
 
 .close-btn {
   color: #aaa;
-  margin-bottom: -8px;
-  margin-top: -6px;
   font-size: 28px;
   font-weight: bold;
   margin-right: 5px;
   cursor: pointer;
   user-select: none;
+  line-height: 1;
 }
 
 .close-btn:hover,

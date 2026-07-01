@@ -334,6 +334,10 @@ export default class Panel {
       if (this.panel.classList.contains('mobile-panel')) {
         return;
       }
+      // Don't start dragging when clicking the close button
+      if (e.target.closest('.close-btn')) {
+        return;
+      }
       this.bringToFront();
       if (e.target === this.panel || e.target.closest('.panel-header')) {
         isDragging = true;
