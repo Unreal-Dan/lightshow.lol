@@ -1,8 +1,7 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from './Modal.js';
-import { wikiUrl } from './wiki-url.js';
-import { communityUrl } from './community-url.js';
+import { wikiUrl, communityUrl } from './VortexEditor.js';
 
 export default class ChromalinkPanel extends Panel {
   constructor(editor) {

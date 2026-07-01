@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
-import { wikiUrl } from './wiki-url.js';
+import { wikiUrl } from './VortexEditor.js';
 
 export default class LedSelectPanel extends Panel {
   constructor(editor) {

@@ -1,5 +1,5 @@
 import Panel from './Panel.js';
-import { wikiUrl } from './wiki-url.js';
+import { wikiUrl } from './VortexEditor.js';
 
 export default class DuoEditorPanel extends Panel {
   constructor(editor) {

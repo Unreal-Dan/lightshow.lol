@@ -1,6 +1,6 @@
 /* WelcomePanel.js */
 import Panel from './Panel.js';
-import { wikiUrl } from './wiki-url.js';
+import { wikiUrl } from './VortexEditor.js';
 
 const WELCOME_VERSION = 'showNewWelcome-v4';
 

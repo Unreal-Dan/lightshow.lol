@@ -1,6 +1,5 @@
 import Panel from './Panel.js';
-import { wikiUrl } from './wiki-url.js';
-import { communityUrl } from './community-url.js';
+import { wikiUrl, communityUrl } from './VortexEditor.js';
 
 const GITHUB_URL = 'https://github.com/StoneOrbits/VortexEngine';
 

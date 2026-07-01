@@ -1,7 +1,7 @@
 import Panel from './Panel.js';
 import Notification from './Notification.js';
 import Modal from  './Modal.js';
-import { wikiUrl } from './wiki-url.js';
+import { wikiUrl } from './VortexEditor.js';
 
 export default class DevicePanel extends Panel {
   constructor(editor) {

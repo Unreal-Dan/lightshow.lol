@@ -3,7 +3,7 @@ import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ColorPickerPanel from './ColorPickerPanel.js';
 import ContextMenu from './ContextMenu.js';
-import { wikiUrl } from './wiki-url.js';
+import { wikiUrl } from './VortexEditor.js';
 
 export default class ColorsetPanel extends Panel {
   constructor(editor) {
