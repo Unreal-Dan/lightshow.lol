@@ -6,20 +6,21 @@
   gap: 8px;
 }
 
+/* Tabs */
 .vcb-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #2a2a2a;
   padding-bottom: 8px;
 }
 
 .vcb-tab {
   flex: 1;
-  padding: 8px;
+  padding: 7px 8px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #777;
+  color: #666;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -28,27 +29,29 @@
 
 .vcb-tab:hover {
   background: rgba(255,255,255,0.04);
-  color: #aaa;
+  color: #999;
 }
 
 .vcb-tab.active {
   background: #1a2a40;
-  color: #ccc;
+  color: #bbb;
 }
 
+/* Tab content */
 .vcb-tab-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* Search */
 .vcb-search-box {
   color: #ccc;
   width: 100%;
   padding: 7px 10px;
   box-sizing: border-box;
-  background: #252525;
-  border: 1px solid #444;
+  background: #1e1e1e;
+  border: 1px solid #333;
   border-radius: 6px;
   font-size: 13px;
   outline: none;
@@ -59,33 +62,39 @@
   border-color: #3a7abd;
 }
 
+.vcb-search-box::placeholder {
+  color: #555;
+}
+
+/* Device filter grid */
 .vcb-filter-container {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 }
 
 .vcb-filter-btn {
   background: #1a1a1a;
-  border: 1px solid #333;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  transition: all 0.2s;
+  justify-content: center;
+  transition: all 0.15s;
 }
 
 .vcb-filter-btn .filter-icon {
   width: 20px;
   height: 20px;
-  opacity: 0.4;
-  transition: opacity 0.2s;
+  opacity: 0.35;
+  transition: opacity 0.15s;
 }
 
 .vcb-filter-btn:hover {
-  background: #242424;
-  border-color: #555;
+  background: #222;
+  border-color: #444;
 }
 
 .vcb-filter-btn:hover .filter-icon {
@@ -106,6 +115,7 @@
   border-color: #4a8acd;
 }
 
+/* List container */
 .vcb-list-container {
   overflow-y: auto;
   overflow-x: hidden;
@@ -116,153 +126,170 @@
 }
 
 .vcb-empty {
-  color: #666;
+  color: #555;
   font-size: 13px;
   text-align: center;
-  padding: 20px;
+  padding: 24px;
   margin: 0;
 }
 
+/* Entry card */
 .vcb-entry {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
   border-radius: 8px;
-  padding: 8px;
-  transition: background 0.15s, border-color 0.15s;
+  padding: 10px;
+  transition: border-color 0.15s, background 0.15s;
   cursor: default;
 }
 
 .vcb-entry:hover {
-  background: #303030;
-  border-color: #4a4a4a;
+  background: #212121;
+  border-color: #3a3a3a;
 }
 
-.vcb-entry-header {
+.vcb-entry-top {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.vcb-entry-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.vcb-pat-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  width: 36px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.vcb-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  border: 1px solid rgba(255,255,255,0.1);
-  display: inline-block;
-}
-
-.vcb-entry-info {
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  gap: 10px;
 }
 
 .vcb-entry-title {
+  flex: 1;
   font-size: 13px;
   font-weight: 600;
   color: #d8d4cf;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+  line-height: 1.3;
 }
 
-.vcb-entry-meta {
-  display: flex;
-  gap: 8px;
-  font-size: 11px;
-  color: #777;
-  margin-top: 1px;
-  flex-wrap: wrap;
-}
-
-.vcb-entry-device {
-  color: #3a7abd;
-  font-weight: 500;
-}
-
-.vcb-entry-creator {
-  color: #999;
-}
-
-.vcb-entry-votes {
-  color: #888;
-}
-
-.vcb-entry-id {
-  color: #666;
-}
-
-.vcb-entry-desc {
-  font-size: 11px;
-  color: #777;
-  margin-top: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.vcb-entry-patterns {
-  display: flex;
-  gap: 3px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.vcb-pat-chip {
-  display: flex;
-  gap: 1px;
-  padding: 2px;
-  background: #1a1a1a;
-  border-radius: 3px;
-  border: 1px solid #333;
-}
-
-.vcb-pat-chip .vcb-swatch {
-  width: 10px;
-  height: 10px;
-}
-
-.vcb-pat-more {
-  font-size: 10px;
-  color: #666;
-  margin-left: 2px;
-}
-
+/* Import button */
 .vcb-import-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  border: 1px solid #444;
+  border: 1px solid #333;
   background: transparent;
-  color: #999;
+  color: #666;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .vcb-import-btn:hover {
   background: #3a7abd;
   border-color: #3a7abd;
   color: #fff;
+}
+
+/* ---- Mode-specific overrides ---- */
+.vcb-entry-mode {
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.vcb-entry-mode .vcb-entry-top {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.vcb-entry-mode .vcb-entry-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vcb-entry-mode .vcb-entry-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.vcb-entry-mode .vcb-entry-title {
+  font-size: 14px;
+  color: #e0dcd7;
+}
+
+.vcb-entry-mode .vcb-entry-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+  align-items: center;
+}
+
+.vcb-entry-mode .vcb-entry-device {
+  font-weight: 500;
+  color: #3a7abd;
+}
+
+.vcb-entry-mode .vcb-entry-author {
+  color: #777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vcb-entry-mode .vcb-import-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.vcb-entry-mode .vcb-entry-chips {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-left: 48px;
+}
+
+.vcb-chip {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: #151515;
+  border-radius: 4px;
+  border: 1px solid #2a2a2a;
+}
+
+.vcb-chip-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.vcb-more {
+  font-size: 11px;
+  color: #555;
+  margin-left: 2px;
+  font-weight: 500;
+}
+
+/* Pattern swatches row (patterns) */
+.vcb-pat-swatches {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.vcb-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.06);
+  display: inline-block;
 }

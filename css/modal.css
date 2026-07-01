@@ -1,26 +1,30 @@
 /* general modal content */
 .modal {
-  display: none; /* Hidden by default */
+  display: none;
   position: fixed;
   z-index: 1000;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent backdrop */
-  justify-content: center;
-  align-items: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
-  background-color: #181a1b;
-  margin: 10% auto; /* Centering the modal */
-  padding: 20px;
-  border: 1px solid #3e4446;
-  border-radius: 8px;
-  width: 40%; /* Fixed width */
-  color: #d8d4cf; /* Text color */
+  background: #1a1a1a;
+  padding: 24px;
+  border: 1px solid #333;
+  border-radius: 14px;
+  width: 400px;
+  max-width: 90vw;
+  color: #ccc;
   text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  position: fixed;
+  top: 20vh;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .modal-content ul {
@@ -30,138 +34,157 @@
 
 .modal-content ul li {
   margin-bottom: 5px;
-  color: #d8d4cf;
+  color: #ccc;
 }
 
 .modal-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 15px;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #eee;
   user-select: none;
 }
 
 .modal-content .modal-blurb {
-  margin-top: 10px;
+  margin-top: 0;
   margin-bottom: 20px;
-  color: #d8d4cf;
-  font-size: 14px;
+  color: #999;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .modal-content input[type="text"] {
   width: calc(100% - 20px);
   padding: 10px;
   margin: 10px auto;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  background-color: #292c2e;
-  color: #d8d4cf;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #222;
+  color: #ccc;
   box-sizing: border-box;
   text-align: center;
+  font-size: 13px;
+}
+
+.modal-content input[type="text"]:focus {
+  border-color: #3a7abd;
+  outline: none;
 }
 
 .modal-buttons {
   display: flex;
   justify-content: center;
   margin-top: 20px;
-  gap: 20%;
+  gap: 12px;
   width: 100%;
-  max-width: 100%;
 }
 
 .modal-device-container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start; /* Align content at the top for balance */
-  text-align: center;
-  gap: 40px; /* More spacing between the two devices */
-  padding: 20px 10px; /* Adds space above & below */
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
 }
 
 .modal-device {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  width: 50%; /* Ensure equal space for both sides */
-}
-
-.modal-device-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #d8d4cf;
+  gap: 8px;
 }
 
 .modal-device img {
-  width: 100px; /* Slightly larger for better visibility */
-  height: auto;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  border: 1px solid #3e4446;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #141414;
+  padding: 8px;
+  object-fit: contain;
 }
 
-.modal-device-info {
+.modal-device-name {
   font-size: 14px;
-  color: #d8d4cf;
-  margin-bottom: 10px;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.modal-device-leds {
+  font-size: 12px;
+  color: #777;
+}
+
+.modal-arrow {
+  font-size: 20px;
+  color: #555;
+  flex-shrink: 0;
 }
 
 .modal-button {
-  min-width: 80px; /* Ensures they are not too small */
-  min-height: 40px; /* Prevents shrinking */
-  padding: 10px 15px;
+  min-height: 42px;
+  padding: 10px 20px;
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 600;
   text-align: center;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s ease-in-out;
+  transition: background 0.15s, transform 0.15s;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: white !important; /* Ensure the text is visible */
+  color: #fff;
+  flex: 1;
 }
 
-/* ------------------------------------ */
+.modal-button:hover {
+  transform: translateY(-1px);
+}
+
+.modal-button:active {
+  transform: translateY(0);
+}
+
 /* flash firmware dialogues have yes/no */
 .modal-button.cancel-button {
-  background-color: #b02a37;
+  background: #b02a37;
 }
 
 .modal-button.cancel-button:hover {
-  background-color: #8f1f2a;
+  background: #8f1f2a;
 }
 
 .modal-button.proceed-button {
-  background-color: #218838;
+  background: #218838;
 }
 
 .modal-button.proceed-button:hover {
-  background-color: #1a6d2d;
+  background: #1a6d2d;
 }
 
-/* --------------------------------------- */
 /* import mode dialogue has switch/convert */
-
 .modal-button.switch-button {
-  background-color: #0066cc;
-  color: white;
-  height: 50px;
-  width: auto;
+  background: #1a2a40;
+  border: 1px solid #3a7abd;
+  color: #ccc;
 }
 
 .modal-button.switch-button:hover {
-  background-color: #005bb5;
+  background: #1e3048;
+  border-color: #4a8acd;
+  color: #fff;
 }
 
 .modal-button.convert-button {
-  background-color: #218838;
-  color: white;
-  height: 50px;
-  width: auto;
+  background: #1a2e2a;
+  border: 1px solid #2a8a7a;
+  color: #ccc;
 }
 
 .modal-button.convert-button:hover {
-  background-color: #1a6d2d;
+  background: #1e3430;
+  border-color: #3a9a8a;
+  color: #fff;
 }
 

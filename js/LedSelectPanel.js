@@ -217,22 +217,30 @@ export default class LedSelectPanel extends Panel {
     const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
     const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
 
-    // Check if the existing device image needs to be replaced
-    let deviceImage = deviceImageContainer.querySelector('img');
-    if (!deviceImage) {
-      deviceImage = document.createElement('img');
-      deviceImage.style.display = 'block';
-      deviceImage.style.width = '100%';
-      deviceImage.style.height = 'auto';
-      deviceImageContainer.appendChild(deviceImage);
+    let deviceSvg = deviceImageContainer.querySelector('.device-svg');
+    if (!deviceSvg) {
+      deviceSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      deviceSvg.setAttribute('viewBox', `0 0 ${deviceData.original_width} ${deviceData.original_height}`);
+      deviceSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      deviceSvg.classList.add('device-svg');
+      deviceSvg.style.display = 'block';
+      deviceSvg.style.width = '100%';
+      deviceSvg.style.height = '100%';
+      deviceImageContainer.insertBefore(deviceSvg, overlay);
     }
+    let svgImage = deviceSvg.querySelector('image');
+    if (!svgImage) {
+      svgImage = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      svgImage.setAttribute('width', deviceData.original_width);
+      svgImage.setAttribute('height', deviceData.original_height);
+      deviceSvg.appendChild(svgImage);
+    }
+    svgImage.setAttribute('href', deviceImageSrc + '?v=' + new Date().getTime());
 
-    deviceImage.src = deviceImageSrc + '?v=' + new Date().getTime();
-
-    deviceImage.onload = () => {
-      const scaleX = deviceImageContainer.clientWidth / deviceData.original_width;
-      const scaleY = deviceImageContainer.clientHeight / deviceData.original_height;
-      // initialzie all the led indicators
+    requestAnimationFrame(() => {
+      const containerRect = deviceImageContainer.getBoundingClientRect();
+      const scaleX = containerRect.width / deviceData.original_width;
+      const scaleY = containerRect.height / deviceData.original_height;
       deviceData.points.forEach((point, index) => {
         const ledIndicator = document.createElement('div');
         ledIndicator.classList.add('led-indicator');
@@ -241,9 +249,8 @@ export default class LedSelectPanel extends Panel {
         ledIndicator.dataset.ledIndex = index;
         overlay.appendChild(ledIndicator);
       });
-      // update indicators with appropriate highlights
       this.updateLedIndicators();
-    };
+    });
   }
 
   // changs the current selection to be the multi, primarily to be used

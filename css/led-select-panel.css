@@ -47,13 +47,11 @@
   max-width: 334px;
 }
 
-#deviceImageContainer img {
+#deviceImageContainer .device-svg {
   display: block;
   width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
+  height: auto;
+  max-height: 250px;
 }
 
 .led-overlay {

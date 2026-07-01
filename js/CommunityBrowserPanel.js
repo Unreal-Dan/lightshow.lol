@@ -148,38 +148,39 @@ export default class CommunityBrowserPanel extends Panel {
 
     container.innerHTML = '';
     modes.forEach(mode => {
-      const entry = document.createElement('div');
-      entry.className = 'vcb-entry';
-
       const patSets = mode.patternSets || [];
-      const patCount = [...new Set(mode.ledPatternOrder || [])].length;
+      const uniqueIndices = [...new Set(mode.ledPatternOrder || [])];
+
+      const entry = document.createElement('div');
+      entry.className = 'vcb-entry vcb-entry-mode';
+
+      const deviceLabel = mode.deviceType.charAt(0).toUpperCase() + mode.deviceType.slice(1);
 
       entry.innerHTML = `
-        <div class="vcb-entry-header">
+        <div class="vcb-entry-top">
           <img src="public/images/${mode.deviceType.toLowerCase()}-logo-square-512.png" alt="${mode.deviceType}" class="vcb-entry-icon" />
           <div class="vcb-entry-info">
             <div class="vcb-entry-title">${mode.name || 'Unnamed Mode'}</div>
             <div class="vcb-entry-meta">
-              <span class="vcb-entry-device">${mode.deviceType}</span>
-              ${mode.creator ? `<span class="vcb-entry-creator">by ${mode.creator.username}</span>` : ''}
-              ${mode.votes !== undefined ? `<span class="vcb-entry-votes">${mode.votes} votes</span>` : ''}
-            </div>
-            ${mode.description ? `<div class="vcb-entry-desc">${mode.description}</div>` : ''}
-            <div class="vcb-entry-patterns">
-              ${patSets.slice(0, 6).map(ps => {
-                const data = ps.data || ps;
-                const colors = data && data.colorset ? data.colorset.slice(0, 4) : [];
-                return `<span class="vcb-pat-chip" title="${ps.name || ''}">${colors.map(h => `<span class="vcb-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}</span>`;
-              }).join('')}
-              ${patCount > 6 ? `<span class="vcb-pat-more">+${patCount - 6}</span>` : ''}
+              <span class="vcb-entry-device">${deviceLabel}</span>
+              ${mode.creator ? `<span class="vcb-entry-author">by ${mode.creator.username}</span>` : ''}
             </div>
           </div>
           <button class="vcb-import-btn" title="Import mode"><i class="fa-solid fa-share"></i></button>
         </div>
+        <div class="vcb-entry-chips">
+          ${uniqueIndices.slice(0, 8).map(idx => {
+            const ps = patSets[idx];
+            if (!ps) return '';
+            const data = ps.data || ps;
+            const colors = data && data.colorset ? data.colorset.slice(0, 3) : [];
+            return `<span class="vcb-chip" title="${ps.name || ''}">${colors.map(h => `<span class="vcb-chip-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}</span>`;
+          }).join('')}
+          ${uniqueIndices.length > 8 ? `<span class="vcb-more">+${uniqueIndices.length - 8}</span>` : ''}
+        </div>
       `;
 
-      const importBtn = entry.querySelector('.vcb-import-btn');
-      importBtn.addEventListener('click', (e) => {
+      entry.querySelector('.vcb-import-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         this._importMode(mode);
       });
@@ -210,23 +211,16 @@ export default class CommunityBrowserPanel extends Panel {
       entry.className = 'vcb-entry';
 
       entry.innerHTML = `
-        <div class="vcb-entry-header">
-          <div class="vcb-pat-preview">
-            ${colors.slice(0, 6).map(h => `<span class="vcb-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}
+        <div class="vcb-entry-top">
+          <div class="vcb-pat-swatches">
+            ${colors.slice(0, 8).map(h => `<span class="vcb-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}
           </div>
-          <div class="vcb-entry-info">
-            <div class="vcb-entry-title">${pat.name || 'Unnamed Pattern'}</div>
-            <div class="vcb-entry-meta">
-              <span class="vcb-entry-id">#${pat.id}</span>
-              ${pat.votes !== undefined ? `<span class="vcb-entry-votes">${pat.votes} votes</span>` : ''}
-            </div>
-          </div>
+          <div class="vcb-entry-title">${pat.name || 'Unnamed Pattern'}</div>
           <button class="vcb-import-btn" title="Import pattern"><i class="fa-solid fa-share"></i></button>
         </div>
       `;
 
-      const importBtn = entry.querySelector('.vcb-import-btn');
-      importBtn.addEventListener('click', (e) => {
+      entry.querySelector('.vcb-import-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         this._importPattern(pat);
       });

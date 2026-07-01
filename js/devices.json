@@ -8,7 +8,7 @@
     "maxModes": 9
   },
   "Orbit": {
-    "image": "public/images/orbit.png",
+    "image": "public/images/orbit.svg",
     "icon": "public/images/orbit-logo-square-64.png",
     "iconBig": "public/images/orbit-logo-square-512.png",
     "label": "Orbit",
@@ -16,7 +16,7 @@
     "maxModes": 14
   },
   "Handle": {
-    "image": "public/images/handle.png",
+    "image": "public/images/handle.svg",
     "icon": "public/images/handle-logo-square-64.png",
     "iconBig": "public/images/handle-logo-square-512.png",
     "label": "Handle",
@@ -24,7 +24,7 @@
     "maxModes": 14
   },
   "Gloves": {
-    "image": "public/images/gloves.png",
+    "image": "public/images/gloves.svg",
     "icon": "public/images/gloves-logo-square-64.png",
     "iconBig": "public/images/gloves-logo-square-512.png",
     "label": "Gloves",
@@ -32,7 +32,7 @@
     "maxModes": 14
   },
   "Chromadeck": {
-    "image": "public/images/chromadeck.png",
+    "image": "public/images/chromadeck.svg",
     "icon": "public/images/chromadeck-logo-square-64.png",
     "iconBig": "public/images/chromadeck-logo-square-512.png",
     "label": "Chromadeck",
@@ -53,7 +53,7 @@
     }
   },
   "Spark": {
-    "image": "public/images/spark.png",
+    "image": "public/images/spark.svg",
     "icon": "public/images/spark-logo-square-64.png",
     "iconBig": "public/images/spark-logo-square-512.png",
     "label": "Spark",
@@ -78,7 +78,7 @@
     }
   },
   "Duo": {
-    "image": "public/images/duo.png",
+    "image": "public/images/duo.svg",
     "icon": "public/images/duo-logo-square-64.png",
     "iconBig": "public/images/duo-logo-square-512.png",
     "label": "Duo",

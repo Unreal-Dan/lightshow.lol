@@ -890,21 +890,22 @@ export default class ModesPanel extends Panel {
       : "<li>No Patterns</li>";
 
     // Create modal content with proper side-by-side layout
+    const currentLedCount = this.editor.devices[currentDevice]?.ledCount || '?';
     const modalBlurb = `
       <div class="modal-device-container">
         <div class="modal-device">
           <img src="/${importedDeviceData.iconBig}" alt="${importedDevice}">
-          <div>
-            <strong>LED Count:</strong> ${modeData.num_leds}
-          </div>
+          <span class="modal-device-name">${importedDevice}</span>
+          <span class="modal-device-leds">${modeData.num_leds} LEDs</span>
         </div>
+        <span class="modal-arrow"><i class="fa-solid fa-arrow-right"></i></span>
         <div class="modal-device">
           <img src="/${currentDeviceData.iconBig}" alt="${currentDevice}">
-          <div>
-            <strong>LED Count:</strong> ${this.editor.devices[currentDevice]?.ledCount || 'Unknown'}
-          </div>
+          <span class="modal-device-name">${currentDevice}</span>
+          <span class="modal-device-leds">${currentLedCount} LEDs</span>
         </div>
       </div>
+      <p style="margin:0;color:#777;font-size:12px;">This mode was made for a different device. Choose how to handle it.</p>
     `;
 
     // Determine which buttons to show
