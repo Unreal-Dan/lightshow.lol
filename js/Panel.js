@@ -1,6 +1,6 @@
 /* Panel.js */
 import ContextMenu from './ContextMenu.js';
-import { wikiUrl } from './VortexEditor.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class Panel {
   static panels = []; // Static list to track all panels

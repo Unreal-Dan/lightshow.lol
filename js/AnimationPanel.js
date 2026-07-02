@@ -1,5 +1,5 @@
 import Panel from './Panel.js';
-import { wikiUrl } from './VortexEditor.js';
+import { wikiUrl } from './wiki-url.js';
 
 export default class AnimationPanel extends Panel {
   constructor(editor) {
