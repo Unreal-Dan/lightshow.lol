@@ -1,7 +1,7 @@
 /* js/mobile/CommunityBrowser.js */
 
 import Notification from '../Notification.js';
-import { communityUrl } from '../VortexEditor.js';
+import { communityUrl } from '../community-url.js';
 
 export default class CommunityBrowser {
   constructor(editor) {

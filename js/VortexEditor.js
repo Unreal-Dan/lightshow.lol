@@ -19,6 +19,8 @@ import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
 import ContextMenu from './ContextMenu.js';
 import { VERSION } from './version.js';  // Adjust path if needed
+import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
 import * as BLE from './ble.js'; // Import BLE module
 
@@ -796,24 +798,6 @@ async function boot() {
   } catch (error) {
     console.error('Error initializing Vortex:', error);
   }
-}
-
-const WIKI_PROD = 'https://stoneorbits.github.io/VortexEngine';
-
-function isLocalWiki() {
-  return location.hostname === '127.0.0.1' || location.hostname === 'localhost';
-}
-
-export function wikiUrl(path = '') {
-  const base = isLocalWiki() ? 'http://127.0.0.1:4000/VortexEngine' : WIKI_PROD;
-  return `${base}${path}`;
-}
-
-export function communityUrl(path = '') {
-  const base = window.location.hostname.startsWith('lightshow.lol')
-    ? 'https://lightshow.lol'
-    : 'http://localhost:3000';
-  return `${base}${path}`;
 }
 
 (function start() {
