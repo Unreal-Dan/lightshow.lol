@@ -140,7 +140,7 @@
   border-radius: 8px;
   padding: 10px;
   transition: border-color 0.15s, background 0.15s;
-  cursor: default;
+  cursor: pointer;
 }
 
 .vcb-entry:hover {
@@ -171,41 +171,47 @@
   flex-shrink: 0;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background: transparent;
-  color: #666;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.03);
+  color: #555;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.15s;
   font-size: 11px;
+  opacity: 0.7;
 }
 
 .vcb-import-btn:hover {
   background: #3a7abd;
-  border-color: #3a7abd;
   color: #fff;
+  opacity: 1;
 }
 
 /* ---- Mode-specific overrides ---- */
 .vcb-entry-mode {
-  padding: 12px;
-  border-radius: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.vcb-entry-mode:hover {
+  background: #1a2a40;
+  border-color: #3a7abd;
 }
 
 .vcb-entry-mode .vcb-entry-top {
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .vcb-entry-mode .vcb-entry-icon {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   flex-shrink: 0;
-  margin-top: 1px;
 }
 
 .vcb-entry-mode .vcb-entry-info {
@@ -214,16 +220,15 @@
 }
 
 .vcb-entry-mode .vcb-entry-title {
-  font-size: 14px;
+  font-size: 13px;
   color: #e0dcd7;
 }
 
 .vcb-entry-mode .vcb-entry-meta {
   display: flex;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   color: #666;
-  margin-top: 2px;
   align-items: center;
 }
 
@@ -233,47 +238,39 @@
 }
 
 .vcb-entry-mode .vcb-entry-author {
-  color: #777;
+  color: #666;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.vcb-entry-mode .vcb-import-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
 .vcb-entry-mode .vcb-entry-chips {
   display: flex;
-  gap: 4px;
-  margin-top: 10px;
-  flex-wrap: wrap;
+  gap: 2px;
   align-items: center;
-  padding-left: 48px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
 }
 
 .vcb-chip {
   display: flex;
-  gap: 2px;
-  padding: 3px;
+  gap: 1px;
+  padding: 2px;
   background: #151515;
-  border-radius: 4px;
+  border-radius: 3px;
   border: 1px solid #2a2a2a;
 }
 
 .vcb-chip-swatch {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
   display: inline-block;
 }
 
 .vcb-more {
-  font-size: 11px;
+  font-size: 10px;
   color: #555;
   margin-left: 2px;
   font-weight: 500;
@@ -284,6 +281,7 @@
   display: flex;
   gap: 2px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .vcb-swatch {

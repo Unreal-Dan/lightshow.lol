@@ -160,24 +160,20 @@ export default class CommunityBrowserPanel extends Panel {
               ${mode.creator ? `<span class="vcb-entry-author">by ${mode.creator.username}</span>` : ''}
             </div>
           </div>
-          <button class="vcb-import-btn" title="Import mode"><i class="fa-solid fa-share"></i></button>
-        </div>
-        <div class="vcb-entry-chips">
-          ${uniqueIndices.slice(0, 8).map(idx => {
-            const ps = patSets[idx];
-            if (!ps) return '';
-            const data = ps.data || ps;
-            const colors = data && data.colorset ? data.colorset.slice(0, 3) : [];
-            return `<span class="vcb-chip" title="${ps.name || ''}">${colors.map(h => `<span class="vcb-chip-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}</span>`;
-          }).join('')}
-          ${uniqueIndices.length > 8 ? `<span class="vcb-more">+${uniqueIndices.length - 8}</span>` : ''}
+          <div class="vcb-entry-chips">
+            ${uniqueIndices.slice(0, 6).map(idx => {
+              const ps = patSets[idx];
+              if (!ps) return '';
+              const data = ps.data || ps;
+              const colors = data && data.colorset ? data.colorset.slice(0, 3) : [];
+              return `<span class="vcb-chip">${colors.map(h => `<span class="vcb-chip-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}</span>`;
+            }).join('')}
+            ${uniqueIndices.length > 6 ? `<span class="vcb-more">+${uniqueIndices.length - 6}</span>` : ''}
+          </div>
         </div>
       `;
 
-      entry.querySelector('.vcb-import-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._importMode(mode);
-      });
+      entry.addEventListener('click', () => this._importMode(mode));
 
       container.appendChild(entry);
     });
@@ -206,18 +202,14 @@ export default class CommunityBrowserPanel extends Panel {
 
       entry.innerHTML = `
         <div class="vcb-entry-top">
+          <div class="vcb-entry-title">${pat.name || 'Unnamed Pattern'}</div>
           <div class="vcb-pat-swatches">
             ${colors.slice(0, 8).map(h => `<span class="vcb-swatch" style="background:${h.replace('0x','#')}"></span>`).join('')}
           </div>
-          <div class="vcb-entry-title">${pat.name || 'Unnamed Pattern'}</div>
-          <button class="vcb-import-btn" title="Import pattern"><i class="fa-solid fa-share"></i></button>
         </div>
       `;
 
-      entry.querySelector('.vcb-import-btn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._importPattern(pat);
-      });
+      entry.addEventListener('click', () => this._importPattern(pat));
 
       container.appendChild(entry);
     });

@@ -144,7 +144,7 @@ export default class CommunityBrowser {
       const importBtn = document.createElement('button');
       importBtn.type = 'button';
       importBtn.className = 'm-vcb-import-btn';
-      importBtn.innerHTML = '<i class="fa-solid fa-share"></i>';
+      importBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
       importBtn.title = 'Import';
 
       importBtn.addEventListener(

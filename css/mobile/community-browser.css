@@ -149,18 +149,21 @@
 }
 
 #mobile-app-root .m-vcb-import-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.92);
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  transition: all 0.15s;
 }
 
 #mobile-app-root .m-vcb-import-btn:active {
-  background: rgba(255, 255, 255, 0.08);
+  background: #3a7abd;
+  color: #fff;
 }
 
 #mobile-app-root .m-vcb-footer {
