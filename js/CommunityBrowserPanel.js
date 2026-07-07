@@ -2,6 +2,7 @@ import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 import { communityUrl } from './community-url.js';
 import Notification from './Notification.js';
+import ContextMenu from './ContextMenu.js';
 
 export default class CommunityBrowserPanel extends Panel {
   constructor(editor) {
@@ -173,7 +174,16 @@ export default class CommunityBrowserPanel extends Panel {
         </div>
       `;
 
-      entry.addEventListener('click', () => this._importMode(mode));
+      entry.addEventListener('click', () => this._importMode(mode, false));
+
+      entry.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const menu = ContextMenu.getInstance();
+        menu.show(e.clientX, e.clientY, [
+          { label: 'Overwrite current mode', action: () => this._importMode(mode, false) },
+          { label: 'Add as new mode', action: () => this._importMode(mode, true) },
+        ]);
+      });
 
       container.appendChild(entry);
     });
@@ -215,7 +225,7 @@ export default class CommunityBrowserPanel extends Panel {
     });
   }
 
-  _importMode(mode) {
+  _importMode(mode, addNew = false) {
     const patternSets = mode.patternSets;
     const ledPatternOrder = mode.ledPatternOrder;
     if (!patternSets || !ledPatternOrder) {
@@ -236,7 +246,7 @@ export default class CommunityBrowserPanel extends Panel {
       num_leds: num_leds,
       single_pats: single_pats
     };
-    this.editor.modesPanel.importModeFromData(vortexMode, false);
+    this.editor.modesPanel.importModeFromData(vortexMode, addNew);
   }
 
   _importPattern(pat) {
