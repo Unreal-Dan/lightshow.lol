@@ -178,10 +178,13 @@ export default class CommunityBrowserPanel extends Panel {
 
       entry.addEventListener('contextmenu', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const menu = ContextMenu.getInstance();
         menu.show(e.clientX, e.clientY, [
           { label: 'Overwrite current mode', action: () => this._importMode(mode, false) },
           { label: 'Add as new mode', action: () => this._importMode(mode, true) },
+          { separator: true },
+          { label: 'Help', action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl) },
         ]);
       });
 
