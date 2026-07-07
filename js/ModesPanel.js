@@ -891,13 +891,13 @@ export default class ModesPanel extends Panel {
     const modalBlurb = `
       <div class="modal-device-container">
         <div class="modal-device">
-          <img src="/${importedDeviceData.iconBig}" alt="${importedDevice}">
+          <img src="${importedDeviceData.iconBig}" alt="${importedDevice}">
           <span class="modal-device-name">${importedDevice}</span>
           <span class="modal-device-leds">${modeData.num_leds} LEDs</span>
         </div>
         <span class="modal-arrow"><i class="fa-solid fa-arrow-right"></i></span>
         <div class="modal-device">
-          <img src="/${currentDeviceData.iconBig}" alt="${currentDevice}">
+          <img src="${currentDeviceData.iconBig}" alt="${currentDevice}">
           <span class="modal-device-name">${currentDevice}</span>
           <span class="modal-device-leds">${currentLedCount} LEDs</span>
         </div>

@@ -179,8 +179,7 @@ export default class CommunityBrowser {
     const v = Date.now();
 
     if (this.editor.isLocalServer) {
-      const suffix = page > 1 ? '2' : '';
-      response = await fetch(`public/data/modeData${suffix}.json?v=${v}`);
+      response = await fetch(`public/data/filler-modes.json?v=${v}`);
     } else {
       response = await fetch(
         communityUrl(`/community/modes/json?page=${page}&pageSize=${this._pageSize}&v=${v}`),
