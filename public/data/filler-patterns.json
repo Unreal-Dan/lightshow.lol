@@ -1,0 +1,1033 @@
+{
+  "data": [
+    {
+      "_id": "66a718bf2e72c822faa9b42c",
+      "name": "Mystic Fluorescent Comet",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x380057",
+          "0xff0000"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T04:21:19.370Z"
+    },
+    {
+      "_id": "66a718bf2e72c822faa9b42f",
+      "name": "Coruscating Luminosity",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xffffff"
+        ],
+        "flags": 0,
+        "numColors": 1,
+        "pattern_id": 4
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T04:21:19.381Z"
+    },
+    {
+      "_id": "66a71abb2e72c822faa9b52e",
+      "name": "Flickering Meteoric Hypnosis",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x0051ff",
+          "0xcc0041",
+          "0x992000",
+          "0x664800",
+          "0x003324"
+        ],
+        "flags": 0,
+        "numColors": 5,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T04:29:47.748Z"
+    },
+    {
+      "_id": "66a71abb2e72c822faa9b531",
+      "name": "Glossy Brisk Flicker",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x1d101e"
+        ],
+        "flags": 0,
+        "numColors": 1,
+        "pattern_id": 4
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T04:29:47.754Z"
+    },
+    {
+      "_id": "66a731ad12cd7183a3668525",
+      "name": "Effervescent Lighthouse",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x4c00aa",
+          "0x841fff",
+          "0x632aaa",
+          "0x371f54",
+          "0x3d2a55",
+          "0x423454",
+          "0x493f55",
+          "0xeddfff"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 0
+      },
+      "deviceType": "Handle",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T06:07:41.791Z"
+    },
+    {
+      "_id": "66a731ad12cd7183a3668528",
+      "name": "Glimmering Flashing Radiance",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x00ffae",
+          "0x0b553d",
+          "0x47ffc5",
+          "0x235545",
+          "0x8fffdb",
+          "0x3b554d",
+          "0xd7fff2"
+        ],
+        "flags": 0,
+        "numColors": 7,
+        "pattern_id": 4
+      },
+      "deviceType": "Handle",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-07-29T06:07:41.798Z"
+    },
+    {
+      "_id": "66a811f112cd7183a3668836",
+      "name": "Solar Pulse",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xff0000",
+          "0x00ff00",
+          "0x0000ff",
+          "0xabaa00",
+          "0x5500ab"
+        ],
+        "flags": 0,
+        "numColors": 5,
+        "pattern_id": 4
+      },
+      "deviceType": "Handle",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-07-29T22:04:33.935Z"
+    },
+    {
+      "_id": "66a811f112cd7183a3668839",
+      "name": "Glistering Stellar Galaxy",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          8,
+          0,
+          36,
+          0,
+          7
+        ],
+        "colorset": [
+          "0x009fff",
+          "0x003353",
+          "0x000107",
+          "0x0c0028",
+          "0x000107",
+          "0x003353",
+          "0x009fff"
+        ],
+        "flags": 0,
+        "numColors": 7,
+        "pattern_id": 0
+      },
+      "deviceType": "Handle",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-07-29T22:04:33.944Z"
+    },
+    {
+      "_id": "66ab5c877cbf757fad6f6571",
+      "name": "Nebulous Phantasmagoric Glint",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x210427",
+          "0x000000",
+          "0x000000",
+          "0x000000",
+          "0x000000",
+          "0x000000"
+        ],
+        "flags": 0,
+        "numColors": 6,
+        "pattern_id": 4
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-01T09:59:35.280Z"
+    },
+    {
+      "_id": "66ab5c877cbf757fad6f6574",
+      "name": "Coruscating Translucent Torch",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x3d0000",
+          "0x001f1b"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 4
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-01T09:59:35.295Z"
+    },
+    {
+      "_id": "66ab5c877cbf757fad6f6578",
+      "name": "Mesmerizing Phantasmagoric Luminescence",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x413200",
+          "0x544100",
+          "0x001554",
+          "0x003fff",
+          "0x001554",
+          "0x544100",
+          "0x413200"
+        ],
+        "flags": 0,
+        "numColors": 7,
+        "pattern_id": 4
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-01T09:59:35.297Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f06",
+      "name": "Mesmerizing Eclipse",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          15,
+          51,
+          0,
+          0,
+          0,
+          8,
+          0
+        ],
+        "colorset": [
+          "0x1800ff",
+          "0x55001b",
+          "0xe1ff00",
+          "0x00553c",
+          "0xe1ff00",
+          "0x55001b",
+          "0x1800ff"
+        ],
+        "flags": 0,
+        "numColors": 7,
+        "pattern_id": 25
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.350Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f09",
+      "name": "yee",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          3,
+          7,
+          22,
+          0,
+          8
+        ],
+        "colorset": [
+          "0x33002f",
+          "0x662100",
+          "0x789900",
+          "0x00cc13",
+          "0x00b1ff"
+        ],
+        "flags": 0,
+        "numColors": 5,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.364Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f0c",
+      "name": "Luminous Pulsating Starlight",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          15,
+          51,
+          0,
+          0,
+          0,
+          8,
+          0
+        ],
+        "colorset": [
+          "0x5f007f",
+          "0x39fe00",
+          "0x5f007f"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 25
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.366Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f0f",
+      "name": "Cosmic Pulsar",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          3,
+          7,
+          22,
+          0,
+          8
+        ],
+        "colorset": [
+          "0xff0075",
+          "0x00cc27",
+          "0x009939",
+          "0x006639",
+          "0x33002a"
+        ],
+        "flags": 0,
+        "numColors": 5,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.368Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f12",
+      "name": "Gleaming Aurora",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          15,
+          51,
+          0,
+          0,
+          0,
+          8,
+          0
+        ],
+        "colorset": [
+          "0x008dff",
+          "0x2000aa",
+          "0xf000ff",
+          "0xff0051",
+          "0x542700",
+          "0x425400",
+          "0x035500",
+          "0x00543b"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 25
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.370Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f15",
+      "name": "Lucent Solar Streak",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          3,
+          7,
+          22,
+          0,
+          8
+        ],
+        "colorset": [
+          "0xd4ff1c",
+          "0x804019"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.374Z"
+    },
+    {
+      "_id": "66bea48dec075d0abbdf2f1b",
+      "name": "Vivid Luminescence",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          3,
+          7,
+          22,
+          0,
+          8
+        ],
+        "colorset": [
+          "0x6c00ff",
+          "0x240055",
+          "0x8dff00"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 0
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-08-16T00:59:57.383Z"
+    },
+    {
+      "_id": "66c6aa23ec075d0abbdf4385",
+      "name": "Blinding Celestial Wave",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          1,
+          10,
+          0,
+          6
+        ],
+        "colorset": [
+          "0x7800ff",
+          "0xff00c9"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 13
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-08-22T03:01:55.792Z"
+    },
+    {
+      "_id": "66c6aa23ec075d0abbdf4388",
+      "name": "Galactic Comet",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          4,
+          7,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x00fffc",
+          "0x0045ff"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 13
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-08-22T03:01:55.806Z"
+    },
+    {
+      "_id": "66c6aa23ec075d0abbdf438b",
+      "name": "Flashing Comet",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          2,
+          33,
+          0,
+          4
+        ],
+        "colorset": [
+          "0x81ff00",
+          "0x00ff3c"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 13
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-08-22T03:01:55.808Z"
+    },
+    {
+      "_id": "66c6aa23ec075d0abbdf438e",
+      "name": "Celestial Photon",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          1,
+          3,
+          3,
+          5
+        ],
+        "colorset": [
+          "0xff0000",
+          "0xffc000"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 13
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f4e1e821d5ae1957436fc2",
+      "uploadDate": "2024-08-22T03:01:55.811Z"
+    },
+    {
+      "_id": "66db8aa5ed8caf93278d2c85",
+      "name": "Solar Flicker",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0,
+          10,
+          0
+        ],
+        "colorset": [
+          "0x554a00",
+          "0x554a00",
+          "0x00aa90",
+          "0x00aa90",
+          "0xd200ff",
+          "0xd200ff"
+        ],
+        "flags": 0,
+        "numColors": 6,
+        "pattern_id": 26
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-09-06T23:05:09.469Z"
+    },
+    {
+      "_id": "66db8aa5ed8caf93278d2c88",
+      "name": "Flashing Bonfire",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          3,
+          10,
+          0,
+          2
+        ],
+        "colorset": [
+          "0xff0033",
+          "0xff0033",
+          "0xdb2f00",
+          "0xb76b00",
+          "0x938d00",
+          "0x4a6f00",
+          "0x164b00",
+          "0x002702"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 14
+      },
+      "deviceType": "Orbit",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-09-06T23:05:09.473Z"
+    },
+    {
+      "_id": "66f7b285ed8caf93278d6aa1",
+      "name": "Shiny Glaring Burst",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          10,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x009fff",
+          "0x003353",
+          "0x000107",
+          "0x0c0028",
+          "0x000107",
+          "0x003353",
+          "0x009fff"
+        ],
+        "flags": 0,
+        "numColors": 7,
+        "pattern_id": 4
+      },
+      "deviceType": "Gloves",
+      "votes": 0,
+      "createdBy": "66f78e83ed8caf93278d6a34",
+      "uploadDate": "2024-09-28T07:38:45.185Z"
+    },
+    {
+      "_id": "65f29753700334ffe6c689ff",
+      "name": "Duo Default Mode 1",
+      "description": "The first default mode on the duo",
+      "data": {
+        "args": [
+          6,
+          6,
+          25,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xff0000",
+          "0x00ff00",
+          "0x0000ff"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 6
+      },
+      "deviceType": "Duo",
+      "votes": 1,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-03-14T06:21:07.308Z"
+    },
+    {
+      "_id": "6713834e9a7af7095a82cf82",
+      "name": "Pulsating Vaporous Gleam",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          2,
+          13,
+          0,
+          0,
+          0,
+          5,
+          1
+        ],
+        "colorset": [
+          "0xff0000",
+          "0x00ff00",
+          "0x0000ff"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 28
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:00:46.365Z"
+    },
+    {
+      "_id": "6713834e9a7af7095a82cf85",
+      "name": "Hypnotic Ray",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          2,
+          13,
+          0,
+          0,
+          0,
+          5,
+          0
+        ],
+        "colorset": [
+          "0xff0000",
+          "0x00ff00",
+          "0x0000ff"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 25
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:00:46.371Z"
+    },
+    {
+      "_id": "671383609a7af7095a82cfa0",
+      "name": "Phosphoric Glare",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x97709f"
+        ],
+        "flags": 0,
+        "numColors": 1,
+        "pattern_id": 0
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:01:04.105Z"
+    },
+    {
+      "_id": "671383609a7af7095a82cfa3",
+      "name": "Glowing Star",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          16,
+          20,
+          218,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x4d00b2"
+        ],
+        "flags": 0,
+        "numColors": 1,
+        "pattern_id": 7
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:01:04.107Z"
+    },
+    {
+      "_id": "671383769a7af7095a82cfbf",
+      "name": "Twinkling Effulgent Flash",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xc4003b",
+          "0x700000",
+          "0x000000",
+          "0x0017e9",
+          "0x22004e",
+          "0x000000"
+        ],
+        "flags": 0,
+        "numColors": 6,
+        "pattern_id": 0
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:01:26.191Z"
+    },
+    {
+      "_id": "671383769a7af7095a82cfc2",
+      "name": "Bright Corona",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          2,
+          28,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xc4003b",
+          "0x4d00b2",
+          "0x0017e9"
+        ],
+        "flags": 0,
+        "numColors": 3,
+        "pattern_id": 3
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:01:26.195Z"
+    },
+    {
+      "_id": "6713838c9a7af7095a82cfdf",
+      "name": "Mesmerizing Resplendent Flashlight",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          3,
+          10,
+          0,
+          2
+        ],
+        "colorset": [
+          "0xffc600",
+          "0x235500",
+          "0x00ff66",
+          "0x004355",
+          "0x0600ff",
+          "0x480055",
+          "0xff0057",
+          "0x552c00"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 14
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-10-19T10:01:48.650Z"
+    },
+    {
+      "_id": "6732851e9a7af7095a83065d",
+      "name": "Illuminating Sunburst",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          1,
+          3,
+          3,
+          30,
+          2
+        ],
+        "colorset": [
+          "0x061f0d",
+          "0x2a3e3c",
+          "0x1b5d2e",
+          "0x4e477c",
+          "0x749b78",
+          "0xba0593",
+          "0xc873d9",
+          "0xf3f89a"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 21
+      },
+      "deviceType": "Duo",
+      "votes": 0,
+      "createdBy": "671b7a249a7af7095a82e5df",
+      "uploadDate": "2024-11-11T22:28:46.787Z"
+    },
+    {
+      "_id": "6768aba6e6f12f8c3d86ecb1",
+      "name": "Nebulous Flashlight",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x215449",
+          "0x154f54",
+          "0xff5841",
+          "0x8c03ff",
+          "0xdfffa4",
+          "0x89aa70"
+        ],
+        "flags": 0,
+        "numColors": 6,
+        "pattern_id": 23
+      },
+      "deviceType": "Chromadeck",
+      "votes": 0,
+      "createdBy": "65f2971c700334ffe6c689ed",
+      "uploadDate": "2024-12-23T00:15:34.893Z"
+    },
+    {
+      "_id": "677745b81e7f2b31b37abf40",
+      "name": "Glimmering Lucent Constellation",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          6,
+          6,
+          25,
+          0,
+          0
+        ],
+        "colorset": [
+          "0x1e031c",
+          "0xb2ff02"
+        ],
+        "flags": 0,
+        "numColors": 2,
+        "pattern_id": 6
+      },
+      "deviceType": "Chromadeck",
+      "votes": 0,
+      "createdBy": "677745531e7f2b31b37abf23",
+      "uploadDate": "2025-01-03T02:04:40.556Z"
+    },
+    {
+      "_id": "677745b81e7f2b31b37abf43",
+      "name": "Spectral Radiant Radiation",
+      "description": "No description provided.",
+      "data": {
+        "args": [
+          16,
+          20,
+          0,
+          0,
+          0
+        ],
+        "colorset": [
+          "0xcc00ff",
+          "0x250011",
+          "0x2f0f00",
+          "0x3e4300",
+          "0x051e00",
+          "0x000a05",
+          "0x000b10",
+          "0x020031"
+        ],
+        "flags": 0,
+        "numColors": 8,
+        "pattern_id": 1
+      },
+      "deviceType": "Chromadeck",
+      "votes": 0,
+      "createdBy": "677745531e7f2b31b37abf23",
+      "uploadDate": "2025-01-03T02:04:40.562Z"
+    }
+  ],
+  "pages": 1
+}

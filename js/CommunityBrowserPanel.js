@@ -100,12 +100,22 @@ export default class CommunityBrowserPanel extends Panel {
     }
   }
 
+  _isFillerDeployment() {
+    return this.editor && this.editor.isLocalServer;
+  }
+
   async _fetchModes() {
     try {
-      const res = await fetch(communityUrl(`/community/modes/json?page=1&pageSize=999&v=${Date.now()}`), {
-        credentials: 'include'
-      });
-      const data = await res.json();
+      let data;
+      if (this._isFillerDeployment()) {
+        const res = await fetch(`public/data/filler-modes.json?v=${Date.now()}`);
+        data = await res.json();
+      } else {
+        const res = await fetch(communityUrl(`/community/modes/json?page=1&pageSize=999&v=${Date.now()}`), {
+          credentials: 'include'
+        });
+        data = await res.json();
+      }
       this.modesCache = data.data || [];
     } catch (err) {
       console.error('Failed to load modes:', err);
@@ -115,10 +125,16 @@ export default class CommunityBrowserPanel extends Panel {
 
   async _fetchPats() {
     try {
-      const res = await fetch(communityUrl(`/community/pats/json?page=1&pageSize=999&v=${Date.now()}`), {
-        credentials: 'include'
-      });
-      const data = await res.json();
+      let data;
+      if (this._isFillerDeployment()) {
+        const res = await fetch(`public/data/filler-patterns.json?v=${Date.now()}`);
+        data = await res.json();
+      } else {
+        const res = await fetch(communityUrl(`/community/pats/json?page=1&pageSize=999&v=${Date.now()}`), {
+          credentials: 'include'
+        });
+        data = await res.json();
+      }
       this.patsCache = data.data || [];
     } catch (err) {
       console.error('Failed to load patterns:', err);
