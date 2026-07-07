@@ -12,6 +12,7 @@ import ColorPicker from './ColorPicker.js';
 import CommunityBrowser from './CommunityBrowser.js';
 import SettingsModal from './SettingsModal.js';
 import * as ConnStatus from './ConnStatus.js';
+import { getDefaultHub } from '../spectra.js';
 
 const ASSETS = {
   styles: [
@@ -29,6 +30,7 @@ const DEVICE_CARDS = [
   { id: 'Duo', label: 'Duo', img: 'public/images/duo-logo-square-512.png' },
   { id: 'Spark', label: 'Spark', img: 'public/images/spark-logo-square-512.png' },
   { id: 'Chromadeck', label: 'Chromadeck', img: 'public/images/chromadeck-logo-square-512.png' },
+  { id: 'Spectra Hub', label: 'Spectra Hub', img: 'public/images/chromadeck-logo-square-512.png' },
 ];
 
 export default class VortexEditorMobile {
@@ -40,6 +42,7 @@ export default class VortexEditorMobile {
     this.vortex.setLedCount(1);
 
     this.vortexPort = new VortexPort(this, true);
+    this.spectraHub = getDefaultHub();
 
     this.deviceType = null;
     this.devices = null;
@@ -282,7 +285,18 @@ export default class VortexEditorMobile {
     } catch {}
   }
 
+  isSpectraDevice(type) {
+    return type === 'Spectra Hub';
+  }
+
   getBleConnectCopy(deviceType) {
+    if (this.isSpectraDevice(deviceType)) {
+      return {
+        deviceImg: 'public/images/chromadeck-logo-square-512.png',
+        deviceAlt: 'Spectra Hub',
+        instructions: 'Tap Connect below and select your Spectra Hub (PhotoHub) from the list',
+      };
+    }
     if (deviceType === 'Duo' || deviceType === 'Chromadeck') {
       return {
         deviceImg: 'public/images/chromadeck-logo-square-512.png',
@@ -299,6 +313,7 @@ export default class VortexEditorMobile {
 
   loadActionLabel(deviceType) {
     if (deviceType === 'Duo') return `<i class="fa-solid fa-satellite-dish"></i> Load from Duo`;
+    if (this.isSpectraDevice(deviceType)) return `<i class="fa-solid fa-download"></i> Load from Hub`;
     return `<i class="fa-solid fa-download"></i> Load from device`;
   }
 
@@ -412,6 +427,32 @@ export default class VortexEditorMobile {
           `<i class="fa-solid fa-spinner fa-spin"></i> Connecting…`,
           async () => {
             try {
+              if (this.isSpectraDevice(deviceType)) {
+                const found = await this.spectraHub.scan();
+                if (!found) {
+                  ConnStatus.setConnError(this, 'No device selected', { deviceType });
+                  return;
+                }
+                const ok = await this.spectraHub.connect();
+                if (!ok) {
+                  ConnStatus.setConnError(this, 'Connection failed', { deviceType });
+                  return;
+                }
+                completed = true;
+                this.spectraHub.onDisconnect(() => {
+                  ConnStatus.setConnError(this, 'Disconnected', { deviceType });
+                });
+                ConnStatus.setConnStatus(this, {
+                  status: 'connected',
+                  title: deviceType,
+                  subtitle: 'Connected',
+                  deviceType,
+                  error: null,
+                });
+                await this.gotoModeSource({ deviceType });
+                return;
+              }
+
               await this.vortexPort.requestDevice(async (status) => {
                 if (completed) return;
 
@@ -527,6 +568,11 @@ export default class VortexEditorMobile {
     try {
       if (this._transferInProgress) return;
 
+      if (this.isSpectraDevice(this.deviceType) && this.spectraHub.isConnected()) {
+        await this.spectraHub.syncVortexMode(this.vortexLib, this.vortex, 1);
+        return;
+      }
+
       let tries = 0;
       while (this.vortexPort.isTransmitting || !this.vortexPort.isActive()) {
         if (tries++ > 10) return;
@@ -540,12 +586,21 @@ export default class VortexEditorMobile {
   }
 
   async demoColorOnDevice(rgbColor) {
+    if (this.isSpectraDevice(this.deviceType) && this.spectraHub.isConnected()) {
+      await this.spectraHub.previewColor(rgbColor.red, rgbColor.green, rgbColor.blue);
+      return;
+    }
     await this.vortexPort.demoColor(this.vortexLib, this.vortex, rgbColor);
   }
 
   async pullFromDeviceAndEnterEditor(deviceType, { source = 'mode-source', progressEl = null, disableEls = [] } = {}) {
     if (deviceType === 'Duo') {
       await this.gotoDuoReceive({ deviceType });
+      return;
+    }
+    if (this.isSpectraDevice(deviceType)) {
+      Notification.failure?.('Pull not supported for Spectra Hub yet');
+      await this.gotoEditor({ deviceType });
       return;
     }
 
@@ -822,7 +877,17 @@ export default class VortexEditorMobile {
     this.dom.set(frag);
 
     await ConnStatus.ensureConnStatusOverlay(this, dt);
-    ConnStatus.syncConnStatusFromPort(this, dt);
+    if (this.isSpectraDevice(dt) && this.spectraHub.isConnected()) {
+      ConnStatus.setConnStatus(this, {
+        status: 'connected',
+        title: dt,
+        subtitle: 'Connected',
+        deviceType: dt,
+        error: null,
+      });
+    } else {
+      ConnStatus.syncConnStatusFromPort(this, dt);
+    }
 
     this._bindEditorTopButtons(dt);
 
@@ -913,13 +978,27 @@ export default class VortexEditorMobile {
     } catch {}
 
     try {
-      await this.vortexPort.disconnect();
+      if (this.isSpectraDevice(dtNow)) {
+        await this.spectraHub.disconnect();
+      } else {
+        await this.vortexPort.disconnect();
+      }
     } catch (err) {
       console.error('[Mobile] disconnect failed:', err);
       Notification.failure?.('Failed to disconnect');
     } finally {
       try {
-        ConnStatus.syncConnStatusFromPort(this, dtNow);
+        if (this.isSpectraDevice(dtNow)) {
+          ConnStatus.setConnStatus(this, {
+            status: 'disconnected',
+            title: dtNow,
+            subtitle: 'Disconnected',
+            deviceType: dtNow,
+            error: null,
+          });
+        } else {
+          ConnStatus.syncConnStatusFromPort(this, dtNow);
+        }
       } catch {}
     }
   }
