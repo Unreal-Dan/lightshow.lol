@@ -236,7 +236,7 @@ export default class CommunityBrowserPanel extends Panel {
       num_leds: num_leds,
       single_pats: single_pats
     };
-    this.editor.modesPanel.importModeFromData(vortexMode, true);
+    this.editor.modesPanel.importModeFromData(vortexMode, false);
   }
 
   _importPattern(pat) {

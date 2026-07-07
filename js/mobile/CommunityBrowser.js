@@ -311,9 +311,9 @@ export default class CommunityBrowser {
       if (!Array.isArray(obj.modes)) obj.modes = [];
 
       const modeJson = this._buildModeJsonFromCommunity(mode);
-      const insertIndex = obj.modes.length | 0;
+      const curModeIndex = vortex.curModeIndex() | 0;
 
-      obj.modes.push(modeJson);
+      obj.modes[curModeIndex] = modeJson;
       obj.num_modes = obj.modes.length | 0;
 
       const outStr = JSON.stringify(obj);
@@ -326,8 +326,7 @@ export default class CommunityBrowser {
 
       const afterCount = vortex.numModes() | 0;
       if (afterCount > 0) {
-        const target = Math.min(insertIndex, afterCount - 1);
-        vortex.setCurMode(target, false);
+        vortex.setCurMode(Math.min(curModeIndex, afterCount - 1), false);
       }
 
       Notification.success?.('Imported mode');
