@@ -11,7 +11,7 @@ export default class ChromalinkPanel extends Panel {
         <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo">Connect Duo</button>
         <div id="chromalinkDetails" style="display: none;">
           <div class="duo-device-info">
-            <img src="./public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
+            <img src="public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
             <div id="duoInfo">
               <p id="deviceUpdateLabel"><strong>Device:</strong> Duo</p>
               <p id="deviceVersionLabel"><strong>Version:</strong> <span id="duoVersion"></span></p>
