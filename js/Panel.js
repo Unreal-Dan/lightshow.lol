@@ -9,6 +9,7 @@ export default class Panel {
   constructor(editor, id, content, title = 'Panel', options = {}) {
     this.panel = document.createElement('div');
     this.panel.id = id;
+    this.id = id;
     this.panel.className = 'draggable-panel';
     this.panel.title = title;
     this.panel.editor = editor;
