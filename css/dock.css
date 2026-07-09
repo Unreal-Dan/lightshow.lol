@@ -336,14 +336,13 @@
 #welcomePanel {
   width: min(900px, calc(100vw - 80px)) !important;
   max-height: min(85vh, 750px);
-  padding-bottom: 20px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 #welcomePanel > .panel-header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   padding: 10px 14px;
@@ -357,6 +356,8 @@
 }
 
 #welcomePanel > .panel-content {
+  flex: 1;
+  min-height: 0;
   max-height: none;
   overflow-y: auto;
   padding: 20px 30px;
