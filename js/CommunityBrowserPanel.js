@@ -88,6 +88,15 @@ export default class CommunityBrowserPanel extends Panel {
     });
 
     this._loadTab(this.activeTab);
+
+    // Adapt filter grid columns to container width
+    this._filterResizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        filterContainer.style.gridTemplateColumns = w >= 300 ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)';
+      }
+    });
+    this._filterResizeObserver.observe(filterContainer);
   }
 
   async _loadTab(tab) {
