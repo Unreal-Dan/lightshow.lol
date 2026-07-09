@@ -1174,6 +1174,15 @@ export default class DockManager {
       }
     });
 
+    // Re-position resize handles and canvas for the reset dock sizes
+    ['left', 'right', 'bottom'].forEach(side => {
+      if (this.dockPanelOrder[side].length > 0) {
+        this.updateDockVisibility(side);
+        this.applyDockSize(side);
+      }
+    });
+    this.updateCanvasLayout();
+
     // Re-enable and save final state
     this.saveLayout = origSave;
     this.saveLayout();
