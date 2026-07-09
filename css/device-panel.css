@@ -101,6 +101,7 @@
   cursor: pointer;
   display: flex;
   align-items: center;
+  color: #d8d4cf;
 }
 
 .custom-dropdown-option img {
