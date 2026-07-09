@@ -77,7 +77,7 @@
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
-  padding: 6px;
+  padding: 10px 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -86,8 +86,8 @@
 }
 
 .vcb-filter-btn .filter-icon {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   opacity: 0.35;
   transition: opacity 0.15s;
 }

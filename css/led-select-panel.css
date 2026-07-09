@@ -1,11 +1,9 @@
-#ledSelectPanel {
-  top: 433px;
-  right: 5px;
-}
+
 
 .flex-container {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 10px;
 }
 
@@ -127,8 +125,12 @@
 
 #ledControls {
   display: flex;
-  justify-content: space-between;
-  gap: 5px; /* Space between buttons */
+  gap: 5px;
+}
+
+#ledControls .led-select-button {
+  flex: 1;
+  text-align: center;
 }
 
 .selection-box {
@@ -208,5 +210,13 @@
 .legend-circle.unselected {
   background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
   border: 1px solid black;
+}
+
+.no-device-message {
+  padding: 40px 10px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+  width: 100%;
 }
 

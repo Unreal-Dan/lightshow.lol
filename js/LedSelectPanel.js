@@ -111,8 +111,10 @@ export default class LedSelectPanel extends Panel {
     this.refreshLedList();
 
     if (!this.editor.detectMobile()) {
-      // hide till device connects
-      this.hide();
+      // Ensure the panel is expanded — it may have been collapsed during dock init
+      if (this.isCollapsed) this.toggleCollapse();
+      // show placeholder until a device is selected
+      this.showNoDeviceMessage();
     }
   }
 
@@ -156,8 +158,9 @@ export default class LedSelectPanel extends Panel {
   }
 
   async updateSelectedDevice(device) {
+    this.selectedDevice = device;
     if (device === 'None') {
-      this.hide();
+      this.showNoDeviceMessage();
       return;
     }
     // Reset duo mode when switching away from Chromadeck
@@ -165,12 +168,8 @@ export default class LedSelectPanel extends Panel {
       this.isDuoMode = false;
       this.editor.lightshow.setChromadeckDuoMode(false);
     }
-    // change the selected device name
-    this.selectedDevice = device;
     // render the led indicators for this device
     await this.renderLedIndicators(device);
-    // show the led selection window if it was previously hidden
-    this.show();
     // refresh the led list
     this.refreshLedList();
     // select all of the leds but don't propagate this update
@@ -178,7 +177,7 @@ export default class LedSelectPanel extends Panel {
   }
 
   show() {
-    if (this.editor.detectMobile() && this.selectedDevice) {
+    if (this.editor.detectMobile() && this.selectedDevice && this.selectedDevice !== 'None') {
       this.renderLedIndicators(this.selectedDevice);
     }
     super.show();
@@ -196,15 +195,48 @@ export default class LedSelectPanel extends Panel {
     }
   }
 
+  showNoDeviceMessage() {
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!deviceImageContainer) return;
+
+    // Clear existing content
+    deviceImageContainer.innerHTML = '';
+
+    const msg = document.createElement('div');
+    msg.className = 'no-device-message';
+    msg.textContent = 'Select a device to select LEDs';
+    deviceImageContainer.appendChild(msg);
+
+    // Hide device-specific UI (but keep deviceImageContainer visible inside fieldset)
+    const ledLegend = document.getElementById('ledLegend');
+    if (ledLegend) ledLegend.style.display = 'none';
+    const ledControls = document.getElementById('ledControls');
+    if (ledControls) ledControls.style.display = 'none';
+    const toggleLedList = document.getElementById('toggleLedList');
+    if (toggleLedList) toggleLedList.style.display = 'none';
+  }
+
   async renderLedIndicators(deviceName = null) {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     if (!deviceImageContainer) {
       return;
     }
     if (!deviceName || deviceName === 'None') {
-      this.hide();
+      this.showNoDeviceMessage();
       return;
     }
+
+    // Remove any leftover no-device message
+    const existingMsg = deviceImageContainer.querySelector('.no-device-message');
+    if (existingMsg) existingMsg.remove();
+
+    // Show device-specific UI (inside the fieldset — don't unhide fieldset itself)
+    const ledLegend = document.getElementById('ledLegend');
+    if (ledLegend) ledLegend.style.display = '';
+    const ledControls = document.getElementById('ledControls');
+    if (ledControls) ledControls.style.display = '';
+    const toggleLedList = document.getElementById('toggleLedList');
+    if (toggleLedList) toggleLedList.style.display = '';
 
     // Check if an existing overlay already exists
     let overlay = deviceImageContainer.querySelector('.led-overlay');

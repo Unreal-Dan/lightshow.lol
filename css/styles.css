@@ -1,6 +1,7 @@
 /* desktop styles */
 @import url('vortex-editor.css');
 @import url('notification.css');
+@import url('dock.css');
 @import url('panel.css');
 @import url('about-panel.css');
 @import url('animation-panel.css');
