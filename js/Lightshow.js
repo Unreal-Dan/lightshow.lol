@@ -88,8 +88,12 @@ export default class Lightshow {
       this.canvas.width = window.innerWidth;
       this.canvas.height = Math.floor(window.innerHeight * 0.4);
     } else {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
+      const dock = this.editor ? this.editor.dockManager : null;
+      const leftW = dock ? dock.getLeftWidth() : 0;
+      const rightW = dock ? dock.getRightWidth() : 0;
+      const bottomH = dock ? dock.getBottomHeight() : 0;
+      this.canvas.width = window.innerWidth - leftW - rightW;
+      this.canvas.height = window.innerHeight - bottomH;
     }
 
     this._recomputeCenters();

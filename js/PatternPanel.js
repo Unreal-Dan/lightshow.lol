@@ -38,19 +38,13 @@ export default class PatternPanel extends Panel {
     toggleButton.addEventListener('click', () => this.togglePatternParams());
   }
 
-  togglePatternParams(propagate = true) {
+  togglePatternParams() {
     const patternPanel = document.getElementById('patternPanel');
     const patternParams = document.getElementById('patternParams');
     const toggleButton = document.getElementById('togglePatternParams');
 
-    // Step 1: Capture the previous height and identify snapped panels
-    const previousHeight = patternPanel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
-
-    // Step 2: Toggle the visibility
     const isHidden = patternParams.classList.toggle('hidden');
 
-    // Update the toggle button icon
     const icon = toggleButton.querySelector('i');
     if (isHidden) {
       icon.classList.remove('fa-chevron-up');
@@ -58,17 +52,6 @@ export default class PatternPanel extends Panel {
     } else {
       icon.classList.remove('fa-chevron-down');
       icon.classList.add('fa-chevron-up');
-    }
-
-    if (propagate) {
-      // Step 3: Calculate the new height
-      const heightChange = patternPanel.offsetHeight - previousHeight;
-      // Step 4: Move snapped panels after the height change
-      snappedPanels.forEach((otherPanel) => {
-        otherPanel.moveSnappedPanels(heightChange);
-        const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-        otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-      });
     }
   }
 

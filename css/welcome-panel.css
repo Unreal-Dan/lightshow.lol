@@ -1,7 +1,5 @@
 /* welcome-panel.css */
 #welcomePanel {
-  top: 75px;
-  left: 50%; /* Center the div */
   width: 900px;
   transform: translate(-25%, 0%);
   text-align: left;
