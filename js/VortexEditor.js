@@ -277,14 +277,14 @@ export default class VortexEditor {
 
       items.push({ separator: true });
       items.push({
-        label: 'Help',
-        action: () => this.showHelpPopup()
+        label: 'Reset Window Layout',
+        action: () => this.dockManager.resetLayout()
       });
 
       items.push({ separator: true });
       items.push({
-        label: 'Reset Window Layout',
-        action: () => this.dockManager.resetLayout()
+        label: 'Help',
+        action: () => this.showHelpPopup()
       });
 
       if (items.length > 0) {

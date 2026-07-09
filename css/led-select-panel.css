@@ -3,7 +3,6 @@
 .flex-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 10px;
 }
 
@@ -40,16 +39,13 @@
 
 #deviceImageContainer {
   position: relative;
-  width: 100%; /* Take full width of the container */
-  height: 100%; /* Adjust height automatically */
-  max-width: 334px;
+  width: 100%;
 }
 
 #deviceImageContainer .device-svg {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 250px;
 }
 
 .led-overlay {
@@ -104,13 +100,13 @@
 
 .led-indicator {
   position: absolute;
-  width: 14px; /* Adjust size */
-  height: 14px; /* Adjust size */
+  width: 18px;
+  height: 18px;
   background: radial-gradient(circle, rgba(50, 50, 50, 1) 0%, rgba(50, 50, 50, 1) 10%, rgba(50, 50, 50, 0.3) 100%);
-  border-radius: 50%; /* Circular indicators */
-  cursor: pointer; /* Change cursor on hover */
+  border-radius: 50%;
+  cursor: pointer;
   transform: translate(-50%, -50%);
-  z-index: 3; /* Ensure indicators are above other UI elements */
+  z-index: 3;
 }
 
 .led-indicator.selected {

@@ -116,6 +116,12 @@ export default class LedSelectPanel extends Panel {
       // show placeholder until a device is selected
       this.showNoDeviceMessage();
     }
+
+    // Reposition LED indicators when the container resizes (e.g. dock resize)
+    this._resizeObserver = new ResizeObserver(() => {
+      this.refreshLedPositions();
+    });
+    this._resizeObserver.observe(deviceImageContainer);
   }
 
   toggleLedList() {
@@ -271,6 +277,9 @@ export default class LedSelectPanel extends Panel {
     const deviceData = await this.getLedPositions(positionsDevice);
     const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : (useChromadeckDuo ? this.editor.devices['Duo'].image : this.editor.devices[deviceName].image);
 
+    // Store for resize repositioning
+    this._deviceData = deviceData;
+
     let deviceSvg = deviceImageContainer.querySelector('.device-svg');
     if (!deviceSvg) {
       deviceSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -304,6 +313,27 @@ export default class LedSelectPanel extends Panel {
         overlay.appendChild(ledIndicator);
       });
       this.updateLedIndicators();
+    });
+  }
+
+  refreshLedPositions() {
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!deviceImageContainer || !this._deviceData) return;
+    const overlay = deviceImageContainer.querySelector('.led-overlay');
+    if (!overlay) return;
+
+    requestAnimationFrame(() => {
+      const containerRect = deviceImageContainer.getBoundingClientRect();
+      const scaleX = containerRect.width / this._deviceData.original_width;
+      const scaleY = containerRect.height / this._deviceData.original_height;
+      const indicators = overlay.querySelectorAll('.led-indicator');
+      this._deviceData.points.forEach((point, index) => {
+        const indicator = indicators[index];
+        if (indicator) {
+          indicator.style.left = `${point.x * scaleX}px`;
+          indicator.style.top = `${point.y * scaleY}px`;
+        }
+      });
     });
   }
 
