@@ -393,10 +393,13 @@ export default class DevicePanel extends Panel {
 
   _setHighZIndex(active) {
     if (active) {
+      this._savedPosition = this.panel.style.position || '';
       this._savedZIndex = this.panel.style.zIndex || '';
+      this.panel.style.position = 'relative';
       this.panel.style.zIndex = '1000';
     } else {
       if (this._savedZIndex !== undefined) {
+        this.panel.style.position = this._savedPosition;
         this.panel.style.zIndex = this._savedZIndex;
         this._savedZIndex = undefined;
       }
