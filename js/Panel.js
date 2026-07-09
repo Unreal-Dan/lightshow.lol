@@ -31,15 +31,6 @@ export default class Panel {
         this.hide();
       });
       header.appendChild(closeBtn);
-    } else {
-      const collapseBtn = document.createElement('button');
-      collapseBtn.className = 'collapse-btn';
-      collapseBtn.textContent = '▼';
-      collapseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCollapse();
-      });
-      header.appendChild(collapseBtn);
     }
 
     // Create content container
