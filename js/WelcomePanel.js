@@ -148,8 +148,10 @@ export default class WelcomePanel extends Panel {
 
   show() {
     super.show();
+    console.log('welcomePanel show, mobile?', this.editor.detectMobile(), 'id:', this.id);
     if (!this.editor.detectMobile()) {
-      this.editor.dockManager.floatPanel(this.id, Math.max(10, (window.innerWidth - 900) / 2), 30);
+      const r = this.editor.dockManager.floatPanel(this.id, Math.max(10, (window.innerWidth - 900) / 2), 30);
+      console.log('floatPanel result:', r);
       this.panel.style.width = '';
       this.panel.style.height = '';
     }
