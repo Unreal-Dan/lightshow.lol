@@ -436,16 +436,23 @@ export default class DevicePanel extends Panel {
   }
 
   _setHighZIndex(active) {
+    const options = document.getElementById('deviceTypeOptions');
+    const dockArea = this.panel.closest('.dock-area');
     if (active) {
-      this._savedPosition = this.panel.style.position || '';
-      this._savedZIndex = this.panel.style.zIndex || '';
-      this.panel.style.position = 'relative';
-      this.panel.style.zIndex = '1000';
+      if (options) options.style.zIndex = '9999';
+      if (dockArea) {
+        this._savedDockZIndex = dockArea.style.zIndex;
+        this._savedDockOverflow = dockArea.style.overflow;
+        dockArea.style.zIndex = '999';
+        dockArea.style.overflow = 'visible';
+      }
     } else {
-      if (this._savedZIndex !== undefined) {
-        this.panel.style.position = this._savedPosition;
-        this.panel.style.zIndex = this._savedZIndex;
-        this._savedZIndex = undefined;
+      if (options) options.style.zIndex = '';
+      if (dockArea && this._savedDockZIndex !== undefined) {
+        dockArea.style.zIndex = this._savedDockZIndex;
+        dockArea.style.overflow = this._savedDockOverflow || '';
+        this._savedDockZIndex = undefined;
+        this._savedDockOverflow = undefined;
       }
     }
   }
