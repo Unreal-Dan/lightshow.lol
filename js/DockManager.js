@@ -288,6 +288,7 @@ export default class DockManager {
     panelEl.style.position = 'fixed';
     panelEl.style.left = x + 'px';
     panelEl.style.top = y + 'px';
+    console.log('floatPanel set', id, 'top', y, new Error().stack);
     panelEl.style.width = Math.min(400, window.innerWidth - 40) + 'px';
     this._zCounter++;
     panelEl.style.zIndex = String(this._zCounter);
@@ -333,6 +334,7 @@ export default class DockManager {
       if (!baselineFired) {
         baselineFired = true;
         this._floatingHeights.set(panelId, newHeight);
+        console.log('observer baseline:', panelId, newHeight);
         return;
       }
 
@@ -343,6 +345,7 @@ export default class DockManager {
       if (oldHeight === undefined) return;
       const delta = newHeight - oldHeight;
       this._floatingHeights.set(panelId, newHeight);
+      console.log('observer delta:', panelId, 'old:', oldHeight, 'new:', newHeight, 'delta:', delta);
       if (Math.abs(delta) < 0.5) return;
       this._propagateStackDelta(panelId, Math.round(delta));
     });
@@ -397,6 +400,7 @@ export default class DockManager {
   }
 
   _propagateStackDelta(panelId, delta) {
+    console.log('_propagateStackDelta from', panelId, 'delta', delta, new Error().stack);
     this._stackingBusy = true;
 
     const below = this._findStackBelow(panelId, delta);
@@ -406,6 +410,7 @@ export default class DockManager {
       if (!rec) continue;
       const el = rec.panel.panel;
       const r = el.getBoundingClientRect();
+      console.log('  moving', id, 'from top', r.top, 'to', r.top + delta);
       el.style.top = (r.top + delta) + 'px';
       // Update stored height reference since position changed
       this._floatingHeights.set(id, el.offsetHeight);
@@ -1106,6 +1111,7 @@ export default class DockManager {
     ids.forEach(id => {
       const entry = data.panels[id];
       if (!entry) return;
+      console.log('restoreLayout processing', id, 'floating:', entry.floating, 'saved y:', entry.y);
 
       if (entry.floating) {
         // Float at saved position
@@ -1120,6 +1126,7 @@ export default class DockManager {
       if (record) {
         const content = record.panel.panel.querySelector('.panel-content');
         const isCurrentlyCollapsed = content?.classList.contains('collapsed') ?? false;
+        console.log('  collapsed state: saved=', entry.collapsed, 'current=', isCurrentlyCollapsed);
         if (isCurrentlyCollapsed !== entry.collapsed) {
           record.panel.toggleCollapse();
         }
@@ -1138,6 +1145,7 @@ export default class DockManager {
     }
 
     // Re-enable stack and rebuild chain
+    console.log('restoreLayout: _suppressStack = false, about to _rebuildFloatingStack');
     this._suppressStack = false;
     this._rebuildFloatingStack();
 
@@ -1150,6 +1158,7 @@ export default class DockManager {
     });
 
     this.updateCanvasLayout();
+    console.log('restoreLayout complete — positions should now be final');
     return true;
   }
 
