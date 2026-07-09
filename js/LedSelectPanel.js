@@ -110,9 +110,6 @@ export default class LedSelectPanel extends Panel {
     this.refreshLedList();
 
     if (!this.editor.detectMobile()) {
-      // Ensure the panel is expanded — it may have been collapsed during dock init
-      if (this.isCollapsed) this.toggleCollapse();
-      // show placeholder until a device is selected
       this.showNoDeviceMessage();
     }
 
