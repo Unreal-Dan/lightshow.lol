@@ -37,17 +37,18 @@
 }
 
 .welcome-left {
-  width: 40%;
-  padding: 16px 20px;
+  width: 50%;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   border-right: 1px solid #333;
+  overflow-y: auto;
 }
 
 .welcome-right {
-  width: 60%;
+  width: 50%;
   display: flex;
   flex-direction: column;
   min-height: 0;
