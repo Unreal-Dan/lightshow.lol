@@ -40,30 +40,34 @@ export default class WelcomePanel extends Panel {
     }
 
     const content = `
-      <h1 class="welcome-title">Welcome to lightshow.lol</h1>
-      <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
-      <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
+      <div class="welcome-split">
+        <div class="welcome-left">
+          <h1 class="welcome-title">Welcome to lightshow.lol</h1>
+          <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
+          <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
 
-      <div class="features-container">
-        <div class="features-container-title">News & Updates</div>
-        <div class="feature-scroll">
-          ${featuresHtml}
+          <div class="welcome-actions">
+            <a href="${wikiUrl('/lightshow-lol/')}" target="_blank" class="wiki-button">
+              <span>See Wiki</span>
+              <span class="arrow">→</span>
+            </a>
+            <button class="close-welcome-btn">Close</button>
+          </div>
+
+          <div class="checkbox-container">
+            <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
+          </div>
+        </div>
+        <div class="welcome-right">
+          <div class="features-container-title">News & Updates</div>
+          <div class="feature-scroll">
+            ${featuresHtml}
+          </div>
         </div>
       </div>
-
-      <a href="${wikiUrl('/lightshow-lol/')}" target="_blank" class="wiki-button">
-        <span>See Wiki</span>
-        <span class="arrow">→</span>
-      </a>
-
-      <div class="checkbox-container">
-        <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
-      </div>
-
-      <button class="close-welcome-btn">Close</button>
     `;
 
-    super(editor, 'welcomePanel', content, '', { showCloseButton: true });
+    super(editor, 'welcomePanel', content, 'Welcome', { showCloseButton: true });
 
     this.welcomeToken = WELCOME_VERSION;
     this.editor = editor;
@@ -139,6 +143,13 @@ export default class WelcomePanel extends Panel {
 
     if (this.editor.detectMobile()) {
       this.panel.querySelector('.checkbox-container').style.display = 'none';
+    }
+  }
+
+  show() {
+    super.show();
+    if (!this.editor.detectMobile()) {
+      this.editor.dockManager.floatPanel(this.id, (window.innerWidth - 800) / 2, 50);
     }
   }
 

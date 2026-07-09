@@ -190,7 +190,7 @@ export default class DockManager {
 
   register(panel, defaultDock = 'left') {
     const id = panel.panel.id;
-    const record = { panel, dock: defaultDock, index: -1 };
+    const record = { panel, dock: null, index: -1 };
     this.panels.set(id, record);
 
     // Add headerdrag listener
@@ -203,8 +203,10 @@ export default class DockManager {
       this.saveLayout();
     };
 
-    // Add to default dock
-    this.dockPanel(id, defaultDock);
+    // Add to default dock (skip if null)
+    if (defaultDock) {
+      this.dockPanel(id, defaultDock);
+    }
   }
 
   enableHeaderDrag(panel) {
@@ -1043,6 +1045,7 @@ export default class DockManager {
     };
 
     this.panels.forEach((record, id) => {
+      if (id === 'welcomePanel') return;
       const panelEl = record.panel.panel;
       const entry = {
         collapsed: panelEl.querySelector('.panel-content')?.classList.contains('collapsed') ?? false,
