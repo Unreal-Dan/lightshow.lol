@@ -299,8 +299,7 @@
   overflow-y: auto;
 }
 
-/* ── Overlay panels (welcome, colorPicker, update, chromalink) ── */
-#welcomePanel,
+/* ── Overlay panels (colorPicker, update, chromalink) ── */
 #colorPickerPanel,
 #updatePanel,
 #chromalinkPanel {
@@ -317,7 +316,6 @@
   background: #181a1b;
 }
 
-#welcomePanel .panel-header,
 #colorPickerPanel .panel-header,
 #updatePanel .panel-header,
 #chromalinkPanel .panel-header {
@@ -325,42 +323,27 @@
   background: #292c2e;
 }
 
-#welcomePanel .panel-header:hover,
 #colorPickerPanel .panel-header:hover,
 #updatePanel .panel-header:hover,
 #chromalinkPanel .panel-header:hover {
   background: #292c2e;
 }
 
-/* Welcome panel is large — override the compact overlay defaults */
+/* Welcome panel — large floating panel, not compact */
 #welcomePanel {
-  width: min(900px, calc(100vw - 80px)) !important;
-  max-height: min(85vh, 750px);
+  width: min(800px, calc(100vw - 40px)) !important;
+  max-height: min(85vh, 650px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-#welcomePanel > .panel-header {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 14px;
-  min-height: 44px;
-  border-bottom: 1px solid #333;
-}
-
-#welcomePanel > .panel-header .close-btn {
-  font-size: 30px;
-  line-height: 1;
 }
 
 #welcomePanel > .panel-content {
   flex: 1;
   min-height: 0;
-  max-height: none;
-  overflow-y: auto;
-  padding: 20px 30px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
 /* ── Insertion indicator (reordering within dock) ── */
