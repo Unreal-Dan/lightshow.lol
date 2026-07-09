@@ -299,8 +299,7 @@
   overflow-y: auto;
 }
 
-/* ── Overlay panels (colorPicker, update, chromalink) ── */
-#colorPickerPanel,
+/* ── Overlay panels (update, chromalink) ── */
 #updatePanel,
 #chromalinkPanel {
   position: fixed !important;
@@ -316,24 +315,30 @@
   background: #181a1b;
 }
 
-#colorPickerPanel .panel-header,
 #updatePanel .panel-header,
 #chromalinkPanel .panel-header {
   cursor: default;
   background: #292c2e;
 }
 
-#colorPickerPanel .panel-header:hover,
 #updatePanel .panel-header:hover,
 #chromalinkPanel .panel-header:hover {
   background: #292c2e;
 }
 
+/* Color picker — floating panel */
+#colorPickerPanel {
+  width: 560px !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Welcome panel — large floating panel, not compact */
 #welcomePanel {
-  width: min(900px, calc(100vw - 40px)) !important;
+  width: min(1050px, calc(100vw - 40px)) !important;
   max-width: none !important;
-  max-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
 }

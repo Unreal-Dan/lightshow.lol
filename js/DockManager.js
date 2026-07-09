@@ -1052,7 +1052,7 @@ export default class DockManager {
     };
 
     this.panels.forEach((record, id) => {
-      if (id === 'welcomePanel') return;
+      if (id === 'welcomePanel' || id === 'colorPickerPanel') return;
       const panelEl = record.panel.panel;
       const entry = {
         collapsed: panelEl.querySelector('.panel-content')?.classList.contains('collapsed') ?? false,

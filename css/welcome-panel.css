@@ -8,7 +8,7 @@
 }
 
 #welcomePanel .welcome-title {
-  font-size: 26px;
+  font-size: 30px;
   font-weight: 900;
   text-align: center;
   background: linear-gradient(135deg, #ff6600, #ffcc00, #ff6600);
@@ -18,15 +18,15 @@
   color: transparent;
   animation: bannerShimmer 3s ease-in-out infinite;
   text-shadow: none;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   letter-spacing: 1px;
 }
 
 #welcomePanel .intro-text {
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
   color: #c8c4c0;
-  margin: 0 0 6px;
+  margin: 0 0 10px;
   text-align: center;
 }
 
@@ -37,18 +37,18 @@
 }
 
 .welcome-left {
-  width: 50%;
-  padding: 20px 24px;
+  width: 45%;
+  padding: 28px 28px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   border-right: 1px solid #333;
   overflow-y: auto;
 }
 
 .welcome-right {
-  width: 50%;
+  width: 55%;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -147,21 +147,21 @@
 
 .welcome-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 12px;
 }
 
 .wiki-button {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  font-size: 14px;
+  padding: 10px 24px;
+  font-size: 15px;
   font-weight: bold;
   text-decoration: none;
   color: white;
   background-color: #28a745;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
@@ -181,13 +181,13 @@
 }
 
 .close-welcome-btn {
-  padding: 8px 20px;
-  font-size: 14px;
+  padding: 10px 28px;
+  font-size: 15px;
   font-weight: bold;
-  color: #ccc;
+  color: #d8d4cf;
   background: #3a3a3a;
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -201,13 +201,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .checkbox-container label {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .checkbox-container input[type="checkbox"] {
   margin-right: 8px;
+  width: 18px;
+  height: 18px;
 }

@@ -189,8 +189,9 @@ export default class VortexEditor {
         if (panel) this.dockManager.register(panel, 'left');
       });
 
-      // Register welcome panel (floating, not docked)
+      // Register floating-only panels (not docked)
       if (this.welcomePanel) this.dockManager.register(this.welcomePanel, null);
+      if (this.colorPickerPanel) this.dockManager.register(this.colorPickerPanel, null);
 
       // Restore saved layout if available, otherwise collapse all by default
       const restored = this.dockManager.restoreLayout();
@@ -202,7 +203,6 @@ export default class VortexEditor {
 
       // Overlay panels go to body (not managed by dock manager)
       const overlayPanels = [
-        this.colorPickerPanel,
         this.updatePanel,
         this.chromalinkPanel,
       ];
