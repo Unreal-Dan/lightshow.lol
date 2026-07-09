@@ -1119,6 +1119,17 @@ export default class DockManager {
       }
     });
 
+    // Re-init floating observers so baselines reflect final (collapsed) heights.
+    // The collapse toggles above changed panel heights but the ResizeObserver
+    // callbacks that recorded those changes may have fired before the baseline
+    // was set, producing stale baselines. Fresh observers will fire with the
+    // current height as their first observation.
+    for (const fp of this.floatingPanels) {
+      const id = fp.panel.panel.id;
+      this._teardownFloatingObserver(id);
+      this._setupFloatingObserver(id, fp.panel.panel);
+    }
+
     // Re-enable stack and rebuild chain
     this._suppressStack = false;
     this._rebuildFloatingStack();
