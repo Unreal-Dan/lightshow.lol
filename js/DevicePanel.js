@@ -113,7 +113,7 @@ export default class DevicePanel extends Panel {
     // Close dropdown on outside click and restore z-index
     document.addEventListener('click', (event) => {
       const options = document.getElementById('deviceTypeOptions');
-      if (options.classList.contains('show') && !event.target.closest('#deviceTypeContainer')) {
+      if (options.classList.contains('show') && !event.target.closest('#deviceTypeContainer') && !event.target.closest('#deviceTypeOptions')) {
         options.classList.remove('show');
         this._setHighZIndex(false);
       }
@@ -393,22 +393,42 @@ export default class DevicePanel extends Panel {
 
   _setHighZIndex(active) {
     const options = document.getElementById('deviceTypeOptions');
-    const dockArea = this.panel.closest('.dock-area');
+    const trigger = document.getElementById('deviceTypeSelected');
+    if (!options || !trigger) return;
+
     if (active) {
-      if (options) options.style.zIndex = '9999';
-      if (dockArea) {
-        this._savedDockZIndex = dockArea.style.zIndex;
-        this._savedDockOverflow = dockArea.style.overflow;
-        dockArea.style.zIndex = '999';
-        dockArea.style.overflow = 'visible';
-      }
+      const rect = trigger.getBoundingClientRect();
+      this._savedDropdownParent = options.parentNode;
+      this._savedDropdownNextSibling = options.nextSibling;
+      this._savedDropdownStyle = {
+        position: options.style.position,
+        left: options.style.left,
+        top: options.style.top,
+        width: options.style.width,
+        zIndex: options.style.zIndex,
+      };
+      document.body.appendChild(options);
+      options.style.position = 'fixed';
+      options.style.left = rect.left + 'px';
+      options.style.top = (rect.bottom + 2) + 'px';
+      options.style.width = rect.width + 'px';
+      options.style.zIndex = '9999';
     } else {
-      if (options) options.style.zIndex = '';
-      if (dockArea && this._savedDockZIndex !== undefined) {
-        dockArea.style.zIndex = this._savedDockZIndex;
-        dockArea.style.overflow = this._savedDockOverflow || '';
-        this._savedDockZIndex = undefined;
-        this._savedDockOverflow = undefined;
+      const parent = this._savedDropdownParent;
+      if (parent) {
+        if (this._savedDropdownNextSibling) {
+          parent.insertBefore(options, this._savedDropdownNextSibling);
+        } else {
+          parent.appendChild(options);
+        }
+        options.style.position = this._savedDropdownStyle.position || '';
+        options.style.left = this._savedDropdownStyle.left || '';
+        options.style.top = this._savedDropdownStyle.top || '';
+        options.style.width = this._savedDropdownStyle.width || '';
+        options.style.zIndex = this._savedDropdownStyle.zIndex || '';
+        this._savedDropdownParent = null;
+        this._savedDropdownNextSibling = null;
+        this._savedDropdownStyle = null;
       }
     }
   }
