@@ -332,6 +332,7 @@
 /* Welcome panel — large floating panel, not compact */
 #welcomePanel {
   width: min(900px, calc(100vw - 40px)) !important;
+  max-width: none !important;
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
