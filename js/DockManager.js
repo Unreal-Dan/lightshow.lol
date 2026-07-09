@@ -34,6 +34,7 @@ export default class DockManager {
     this._stackingBusy = false; // prevent re-entrant chain propagation
     this._zCounter = 200; // stacking order for floating panels
     this._suppressStack = false; // suppress stack propagation during restore
+    this._observerVersions = new Map(); // panelId -> counter to invalidate stale observer callbacks
   }
 
   /* ── Initialization ── */
@@ -317,7 +318,13 @@ export default class DockManager {
 
     let baselineFired = false;
 
+    const observerVersion = (this._observerVersions.get(panelId) || 0) + 1;
+    this._observerVersions.set(panelId, observerVersion);
+
     const observer = new ResizeObserver((entries) => {
+      // Stale observer callback from before re-init — ignore
+      if (this._observerVersions.get(panelId) !== observerVersion) return;
+
       const newHeight = entries[0].contentRect.height;
 
       // First fire just sets the baseline — offsetHeight includes borders
