@@ -717,6 +717,7 @@ export default class VortexEditorMobile {
     try {
       this._getModes().initCurMode();
       this._getModes().saveCurMode();
+      this.vortex.addUndoBuffer();
     } catch {}
 
     await this.gotoEditor({ deviceType: dt });
@@ -798,6 +799,7 @@ export default class VortexEditorMobile {
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
+          this.vortex.addUndoBuffer();
         } catch {}
         this._afterModeChanged(deviceType, { finalize: false, demo: true });
       }
@@ -1309,6 +1311,7 @@ export default class VortexEditorMobile {
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
+          this.vortex.addUndoBuffer();
         } catch {}
       });
     } catch (e) {
@@ -1357,6 +1360,7 @@ export default class VortexEditorMobile {
           try {
             this._getModes().initCurMode();
             this._getModes().saveCurMode();
+            this.vortex.addUndoBuffer();
           } catch {}
         }
       });

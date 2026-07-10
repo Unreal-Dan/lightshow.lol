@@ -266,6 +266,7 @@ export default class ModesPanel extends Panel {
         mode.setColorset(set, allLeds);
         mode.init();
         this.editor.vortex.engine().modes().saveCurMode();
+        this.editor.vortex.addUndoBuffer();
         count++;
       }
     });
@@ -499,6 +500,7 @@ export default class ModesPanel extends Panel {
     targetLeds.forEach(led => cur.setColorset(set, led));
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.addUndoBuffer();
     this.editor.colorsetPanel.refresh();
     this.editor.demoModeOnDevice();
     Notification.success("Pasted colorset");
@@ -539,6 +541,7 @@ export default class ModesPanel extends Panel {
     });
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.addUndoBuffer();
     this.refresh();
     this.editor.patternPanel.refresh();
     this.editor.colorsetPanel.refresh();
@@ -762,6 +765,7 @@ export default class ModesPanel extends Panel {
       Notification.failure("Failed to add another mode");
       return;
     }
+    this.editor.vortex.addUndoBuffer();
     setTimeout(() => {
       this.selectMode(modeCount);
       this.refreshModeList();
@@ -1011,6 +1015,7 @@ export default class ModesPanel extends Panel {
     cur = this.editor.vortex.engine().modes().curMode();
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.addUndoBuffer();
 
     if (addNew) {
       this.editor.vortex.setCurMode(curSel, false);
@@ -1106,6 +1111,7 @@ export default class ModesPanel extends Panel {
     }
     this.editor.vortex.setCurMode(cur, false);
     this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.vortex.addUndoBuffer();
     this.refreshModeList();
     this.refreshOtherPanels();
     Notification.success(`Successfully Deleted Mode ${parseInt(index) + 1}`);

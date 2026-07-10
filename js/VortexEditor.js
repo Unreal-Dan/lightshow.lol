@@ -260,6 +260,21 @@ export default class VortexEditor {
       }
     });
 
+    // Undo/Redo via Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
+    document.addEventListener('keydown', (event) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      const isUndo = event.key === 'z' && !event.shiftKey;
+      const isRedo = event.key === 'y' || (event.key === 'z' && event.shiftKey);
+      if (!isUndo && !isRedo) return;
+      event.preventDefault();
+      const success = isUndo ? this.vortex.undo() : this.vortex.redo();
+      if (success) {
+        this.modesPanel.refreshModeList();
+        this.modesPanel.refreshOtherPanels();
+        this.demoModeOnDevice();
+      }
+    });
+
     // detect the postmessage from vortex community to send over a mode
     window.addEventListener('message', (event) => {
       console.log('Received message:', event);

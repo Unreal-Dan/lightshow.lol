@@ -2083,8 +2083,8 @@ export default class ColorPicker {
     try {
       const modes = this._getModes();
       modes?.saveCurMode?.();
+      this._getVortex()?.addUndoBuffer?.();
     } catch {}
-
     return { cur, set, sourceLed, targetLeds };
   }
 
@@ -2142,6 +2142,7 @@ export default class ColorPicker {
     } catch {}
     try {
       this._getModes()?.saveCurMode?.();
+      this._getVortex()?.addUndoBuffer?.();
     } catch {}
   }
 }

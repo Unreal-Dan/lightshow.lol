@@ -306,6 +306,7 @@ export default class CommunityBrowserPanel extends Panel {
 
       cur.init();
       vortex.engine().modes().saveCurMode();
+      vortex.addUndoBuffer();
 
       this.editor.modesPanel.refreshModeList();
       this.editor.patternPanel.refresh();
