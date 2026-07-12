@@ -158,6 +158,7 @@ export default class DuoEditorPanel extends Panel {
       cur.setPattern(patID, this.mainSelectedLed, null, null);
       cur.init();
       vortex.engine().modes().saveCurMode();
+      this.editor.pushUndoState(`Pattern: ${vortex.patternToString(patID)}`);
       await this.editor.demoModeOnDevice();
     });
 
@@ -234,10 +235,10 @@ export default class DuoEditorPanel extends Panel {
       cur.setPattern(this.editor.vortexLib.intToPatternID(newPatId), ledIndex, args, colorset);
       cur.init();
       this.editor.vortex.engine().modes().saveCurMode();
+      this.editor.pushUndoState(`Pattern: ${availablePatterns[newPatId]}`);
       await this.editor.demoModeOnDevice();
     };
   }
-
 
   showLedPopup(x, y, ledIndex) {
     const popup = document.getElementById('ledPopup');
@@ -278,14 +279,23 @@ export default class DuoEditorPanel extends Panel {
   }
 
   onActive() {
-    this.editor.lightshow.setDuoEditorMode(true);
+    // If chromadeck duo mode is active, preserve it; otherwise set duo editor mode
+    if (!this.editor.lightshow.chromadeckDuoMode) {
+      this.editor.lightshow.setDuoEditorMode(true);
+    }
     this.editor.animationPanel.applyPreset('DuoEditor');
     this.editor.ledSelectPanel.unselectAllLeds();
   }
 
   onInactive() {
-    this.editor.lightshow.setDuoEditorMode(false);
-    this.editor.animationPanel.applyPreset('Chromadeck');
+    // If chromadeck duo mode is active, preserve duoEditorMode and restore duo preset
+    if (this.editor.lightshow.chromadeckDuoMode) {
+      this.editor.lightshow.setDuoEditorMode(true);
+      this.editor.animationPanel.applyPreset('duo');
+    } else {
+      this.editor.lightshow.setDuoEditorMode(false);
+      this.editor.animationPanel.applyPreset('Chromadeck');
+    }
     this.editor.ledSelectPanel.unselectAllLeds();
 
     // Restore pattern select

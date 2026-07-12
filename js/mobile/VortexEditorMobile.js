@@ -717,6 +717,7 @@ export default class VortexEditorMobile {
     try {
       this._getModes().initCurMode();
       this._getModes().saveCurMode();
+      this.pushUndoState?.('Added mode');
     } catch {}
 
     await this.gotoEditor({ deviceType: dt });
@@ -798,6 +799,7 @@ export default class VortexEditorMobile {
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
+          this.pushUndoState('Trimmed modes');
         } catch {}
         this._afterModeChanged(deviceType, { finalize: false, demo: true });
       }
@@ -1309,6 +1311,7 @@ export default class VortexEditorMobile {
         try {
           this._getModes().initCurMode();
           this._getModes().saveCurMode();
+          this.pushUndoState(`Added Mode ${before + 1}`);
         } catch {}
       });
     } catch (e) {
@@ -1357,6 +1360,7 @@ export default class VortexEditorMobile {
           try {
             this._getModes().initCurMode();
             this._getModes().saveCurMode();
+            this.pushUndoState(`Deleted Mode ${idx + 1}`);
           } catch {}
         }
       });
@@ -1436,6 +1440,23 @@ export default class VortexEditorMobile {
           if ((this.vortex.numModes() | 0) <= 0) return;
           if (e.key === 'ArrowLeft') await this._navigateMode(this.selectedDeviceType('Duo'), -1);
           else if (e.key === 'ArrowRight') await this._navigateMode(this.selectedDeviceType('Duo'), +1);
+          else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            if (this.vortex.undo() && this._undoIndex < (this._undoDescriptions || []).length) {
+              this._undoIndex++;
+              const desc = this._undoDescriptions[this._undoDescriptions.length - this._undoIndex];
+              this._showUndoLog(desc, 'undo');
+              this._afterModeChanged?.(this.selectedDeviceType('Duo'), { finalize: false, demo: true });
+            }
+          } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            if (this.vortex.redo() && this._undoIndex > 0) {
+              this._undoIndex--;
+              const desc = this._undoDescriptions[this._undoDescriptions.length - this._undoIndex - 1];
+              this._showUndoLog(desc, 'redo');
+              this._afterModeChanged?.(this.selectedDeviceType('Duo'), { finalize: false, demo: true });
+            }
+          }
         },
         { passive: true }
       );
@@ -1944,6 +1965,36 @@ export default class VortexEditorMobile {
     const deviceType = dt || this.selectedDeviceType('Duo');
 
     await this.effectsPanel.openForCurrentMode({ deviceType, title: 'Effects' });
+  }
+
+  pushUndoState(description) {
+    this.vortex.addUndoBuffer();
+    if (!this._undoDescriptions) this._undoDescriptions = [];
+    if (!this._undoIndex) this._undoIndex = 0;
+    while (this._undoIndex > 0) {
+      this._undoDescriptions.pop();
+      this._undoIndex--;
+    }
+    this._undoDescriptions.push(description);
+  }
+
+  _showUndoLog(description, type) {
+    const container = document.getElementById('undoLogContainer') || (() => {
+      const el = document.createElement('div');
+      el.id = 'undoLogContainer';
+      el.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column-reverse;align-items:center;gap:4px;pointer-events:none';
+      document.body.appendChild(el);
+      return el;
+    })();
+    const el = document.createElement('div');
+    el.textContent = (type === 'undo' ? '↩ ' : '↪ ') + description;
+    el.style.cssText = 'color:#ccc;font-size:16px;font-family:sans-serif;opacity:1;text-shadow:0 0 6px #000';
+    container.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = 'opacity 2.5s ease';
+      el.style.opacity = '0';
+    }));
+    setTimeout(() => el.remove(), 5000);
   }
 }
 

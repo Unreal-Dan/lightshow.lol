@@ -283,6 +283,7 @@ export default class ColorsetPanel extends Panel {
     }
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.pushUndoState(`${preset} colorset (${numColors} colors)`);
     this.refresh();
     this.editor.demoModeOnDevice();
   }
@@ -410,6 +411,7 @@ export default class ColorsetPanel extends Panel {
 
     cur.init();
     this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.pushUndoState(`Pasted color at ${this.selectedColorIndex}`);
     this.refresh();
 
     Notification.success("Pasted color successfully");
@@ -570,6 +572,7 @@ export default class ColorsetPanel extends Panel {
         cur.setColorset(set, this.getTargetLeds());
         cur.init();
         this.lightshow.vortex.engine().modes().saveCurMode();
+        this.editor.pushUndoState(`Moved color ${dragStartIndex} → ${dropIndex}`);
       }
 
       placeholder?.remove();
@@ -719,6 +722,9 @@ export default class ColorsetPanel extends Panel {
     cur.init();
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
+    if (!isDragging) {
+      this.editor.pushUndoState(`Color ${index}: #${hex}`);
+    }
     // refresh
     this.refresh();
     if (isDragging) {
@@ -753,6 +759,7 @@ export default class ColorsetPanel extends Panel {
     cur.init();
     // save
     this.lightshow.vortex.engine().modes().saveCurMode();
+    this.editor.pushUndoState(`Deleted color ${index}`);
     // refresh
     this.refresh();
     // demo on device

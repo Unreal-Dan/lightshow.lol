@@ -48,6 +48,9 @@ export default class Lightshow {
     // Duo editor mode draws only 2 leds on flash canvas
     this.duoEditorMode = false;
 
+    // Chromadeck duo mode: visualizes 2 LEDs while engine still has 20
+    this.chromadeckDuoMode = false;
+
     // --- Springy center (works for ALL shapes) ---
     // rest center is the "spinning" center; spring center is where shapes are drawn
     this._restCenter = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
@@ -332,6 +335,18 @@ export default class Lightshow {
     this.updateHistories();
   }
 
+  visualLedCount() {
+    // In duo modes (either standalone Duo or Chromadeck duo mode), visualize only 2 LEDs
+    if (this.duoEditorMode || this.chromadeckDuoMode) return 2;
+    return this.vortex.engine().leds().ledCount();
+  }
+
+  setChromadeckDuoMode(enabled) {
+    this.chromadeckDuoMode = enabled;
+    this.duoEditorMode = enabled;
+    this.updateHistories();
+  }
+
   resetToCenter() {
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;
     this.ctx.fillStyle = 'rgba(0, 0, 0)';
@@ -424,6 +439,9 @@ export default class Lightshow {
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
       if (!leds) continue;
+      // Truncate to visual LED count for duo modes
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
 
@@ -538,6 +556,9 @@ export default class Lightshow {
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
       if (!leds) continue;
+      // Truncate to visual LED count for duo modes
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
 
@@ -564,6 +585,9 @@ export default class Lightshow {
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
       if (!leds) continue;
+      // Truncate to visual LED count for duo modes
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
 
@@ -595,6 +619,9 @@ export default class Lightshow {
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
       if (!leds) continue;
+      // Truncate to visual LED count for duo modes
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
 
       leds.forEach((col, index) => {
         const boxSize = baseBoxSize + index * this.spread;
@@ -640,6 +667,9 @@ export default class Lightshow {
     for (let i = 0; i < this.tickRate; i++) {
       const leds = this.vortexLib.RunTick(this.vortex);
       if (!leds) continue;
+      // Truncate to visual LED count for duo modes
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
 
@@ -685,6 +715,7 @@ export default class Lightshow {
     });
     demoMode.init();
     this.vortex.engine().modes().saveCurMode();
+    this.editor?.pushUndoState(`Pattern: ${this.vortex.patternToString(selectedPattern)}`);
   }
 
   getColorset(led = this.vortex.engine().leds().ledAny()) {
@@ -702,6 +733,7 @@ export default class Lightshow {
     });
     demoMode.init();
     this.vortex.engine().modes().saveCurMode();
+    this.editor?.pushUndoState(`Colorset: ${colorset.numColors()} colors`);
   }
 
   addColor(r, g, b, targetLeds, sourceLed) {
@@ -747,6 +779,7 @@ export default class Lightshow {
 
     for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
+    this.editor?.pushUndoState('Randomized colorset');
   }
 
   randomizePattern(targetLeds) {
@@ -768,6 +801,7 @@ export default class Lightshow {
 
     for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
+    this.editor?.pushUndoState('Randomized pattern');
   }
 }
 

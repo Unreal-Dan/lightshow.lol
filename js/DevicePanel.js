@@ -109,8 +109,52 @@ export default class DevicePanel extends Panel {
 
     // Brightness slider listener
     const brightnessSlider = document.getElementById('brightnessSlider');
-    brightnessSlider.addEventListener('input', this.onBrightnessSliderInput.bind(this));
-    brightnessSlider.addEventListener('change', this.onBrightnessSliderChange.bind(this));
+
+    // Custom drag handler to bypass Firefox's broken range drag coordinate calculation
+    let dragActive = false;
+
+    const setSliderValue = (clientX) => {
+      const rect = brightnessSlider.getBoundingClientRect();
+      let val = Math.round(((clientX - rect.left) / rect.width) * 255);
+      val = Math.max(0, Math.min(255, val));
+      brightnessSlider.value = val;
+      return val;
+    };
+
+    const onDragEnd = () => {
+      if (!dragActive) return;
+      dragActive = false;
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      this.onBrightnessSliderChange({ target: brightnessSlider });
+    };
+
+    const onDragMove = (e) => {
+      if (!dragActive) return;
+      e.preventDefault();
+      setSliderValue(e.clientX);
+      this.onBrightnessSliderInput({ target: brightnessSlider });
+    };
+
+    brightnessSlider.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      setSliderValue(e.clientX);
+      this.onBrightnessSliderInput({ target: brightnessSlider });
+      dragActive = true;
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragEnd);
+    });
+
+    // Handle non-mouse changes (keyboard, accessibility)
+    brightnessSlider.addEventListener('input', () => {
+      if (dragActive) return;
+      this.onBrightnessSliderInput({ target: brightnessSlider });
+    });
+
+    brightnessSlider.addEventListener('change', () => {
+      if (dragActive) return;
+      this.onBrightnessSliderChange({ target: brightnessSlider });
+    });
 
     // transmit toggle button
     const transmitToggle = document.getElementById('transmitToggle');

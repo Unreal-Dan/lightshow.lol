@@ -2083,8 +2083,8 @@ export default class ColorPicker {
     try {
       const modes = this._getModes();
       modes?.saveCurMode?.();
+      this.host?.pushUndoState?.('Changed color');
     } catch {}
-
     return { cur, set, sourceLed, targetLeds };
   }
 
@@ -2142,6 +2142,9 @@ export default class ColorPicker {
     } catch {}
     try {
       this._getModes()?.saveCurMode?.();
+      const vortex = this._getVortex();
+      const name = vortex?.patternToString?.(patID);
+      this.host?.pushUndoState?.(name ? `Pattern: ${name}` : 'Changed pattern');
     } catch {}
   }
 }

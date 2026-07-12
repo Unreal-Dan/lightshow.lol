@@ -306,6 +306,7 @@ export default class CommunityBrowserPanel extends Panel {
 
       cur.init();
       vortex.engine().modes().saveCurMode();
+      this.editor.pushUndoState(`Imported ${vortex.patternToString(patID)}`);
 
       this.editor.modesPanel.refreshModeList();
       this.editor.patternPanel.refresh();

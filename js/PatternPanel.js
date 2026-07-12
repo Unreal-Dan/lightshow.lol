@@ -268,6 +268,7 @@ export default class PatternPanel extends Panel {
     }
     curMode.init();
     this.editor.vortex.engine().modes().saveCurMode();
+    this.editor.pushUndoState(`Pattern: ${this.editor.vortex.patternToString(patID)}`);
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.refreshPatternArgs();
     this.editor.demoModeOnDevice();
@@ -360,6 +361,7 @@ export default class PatternPanel extends Panel {
         dragActive = false;
         document.removeEventListener('mousemove', onDragMove);
         document.removeEventListener('mouseup', onDragEnd);
+        this.editor.pushUndoState(`Arg ${i + 1}: ${slider.value}`);
       };
 
       const onDragMove = (e) => {
@@ -368,7 +370,7 @@ export default class PatternPanel extends Panel {
         setSliderValue(e.clientX);
         input.value = slider.value;
         this.updateSliderFill(slider);
-        this.updatePatternArg(i, slider.value);
+        this.updatePatternArg(i, slider.value, false);
       };
 
       slider.addEventListener('mousedown', (e) => {
@@ -377,7 +379,7 @@ export default class PatternPanel extends Panel {
         setSliderValue(e.clientX);
         input.value = slider.value;
         this.updateSliderFill(slider);
-        this.updatePatternArg(i, slider.value);
+        this.updatePatternArg(i, slider.value, true);
         // Enter drag mode
         dragActive = true;
         document.addEventListener('mousemove', onDragMove);
@@ -443,7 +445,7 @@ export default class PatternPanel extends Panel {
     slider.style.setProperty('--slider-fill', `${percent}%`);
   }
 
-  updatePatternArg(index, value) {
+  updatePatternArg(index, value, saveUndo = true) {
     const curMode = this.editor.vortex.engine().modes().curMode();
     if (curMode === null) {
       return;
@@ -453,6 +455,9 @@ export default class PatternPanel extends Panel {
     });
     curMode.init();
     this.editor.vortex.engine().modes().saveCurMode();
+    if (saveUndo) {
+      this.editor.pushUndoState(`Arg ${index + 1}: ${value}`);
+    }
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.editor.demoModeOnDevice();
   }
