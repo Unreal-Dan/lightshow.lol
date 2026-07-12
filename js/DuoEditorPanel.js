@@ -279,14 +279,23 @@ export default class DuoEditorPanel extends Panel {
   }
 
   onActive() {
-    this.editor.lightshow.setDuoEditorMode(true);
+    // If chromadeck duo mode is active, preserve it; otherwise set duo editor mode
+    if (!this.editor.lightshow.chromadeckDuoMode) {
+      this.editor.lightshow.setDuoEditorMode(true);
+    }
     this.editor.animationPanel.applyPreset('DuoEditor');
     this.editor.ledSelectPanel.unselectAllLeds();
   }
 
   onInactive() {
-    this.editor.lightshow.setDuoEditorMode(false);
-    this.editor.animationPanel.applyPreset('Chromadeck');
+    // If chromadeck duo mode is active, preserve duoEditorMode and restore duo preset
+    if (this.editor.lightshow.chromadeckDuoMode) {
+      this.editor.lightshow.setDuoEditorMode(true);
+      this.editor.animationPanel.applyPreset('duo');
+    } else {
+      this.editor.lightshow.setDuoEditorMode(false);
+      this.editor.animationPanel.applyPreset('Chromadeck');
+    }
     this.editor.ledSelectPanel.unselectAllLeds();
 
     // Restore pattern select

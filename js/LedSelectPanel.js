@@ -44,6 +44,7 @@ export default class LedSelectPanel extends Panel {
     super(editor, 'ledSelectPanel', content, editor.detectMobile() ? 'LEDs' : 'LED Selection');
     this.editor = editor;
     this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/led-selection');
+    this.isDuoMode = false;
   }
 
   initialize() {
@@ -132,8 +133,22 @@ export default class LedSelectPanel extends Panel {
   }
 
   async toggleAltImage() {
-    this.isAlt = !this.isAlt;
-    await this.renderLedIndicators(this.selectedDevice);
+    if (this.selectedDevice === 'Chromadeck') {
+      this.isDuoMode = !this.isDuoMode;
+      this.editor.lightshow.setChromadeckDuoMode(this.isDuoMode);
+      if (this.isDuoMode) {
+        this.editor.animationPanel.applyPreset('duo');
+      } else {
+        this.editor.animationPanel.applyPreset('chromadeck');
+      }
+      await this.renderLedIndicators(this.selectedDevice);
+      this.refreshLedList();
+      this.selectAllLeds(false);
+      this.editor.demoModeOnDevice();
+    } else {
+      this.isAlt = !this.isAlt;
+      await this.renderLedIndicators(this.selectedDevice);
+    }
   }
 
   useAltImage() {
@@ -144,6 +159,11 @@ export default class LedSelectPanel extends Panel {
     if (device === 'None') {
       this.hide();
       return;
+    }
+    // Reset duo mode when switching away from Chromadeck
+    if (this.isDuoMode && device !== 'Chromadeck') {
+      this.isDuoMode = false;
+      this.editor.lightshow.setChromadeckDuoMode(false);
     }
     // change the selected device name
     this.selectedDevice = device;
@@ -205,7 +225,7 @@ export default class LedSelectPanel extends Panel {
       swapDeviceButton.innerHTML = '<i class="fa-solid fa-right-left"></i>';
       deviceImageContainer.appendChild(swapDeviceButton);
     }
-    swapDeviceButton.style.display = (this.selectedDevice === 'Spark') ? 'block' : 'none';
+    swapDeviceButton.style.display = (this.selectedDevice === 'Spark' || this.selectedDevice === 'Chromadeck') ? 'block' : 'none';
     if (!swapDeviceButton.dataset.handlerBound) {
       swapDeviceButton.addEventListener('click', async () => this.toggleAltImage());
       swapDeviceButton.addEventListener('touchstart', async (e) => {
@@ -214,8 +234,10 @@ export default class LedSelectPanel extends Panel {
       }, { passive: true });
       swapDeviceButton.dataset.handlerBound = 'true';
     }
-    const deviceData = await this.getLedPositions(this.useAltImage() ? this.editor.devices[deviceName].altLabel : deviceName);
-    const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : this.editor.devices[deviceName].image;
+    const useChromadeckDuo = this.selectedDevice === 'Chromadeck' && this.isDuoMode;
+    const positionsDevice = this.useAltImage() ? this.editor.devices[deviceName].altLabel : (useChromadeckDuo ? 'Duo' : deviceName);
+    const deviceData = await this.getLedPositions(positionsDevice);
+    const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : (useChromadeckDuo ? this.editor.devices['Duo'].image : this.editor.devices[deviceName].image);
 
     let deviceSvg = deviceImageContainer.querySelector('.device-svg');
     if (!deviceSvg) {
@@ -264,7 +286,7 @@ export default class LedSelectPanel extends Panel {
   // changs the current selection to be the singles, primarily to be used
   // when the pattern is changing from multi to singles
   switchToSelectSingles() {
-    const ledCount = this.editor.vortex.engine().leds().ledCount();
+    const ledCount = this.isDuoMode ? 2 : this.editor.vortex.engine().leds().ledCount();
     let selectedLeds = [];
     for (let i = 0; i < ledCount; ++i) {
       selectedLeds.push(`${i}`);
@@ -296,7 +318,8 @@ export default class LedSelectPanel extends Panel {
     });
 
     if (!isMultiLed) {
-      for (let pos = 0; pos < this.editor.vortex.engine().leds().ledCount(); ++pos) {
+      const ledCount = this.isDuoMode ? 2 : this.editor.vortex.engine().leds().ledCount();
+      for (let pos = 0; pos < ledCount; ++pos) {
         let ledName = this.editor.vortex.ledToString(pos + 1) + " (" + this.editor.vortex.getPatternName(pos) + ")";
         const option = document.createElement('option');
         option.value = pos;
@@ -372,7 +395,15 @@ export default class LedSelectPanel extends Panel {
     if (!ledList) {
       return null;
     }
-    return Array.from(ledList.selectedOptions).map(option => option.value);
+    const selected = Array.from(ledList.selectedOptions).map(option => option.value);
+    // In Chromadeck duo mode, map the 2 visual LEDs to all 20 engine LEDs
+    if (this.isDuoMode && this.selectedDevice === 'Chromadeck' && selected.length > 0) {
+      const engineLedCount = this.editor.vortex.engine().leds().ledCount();
+      const allLeds = [];
+      for (let i = 0; i < engineLedCount; i++) allLeds.push(String(i));
+      return allLeds;
+    }
+    return selected;
   }
 
   getMainSelectedLed() {
