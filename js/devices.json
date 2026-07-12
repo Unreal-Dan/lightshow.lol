@@ -57,7 +57,7 @@
     "icon": "public/images/spark-logo-square-64.png",
     "iconBig": "public/images/spark-logo-square-512.png",
     "label": "Spark",
-    "altImage": "public/images/spark-handle.png",
+    "altImage": "public/images/spark-handle.svg",
     "altIcon": "public/images/spark-handle-logo-square-64.png",
     "altIconBig": "public/images/spark-handle-logo-square-512.png",
     "altLabel": "SparkHandle",
