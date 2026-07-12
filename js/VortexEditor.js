@@ -287,7 +287,7 @@ export default class VortexEditor {
     document.addEventListener('keydown', (event) => {
       if (!event.ctrlKey && !event.metaKey) return;
       const isUndo = event.key === 'z' && !event.shiftKey;
-      const isRedo = event.key === 'y' || (event.key === 'z' && event.shiftKey);
+      const isRedo = event.key === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey);
       if (!isUndo && !isRedo) return;
       event.preventDefault();
       if (isUndo) {

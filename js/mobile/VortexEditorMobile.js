@@ -1448,7 +1448,7 @@ export default class VortexEditorMobile {
               this._showUndoLog(desc, 'undo');
               this._afterModeChanged?.(this.selectedDeviceType('Duo'), { finalize: false, demo: true });
             }
-          } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+          } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
             e.preventDefault();
             if (this.vortex.redo() && this._undoIndex > 0) {
               this._undoIndex--;
