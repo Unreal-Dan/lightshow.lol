@@ -277,6 +277,9 @@ export default class LedSelectPanel extends Panel {
     // Store for resize repositioning
     this._deviceData = deviceData;
 
+    // Store for resize repositioning
+    this._deviceData = deviceData;
+
     let deviceSvg = deviceImageContainer.querySelector('.device-svg');
     if (!deviceSvg) {
       deviceSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
