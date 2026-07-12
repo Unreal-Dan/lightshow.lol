@@ -266,7 +266,7 @@ export default class ModesPanel extends Panel {
         mode.setColorset(set, allLeds);
         mode.init();
         this.editor.vortex.engine().modes().saveCurMode();
-        this.editor.vortex.addUndoBuffer();
+        this.editor.pushUndoState(`Converted Mode ${index + 1} to single-LED`);
         count++;
       }
     });
@@ -293,8 +293,8 @@ export default class ModesPanel extends Panel {
     this.editor.vortex.setCurMode(curSel, false);
   }
 
-  selectMode(index, refresh = true) {
-    this.editor.vortex.setCurMode(index, true);
+  selectMode(index, refresh = true, save = true) {
+    this.editor.vortex.setCurMode(index, save);
 
     // Hide buttons for all modes first
     document.querySelectorAll('.mode-btn-container').forEach(buttonContainer => {
@@ -500,7 +500,7 @@ export default class ModesPanel extends Panel {
     targetLeds.forEach(led => cur.setColorset(set, led));
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
-    this.editor.vortex.addUndoBuffer();
+    this.editor.pushUndoState(`Pasted colorset (${data.colors.length} colors)`);
     this.editor.colorsetPanel.refresh();
     this.editor.demoModeOnDevice();
     Notification.success("Pasted colorset");
@@ -541,7 +541,7 @@ export default class ModesPanel extends Panel {
     });
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
-    this.editor.vortex.addUndoBuffer();
+    this.editor.pushUndoState(`Pasted pattern: ${this.editor.vortex.patternToString(patID)}`);
     this.refresh();
     this.editor.patternPanel.refresh();
     this.editor.colorsetPanel.refresh();
@@ -765,11 +765,13 @@ export default class ModesPanel extends Panel {
       Notification.failure("Failed to add another mode");
       return;
     }
-    this.editor.vortex.addUndoBuffer();
     setTimeout(() => {
-      this.selectMode(modeCount);
+      this.editor.vortex.setCurMode(modeCount, false);
+      this.editor.pushUndoState(`Added Mode ${modeCount + 1}`);
       this.refreshModeList();
       this.refreshOtherPanels();
+      this.editor.ledSelectPanel.refreshLedList();
+      this.editor.demoModeOnDevice();
     }, 0);
     Notification.success(`Successfully Added Mode ${modeCount + 1}`);
   }
@@ -1009,13 +1011,12 @@ export default class ModesPanel extends Panel {
 
       cur = this.editor.vortex.engine().modes().curMode();
       cur.setPattern(patID, i, args, set);
-      this.editor.vortex.setPatternArgs(i, args, true);
     }
 
     cur = this.editor.vortex.engine().modes().curMode();
     cur.init();
     this.editor.vortex.engine().modes().saveCurMode();
-    this.editor.vortex.addUndoBuffer();
+    this.editor.pushUndoState(`${addNew ? 'Imported' : 'Replaced'} mode (${totalLeds} LEDs)`);
 
     if (addNew) {
       this.editor.vortex.setCurMode(curSel, false);
@@ -1023,7 +1024,7 @@ export default class ModesPanel extends Panel {
 
     // select the new mode and refresh a moment later
     setTimeout(() => {
-        this.selectMode(addNew ? modeCount : curSel);
+        this.selectMode(addNew ? modeCount : curSel, true, false);
         this.refresh();
         Notification.success("Successfully imported mode");
     }, 100);
@@ -1111,7 +1112,7 @@ export default class ModesPanel extends Panel {
     }
     this.editor.vortex.setCurMode(cur, false);
     this.editor.vortex.engine().modes().saveCurMode();
-    this.editor.vortex.addUndoBuffer();
+    this.editor.pushUndoState(`Deleted Mode ${parseInt(index) + 1}`);
     this.refreshModeList();
     this.refreshOtherPanels();
     Notification.success(`Successfully Deleted Mode ${parseInt(index) + 1}`);

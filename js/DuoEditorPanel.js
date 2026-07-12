@@ -158,7 +158,7 @@ export default class DuoEditorPanel extends Panel {
       cur.setPattern(patID, this.mainSelectedLed, null, null);
       cur.init();
       vortex.engine().modes().saveCurMode();
-      vortex.addUndoBuffer();
+      this.editor.pushUndoState(`Pattern: ${vortex.patternToString(patID)}`);
       await this.editor.demoModeOnDevice();
     });
 
@@ -235,7 +235,7 @@ export default class DuoEditorPanel extends Panel {
       cur.setPattern(this.editor.vortexLib.intToPatternID(newPatId), ledIndex, args, colorset);
       cur.init();
       this.editor.vortex.engine().modes().saveCurMode();
-      this.editor.vortex.addUndoBuffer();
+      this.editor.pushUndoState(`Pattern: ${availablePatterns[newPatId]}`);
       await this.editor.demoModeOnDevice();
     };
   }

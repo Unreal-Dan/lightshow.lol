@@ -685,7 +685,7 @@ export default class Lightshow {
     });
     demoMode.init();
     this.vortex.engine().modes().saveCurMode();
-    this.vortex.addUndoBuffer();
+    this.editor?.pushUndoState(`Pattern: ${this.vortex.patternToString(selectedPattern)}`);
   }
 
   getColorset(led = this.vortex.engine().leds().ledAny()) {
@@ -703,7 +703,7 @@ export default class Lightshow {
     });
     demoMode.init();
     this.vortex.engine().modes().saveCurMode();
-    this.vortex.addUndoBuffer();
+    this.editor?.pushUndoState(`Colorset: ${colorset.numColors()} colors`);
   }
 
   addColor(r, g, b, targetLeds, sourceLed) {
@@ -749,7 +749,7 @@ export default class Lightshow {
 
     for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
-    this.vortex.addUndoBuffer();
+    this.editor?.pushUndoState('Randomized colorset');
   }
 
   randomizePattern(targetLeds) {
@@ -771,7 +771,7 @@ export default class Lightshow {
 
     for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
     this.vortex.engine().modes().saveCurMode();
-    this.vortex.addUndoBuffer();
+    this.editor?.pushUndoState('Randomized pattern');
   }
 }
 

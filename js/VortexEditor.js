@@ -45,6 +45,10 @@ export default class VortexEditor {
     const vlibVersion = this.vortex.getVersion();
     this.createVersionOverlay(`v${VERSION} (VortexLib v${vlibVersion})`);
 
+    // Undo/redo tracking
+    this._undoDescriptions = [];
+    this._undoIndex = 0;
+
     // Create and append canvas dynamically
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'lightshowCanvas';
@@ -57,6 +61,7 @@ export default class VortexEditor {
 
     // Instantiate Lightshow
     this.lightshow = new Lightshow(vortexLib, this.vortex, this.canvas);
+    this.lightshow.editor = this;
 
     // for tracking mobile panel switches
     this.activePanelId = null;
@@ -129,6 +134,15 @@ export default class VortexEditor {
       'communityBrowserPanel',
       'duoEditorPanel'
     ];
+  }
+
+  pushUndoState(description) {
+    this.vortex.addUndoBuffer();
+    while (this._undoIndex > 0) {
+      this._undoDescriptions.pop();
+      this._undoIndex--;
+    }
+    this._undoDescriptions.push(description);
   }
 
   async initialize() {
@@ -232,6 +246,15 @@ export default class VortexEditor {
         label: 'Paste',
         action: () => this.modesPanel.paste()
       });
+      items.push({ separator: true });
+      items.push({
+        label: 'Undo',
+        action: () => this.vortex.undo()
+      });
+      items.push({
+        label: 'Redo',
+        action: () => this.vortex.redo()
+      });
 
       items.push({ separator: true });
       items.push({
@@ -267,12 +290,22 @@ export default class VortexEditor {
       const isRedo = event.key === 'y' || (event.key === 'z' && event.shiftKey);
       if (!isUndo && !isRedo) return;
       event.preventDefault();
-      const success = isUndo ? this.vortex.undo() : this.vortex.redo();
-      if (success) {
-        this.modesPanel.refreshModeList();
-        this.modesPanel.refreshOtherPanels();
-        this.demoModeOnDevice();
+      if (isUndo) {
+        if (!this.vortex.undo()) return;
+        if (this._undoIndex < this._undoDescriptions.length) {
+          const desc = this._undoDescriptions[this._undoDescriptions.length - ++this._undoIndex];
+          this._showUndoLog(desc, 'undo');
+        }
+      } else {
+        if (!this.vortex.redo()) return;
+        if (this._undoIndex > 0) {
+          const desc = this._undoDescriptions[this._undoDescriptions.length - this._undoIndex--];
+          this._showUndoLog(desc, 'redo');
+        }
       }
+      this.modesPanel.refreshModeList();
+      this.modesPanel.refreshOtherPanels();
+      this.demoModeOnDevice();
     });
 
     // detect the postmessage from vortex community to send over a mode
@@ -802,6 +835,25 @@ export default class VortexEditor {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) overlay.remove();
     });
+  }
+
+  _showUndoLog(description, type) {
+    const container = document.getElementById('undoLogContainer') || (() => {
+      const el = document.createElement('div');
+      el.id = 'undoLogContainer';
+      el.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column-reverse;align-items:center;gap:4px;pointer-events:none';
+      document.body.appendChild(el);
+      return el;
+    })();
+    const el = document.createElement('div');
+    el.textContent = (type === 'undo' ? '↩ ' : '↪ ') + description;
+    el.style.cssText = 'color:#ccc;font-size:16px;font-family:sans-serif;opacity:1;text-shadow:0 0 6px #000';
+    container.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = 'opacity 2.5s ease';
+      el.style.opacity = '0';
+    }));
+    setTimeout(() => el.remove(), 5000);
   }
 }
 

@@ -268,7 +268,7 @@ export default class PatternPanel extends Panel {
     }
     curMode.init();
     this.editor.vortex.engine().modes().saveCurMode();
-    this.editor.vortex.addUndoBuffer();
+    this.editor.pushUndoState(`Pattern: ${this.editor.vortex.patternToString(patID)}`);
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.refreshPatternArgs();
     this.editor.demoModeOnDevice();
@@ -361,7 +361,7 @@ export default class PatternPanel extends Panel {
         dragActive = false;
         document.removeEventListener('mousemove', onDragMove);
         document.removeEventListener('mouseup', onDragEnd);
-        this.editor.vortex.addUndoBuffer();
+        this.editor.pushUndoState(`Arg ${i + 1}: ${slider.value}`);
       };
 
       const onDragMove = (e) => {
@@ -456,7 +456,7 @@ export default class PatternPanel extends Panel {
     curMode.init();
     this.editor.vortex.engine().modes().saveCurMode();
     if (saveUndo) {
-      this.editor.vortex.addUndoBuffer();
+      this.editor.pushUndoState(`Arg ${index + 1}: ${value}`);
     }
     document.dispatchEvent(new CustomEvent('patternChange'));
     this.editor.demoModeOnDevice();

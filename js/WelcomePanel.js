@@ -2,9 +2,11 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 
-const WELCOME_VERSION = 'showNewWelcome-v4';
+const WELCOME_VERSION = 'showNewWelcome-v5';
 
+// new entries go at the top so they appear first in the scroll
 const FEATURES = [
+  { key: 'undo-redo', html: '<strong>Undo & Redo</strong> — Added full undo/redo support across the editor. <b>Ctrl+Z</b> to undo, <b>Ctrl+Y</b> or <b>Ctrl+Shift+Z</b> to redo. Also available from the canvas right-click menu.' },
   { key: 'vortex-community-overhaul', html: '<strong>Vortex Community Overhaul</strong> — The entirety of Vortex Community has been overhauled and almost every UI has been rewritten or improved.' },
   { key: 'led-selection-refresh', html: '<strong>Led Select Refresh</strong> — The Led Selection Panel has been refreshed and uses new assets for the device previews' },
   { key: 'community-browser', html: '<strong>Community Browser Redesign</strong> — The Community Browser panel has been redesigned and includes Patterns and Modes now, still a work in progress.' },
