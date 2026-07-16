@@ -1,8 +1,4 @@
 /* update-panel.css */
-#updatePanel {
-  top: 5px;
-  right: 615px;
-}
 
 .device-update-labels {
   display: flex;

@@ -1,0 +1,397 @@
+/* dock.css — Docking system: dock areas, floating panels, drop zones, resize handles */
+
+/* ── Dock Areas ── */
+.dock-area {
+  position: fixed;
+  background: #131516;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 50;
+}
+
+.dock-area.hidden {
+  display: none;
+}
+
+.dock-area.left {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  box-shadow: inset -1px 0 0 #25282a;
+}
+
+.dock-area.right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  box-shadow: inset 1px 0 0 #25282a;
+}
+
+.dock-area.bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  box-shadow: inset 0 1px 0 #25282a;
+}
+
+.dock-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dock-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dock-content::-webkit-scrollbar-thumb {
+  background: #3a3c3e;
+  border-radius: 3px;
+}
+
+.dock-content::-webkit-scrollbar-thumb:hover {
+  background: #4a4c4e;
+}
+
+/* ── Panels inside dock areas ── */
+.dock-area .draggable-panel {
+  position: relative;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #25282a;
+  border-radius: 0;
+  padding: 0;
+  z-index: auto;
+  flex-shrink: 0;
+  background: #181a1b;
+}
+
+.dock-area .draggable-panel:last-child {
+  border-bottom: none;
+}
+
+.dock-area .panel-header {
+  cursor: grab;
+  border-radius: 0;
+  border-bottom: 1px solid #25282a;
+  padding: 8px 12px;
+  min-height: 36px;
+  box-sizing: border-box;
+  background: #1e2022;
+  transition: background 0.15s ease;
+}
+
+.dock-area .panel-header:hover {
+  background: #272a2c;
+}
+
+.dock-area .panel-header:active {
+  cursor: grabbing;
+  background: #222426;
+}
+
+.dock-area .panel-content {
+  padding: 10px 12px;
+}
+
+/* ── Drop Zone Overlays ── */
+.dock-zone {
+  position: fixed;
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dock-zone.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dock-zone.highlight {
+  opacity: 1;
+}
+
+/* Drop zone hit areas (thin strips at edges) */
+.dock-zone.left-hit {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+}
+
+.dock-zone.right-hit {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+}
+
+.dock-zone.bottom-hit {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+}
+
+/* Drop zone visuals (expanded preview) */
+.dock-zone-preview {
+  position: fixed;
+  z-index: 499;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border: 2px dashed #3a7abd;
+  background: rgba(26, 42, 64, 0.5);
+  border-radius: 4px;
+}
+
+.dock-zone-preview.active {
+  opacity: 1;
+}
+
+/* Position/size of .dock-zone-preview.left and .right set dynamically by updateDropZonePreviews() */
+
+/* ── Drag Ghost ── */
+.dock-ghost {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.85;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+  background: #181a1b;
+  border-radius: 4px;
+  min-width: 200px;
+}
+
+.dock-ghost .panel-header {
+  background: #272a2c;
+  padding: 8px 12px;
+  border-bottom: 1px solid #3a3c3e;
+}
+
+.dock-ghost .panel-content {
+  padding: 10px 12px;
+}
+
+.dock-ghost .panel-content > * {
+  opacity: 0.4;
+}
+
+/* ── Drag Position Label ── */
+.drag-position-label {
+  position: fixed;
+  z-index: 1001;
+  background: #1e2122;
+  color: #d8d4cf;
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border: 1px solid #3e4446;
+  border-radius: 3px;
+  pointer-events: none;
+  white-space: nowrap;
+  top: 8px;
+  right: 8px;
+}
+
+/* ── Snap Guides ── */
+.snap-guide {
+  position: fixed;
+  z-index: 998;
+  pointer-events: none;
+  background: #3a7abd;
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+.snap-guide.visible {
+  opacity: 0.7;
+}
+.snap-guide.horizontal {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.snap-guide.vertical {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+/* ── Resize Handles ── */
+.resize-handle {
+  position: fixed;
+  z-index: 60;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+  background: #3a7abd;
+}
+
+.resize-handle.vertical {
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+}
+
+.resize-handle.vertical:hover,
+.resize-handle.vertical.active {
+  width: 4px;
+}
+
+.resize-handle.horizontal {
+  left: 0;
+  right: 0;
+  height: 4px;
+  cursor: row-resize;
+}
+
+.resize-handle.horizontal:hover,
+.resize-handle.horizontal.active {
+  height: 4px;
+}
+
+/* ── Floating Panels ── */
+.floating-panel {
+  position: fixed;
+  z-index: 200;
+  min-width: 250px;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #181a1b;
+  border: 1px solid #3a3c3e;
+}
+
+.floating-panel .panel-header {
+  cursor: grab;
+  background: #1e2022;
+  padding: 8px 12px;
+  border-bottom: 1px solid #25282a;
+}
+
+.floating-panel .panel-header:hover {
+  background: #272a2c;
+}
+
+.floating-panel .panel-header:active {
+  cursor: grabbing;
+}
+
+.floating-panel .panel-content {
+  padding: 10px 12px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* ── Overlay panels (update, chromalink) ── */
+#updatePanel,
+#chromalinkPanel {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 200 !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 370px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  background: #181a1b;
+}
+
+#updatePanel .panel-header,
+#chromalinkPanel .panel-header {
+  cursor: default;
+  background: #292c2e;
+}
+
+#updatePanel .panel-header:hover,
+#chromalinkPanel .panel-header:hover {
+  background: #292c2e;
+}
+
+/* Color picker — floating panel */
+#colorPickerPanel {
+  width: 560px !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Welcome panel — large floating panel, not compact */
+#welcomePanel {
+  width: min(1050px, calc(100vw - 40px)) !important;
+  max-width: none !important;
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+#welcomePanel > .panel-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── Insertion indicator (reordering within dock) ── */
+.dock-insert-indicator {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 4px;
+  background: #5a9eff;
+  border-radius: 2px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 8px rgba(90, 158, 255, 0.6);
+  transition: opacity 0.1s ease;
+}
+
+.dock-insert-indicator.active {
+  opacity: 1;
+}
+
+/* ── Fixes: override legacy absolute positioning that conflicts with docks ── */
+.dock-area #animationPanel {
+  position: relative;
+  border: none;
+  border-radius: 0;
+}
+
+/* Allow dropdowns to overflow panel bounds (not collapsed) */
+.dock-area .panel-content:not(.collapsed) {
+  overflow: visible;
+}
+.floating-panel .panel-content:not(.collapsed) {
+  overflow: visible;
+}
+
+/* Community browser filter grid — fewer columns in narrow dock */
+.dock-area .vcb-filter-container {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Device dropdown: higher z-index to float above dock panels */
+.dock-area .custom-dropdown-options.show {
+  z-index: 100;
+}

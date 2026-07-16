@@ -1,15 +1,6 @@
 /* welcome-panel.css */
-#welcomePanel {
-  top: 75px;
-  left: 50%; /* Center the div */
-  width: 900px;
-  transform: translate(-25%, 0%);
-  text-align: left;
-  z-index: 50;
-}
-
 #welcomePanel label {
-  font-size: 20px;
+  font-size: 16px;
 }
 #welcomePanel input {
   height: 16px;
@@ -17,7 +8,7 @@
 }
 
 #welcomePanel .welcome-title {
-  font-size: 36px;
+  font-size: 30px;
   font-weight: 900;
   text-align: center;
   background: linear-gradient(135deg, #ff6600, #ffcc00, #ff6600);
@@ -27,55 +18,60 @@
   color: transparent;
   animation: bannerShimmer 3s ease-in-out infinite;
   text-shadow: none;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   letter-spacing: 1px;
 }
 
 #welcomePanel .intro-text {
-  font-size: 20px;
+  font-size: 17px;
   line-height: 1.6;
   color: #c8c4c0;
-  margin: 0 50px 8px;
+  margin: 0 0 10px;
   text-align: center;
 }
 
-#welcomePanel .intro-text:last-of-type {
-  margin: 0 50px 20px;
+.welcome-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
-#welcomePanel p {
-  font-size: 20px;
+.welcome-left {
+  width: 45%;
+  padding: 28px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  border-right: 1px solid #333;
+  overflow-y: auto;
 }
 
-#welcomePanel h2 {
-  margin-bottom: 0;
-}
-
-/* public/css/components/welcome-panel.css */
-
-.features-container {
-  border: 1px solid #444;
-  border-radius: 10px;
-  margin: 16px 0;
-  overflow: hidden;
+.welcome-right {
+  width: 55%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .features-container-title {
   background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
   color: #f0ece8;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 700;
   text-align: center;
-  padding: 9px 0;
+  padding: 8px 0;
   letter-spacing: 1px;
   border-bottom: 1px solid #555;
+  flex-shrink: 0;
 }
 
 .feature-scroll {
-  max-height: 340px;
+  flex: 1;
   overflow-y: auto;
-  padding: 8px 10px;
+  padding: 6px 10px;
   scrollbar-color: #777 transparent;
+  min-height: 0;
 }
 
 .feature-scroll::-webkit-scrollbar {
@@ -101,13 +97,14 @@
   border: 1px solid #555;
   border-left: 4px solid #ff4400;
   border-radius: 8px;
-  padding: 12px 16px;
-  margin: 10px 0;
+  padding: 10px 14px;
+  margin: 8px 0;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
+  font-size: 13px;
 }
 
 .feature-box.seen {
@@ -123,9 +120,9 @@
 .feature-badge {
   background: #ff4400;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: bold;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   flex-shrink: 0;
   margin-top: 1px;
@@ -148,48 +145,49 @@
   }
 }
 
+.welcome-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
 .wiki-button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 12px 20px;
-  font-size: 18px;
+  padding: 10px 24px;
+  font-size: 15px;
   font-weight: bold;
   text-decoration: none;
   color: white;
-  background-color: #28a745; /* Green color */
+  background-color: #28a745;
   border-radius: 8px;
   transition: background-color 0.3s ease, transform 0.2s ease;
-  margin: 18px 0 0;
 }
 
 .wiki-button .arrow {
-  margin-left: 10px;
-  font-size: 20px;
+  margin-left: 8px;
+  font-size: 16px;
 }
 
 .wiki-button:hover {
-  background-color: #218838; /* Darker green on hover */
+  background-color: #218838;
   transform: translateY(-2px);
 }
 
 .wiki-button:active {
-  background-color: #1e7e34; /* Even darker green on click */
+  background-color: #1e7e34;
   transform: translateY(1px);
 }
 
 .close-welcome-btn {
-  display: block;
-  width: auto;
-  min-width: 120px;
-  margin: 18px auto 0;
-  padding: 10px 24px;
+  padding: 10px 28px;
   font-size: 15px;
   font-weight: bold;
-  color: #ccc;
+  color: #d8d4cf;
   background: #3a3a3a;
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -199,20 +197,19 @@
   color: #fff;
 }
 
-/* Container for the checkbox to help with positioning */
 .checkbox-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 18px;
+  margin-top: 8px;
 }
 
-/* Label for the checkbox */
 .checkbox-container label {
-  font-size: 1rem;
+  font-size: 14px;
 }
 
-/* Style for the checkbox itself */
 .checkbox-container input[type="checkbox"] {
-  margin-right: 10px;
+  margin-right: 8px;
+  width: 18px;
+  height: 18px;
 }
