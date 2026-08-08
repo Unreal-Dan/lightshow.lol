@@ -77,6 +77,14 @@
       }
     }
   },
+  "Spectra Hub": {
+    "image": "public/images/chromadeck.svg",
+    "icon": "public/images/chromadeck-logo-square-64.png",
+    "iconBig": "public/images/chromadeck-logo-square-512.png",
+    "label": "Spectra Hub",
+    "ledCount": 10,
+    "maxModes": 14
+  },
   "Duo": {
     "image": "public/images/duo.svg",
     "icon": "public/images/duo-logo-square-64.png",
