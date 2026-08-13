@@ -683,7 +683,7 @@ export default class LedSelectPanel extends Panel {
     // ignore clicks on the swap device image button which is in the led select
     // area when the spark is the selected device
     const target = event.target;
-    if (target.closest('#swapDeviceImage')) {
+    if (target && typeof target.closest === 'function' && target.closest('#swapDeviceImage')) {
       return;
     }
 

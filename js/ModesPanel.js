@@ -1,5 +1,6 @@
 /* ModesPanel.js */
 import Panel from './Panel.js';
+import ContextMenu from './ContextMenu.js';
 import Modal from './Modal.js';
 import Notification from './Notification.js';
 import ChromalinkPanel from './ChromalinkPanel.js';
@@ -356,6 +357,65 @@ export default class ModesPanel extends Panel {
     });
   }
 
+  copyAllModes() {
+    const vortex = this.editor.vortex;
+    const n = vortex.numModes();
+    if (n === 0) {
+      Notification.failure("No modes to copy");
+      return;
+    }
+    const savedIndex = vortex.curModeIndex();
+    const modes = [];
+    try {
+      for (let i = 0; i < n; ++i) {
+        vortex.setCurMode(i, false);
+        modes.push(JSON.parse(vortex.printModeJson(false)));
+      }
+    } finally {
+      vortex.setCurMode(savedIndex, false);
+    }
+    const json = JSON.stringify({ type: "modes", modes });
+    navigator.clipboard.writeText(json).then(() => {
+      Notification.success(`Copied ${n} modes to clipboard`);
+    }).catch(() => {
+      Notification.failure("Failed to copy modes");
+    });
+  }
+
+  // paste as many modes from the copied list as will fit, without erasing any
+  // existing modes
+  pasteAllModes(data) {
+    if (!data || !Array.isArray(data.modes) || data.modes.length === 0) {
+      Notification.failure("No modes to paste");
+      return;
+    }
+    const device = this.editor.devicePanel.selectedDevice;
+    const max = this.getMaxModes(device);
+    let current = this.editor.vortex.numModes();
+    let pasted = 0;
+    for (const m of data.modes) {
+      if (current >= max) break;
+      this.importModeFromData(m, true); // appends, never clears existing modes
+      pasted++;
+      current++;
+    }
+    if (pasted > 0) {
+      this.refreshModeList();
+      if (this.editor.patternPanel) this.editor.patternPanel.refresh();
+      if (this.editor.colorsetPanel) this.editor.colorsetPanel.refresh();
+      this.editor.demoModeOnDevice();
+      const skipped = data.modes.length - pasted;
+      Notification.success(
+        skipped > 0
+          ? `Pasted ${pasted} mode${pasted !== 1 ? "s" : ""} (${skipped} did not fit)`
+          : `Pasted ${pasted} mode${pasted !== 1 ? "s" : ""}`
+      );
+      this.editor.pushUndoState(`Pasted ${pasted} mode${pasted !== 1 ? "s" : ""}`);
+    } else {
+      Notification.failure("No modes pasted — the list is full or has no free space");
+    }
+  }
+
   copyColorset() {
     const cur = this.editor.vortex.engine().modes().curMode();
     if (!cur) return;
@@ -430,6 +490,9 @@ export default class ModesPanel extends Panel {
       if (parsed && parsed.type === 'pattern' && parsed.pattern_id !== undefined) {
         return { type: 'pattern', value: parsed };
       }
+      if (parsed && parsed.type === 'modes' && Array.isArray(parsed.modes)) {
+        return { type: 'modes', value: parsed };
+      }
       if (parsed && (parsed.single_pats || parsed.multi_pat)) {
         return { type: 'mode', value: parsed };
       }
@@ -456,6 +519,9 @@ export default class ModesPanel extends Panel {
         if (this.editor.colorsetPanel) {
           this.editor.colorsetPanel.paste();
         }
+        break;
+      case 'modes':
+        this.pasteAllModes(detected.value);
         break;
       case 'colorset':
         this.pasteColorset(detected.value);
@@ -558,6 +624,10 @@ export default class ModesPanel extends Panel {
       label: 'Copy Mode',
       action: () => this.copyMode()
     });
+    options.push({
+      label: 'Copy all Modes',
+      action: () => this.copyAllModes()
+    });
 
     const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
     if (mainLed !== null) {
@@ -575,47 +645,89 @@ export default class ModesPanel extends Panel {
     return options;
   }
 
+  // the panel/list context menu: only list-level actions, no per-mode actions
+  // (those belong on a right-click of an individual mode, see attachModeEventListeners)
   getContextMenuItems() {
     const items = [];
-    const cur = this.editor.vortex.engine().modes().curMode();
-    if (cur) {
+    if (this.editor.vortex.numModes() > 0) {
       items.push({
-        label: 'Copy Mode',
-        action: () => this.copyMode()
-      });
-      const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
-      if (mainLed !== null) {
-        items.push({
-          label: 'Copy Colorset',
-          action: () => this.copyColorset()
-        });
-        items.push({
-          label: 'Copy Pattern',
-          action: () => this.copyPattern()
-        });
-      }
-      items.push({ separator: true });
-      items.push({
-        label: 'Get Link',
-        action: () => this.showLinkModeModal()
-      });
-      items.push({
-        label: 'Share Mode',
-        action: () => this.shareModeToCommunity()
-      });
-      items.push({ separator: true });
-      items.push({
-        label: 'Paste',
-        action: () => this.paste()
-      });
-      items.push({ separator: true });
-      items.push({
-        label: 'Delete Mode',
-        danger: true,
-        action: () => this.deleteMode(this.editor.vortex.curModeIndex())
+        label: 'Copy all Modes',
+        action: () => this.copyAllModes()
       });
       items.push({ separator: true });
     }
+    items.push({
+      label: 'Paste',
+      action: () => this.paste()
+    });
+    items.push({ separator: true });
+    items.push({
+      label: 'Clear all Modes',
+      danger: true,
+      action: () => this.clearAllModes()
+    });
+    items.push({ separator: true });
+    items.push({
+      label: 'Help',
+      action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl)
+    });
+    return items;
+  }
+
+  // per-mode right-click menu, shown only when a specific mode is right-clicked
+  getModeContextMenuItems() {
+    const items = [];
+    const cur = this.editor.vortex.engine().modes().curMode();
+    if (!cur) return items;
+    items.push({
+      label: 'Copy Mode',
+      action: () => this.copyMode()
+    });
+    if (this.editor.vortex.numModes() > 0) {
+      items.push({
+        label: 'Copy all Modes',
+        action: () => this.copyAllModes()
+      });
+    }
+    const mainLed = this.editor.ledSelectPanel.getMainSelectedLed();
+    if (mainLed !== null) {
+      items.push({
+        label: 'Copy Colorset',
+        action: () => this.copyColorset()
+      });
+      items.push({
+        label: 'Copy Pattern',
+        action: () => this.copyPattern()
+      });
+    }
+    items.push({ separator: true });
+    items.push({
+      label: 'Get Link',
+      action: () => this.showLinkModeModal()
+    });
+    items.push({
+      label: 'Share Mode',
+      action: () => this.shareModeToCommunity()
+    });
+    items.push({ separator: true });
+    items.push({
+      label: 'Delete Mode',
+      danger: true,
+      action: () => this.deleteMode(this.editor.vortex.curModeIndex())
+    });
+    items.push({
+      label: 'Clear all Modes',
+      danger: true,
+      action: () => this.clearAllModes()
+    });
+
+    // the list-level actions still make sense when right-clicking a mode, too
+    items.push({ separator: true });
+    items.push({
+      label: 'Paste',
+      action: () => this.paste()
+    });
+    items.push({ separator: true });
     items.push({
       label: 'Help',
       action: () => this.editor && this.editor.showHelpPopup(this.wikiUrl)
@@ -736,6 +848,16 @@ export default class ModesPanel extends Panel {
         setTimeout(() => {
           modeElement.classList.remove('click-animation');
         }, 100);
+      });
+
+      // right-clicking an individual mode shows the per-mode actions
+      modeEntry.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const items = this.getModeContextMenuItems();
+        if (items.length === 0) return;
+        const menu = ContextMenu.getInstance();
+        menu.show(event.clientX, event.clientY, items);
       });
     });
 
@@ -1116,5 +1238,26 @@ export default class ModesPanel extends Panel {
     this.refreshModeList();
     this.refreshOtherPanels();
     Notification.success(`Successfully Deleted Mode ${parseInt(index) + 1}`);
+  }
+
+  clearAllModes() {
+    const vortex = this.editor.vortex;
+    const count = vortex.numModes();
+    if (count === 0) {
+      Notification.failure('No modes to clear');
+      return;
+    }
+    // snapshot the current (full) mode list for undo BEFORE removing anything
+    this.editor.pushUndoState(`Cleared all modes (${count})`);
+    // remove from the top continuously so indices stay valid
+    while (vortex.numModes() > 0) {
+      vortex.setCurMode(0, false);
+      vortex.delCurMode(true);
+    }
+    vortex.engine().modes().saveCurMode();
+    this.refreshModeList();
+    this.refreshOtherPanels();
+    if (this.editor.ledSelectPanel) this.editor.ledSelectPanel.refreshLedList();
+    Notification.success('Cleared all modes');
   }
 }
