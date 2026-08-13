@@ -657,14 +657,14 @@ export default class ModesPanel extends Panel {
       items.push({ separator: true });
     }
     items.push({
-      label: 'Paste',
-      action: () => this.paste()
-    });
-    items.push({ separator: true });
-    items.push({
       label: 'Clear all Modes',
       danger: true,
       action: () => this.clearAllModes()
+    });
+    items.push({ separator: true });
+    items.push({
+      label: 'Paste',
+      action: () => this.paste()
     });
     items.push({ separator: true });
     items.push({
