@@ -310,14 +310,26 @@ export default class VortexEditor {
 
     // detect the postmessage from vortex community to send over a mode
     window.addEventListener('message', (event) => {
-      console.log('Received message:', event);
-      const allowed = ['https://vortex.community', 'https://lightshow.lol'];
-      if (this.isLocalServer) allowed.push('http://localhost:3000');
-      if (!allowed.includes(event.origin)) {
-        console.warn('Rejected message from unauthorized origin:', event.origin);
+      // this handler only decodes mode/pattern imports. other scripts and
+      // extensions post all kinds of unrelated payloads to the window (eg. the
+      // setImmediate helpers post raw strings), so ignore anything that is not
+      // an object carrying a mode/pattern type and a string `data` — silently,
+      // without logging, since it is not an import attempt.
+      if (typeof event.data !== 'object' || event.data === null ||
+          (event.data.type !== 'mode' && event.data.type !== 'pattern') ||
+          typeof event.data.data !== 'string') {
         return;
       }
       let { type, data } = event.data;
+
+      const allowed = ['https://vortex.community', 'https://lightshow.lol'];
+      if (this.isLocalServer) allowed.push('http://localhost:3000');
+      if (!allowed.includes(event.origin)) {
+        console.warn('Rejected import from unauthorized origin:', event.origin);
+        return;
+      }
+
+      console.log('Received mode/pattern import from', event.origin);
 
       if (this._importingFromUrl && type === 'mode') {
         console.log('Skipping postMessage — mode already imported from URL');

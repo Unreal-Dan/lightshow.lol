@@ -43,6 +43,7 @@ export default class VortexPort {
   EDITOR_VERB_SET_GLOBAL_BRIGHTNESS = "L";
   EDITOR_VERB_GET_GLOBAL_BRIGHTNESS = "M";
   EDITOR_VERB_SET_CHROMA_BRIGHTNESS = "N";
+  EDITOR_VERB_SWITCH_PROFILE        = "O";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -234,6 +235,7 @@ export default class VortexPort {
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
             this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
+            this.useNewProfileSwitch = this.editor.isVersionGreaterOrEqual(this.version, '1.5.53');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -589,6 +591,42 @@ export default class VortexPort {
     }
     console.log("Got brightness: " + brightness);
     return brightness;
+  }
+
+  async switchProfile(vortexLib, profile) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      console.log('Already transmitting:' + this.isTransmitting);
+      return false;
+    }
+    if (!this.useNewProfileSwitch) {
+      console.warn('Connected firmware does not support switching profiles');
+      return false;
+    }
+    if (this.debugLogging) console.log(`switchProfile Start (profile: ${profile})`);
+    this.isTransmitting = 'switchProfile';
+    try {
+      await this.cancelReading();
+      // start the profile switch
+      await this.sendCommand(this.EDITOR_VERB_SWITCH_PROFILE);
+      await this.expectData(this.EDITOR_VERB_READY, 1000);
+      // build the profile packet
+      let profileStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData([ profile ], profileStream);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, profileStream));
+      // a secondary READY indicates the profile switch is complete
+      await this.expectData(this.EDITOR_VERB_READY, 1000);
+      return true;
+    } catch (error) {
+      console.error('Error switching profile:', error);
+      return false;
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log("switchProfile End");
+    }
   }
 
   async pushEachToDevice(vortexLib, vortex, onProgress = null) {
