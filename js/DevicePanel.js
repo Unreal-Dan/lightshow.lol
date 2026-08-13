@@ -122,9 +122,16 @@ export default class DevicePanel extends Panel {
     // Custom drag handler to bypass Firefox's broken range drag coordinate calculation
     let dragActive = false;
 
+    // range-input thumbs can't reach the very edges of the element box (they
+    // stop ~half a thumb-width short), so map over the thumb's real travel
+    // (box width minus thumb width). this keeps the far end at a true 255 so
+    // the device reaches full brightness and re-clicking can't creep it higher.
+    const THUMB_WIDTH = 16; // default range-input thumb width (px)
+
     const setSliderValue = (clientX) => {
       const rect = brightnessSlider.getBoundingClientRect();
-      let val = Math.round(((clientX - rect.left) / rect.width) * 255);
+      const track = Math.max(1, rect.width - THUMB_WIDTH);
+      let val = Math.round(((clientX - rect.left - THUMB_WIDTH / 2) / track) * 255);
       val = Math.max(0, Math.min(255, val));
       brightnessSlider.value = val;
       return val;
@@ -223,7 +230,14 @@ export default class DevicePanel extends Panel {
   // when the slider is finally released
   async onBrightnessSliderChange(event) {
     // if it's a duo we don't update the brightness till the final 'change'
-    const brightness = event.target.value;
+    let brightness = Number(event.target.value);
+    // 0 is treated as "not set"/default on the device, so pin the floor at 1
+    if (brightness < 1) {
+      brightness = 1;
+      if (event.target) event.target.value = brightness;
+    }
+    const percent = Math.round((brightness / 255) * 100);
+    console.log(`[Brightness] set to ${brightness}/255 (${percent}%)`);
     const vortexLib = this.editor.vortexLib;
     const vortex = this.editor.lightshow.vortex;
     // use the chromalink to set the duo if we're connected to that
@@ -293,7 +307,18 @@ export default class DevicePanel extends Panel {
       const vortex = this.editor.lightshow.vortex;
       const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
       // Unlock and show brightness control
-      this.toggleDeviceInfo(deviceBrightness);
+      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+      // only toggle-show if the panel is currently hidden; if disconnect didn't
+      // clean up (eg. the ESPLoader ripped the port away without firing the
+      // browser's serial disconnect event), toggling would shrink the panel and
+      // move the modes list up, leaving it stuck behind the device controls
+      if (deviceInfoPanel && (deviceInfoPanel.style.display === '' || deviceInfoPanel.style.display === 'none')) {
+        this.toggleDeviceInfo(deviceBrightness);
+      } else {
+        // still update the slider even if no toggle needed
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        if (brightnessSlider) brightnessSlider.value = deviceBrightness;
+      }
     }
 
     // start reading and demo on device

@@ -436,12 +436,29 @@ export default class UpdatePanel extends Panel {
     `;
 
     if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
+      // flashing wipes flash storage; offer to back the Chromadeck's modes up
+      // and restore them afterwards (default on). profile switching (which the
+      // backup relies on) is only available on Chromadeck firmware 1.5.53+, so
+      // only offer it then — and skip it when the version is unknown (eg. the
+      // forced update path passes 'N/A').
+      const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
+      const supportsProfiles = lowerDevice === 'chromadeck'
+        && isRealVersion
+        && this.editor.isVersionGreaterOrEqual(currentVersion, '1.5.53');
+
+      const backupHtml = supportsProfiles
+        ? `<label for="backupModesCheckbox" style="display:flex;gap:.5em;align-items:center;margin-top:.9em;cursor:pointer;">
+             <input type="checkbox" id="backupModesCheckbox" checked>
+             <span>Back up modes first and restore them after the update</span>
+           </label>`
+        : '';
+
       const flashButton = document.getElementById('updateFlash');
 
       flashButton.addEventListener('click', () => {
         this.confirmationModal.show({
           title: 'Confirm Firmware Flash',
-          blurb: `Are you sure you want to update the ${device} firmware?`,
+          blurb: `<p style="margin:0;">Are you sure you want to update the ${device} firmware?</p>${backupHtml}`,
           buttons: [
             {
               label: '',
@@ -451,8 +468,10 @@ export default class UpdatePanel extends Panel {
             {
               label: '',
               onClick: () => {
+                const checkbox = document.getElementById('backupModesCheckbox');
+                const backupModes = checkbox ? checkbox.checked : false;
                 this.confirmationModal.hide();
-                this.handleFirmwareUpdate();
+                this.handleFirmwareUpdate(backupModes);
               },
               customHtml: '<button class="modal-button proceed-button">Yes</button>',
             },
@@ -464,31 +483,166 @@ export default class UpdatePanel extends Panel {
     this.show();
   }
 
-  async handleFirmwareUpdate() {
-    const updateProgress = document.getElementById('updateProgress');
-    try {
-      Notification.success('Starting firmware update...');
-      if (updateProgress) updateProgress.textContent = 'Initializing firmware update...';
+  getNumProfiles() {
+    const chromadeck = this.editor.devices?.['Chromadeck'];
+    return chromadeck?.ledCount ? Math.floor(chromadeck.ledCount / 2) : 10;
+  }
 
-      this.editor.lightshow.stop();
+  canBackupModes() {
+    const vp = this.vortexPort;
+    return !!vp && vp.isActive() && vp.useNewProfileSwitch;
+  }
 
-      // Check for active device connection or request a new one
-      if (!this.vortexPort.serialPort) {
+  // make sure the editor has a live, active connection to the current (pre-flash)
+  // firmware so we can pull modes from it
+  async ensureUpdateConnection() {
+    const vp = this.vortexPort;
+    if (vp.isActive()) return true;
+    if (!vp.serialPort) {
+      if (!this.serialPort) {
         this.serialPort = await navigator.serial.requestPort();
-        if (!this.serialPort) {
-          throw new Error('Failed to open serial port');
-        }
+        if (!this.serialPort) return false;
         await this.serialPort.open({ baudRate: 115200 });
         await this.serialPort.setSignals({ dataTerminalReady: true });
       }
+      vp.serialPort = this.serialPort;
+    }
+    vp.cancelListeningForGreeting = false;
+    vp.portActive = false;
+    try {
+      await vp.listenForGreeting();
+    } catch (e) {
+      console.warn('ensureUpdateConnection: no greeting', e);
+      return false;
+    }
+    return vp.portActive;
+  }
+
+  // switch to each Chromadeck profile and silently pull+cache its modes
+  async backupAllProfiles() {
+    const vp = this.vortexPort;
+    const vl = this.editor.vortexLib;
+    console.log('[UpdatePanel] backup diag:', {
+      isActive: vp?.isActive(),
+      useNewProfileSwitch: vp?.useNewProfileSwitch,
+      serialPort: !!vp?.serialPort,
+      numProfiles: this.getNumProfiles(),
+    });
+    if (!vp || !vp.isActive() || !vp.useNewProfileSwitch) {
+      console.warn('[UpdatePanel] cannot switch profiles for backup');
+      return null;
+    }
+    const backup = [];
+    for (let p = 0; p < this.getNumProfiles(); ++p) {
+      try {
+        const switched = await vp.switchProfile(vl, p);
+        if (!switched) {
+          console.warn('[UpdatePanel] switchProfile', p, 'returned false');
+          continue;
+        }
+        const modes = await vp.pullProfileModesRaw(vl);
+        console.log('[UpdatePanel] backed up profile', p, 'modes:', modes ? modes.length : 'n/a');
+        backup.push({ profile: p, modes });
+      } catch (e) {
+        console.error('[UpdatePanel] failed to back up profile', p, e);
+      }
+    }
+    // leave the deck on a stable profile
+    try { await vp.switchProfile(vl, 0); } catch (e) {}
+    return backup;
+  }
+
+  // after flashing + reconnecting, switch to each profile and push the cached modes back
+  async restoreAllProfiles(backup) {
+    if (!backup || !this.canBackupModes()) return;
+    const vp = this.vortexPort;
+    const vl = this.editor.vortexLib;
+    for (const item of backup) {
+      try {
+        await vp.switchProfile(vl, item.profile);
+        await vp.pushProfileModesRaw(vl, item.modes);
+      } catch (e) {
+        console.warn('Failed to restore profile', item.profile, e);
+      }
+    }
+    // switch back to the default profile
+    try { await vp.switchProfile(vl, 0); } catch (e) {}
+  }
+
+  // re-establish the editor connection to the freshly-booted firmware so we pick
+  // up the new greeting it sends after a flash/reset
+  async reconnectAfterFlash() {
+    const vp = this.vortexPort;
+    if (!vp) return false;
+    // make sure the editor connection is attached to the flashed port
+    if (!vp.serialPort && this.serialPort) {
+      vp.serialPort = this.serialPort;
+    }
+    vp.cancelListeningForGreeting = false;
+    vp.portActive = false;
+    // give the freshly-reset ESP32 a moment to boot its app and reattach USB
+    await this.sleep(2000);
+    try {
+      await vp.listenForGreeting();
+    } catch (e) {
+      console.warn('Reconnect after flash failed:', e);
+      return false;
+    }
+    return vp.portActive;
+  }
+
+  async handleFirmwareUpdate(backupModes = false) {
+    const updateProgress = document.getElementById('updateProgress');
+    let backup = null;
+    let flashed = false;
+    try {
+      Notification.success('Starting firmware update...');
+      if (updateProgress) updateProgress.textContent = 'Initializing firmware update...';
+      console.log('[UpdatePanel] handleFirmwareUpdate, backupModes =', backupModes);
+
+      // ensure a live connection to the current firmware first (needed for backup)
+      if (!(await this.ensureUpdateConnection())) {
+        throw new Error('Could not establish a connection with the device');
+      }
+
+      // cache the current modes across all profiles BEFORE anything is erased.
+      // if the backup fails we abort before flashing so the modes are never lost.
+      if (backupModes) {
+        if (updateProgress) updateProgress.textContent = 'Backing up modes...';
+        Notification.success('Backing up modes...');
+        backup = await this.backupAllProfiles();
+        if (!backup || backup.length === 0) {
+          throw new Error('Backup failed — not flashing so your modes are safe');
+        }
+        Notification.success(
+          `Backed up ${backup.reduce((n, i) => n + i.modes.length, 0)} modes across ${backup.length} profiles.`
+        );
+      }
+
+      this.editor.lightshow.stop();
+      flashed = true;
 
       await this.initializeESPFlasher();
       await this.fetchAndFlashFirmware();
 
+      // reconnect to the freshly-booted firmware so we see its new greeting
+      if (updateProgress) updateProgress.textContent = 'Reconnecting...';
+      await this.reconnectAfterFlash();
+
+      // push the cached modes back to each profile
+      if (backup) {
+        if (updateProgress) updateProgress.textContent = 'Restoring modes...';
+        Notification.success('Restoring modes...');
+        await this.restoreAllProfiles(backup);
+        Notification.success('Modes restored.');
+      }
+
       this.editor.lightshow.start();
-      if (updateProgress) updateProgress.textContent = 'Firmware update completed successfully!';
+      if (updateProgress) updateProgress.textContent = 'Firmware updated successfully!';
       Notification.success('Firmware updated successfully.');
     } catch (error) {
+      // never leave the show stuck if we aborted before actually flashing
+      if (!flashed) this.editor.lightshow.start();
       if (updateProgress) updateProgress.textContent = 'Firmware update failed.';
       Notification.failure('Firmware update failed: ' + error.message);
       console.error(error);

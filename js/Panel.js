@@ -265,8 +265,14 @@ export default class Panel {
 
       const otherRect = otherPanel.panel.getBoundingClientRect();
 
-      // Check if the other panel is below this panel
-      const isBelow = otherRect.top - rect.bottom <= this.snapRadius && otherRect.top > rect.bottom;
+      // Check if the other panel is below this panel (allowing the exact-flush
+      // case so a panel that shrank flush against us still gets re-snapped down
+      // when we grow again). This must stay one-directional (at-or-below our
+      // bottom) so two panels can't each include the other and cause unbounded
+      // recursion in moveSnappedPanels.
+      const isBelow =
+        otherRect.top >= rect.bottom &&
+        otherRect.top - rect.bottom <= this.snapRadius;
 
       // Check if the horizontal ranges overlap
       const isOverlappingHorizontally =
