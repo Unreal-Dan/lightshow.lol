@@ -18,6 +18,7 @@ function featuresChecksum(features) {
 
 // new entries go at the top so they appear first in the scroll
 const FEATURES = [
+  { key: 'spark-modes-backup', html: '<strong>Spark Modes Backup</strong> — The firmware updates for the Spark will now offer to backup and restore your list of modes.' },
   { key: 'copy-all-modes', html: '<strong>Copy All Modes</strong> — New context menu option on modes list to copy all modes to the clipboard. Pasting will fit as many as possible without erasing existing ones.' },
   { key: 'chromadeck-profiles-update', html: '<strong>Chromadeck Profiles & Update Fixes</strong> — New profile selector in Chromadeck Device Controls. Chromadeck firmware updates can now back up and restore all modes.' },
   { key: 'undo-redo', html: '<strong>Undo & Redo</strong> — Added full undo/redo support across the editor. <b>Ctrl+Z</b> to undo, <b>Ctrl+Y</b> or <b>Ctrl+Shift+Z</b> to redo. Also available from the canvas right-click menu.' },

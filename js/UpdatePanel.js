@@ -124,19 +124,26 @@ export default class UpdatePanel extends Panel {
     }
   }
 
+  // Local dev only: grab the highest-versioned `VortexEngine-{device}-x.y.z.zip`
+  // from ../public/data/, or fall back to the unversioned one.
   async fetchLocalFirmwareZip(targetDevice) {
-    // Try common local filenames first. You can drop your zip in ../public/data/
-    // without touching any API.
-    const candidates = [
-      `VortexEngine-chromadeck.zip`,
-      // add other file names here if you want to try them
-    ];
-
-    let lastTried = [];
+    const names = await this.listLocalDataDir();
+    const rx = new RegExp(`^VortexEngine-${targetDevice}-([0-9.]+)\\.zip$`, 'i');
+    const candidates = (names || [])
+      .filter((n) => rx.test(n))
+      .sort((a, b) => {
+        const va = rx.exec(a)[1].split('.').map(Number);
+        const vb = rx.exec(b)[1].split('.').map(Number);
+        for (let i = 0; i < 3; ++i) {
+          const d = (vb[i] || 0) - (va[i] || 0);
+          if (d) return d;
+        }
+        return 0;
+      })
+      .concat([`VortexEngine-${targetDevice}.zip`]);
 
     for (const name of candidates) {
       const url = this.publicDataUrl(name);
-      lastTried.push(url);
       const buf = await this.tryFetchArrayBuffer(url);
       if (buf) {
         console.log(`Using local firmware zip: ${url}`);
@@ -144,9 +151,20 @@ export default class UpdatePanel extends Panel {
       }
     }
 
-    throw new Error(
-      `Local firmware zip not found for '${targetDevice}'. Tried:\n` + lastTried.join('\n')
-    );
+    throw new Error(`Local firmware zip not found for '${targetDevice}' in ../public/data/`);
+  }
+
+  async listLocalDataDir() {
+    try {
+      const res = await fetch(this.publicDataUrl(''));
+      if (!res.ok) return null;
+      const html = await res.text();
+      return (html.match(/href="([^"]*\.zip)"/gi) || []).map((l) =>
+        decodeURIComponent(l.match(/href="([^"]*)"/i)[1].split('/').pop())
+      );
+    } catch {
+      return null;
+    }
   }
 
   async fetchRemoteFirmwareZip(targetDevice) {
@@ -183,9 +201,11 @@ export default class UpdatePanel extends Panel {
   }
 
   async fetchAndFlashFirmware() {
-    let targetDevice = this.vortexPort?.name?.toLowerCase();
-    if (!targetDevice) {
-      targetDevice = this.editor?.devicePanel?.selectedDevice?.toLowerCase();
+    // Use the device selected in the Device Controls panel; the serial greeting
+    // name (vortexPort.name) can be stale when flashing a different device.
+    let targetDevice = this.editor?.devicePanel?.selectedDevice?.toLowerCase();
+    if (!targetDevice || targetDevice === 'none') {
+      targetDevice = this.vortexPort?.name?.toLowerCase();
     }
 
     if (!targetDevice || targetDevice === 'none') {
@@ -436,17 +456,23 @@ export default class UpdatePanel extends Panel {
     `;
 
     if (lowerDevice === 'chromadeck' || lowerDevice === 'spark') {
-      // flashing wipes flash storage; offer to back the Chromadeck's modes up
-      // and restore them afterwards (default on). profile switching (which the
-      // backup relies on) is only available on Chromadeck firmware 1.5.53+, so
-      // only offer it then — and skip it when the version is unknown (eg. the
-      // forced update path passes 'N/A').
+      // flashing wipes flash storage; offer to back the device's modes up and
+      // restore them afterwards (default on).
+      //
+      // The Chromadeck backup switches across every profile, which is only
+      // available on firmware 1.5.53+ — only offer it then, and skip it when
+      // the version is unknown (eg. the forced update path passes 'N/A').
+      //
+      // The Spark has no profiles — just the single set of 16 modes — so its
+      // backup is offered unconditionally.
+      this.backupDevice = lowerDevice;
       const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
       const supportsProfiles = lowerDevice === 'chromadeck'
         && isRealVersion
         && this.editor.isVersionGreaterOrEqual(currentVersion, '1.5.53');
+      const canOfferBackup = lowerDevice === 'spark' || supportsProfiles;
 
-      const backupHtml = supportsProfiles
+      const backupHtml = canOfferBackup
         ? `<label for="backupModesCheckbox" style="display:flex;gap:.5em;align-items:center;margin-top:.9em;cursor:pointer;">
              <input type="checkbox" id="backupModesCheckbox" checked>
              <span>Back up modes first and restore them after the update</span>
@@ -490,7 +516,10 @@ export default class UpdatePanel extends Panel {
 
   canBackupModes() {
     const vp = this.vortexPort;
-    return !!vp && vp.isActive() && vp.useNewProfileSwitch;
+    if (!vp || !vp.isActive()) return false;
+    // the Spark doesn't need profile switching — just the single live mode set
+    if (this.backupDevice === 'spark') return true;
+    return vp.useNewProfileSwitch;
   }
 
   // make sure the editor has a live, active connection to the current (pre-flash)
@@ -524,11 +553,27 @@ export default class UpdatePanel extends Panel {
     const vl = this.editor.vortexLib;
     console.log('[UpdatePanel] backup diag:', {
       isActive: vp?.isActive(),
+      device: this.backupDevice,
       useNewProfileSwitch: vp?.useNewProfileSwitch,
       serialPort: !!vp?.serialPort,
       numProfiles: this.getNumProfiles(),
     });
-    if (!vp || !vp.isActive() || !vp.useNewProfileSwitch) {
+    if (!vp || !vp.isActive()) {
+      console.warn('[UpdatePanel] cannot back up modes');
+      return null;
+    }
+    // the Spark has no profiles — just backup its single set of modes
+    if (this.backupDevice === 'spark') {
+      try {
+        const modes = await vp.pullProfileModesRaw(vl);
+        console.log('[UpdatePanel] backed up spark modes:', modes ? modes.length : 'n/a');
+        return modes && modes.length ? [{ profile: 0, modes }] : null;
+      } catch (e) {
+        console.error('[UpdatePanel] failed to back up spark modes', e);
+        return null;
+      }
+    }
+    if (!vp.useNewProfileSwitch) {
       console.warn('[UpdatePanel] cannot switch profiles for backup');
       return null;
     }
@@ -557,6 +602,17 @@ export default class UpdatePanel extends Panel {
     if (!backup || !this.canBackupModes()) return;
     const vp = this.vortexPort;
     const vl = this.editor.vortexLib;
+    // the Spark has no profiles — just push its modes back
+    if (this.backupDevice === 'spark') {
+      for (const item of backup) {
+        try {
+          await vp.pushProfileModesRaw(vl, item.modes);
+        } catch (e) {
+          console.warn('Failed to restore spark modes', e);
+        }
+      }
+      return;
+    }
     for (const item of backup) {
       try {
         await vp.switchProfile(vl, item.profile);
@@ -614,9 +670,11 @@ export default class UpdatePanel extends Panel {
         if (!backup || backup.length === 0) {
           throw new Error('Backup failed — not flashing so your modes are safe');
         }
-        Notification.success(
-          `Backed up ${backup.reduce((n, i) => n + i.modes.length, 0)} modes across ${backup.length} profiles.`
-        );
+        const backedUpModes = backup.reduce((n, i) => n + i.modes.length, 0);
+        const backupScope = this.backupDevice === 'spark'
+          ? 'your current 16 modes'
+          : `across ${backup.length} profiles`;
+        Notification.success(`Backed up ${backedUpModes} modes ${backupScope}.`);
       }
 
       this.editor.lightshow.stop();
