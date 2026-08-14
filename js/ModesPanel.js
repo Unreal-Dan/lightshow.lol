@@ -1009,9 +1009,10 @@ export default class ModesPanel extends Panel {
     const modeName = modeData.name || "Unnamed Mode";
 
     // Extract pattern set details (if available)
-    const patternSets = modeData.single_pats || (modeData.multi_pat ? [modeData.multi_pat] : []);
+    const singlePats = modeData.single_pats && modeData.single_pats.some(p => p) ? modeData.single_pats : [];
+    const patternSets = singlePats.length ? singlePats : (modeData.multi_pat ? [modeData.multi_pat] : []);
     const patternDetails = patternSets.length
-      ? patternSets.map((pat, index) => `<li><strong>Pattern ${index + 1}:</strong> ${pat?.data?.colorset ? pat.data.colorset.length + " Colors" : "No Color Data"}</li>`).join("")
+      ? patternSets.map((pat, index) => `<li><strong>Pattern ${index + 1}:</strong> ${pat?.data?.colorset?.length || pat?.colorset?.length ? (pat?.data?.colorset?.length || pat?.colorset?.length) + " Colors" : "No Color Data"}</li>`).join("")
       : "<li>No Patterns</li>";
 
     // Create modal content with proper side-by-side layout
@@ -1093,25 +1094,22 @@ export default class ModesPanel extends Panel {
     }
     cur.init();
 
-    const patterns = modeData.single_pats || [modeData.multi_pat];
-    if (!patterns || patterns.length === 0) {
+    const singlePats = modeData.single_pats && modeData.single_pats.some(p => p) ? modeData.single_pats : null;
+    const multiPat = modeData.multi_pat || null;
+    if (!singlePats && !multiPat) {
       console.log("Patterns empty!");
       return;
     }
 
     const totalLeds = this.editor.vortex.engine().leds().ledCount(); // Get target device LED count
-    const modeLeds = modeData.num_leds; // Get mode's original LED count
 
-    for (let i = 0; i < totalLeds; i++) {
-      const patternIndex = i % patterns.length; // Repeat patterns cyclically
-      const pat = patterns[patternIndex];
-
-      if (!pat) continue;
+    const applyPattern = (pat, led) => {
+      if (!pat) return true;
 
       let patData = pat.data || pat;
       if (!patData.colorset) {
         Notification.failure("Invalid pattern data: " + JSON.stringify(pat));
-        return;
+        return false;
       }
 
       const set = new this.editor.vortexLib.Colorset();
@@ -1132,7 +1130,18 @@ export default class ModesPanel extends Panel {
       patData.args.forEach(arg => args.addArgs(arg));
 
       cur = this.editor.vortex.engine().modes().curMode();
-      cur.setPattern(patID, i, args, set);
+      cur.setPattern(patID, led, args, set);
+      return true;
+    };
+
+    if (multiPat) {
+      if (!applyPattern(multiPat, this.editor.vortex.engine().leds().ledMulti())) return;
+    }
+
+    if (singlePats) {
+      for (let i = 0; i < totalLeds; i++) {
+        if (!applyPattern(singlePats[i % singlePats.length], i)) return;
+      }
     }
 
     cur = this.editor.vortex.engine().modes().curMode();
