@@ -244,6 +244,32 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
+#m-settings-modal .m-profile-select {
+  flex: 1;
+  min-width: 0;
+  max-width: 420px;
+
+  height: 40px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+
+  padding: 7px 12px;
+  font-size: 0.98rem;
+
+  outline: none;
+}
+
+#m-settings-modal .m-profile-select:disabled {
+  opacity: 0.55;
+}
+
+#m-settings-modal .m-profile-select option {
+  color: #000;
+}
+
 #m-settings-modal .m-settings-shapes {
   width: 100%;
   max-width: 560px;

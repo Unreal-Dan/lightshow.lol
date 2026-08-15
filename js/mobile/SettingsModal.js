@@ -65,6 +65,21 @@ export default class SettingsModal {
     }
   }
 
+  _supportsProfileSwitching(dt) {
+    try {
+      if (!this._isConnected()) return false;
+      if (dt !== 'Chromadeck') return false;
+      return !!this.editor?.vortexPort?.useNewProfileSwitch;
+    } catch {
+      return false;
+    }
+  }
+
+  _getNumProfiles() {
+    const chromadeck = this.editor?.devices?.['Chromadeck'];
+    return chromadeck?.ledCount ? Math.floor(chromadeck.ledCount / 2) : 10;
+  }
+
   async _sleep(ms) {
     return new Promise((r) => setTimeout(r, ms));
   }
@@ -188,7 +203,7 @@ export default class SettingsModal {
     });
   }
 
-  async _renderDeviceSection({ dt, connected, brightnessSupported }) {
+  async _renderDeviceSection({ dt, connected, brightnessSupported, profileSupported }) {
     const modalEl = this._modalEl;
     if (!modalEl) return;
 
@@ -205,32 +220,56 @@ export default class SettingsModal {
       chipClass: 'm-settings-chip is-connected',
       hintStyle: 'display:none;',
       showBrightnessStyle: brightnessSupported ? '' : 'display:none;',
+      showProfileStyle: profileSupported ? '' : 'display:none;',
       deviceLabel: dt,
     });
 
     mount.appendChild(frag);
 
-    if (!brightnessSupported) return;
+    if (brightnessSupported) {
+      const rowMount = modalEl.querySelector('#m-settings-device-brightness-mount');
+      if (rowMount) {
+        this._clearMount(rowMount);
 
-    const rowMount = modalEl.querySelector('#m-settings-device-brightness-mount');
-    if (!rowMount) return;
+        const rowFrag = await this.views.render('settings-brightness-row.html', {});
+        rowMount.appendChild(rowFrag);
 
-    this._clearMount(rowMount);
+        const slider = modalEl.querySelector('#m-brightness-slider');
+        const valEl = modalEl.querySelector('#m-brightness-value');
 
-    const rowFrag = await this.views.render('settings-brightness-row.html', {});
-    rowMount.appendChild(rowFrag);
+        if (slider) {
+          const b = await this._getDeviceBrightnessSafe();
+          slider.value = String(b);
+          if (valEl) valEl.textContent = String(b);
+        }
 
-    const slider = modalEl.querySelector('#m-brightness-slider');
-    const valEl = modalEl.querySelector('#m-brightness-value');
-
-    if (slider) {
-      const b = await this._getDeviceBrightnessSafe();
-      slider.value = String(b);
-      if (valEl) valEl.textContent = String(b);
+        // IMPORTANT: bind to the CURRENT slider element (it gets re-rendered)
+        this._bindBrightnessForCurrentSlider();
+      }
     }
 
-    // IMPORTANT: bind to the CURRENT slider element (it gets re-rendered)
-    this._bindBrightnessForCurrentSlider();
+    if (profileSupported) {
+      const profileMount = modalEl.querySelector('#m-settings-device-profile-mount');
+      if (!profileMount) return;
+
+      this._clearMount(profileMount);
+
+      const profileFrag = await this.views.render('settings-profile-row.html', {});
+      profileMount.appendChild(profileFrag);
+
+      const select = modalEl.querySelector('#m-profile-select');
+      if (select) {
+        const numProfiles = this._getNumProfiles();
+        for (let i = 0; i < numProfiles; ++i) {
+          const option = document.createElement('option');
+          option.value = String(i);
+          option.textContent = `Profile ${i + 1}`;
+          select.appendChild(option);
+        }
+      }
+
+      this._bindProfileForCurrentSelect();
+    }
   }
 
   async _renderAnimationSection({ dt }) {
@@ -391,6 +430,38 @@ export default class SettingsModal {
     );
   }
 
+  _bindProfileForCurrentSelect() {
+    const modalEl = this._modalEl;
+    if (!modalEl) return;
+
+    const select = modalEl.querySelector('#m-profile-select');
+    if (!select) return;
+
+    if (select.dataset.bound === '1') return;
+    select.dataset.bound = '1';
+
+    select.addEventListener('change', async () => {
+      await this._switchProfileSafe(parseInt(select.value, 10));
+    });
+  }
+
+  async _switchProfileSafe(profile) {
+    const modalEl = this._modalEl;
+    const select = modalEl?.querySelector('#m-profile-select');
+
+    try {
+      if (select) select.disabled = true;
+      const success = await this.editor.vortexPort.switchProfile(this.editor.vortexLib, profile);
+      if (success) {
+        Notification.success?.(`Switched Chromadeck to Profile ${profile + 1}`);
+      }
+    } catch (error) {
+      Notification.failure?.('Failed to switch profile: ' + error.message);
+    } finally {
+      if (select) select.disabled = false;
+    }
+  }
+
   _bindAnimationOnce() {
     if (this._boundAnimation) return;
     this._boundAnimation = true;
@@ -476,8 +547,9 @@ export default class SettingsModal {
 
     const connected = this._isConnected();
     const brightnessSupported = this._supportsDeviceBrightness();
+    const profileSupported = this._supportsProfileSwitching(dt);
 
-    await this._renderDeviceSection({ dt, connected, brightnessSupported });
+    await this._renderDeviceSection({ dt, connected, brightnessSupported, profileSupported });
     await this._renderAnimationSection({ dt });
     await this._renderAnimationSliders();
   }
