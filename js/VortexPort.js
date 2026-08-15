@@ -43,6 +43,7 @@ export default class VortexPort {
   EDITOR_VERB_SET_GLOBAL_BRIGHTNESS = "L";
   EDITOR_VERB_GET_GLOBAL_BRIGHTNESS = "M";
   EDITOR_VERB_SET_CHROMA_BRIGHTNESS = "N";
+  EDITOR_VERB_SWITCH_PROFILE        = "O";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -234,6 +235,7 @@ export default class VortexPort {
             // 1.3.0 compatibility layer
             this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
             this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
+            this.useNewProfileSwitch = this.editor.isVersionGreaterOrEqual(this.version, '1.5.53');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -591,6 +593,42 @@ export default class VortexPort {
     return brightness;
   }
 
+  async switchProfile(vortexLib, profile) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      console.log('Already transmitting:' + this.isTransmitting);
+      return false;
+    }
+    if (!this.useNewProfileSwitch) {
+      console.warn('Connected firmware does not support switching profiles');
+      return false;
+    }
+    if (this.debugLogging) console.log(`switchProfile Start (profile: ${profile})`);
+    this.isTransmitting = 'switchProfile';
+    try {
+      await this.cancelReading();
+      // start the profile switch
+      await this.sendCommand(this.EDITOR_VERB_SWITCH_PROFILE);
+      await this.expectData(this.EDITOR_VERB_READY, 3000);
+      // build the profile packet
+      let profileStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData([ profile ], profileStream);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, profileStream));
+      // a secondary READY indicates the profile switch is complete
+      await this.expectData(this.EDITOR_VERB_READY, 3000);
+      return true;
+    } catch (error) {
+      console.error('Error switching profile:', error);
+      return false;
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log("switchProfile End");
+    }
+  }
+
   async pushEachToDevice(vortexLib, vortex, onProgress = null) {
     if (!this.isActive()) {
       throw new Error('Port not active');
@@ -779,6 +817,58 @@ export default class VortexPort {
       this.startReading();
       this.isTransmitting = null;
       if (this.debugLogging) console.log('pullEachFromDevice End');
+    }
+  }
+
+  // read the currently selected profile's modes as raw byte buffers without
+  // touching the local lightshow state. used to silently back the Chromadeck's
+  // modes up across a firmware flash (which wipes flash storage).
+  async pullProfileModesRaw(vortexLib) {
+    if (!this.isActive()) throw new Error('Port not active');
+    this.isTransmitting = 'pullProfileModesRaw';
+    try {
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE);
+      const numModesBuf = await this.readByteStream(vortexLib);
+      const numModes = (numModesBuf['12'] | 0);
+      await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+      const modeBufs = [];
+      for (let i = 0; i < numModes; ++i) {
+        const modeBuf = await this.readByteStream(vortexLib);
+        await this.sendCommand(this.EDITOR_VERB_PULL_EACH_MODE_ACK);
+        modeBufs.push(modeBuf);
+      }
+      await this.expectData(this.EDITOR_VERB_PULL_EACH_MODE_DONE);
+      return modeBufs;
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+    }
+  }
+
+  // push raw mode byte buffers to the currently selected profile. used to
+  // restore the modes that were cached before a firmware flash.
+  async pushProfileModesRaw(vortexLib, modeBufs) {
+    if (!this.isActive()) throw new Error('Port not active');
+    this.isTransmitting = 'pushProfileModesRaw';
+    try {
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_PUSH_EACH_MODE);
+      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+      const numModesBuf = new vortexLib.ByteStream();
+      numModesBuf.serialize8(modeBufs.length);
+      numModesBuf.recalcCRC(true);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, numModesBuf));
+      await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+      for (let i = 0; i < modeBufs.length; ++i) {
+        const modeStream = new vortexLib.ByteStream();
+        vortexLib.createByteStreamFromRawData(modeBufs[i], modeStream);
+        await this.sendRaw(this.constructCustomBuffer(vortexLib, modeStream));
+        await this.expectData(this.EDITOR_VERB_PUSH_EACH_MODE_ACK);
+      }
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
     }
   }
 

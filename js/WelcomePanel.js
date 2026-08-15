@@ -2,10 +2,25 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
 
-const WELCOME_VERSION = 'showNewWelcome-v5';
+// FNV-1a 32-bit checksum of the whole feature list. Because the welcome
+// "seen" token is derived from the list contents itself, any change to the
+// list (add / edit / reorder a feature) produces a new token, so returning
+// users see the welcome panel again without anyone manually bumping a version.
+function featuresChecksum(features) {
+  const str = features.map((f) => `${f.key}|${f.html}`).join('\n');
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
 
 // new entries go at the top so they appear first in the scroll
 const FEATURES = [
+  { key: 'spark-modes-backup', html: '<strong>Spark Modes Backup</strong> — The firmware updates for the Spark will now offer to backup and restore your list of modes.' },
+  { key: 'copy-all-modes', html: '<strong>Copy All Modes</strong> — New context menu option on modes list to copy all modes to the clipboard. Pasting will fit as many as possible without erasing existing ones.' },
+  { key: 'chromadeck-profiles-update', html: '<strong>Chromadeck Profiles & Update Fixes</strong> — New profile selector in Chromadeck Device Controls. Chromadeck firmware updates can now back up and restore all modes.' },
   { key: 'undo-redo', html: '<strong>Undo & Redo</strong> — Added full undo/redo support across the editor. <b>Ctrl+Z</b> to undo, <b>Ctrl+Y</b> or <b>Ctrl+Shift+Z</b> to redo. Also available from the canvas right-click menu.' },
   { key: 'vortex-community-overhaul', html: '<strong>Vortex Community Overhaul</strong> — The entirety of Vortex Community has been overhauled and almost every UI has been rewritten or improved.' },
   { key: 'led-selection-refresh', html: '<strong>Led Select Refresh</strong> — The Led Selection Panel has been refreshed and uses new assets for the device previews' },
@@ -21,6 +36,9 @@ const FEATURES = [
   { key: 'wiki-updates', html: '<strong>Wiki Updates</strong> — Several new wiki pages have been added, many existing pages have been improved and refactored, and all broken links have been cleaned up and fixed.' },
   { key: 'colorset-controls', html: '<strong>Improved Colorset Generator</strong> — Revamped randomization controls: slider + number for color count, style dropdown, and a brightness slider. Old quick-preset buttons removed in favor of a cleaner layout.' },
 ];
+
+// storage token tied to the exact contents of the feature list above
+const WELCOME_VERSION = 'showNewWelcome-' + featuresChecksum(FEATURES);
 
 export default class WelcomePanel extends Panel {
   constructor(editor) {

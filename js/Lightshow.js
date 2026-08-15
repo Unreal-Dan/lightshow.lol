@@ -34,6 +34,8 @@ export default class Lightshow {
     this.vortex = vortex;
 
     this.animationFrameId = null;
+    this._lastKnownLedCount = 1;
+
     this.configurableSectionCount = configurableSectionCount;
     this.sectionWidth = this.canvas.width / this.configurableSectionCount;
 
@@ -325,6 +327,7 @@ export default class Lightshow {
   }
 
   setLedCount(count) {
+    this._lastKnownLedCount = count;
     this.vortex.setLedCount(count);
     this.updateHistories();
   }
@@ -340,9 +343,12 @@ export default class Lightshow {
   }
 
   visualLedCount() {
-    // In duo modes (either standalone Duo or Chromadeck duo mode), visualize only 2 LEDs
     if (this.duoEditorMode || this.chromadeckDuoMode) return 2;
-    return this.vortex.engine().leds().ledCount();
+    try {
+      return this.vortexLib.GetLedCount(this.vortex);
+    } catch {
+      return this._lastKnownLedCount || 1;
+    }
   }
 
   setChromadeckDuoMode(enabled) {
@@ -360,6 +366,7 @@ export default class Lightshow {
 
   updateHistories() {
     const ledCount = this.ledCount();
+    this._lastKnownLedCount = ledCount;
     this.histories = [];
     for (let i = 0; i < ledCount; i++) this.histories.push([]);
   }
@@ -413,7 +420,27 @@ export default class Lightshow {
   }
 
   ledCount() {
-    return this.vortex.engine().leds().ledCount();
+    try {
+      const count = this.vortexLib.GetLedCount(this.vortex);
+      this._lastKnownLedCount = count;
+      return count;
+    } catch {
+      return this._lastKnownLedCount || 1;
+    }
+  }
+
+  // Read LED colors directly from WASM linear memory via pointer.
+  // Returns an array of {red, green, blue} objects — zero val allocations.
+  _readLedData() {
+    const ptr = this.vortexLib.TickGetLedPtr(this.vortex);
+    const count = this.vortexLib.GetLedCount(this.vortex);
+    this._lastKnownLedCount = count;
+    const heap = this.vortexLib.HEAPU8;
+    const leds = new Array(count);
+    for (let i = 0, off = ptr; i < count; i++, off += 3) {
+      leds[i] = { red: heap[off], green: heap[off + 1], blue: heap[off + 2] };
+    }
+    return leds;
   }
 
   setShape(shape) {
@@ -431,23 +458,21 @@ export default class Lightshow {
 
     const minR = Math.min(this.canvas.width / 2, this.canvas.height / 2);
     const ropeRadius = Math.max(40, minR - (500 - parseInt(this.circleRadius)));
-    // LED ring radius around the orbit puck should scale with spread
-    // (spread is your per-LED spacing knob; map it into a usable pixel radius)
     const nSpread = Math.max(0, Number(this.spread) || 0);
-    // Base keeps it visible even at spread=0; the multiplier controls how sensitive it feels.
     const orbitRadius = Math.max(12, 12 + nSpread * 1.0);
 
     const orbitStep = 0.014 * this.direction;
     const spinStep = orbitStep * this.orbitSpinMul;
 
     for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
+      const leds = this._readLedData();
+
       if (!leds) continue;
-      // Truncate to visual LED count for duo modes
       const visualCount = this.visualLedCount();
       if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
 
       this.orbitAngle += orbitStep;
       this.spinAngle += spinStep;
@@ -477,7 +502,6 @@ export default class Lightshow {
   }
 
   draw() {
-    // Update springy center once per frame (affects all shapes)
     this._updateSpringCenter();
 
     switch (this.currentShape) {
@@ -547,7 +571,7 @@ export default class Lightshow {
       while (history.length > this.trailSize) history.shift();
     });
 
-    if (!this._pause) requestAnimationFrame(this.draw.bind(this));
+    if (!this._pause) requestAnimationFrame(this.boundDraw);
   }
 
   feedCirclePoints() {
@@ -558,13 +582,14 @@ export default class Lightshow {
     const baseRadius = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
+      const leds = this._readLedData();
+
       if (!leds) continue;
-      // Truncate to visual LED count for duo modes
       const visualCount = this.visualLedCount();
       if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
 
       this.angle += 0.02 * this.direction;
       if (this.angle >= 2 * Math.PI) this.angle = 0;
@@ -587,13 +612,14 @@ export default class Lightshow {
     const scale = this.circleRadius / 20 + 1;
 
     for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
+      const leds = this._readLedData();
+
       if (!leds) continue;
-      // Truncate to visual LED count for duo modes
       const visualCount = this.visualLedCount();
       if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
 
       this.angle += 0.05 * this.direction;
       if (this.angle >= 2 * Math.PI) this.angle = 0;
@@ -621,9 +647,9 @@ export default class Lightshow {
     const baseBoxSize = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
+      const leds = this._readLedData();
+
       if (!leds) continue;
-      // Truncate to visual LED count for duo modes
       const visualCount = this.visualLedCount();
       if (leds.length > visualCount) leds.length = visualCount;
 
@@ -658,6 +684,7 @@ export default class Lightshow {
         if (!this.histories[index]) this.histories[index] = [];
         this.histories[index].push({ x, y, color: col });
       });
+      while (this.histories.length > leds.length) this.histories.pop();
     }
   }
 
@@ -669,13 +696,14 @@ export default class Lightshow {
     const baseRadius = minR - (500 - parseInt(this.circleRadius));
 
     for (let i = 0; i < this.tickRate; i++) {
-      const leds = this.vortexLib.RunTick(this.vortex);
+      const leds = this._readLedData();
+
       if (!leds) continue;
-      // Truncate to visual LED count for duo modes
       const visualCount = this.visualLedCount();
       if (leds.length > visualCount) leds.length = visualCount;
 
       while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
 
       this.angle += 0.02 * this.direction;
       if (this.angle >= 2 * Math.PI) this.angle = 0;
@@ -781,7 +809,7 @@ export default class Lightshow {
     this.vortex.shortClick(0);
     this.vortex.longClick(0);
 
-    for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
+    for (let i = 0; i < numCmds; ++i) this._readLedData();
     this.vortex.engine().modes().saveCurMode();
     this.editor?.pushUndoState('Randomized colorset');
   }
@@ -803,7 +831,7 @@ export default class Lightshow {
     this.vortex.shortClick(0);
     this.vortex.longClick(0);
 
-    for (let i = 0; i < numCmds; ++i) this.vortexLib.RunTick(this.vortex);
+    for (let i = 0; i < numCmds; ++i) this._readLedData();
     this.vortex.engine().modes().saveCurMode();
     this.editor?.pushUndoState('Randomized pattern');
   }

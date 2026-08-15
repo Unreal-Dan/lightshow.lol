@@ -457,15 +457,7 @@ export default class LedSelectPanel extends Panel {
     if (!ledList) {
       return null;
     }
-    const selected = Array.from(ledList.selectedOptions).map(option => option.value);
-    // In Chromadeck duo mode, map the 2 visual LEDs to all 20 engine LEDs
-    if (this.isDuoMode && this.selectedDevice === 'Chromadeck' && selected.length > 0) {
-      const engineLedCount = this.editor.vortex.engine().leds().ledCount();
-      const allLeds = [];
-      for (let i = 0; i < engineLedCount; i++) allLeds.push(String(i));
-      return allLeds;
-    }
-    return selected;
+    return Array.from(ledList.selectedOptions).map(option => option.value);
   }
 
   getMainSelectedLed() {
@@ -753,7 +745,7 @@ export default class LedSelectPanel extends Panel {
     // ignore clicks on the swap device image button which is in the led select
     // area when the spark is the selected device
     const target = event.target;
-    if (target.closest('#swapDeviceImage')) {
+    if (target && typeof target.closest === 'function' && target.closest('#swapDeviceImage')) {
       return;
     }
 

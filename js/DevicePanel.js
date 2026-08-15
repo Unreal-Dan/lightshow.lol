@@ -40,6 +40,12 @@ export default class DevicePanel extends Panel {
               <i class="fa-solid fa-sun" id="brightnessIcon"></i>
             </div>
           </div>
+          <div id="profileSelectContainer" style="display:none;">
+            <label for="profileSelect" id="profileLabel">Chromadeck Profile</label>
+            <select id="profileSelect" class="profile-select" title="Switch which profile the Chromadeck loads">
+              <!-- Profile options populated dynamically -->
+            </select>
+          </div>
           <!-- TODO: finish the duo mode button -->
         </div>
       </div>
@@ -55,6 +61,9 @@ export default class DevicePanel extends Panel {
     this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/device-controls');
     this.selectedDevice = 'None';
     this.multiLedWarningModal = new Modal('multiLedWarning');
+    // the number of profiles matches half the number of leds on the chromadeck
+    this.numProfiles = 10;
+    this.currentProfile = 0;
   }
 
   initialize() {
@@ -125,9 +134,16 @@ export default class DevicePanel extends Panel {
     // Custom drag handler to bypass Firefox's broken range drag coordinate calculation
     let dragActive = false;
 
+    // range-input thumbs can't reach the very edges of the element box (they
+    // stop ~half a thumb-width short), so map over the thumb's real travel
+    // (box width minus thumb width). this keeps the far end at a true 255 so
+    // the device reaches full brightness and re-clicking can't creep it higher.
+    const THUMB_WIDTH = 16; // default range-input thumb width (px)
+
     const setSliderValue = (clientX) => {
       const rect = brightnessSlider.getBoundingClientRect();
-      let val = Math.round(((clientX - rect.left) / rect.width) * 255);
+      const track = Math.max(1, rect.width - THUMB_WIDTH);
+      let val = Math.round(((clientX - rect.left - THUMB_WIDTH / 2) / track) * 255);
       val = Math.max(0, Math.min(255, val));
       brightnessSlider.value = val;
       return val;
@@ -167,6 +183,23 @@ export default class DevicePanel extends Panel {
       if (dragActive) return;
       this.onBrightnessSliderChange({ target: brightnessSlider });
     });
+
+    // profile selector (chromadeck only)
+    const chromadeck = this.editor.devices?.['Chromadeck'];
+    if (chromadeck?.ledCount) {
+      this.numProfiles = Math.floor(chromadeck.ledCount / 2);
+    }
+    const profileSelect = document.getElementById('profileSelect');
+    for (let i = 0; i < this.numProfiles; ++i) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = `Profile ${i + 1}`;
+      profileSelect.appendChild(option);
+    }
+    profileSelect.addEventListener('change', async () => {
+      await this.switchProfile(parseInt(profileSelect.value, 10));
+    });
+    this.setProfileVisible(false);
 
     // transmit toggle button
     const transmitToggle = document.getElementById('transmitToggle');
@@ -209,7 +242,14 @@ export default class DevicePanel extends Panel {
   // when the slider is finally released
   async onBrightnessSliderChange(event) {
     // if it's a duo we don't update the brightness till the final 'change'
-    const brightness = event.target.value;
+    let brightness = Number(event.target.value);
+    // 0 is treated as "not set"/default on the device, so pin the floor at 1
+    if (brightness < 1) {
+      brightness = 1;
+      if (event.target) event.target.value = brightness;
+    }
+    const percent = Math.round((brightness / 255) * 100);
+    console.log(`[Brightness] set to ${brightness}/255 (${percent}%)`);
     const vortexLib = this.editor.vortexLib;
     const vortex = this.editor.lightshow.vortex;
     // use the chromalink to set the duo if we're connected to that
@@ -279,7 +319,18 @@ export default class DevicePanel extends Panel {
       const vortex = this.editor.lightshow.vortex;
       const deviceBrightness = await this.editor.vortexPort.getBrightness(vortexLib, vortex);
       // Unlock and show brightness control
-      this.toggleDeviceInfo(deviceBrightness);
+      const deviceInfoPanel = document.getElementById('deviceInfoPanel');
+      // only toggle-show if the panel is currently hidden; if disconnect didn't
+      // clean up (eg. the ESPLoader ripped the port away without firing the
+      // browser's serial disconnect event), toggling would shrink the panel and
+      // move the modes list up, leaving it stuck behind the device controls
+      if (deviceInfoPanel && (deviceInfoPanel.style.display === '' || deviceInfoPanel.style.display === 'none')) {
+        this.toggleDeviceInfo(deviceBrightness);
+      } else {
+        // still update the slider even if no toggle needed
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        if (brightnessSlider) brightnessSlider.value = deviceBrightness;
+      }
     }
 
     // start reading and demo on device
@@ -319,6 +370,10 @@ export default class DevicePanel extends Panel {
     if (deviceInfoPanel) {
       deviceInfoPanel.style.display = 'flex';
     }
+
+    // show the profile selector for chromadeck firmware that
+    // supports the profile switch command
+    this.setProfileVisible(deviceName === 'Chromadeck' && this.editor.vortexPort.useNewProfileSwitch);
 
     const transmitToggle = document.getElementById('transmitToggle');
     if (transmitToggle) {
@@ -371,13 +426,52 @@ export default class DevicePanel extends Panel {
 
     // unlock device selection
     this.lockDeviceSelection(false);
+
+    // hide the profile selector
+    this.setProfileVisible(false);
+  }
+
+  async onDeviceSelected(deviceName) {
+    // if a non-chromadeck device is selected hide the profile selector
+    if (deviceName === 'Chromadeck' && this.editor.vortexPort.isActive()) {
+      // returning to the chromadeck from the duo needs to restore the selector
+      this.setProfileVisible(this.editor.vortexPort.useNewProfileSwitch);
+    } else if (deviceName !== 'Chromadeck') {
+      this.setProfileVisible(false);
+    }
+  }
+
+  setProfileVisible(visible) {
+    const container = document.getElementById('profileSelectContainer');
+    if (!container) return;
+    const isVisible = container.style.display !== 'none';
+    if (isVisible === visible) return;
+
+    container.style.display = visible ? 'flex' : 'none';
+  }
+
+  async switchProfile(profile) {
+    try {
+      this.setSwitching(true);
+      const success = await this.editor.vortexPort.switchProfile(this.editor.vortexLib, profile);
+      if (success) {
+        this.currentProfile = profile;
+        Notification.success(`Switched Chromadeck to Profile ${profile + 1}`);
+      }
+    } catch (error) {
+      Notification.failure('Failed to switch profile: ' + error.message);
+    } finally {
+      this.setSwitching(false);
+    }
+  }
+
+  setSwitching(switching) {
+    const select = document.getElementById('profileSelect');
+    if (select) select.disabled = switching;
   }
 
   async onDeviceWaiting(deviceName) {
     console.log(`Waiting for ${deviceName}...`);
-  }
-
-  async onDeviceSelected(deviceName) {
   }
 
   addIconsToDropdown() {

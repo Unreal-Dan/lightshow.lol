@@ -121,12 +121,11 @@
 
 #brightnessControl {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   padding: 0.25em;
-  margin: 0.25em;
-  margin-top: 0;
+  margin: 0 0.25em;
 }
 
 #brightnessSlider {
@@ -140,8 +139,8 @@
 }
 
 #brightnessLabelWrapper {
-  text-align: left;
-  padding-left: 0.2em;
+  white-space: nowrap;
+  padding-right: 0.5em;
 }
 
 #brightnessLabel {
@@ -154,6 +153,50 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+}
+
+#profileSelectContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25em;
+  margin: 0 0.25em;
+  margin-top: 0;
+}
+
+#profileLabel {
+  white-space: nowrap;
+  padding-right: 0.5em;
+  font-size: 0.75em;
+  color: #ffffff;
+  opacity: 0.6;
+}
+
+.profile-select {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  background-color: #181a1b;
+  color: #d8d4cf;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-select:hover {
+  background-color: #3e4446;
+  color: #ffffff;
+}
+
+.profile-select:disabled {
+  background: #2a2a2a;
+  color: #888;
+  cursor: default;
+  opacity: 0.6;
 }
 
 .device-info {
@@ -179,7 +222,7 @@
 
 #deviceInfoPanelContent {
   display: flex;
-  gap: 0.25em;
+  gap: 0.1em;
   margin: 0.2em;
   margin-top: 0;
   flex-direction:column;
