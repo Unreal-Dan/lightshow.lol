@@ -346,6 +346,7 @@
 #welcomePanel > .panel-content {
   flex: 1;
   min-height: 0;
+  max-height: none;
   display: flex;
   flex-direction: column;
   padding: 0;
