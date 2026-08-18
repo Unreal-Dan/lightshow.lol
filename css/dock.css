@@ -299,33 +299,6 @@
   overflow-y: auto;
 }
 
-/* ── Overlay panels (update, chromalink) ── */
-#updatePanel,
-#chromalinkPanel {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 200 !important;
-  max-height: 90vh;
-  overflow-y: auto;
-  width: 370px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-  border-radius: 6px;
-  background: #181a1b;
-}
-
-#updatePanel .panel-header,
-#chromalinkPanel .panel-header {
-  cursor: default;
-  background: #292c2e;
-}
-
-#updatePanel .panel-header:hover,
-#chromalinkPanel .panel-header:hover {
-  background: #292c2e;
-}
-
 /* Color picker — floating panel */
 #colorPickerPanel {
   width: 560px !important;

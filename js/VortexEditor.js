@@ -15,6 +15,7 @@ import ChromalinkPanel from './ChromalinkPanel.js';
 import CommunityBrowserPanel from './CommunityBrowserPanel.js';
 import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
+import LayoutPanel from './LayoutPanel.js';
 import DockManager from './DockManager.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
@@ -82,6 +83,7 @@ export default class VortexEditor {
     this.communityBrowserPanel = new CommunityBrowserPanel(this);
     this.duoEditorPanel = new DuoEditorPanel(this);
     this.duoCommunityPanel = new CommunityBrowserPanel(this);
+    this.layoutPanel = new LayoutPanel(this);
     this.panels = [
       this.welcomePanel,
       this.aboutPanel,
@@ -96,6 +98,7 @@ export default class VortexEditor {
       this.updatePanel,
       this.chromalinkPanel,
       this.communityBrowserPanel,
+      this.layoutPanel,
     ];
     if (this.detectMobile()) {
       this.panels.push(this.duoEditorPanel);
@@ -123,6 +126,7 @@ export default class VortexEditor {
       'modesPanel',
       'ledSelectPanel',
       'communityBrowserPanel',
+      'layoutPanel',
       'duoEditorPanel'
     ];
   }
@@ -184,6 +188,9 @@ export default class VortexEditor {
         this.modesPanel,
         this.ledSelectPanel,
         this.communityBrowserPanel,
+        this.layoutPanel,
+        this.updatePanel,
+        this.chromalinkPanel,
       ];
       dockPanels.forEach(panel => {
         if (panel) this.dockManager.register(panel, 'left');
@@ -201,12 +208,12 @@ export default class VortexEditor {
         });
       }
 
-      // Overlay panels go to body (not managed by dock manager)
-      const overlayPanels = [
-        this.updatePanel,
-        this.chromalinkPanel,
+      // Floating-only panels go to body (not managed by dock manager)
+      const floatingPanels = [
+        this.welcomePanel,
+        this.colorPickerPanel,
       ];
-      overlayPanels.forEach(panel => {
+      floatingPanels.forEach(panel => {
         if (panel && panel.panel) document.body.appendChild(panel.panel);
       });
 
@@ -275,12 +282,6 @@ export default class VortexEditor {
       items.push({
         label: 'Redo',
         action: () => this.vortex.redo()
-      });
-
-      items.push({ separator: true });
-      items.push({
-        label: 'Reset Window Layout',
-        action: () => this.dockManager.resetLayout()
       });
 
       items.push({ separator: true });
@@ -672,6 +673,9 @@ export default class VortexEditor {
         this.modesPanel,
         this.ledSelectPanel,
         this.communityBrowserPanel,
+        this.layoutPanel,
+        this.updatePanel,
+        this.chromalinkPanel,
       ];
       dockPanels.forEach(panel => {
         if (panel) this.dockManager.register(panel, 'left');
@@ -685,13 +689,12 @@ export default class VortexEditor {
         });
       }
 
-      const overlayPanels = [
+      // Floating-only panels go to body (not managed by dock manager)
+      const floatingPanels = [
         this.welcomePanel,
         this.colorPickerPanel,
-        this.updatePanel,
-        this.chromalinkPanel,
       ];
-      overlayPanels.forEach(panel => {
+      floatingPanels.forEach(panel => {
         if (panel && panel.panel && !document.body.contains(panel.panel)) {
           document.body.appendChild(panel.panel);
         }

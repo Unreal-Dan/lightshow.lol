@@ -1102,6 +1102,24 @@ export default class DockManager {
       panelEl.classList.remove('floating-panel');
     });
 
+    // Ensure floating-only panels are detached from any dock they may
+    // have ended up in from a prior layout
+    ['welcomePanel', 'colorPickerPanel'].forEach(id => {
+      const record = this.panels.get(id);
+      if (!record) return;
+      if (record.dock || record.floating) this.removePanel(id);
+      const panelEl = record.panel.panel;
+      if (panelEl.parentElement) {
+        panelEl.parentElement.removeChild(panelEl);
+      }
+      panelEl.style.position = '';
+      panelEl.style.left = '';
+      panelEl.style.top = '';
+      panelEl.style.width = '';
+      panelEl.style.zIndex = '';
+      panelEl.classList.remove('floating-panel');
+    });
+
     // Now re-apply saved positions
     ids.forEach(id => {
       const entry = data.panels[id];
@@ -1178,13 +1196,20 @@ export default class DockManager {
       const record = this.panels.get(id);
       if (!record) return;
       this.removePanel(id);
-      const panelEl = record.panel.panel;
-      panelEl.style.position = '';
-      panelEl.style.left = '';
-      panelEl.style.top = '';
-      panelEl.style.width = '';
-      panelEl.style.zIndex = '';
-      panelEl.classList.remove('floating-panel');
+      // Floating-only panels: strip state and detach from dock DOM so they
+      // don't remain visible in a dock from a previous layout
+      if (id === 'welcomePanel' || id === 'colorPickerPanel') {
+        const panelEl = record.panel.panel;
+        if (panelEl.parentElement) {
+          panelEl.parentElement.removeChild(panelEl);
+        }
+        panelEl.style.position = '';
+        panelEl.style.left = '';
+        panelEl.style.top = '';
+        panelEl.style.width = '';
+        panelEl.style.zIndex = '';
+        panelEl.classList.remove('floating-panel');
+      }
     });
 
     // Reset dock sizes to defaults
@@ -1192,8 +1217,9 @@ export default class DockManager {
     this.dockSizes.right = DEFAULT_DOCK_SIZE;
     this.dockSizes.bottom = DEFAULT_BOTTOM_SIZE;
 
-    // Dock all panels on left, collapsed
+    // Dock all panels on left, collapsed (skip floating-only panels)
     ids.forEach(id => {
+      if (id === 'welcomePanel' || id === 'colorPickerPanel') return;
       this.dockPanel(id, 'left');
     });
 
