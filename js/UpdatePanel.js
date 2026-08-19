@@ -656,14 +656,14 @@ export default class UpdatePanel extends Panel {
       if (updateProgress) updateProgress.textContent = 'Initializing firmware update...';
       console.log('[UpdatePanel] handleFirmwareUpdate, backupModes =', backupModes);
 
-      // ensure a live connection to the current firmware first (needed for backup)
-      if (!(await this.ensureUpdateConnection())) {
-        throw new Error('Could not establish a connection with the device');
-      }
-
-      // cache the current modes across all profiles BEFORE anything is erased.
-      // if the backup fails we abort before flashing so the modes are never lost.
       if (backupModes) {
+        // ensure a live connection to the current firmware first (needed for backup)
+        if (!(await this.ensureUpdateConnection())) {
+          throw new Error('Could not establish a connection with the device');
+        }
+
+        // cache the current modes across all profiles BEFORE anything is erased.
+        // if the backup fails we abort before flashing so the modes are never lost.
         if (updateProgress) updateProgress.textContent = 'Backing up modes...';
         Notification.success('Backing up modes...');
         backup = await this.backupAllProfiles();
@@ -675,6 +675,19 @@ export default class UpdatePanel extends Panel {
           ? 'your current 16 modes'
           : `across ${backup.length} profiles`;
         Notification.success(`Backed up ${backedUpModes} modes ${backupScope}.`);
+      } else {
+        // no backup — just make sure we have a serial port for the ESP flasher
+        // without wasting time on a greeting handshake
+        if (!this.serialPort) {
+          if (!this.vortexPort.serialPort) {
+            this.serialPort = await navigator.serial.requestPort();
+            if (!this.serialPort) throw new Error('No serial port selected');
+            await this.serialPort.open({ baudRate: 115200 });
+            await this.serialPort.setSignals({ dataTerminalReady: true });
+          } else {
+            this.serialPort = this.vortexPort.serialPort;
+          }
+        }
       }
 
       this.editor.lightshow.stop();
