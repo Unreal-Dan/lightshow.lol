@@ -111,9 +111,14 @@ export default class LedSelectPanel extends Panel {
     this.refreshLedList();
 
     if (!this.editor.detectMobile()) {
-      // hide till device connects
-      this.hide();
+      this.showNoDeviceMessage();
     }
+
+    // Reposition LED indicators when the container resizes (e.g. dock resize)
+    this._resizeObserver = new ResizeObserver(() => {
+      this.refreshLedPositions();
+    });
+    this._resizeObserver.observe(deviceImageContainer);
   }
 
   toggleLedList() {
@@ -156,8 +161,9 @@ export default class LedSelectPanel extends Panel {
   }
 
   async updateSelectedDevice(device) {
+    this.selectedDevice = device;
     if (device === 'None') {
-      this.hide();
+      this.showNoDeviceMessage();
       return;
     }
     // Reset duo mode when switching away from Chromadeck
@@ -165,12 +171,8 @@ export default class LedSelectPanel extends Panel {
       this.isDuoMode = false;
       this.editor.lightshow.setChromadeckDuoMode(false);
     }
-    // change the selected device name
-    this.selectedDevice = device;
     // render the led indicators for this device
     await this.renderLedIndicators(device);
-    // show the led selection window if it was previously hidden
-    this.show();
     // refresh the led list
     this.refreshLedList();
     // select all of the leds but don't propagate this update
@@ -178,7 +180,7 @@ export default class LedSelectPanel extends Panel {
   }
 
   show() {
-    if (this.editor.detectMobile() && this.selectedDevice) {
+    if (this.editor.detectMobile() && this.selectedDevice && this.selectedDevice !== 'None') {
       this.renderLedIndicators(this.selectedDevice);
     }
     super.show();
@@ -196,15 +198,48 @@ export default class LedSelectPanel extends Panel {
     }
   }
 
+  showNoDeviceMessage() {
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!deviceImageContainer) return;
+
+    // Clear existing content
+    deviceImageContainer.innerHTML = '';
+
+    const msg = document.createElement('div');
+    msg.className = 'no-device-message';
+    msg.textContent = 'Select a device to select LEDs';
+    deviceImageContainer.appendChild(msg);
+
+    // Hide device-specific UI (but keep deviceImageContainer visible inside fieldset)
+    const ledLegend = document.getElementById('ledLegend');
+    if (ledLegend) ledLegend.style.display = 'none';
+    const ledControls = document.getElementById('ledControls');
+    if (ledControls) ledControls.style.display = 'none';
+    const toggleLedList = document.getElementById('toggleLedList');
+    if (toggleLedList) toggleLedList.style.display = 'none';
+  }
+
   async renderLedIndicators(deviceName = null) {
     const deviceImageContainer = document.getElementById('deviceImageContainer');
     if (!deviceImageContainer) {
       return;
     }
     if (!deviceName || deviceName === 'None') {
-      this.hide();
+      this.showNoDeviceMessage();
       return;
     }
+
+    // Remove any leftover no-device message
+    const existingMsg = deviceImageContainer.querySelector('.no-device-message');
+    if (existingMsg) existingMsg.remove();
+
+    // Show device-specific UI (inside the fieldset — don't unhide fieldset itself)
+    const ledLegend = document.getElementById('ledLegend');
+    if (ledLegend) ledLegend.style.display = '';
+    const ledControls = document.getElementById('ledControls');
+    if (ledControls) ledControls.style.display = '';
+    const toggleLedList = document.getElementById('toggleLedList');
+    if (toggleLedList) toggleLedList.style.display = '';
 
     // Check if an existing overlay already exists
     let overlay = deviceImageContainer.querySelector('.led-overlay');
@@ -239,6 +274,12 @@ export default class LedSelectPanel extends Panel {
     const deviceData = await this.getLedPositions(positionsDevice);
     const deviceImageSrc = this.useAltImage() ? this.editor.devices[deviceName].altImage : (useChromadeckDuo ? this.editor.devices['Duo'].image : this.editor.devices[deviceName].image);
 
+    // Store for resize repositioning
+    this._deviceData = deviceData;
+
+    // Store for resize repositioning
+    this._deviceData = deviceData;
+
     let deviceSvg = deviceImageContainer.querySelector('.device-svg');
     if (!deviceSvg) {
       deviceSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -272,6 +313,27 @@ export default class LedSelectPanel extends Panel {
         overlay.appendChild(ledIndicator);
       });
       this.updateLedIndicators();
+    });
+  }
+
+  refreshLedPositions() {
+    const deviceImageContainer = document.getElementById('deviceImageContainer');
+    if (!deviceImageContainer || !this._deviceData) return;
+    const overlay = deviceImageContainer.querySelector('.led-overlay');
+    if (!overlay) return;
+
+    requestAnimationFrame(() => {
+      const containerRect = deviceImageContainer.getBoundingClientRect();
+      const scaleX = containerRect.width / this._deviceData.original_width;
+      const scaleY = containerRect.height / this._deviceData.original_height;
+      const indicators = overlay.querySelectorAll('.led-indicator');
+      this._deviceData.points.forEach((point, index) => {
+        const indicator = indicators[index];
+        if (indicator) {
+          indicator.style.left = `${point.x * scaleX}px`;
+          indicator.style.top = `${point.y * scaleY}px`;
+        }
+      });
     });
   }
 

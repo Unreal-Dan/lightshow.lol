@@ -4,7 +4,6 @@
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
-  position: absolute;
   z-index: 2;
   transition: transform 0.4s ease; /* Sliding animation */
 }
@@ -84,8 +83,8 @@
 }
 
 .animation-button {
-  margin: 5px;
-  width: 50px;
+  margin: 0;
+  flex: 1;
   height: 50px;
   display: flex;
   align-items: center;
@@ -100,15 +99,10 @@
 
 .animation-buttons-container {
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
   padding: 10px;
   padding-top: 0;
   padding-bottom: 0;
-}
-
-.animation-buttons-container {
-  display: flex;
-  gap: 10px;
   margin-bottom: 10px;
 }
 
@@ -160,5 +154,3 @@
   outline: none;
   border-color: #888; /* Highlight border on focus */
 }
-
-

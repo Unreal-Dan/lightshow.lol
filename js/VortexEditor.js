@@ -15,6 +15,8 @@ import ChromalinkPanel from './ChromalinkPanel.js';
 import CommunityBrowserPanel from './CommunityBrowserPanel.js';
 import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
+import LayoutPanel from './LayoutPanel.js';
+import DockManager from './DockManager.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
 import ContextMenu from './ContextMenu.js';
@@ -81,6 +83,7 @@ export default class VortexEditor {
     this.communityBrowserPanel = new CommunityBrowserPanel(this);
     this.duoEditorPanel = new DuoEditorPanel(this);
     this.duoCommunityPanel = new CommunityBrowserPanel(this);
+    this.layoutPanel = new LayoutPanel(this);
     this.panels = [
       this.welcomePanel,
       this.aboutPanel,
@@ -95,6 +98,7 @@ export default class VortexEditor {
       this.updatePanel,
       this.chromalinkPanel,
       this.communityBrowserPanel,
+      this.layoutPanel,
     ];
     if (this.detectMobile()) {
       this.panels.push(this.duoEditorPanel);
@@ -109,19 +113,9 @@ export default class VortexEditor {
     if (allGood) {
       console.log("All panels instantiated successfully.");
     }
-    // initial layout of left panels
-    this.leftPanels = [
-      this.aboutPanel,
-      this.animationPanel,
-      this.patternPanel,
-      this.colorsetPanel,
-      this.communityBrowserPanel
-    ];
-    this.rightPanels = [
-      this.devicePanel,
-      this.modesPanel,
-      this.ledSelectPanel,
-    ];
+    // Initialize Dock Manager (desktop only)
+    this.dockManager = new DockManager(this);
+
     this.mobileTabs = [
       // IDs of panels to include as tabs on mobile
       'welcomePanel',
@@ -132,6 +126,7 @@ export default class VortexEditor {
       'modesPanel',
       'ledSelectPanel',
       'communityBrowserPanel',
+      'layoutPanel',
       'duoEditorPanel'
     ];
   }
@@ -176,34 +171,67 @@ export default class VortexEditor {
       document.body.appendChild(panelContainer);
     }
 
-    // Append panels to the DOM
-    const panelContainer = document.querySelector('.mobile-panel-content') || document.body;
-    this.panels.forEach((panel) => {
-      panel.appendTo(panelContainer);
-    });
+    // Desktop: initialize dock manager, register panels, attach overlays to body
+    if (!this.detectMobile()) {
+      await this.dockManager.initialize();
+
+      // Suppress auto-save during initial setup — we'll save once at the end
+      this.dockManager._suppressSave = true;
+
+      // Register panels with DockManager — all on left side
+      const dockPanels = [
+        this.aboutPanel,
+        this.animationPanel,
+        this.patternPanel,
+        this.colorsetPanel,
+        this.devicePanel,
+        this.modesPanel,
+        this.ledSelectPanel,
+        this.communityBrowserPanel,
+        this.layoutPanel,
+        this.updatePanel,
+        this.chromalinkPanel,
+      ];
+      dockPanels.forEach(panel => {
+        if (panel) this.dockManager.register(panel, 'left');
+      });
+
+      // Register floating-only panels (not docked)
+      if (this.welcomePanel) this.dockManager.register(this.welcomePanel, null);
+      if (this.colorPickerPanel) this.dockManager.register(this.colorPickerPanel, null);
+
+      // Restore saved layout if available, otherwise collapse all by default
+      const restored = this.dockManager.restoreLayout();
+      if (!restored) {
+        dockPanels.forEach(panel => {
+          if (panel && !panel.isCollapsed) panel.toggleCollapse();
+        });
+      }
+
+      // Floating-only panels go to body (not managed by dock manager)
+      const floatingPanels = [
+        this.welcomePanel,
+        this.colorPickerPanel,
+      ];
+      floatingPanels.forEach(panel => {
+        if (panel && panel.panel) document.body.appendChild(panel.panel);
+      });
+
+      // Re-enable saves and persist final state
+      this.dockManager._suppressSave = false;
+      this.dockManager.saveLayout();
+
+      this.dockManager.updateCanvasLayout();
+    } else {
+      // Mobile: append all panels to the mobile panel container
+      const panelContainer = document.querySelector('.mobile-panel-content');
+      if (panelContainer) {
+        this.panels.forEach((panel) => panel.appendTo(panelContainer));
+      }
+    }
 
     // Initialize Panels
     this.panels.forEach((panel) => panel.initialize());
-
-    if (!this.detectMobile()) {
-      // position the panels
-      let leftTop = 5;
-      this.leftPanels.forEach((panel) => {
-        if (!panel || !panel.panel) return;
-        panel.panel.style.position = 'absolute';
-        panel.panel.style.left = '5px';
-        panel.panel.style.top = `${leftTop}px`;
-        leftTop += panel.panel.offsetHeight + 5;
-      });
-      let rightTop = 5;
-      this.rightPanels.forEach((panel) => {
-        if (!panel || !panel.panel) return;
-        panel.panel.style.position = 'absolute';
-        panel.panel.style.right = '5px';
-        panel.panel.style.top = `${rightTop}px`;
-        rightTop += panel.panel.offsetHeight + 5;
-      });
-    }
 
     // Handle URL-imported mode data
     this.importModeDataFromUrl();
@@ -254,6 +282,12 @@ export default class VortexEditor {
       items.push({
         label: 'Redo',
         action: () => this.vortex.redo()
+      });
+
+      items.push({ separator: true });
+      items.push({
+        label: 'Reset Window Layout',
+        action: () => this.dockManager.resetLayout()
       });
 
       items.push({ separator: true });
@@ -422,10 +456,11 @@ export default class VortexEditor {
     }
 
     window.addEventListener('resize', () => {
-      // TODO: Responsive layout
-      //this.applyLayout();
-      // always shift the lightshow to be centered
-      this.lightshow.resetToCenter();
+      if (!this.detectMobile()) {
+        this.dockManager.updateCanvasLayout();
+      } else {
+        this.lightshow.updateLayout(true);
+      }
     });
 
     // In `VortexEditor.js` inside the `initialize` method:
@@ -504,8 +539,7 @@ export default class VortexEditor {
 
     // Style the overlay
     Object.assign(overlay.style, {
-      position: 'absolute',
-      left: '10px',
+      position: 'fixed',
       background: 'rgba(0, 0, 0, 0.1)', // Semi-transparent background
       color: 'rgba(255, 255, 255, 0.2)', // semi transparent text
       padding: '5px 10px',
@@ -518,8 +552,11 @@ export default class VortexEditor {
 
     if (this.detectMobile()) {
       overlay.style.top = '10px';
+      overlay.style.left = '10px';
     } else {
       overlay.style.bottom = '10px';
+      overlay.style.left = '10px';
+      // Will be repositioned to canvas left when updateCanvasLayout runs
     }
 
     // Set version text
@@ -600,30 +637,81 @@ export default class VortexEditor {
     return navigator.bluetooth !== undefined;
   }
 
-  applyLayout() {
+  async applyLayout() {
     const isNowMobile = this.detectMobile();
     if (isNowMobile === this.isMobile) {
-      // nothing to change
       return;
     }
-    // when switching between mobile and non mobile update the layout
     this.isMobile = isNowMobile;
 
-    // update the stylesheet
     const currentStylesheet = document.getElementById('mainStyles');
     if (this.isMobile && currentStylesheet) {
       currentStylesheet.href = "css/mobile-styles.css?v=__CACHE_BUSTER__";
     }
 
-    // Update layout for all panels
+    if (isNowMobile) {
+      // Switching to mobile: destroy dock areas, reset canvas
+      this.dockManager.destroy();
+      this.canvas.style.position = 'absolute';
+      this.canvas.style.left = '';
+      this.canvas.style.top = '';
+      this.canvas.style.width = '';
+      this.canvas.style.height = '';
+    } else {
+      // Switching to desktop: initialize dock manager
+      await this.dockManager.initialize();
+
+      this.dockManager._suppressSave = true;
+
+      // Register panels with DockManager — all on left side
+      const dockPanels = [
+        this.aboutPanel,
+        this.animationPanel,
+        this.patternPanel,
+        this.colorsetPanel,
+        this.devicePanel,
+        this.modesPanel,
+        this.ledSelectPanel,
+        this.communityBrowserPanel,
+        this.layoutPanel,
+        this.updatePanel,
+        this.chromalinkPanel,
+      ];
+      dockPanels.forEach(panel => {
+        if (panel) this.dockManager.register(panel, 'left');
+      });
+
+      // Restore saved layout if available, otherwise collapse all
+      const restored = this.dockManager.restoreLayout();
+      if (!restored) {
+        dockPanels.forEach(panel => {
+          if (panel && !panel.isCollapsed) panel.toggleCollapse();
+        });
+      }
+
+      // Floating-only panels go to body (not managed by dock manager)
+      const floatingPanels = [
+        this.welcomePanel,
+        this.colorPickerPanel,
+      ];
+      floatingPanels.forEach(panel => {
+        if (panel && panel.panel && !document.body.contains(panel.panel)) {
+          document.body.appendChild(panel.panel);
+        }
+      });
+
+      this.dockManager._suppressSave = false;
+      this.dockManager.saveLayout();
+
+      this.dockManager.updateCanvasLayout();
+    }
+
     this.panels.forEach(panel => {
       panel.updateLayout(this.isMobile);
     });
 
-    // update the lightshow layout
     this.lightshow.updateLayout(this.isMobile);
 
-    // set the active tab if mobile
     if (this.isMobile && this.panels.length > 0) {
       this.setActiveTab(this.panels[0].panel.id);
     }

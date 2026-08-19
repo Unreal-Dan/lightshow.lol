@@ -14,14 +14,10 @@ export default class ColorPickerPanel extends Panel {
 
   initialize() {
     this.initColorPickerContent();
-
-    // Automatically append to the document body
-    this.appendTo(document.body);
-    this.hide(); // Initially hide the panel
+    this.hide();
   }
 
   initColorPickerContent() {
-    // Create and structure the content container for the color picker
     this.contentContainer.innerHTML = `<div class="color-picker-controls"></div>`;
   }
 
@@ -41,6 +37,14 @@ export default class ColorPickerPanel extends Panel {
       this.initColorPickerControls(updateColorCallback);
       this.initHueCircle(h);
     }, 0);
+  }
+
+  show() {
+    super.show();
+    if (!this.editor.detectMobile() && this.editor.dockManager) {
+      this.editor.dockManager.floatPanel(this.id, Math.max(10, (window.innerWidth - 560) / 2), 80);
+      this.panel.style.width = '';
+    }
   }
 
   hide() {

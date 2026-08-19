@@ -242,12 +242,6 @@ export default class AnimationPanel extends Panel {
 
     // hide the spread slider
     this.toggleSpreadSlider(false);
-
-    // animation panel starts collapsed, don't move panels below when collapsing it
-    if (!this.editor.detectMobile()) {
-      // animation panel starts collapsed, don't move panels below when collapsing it
-      this.toggleCollapse(false);
-    }
   }
 
   applyMobileLayout() {
@@ -299,35 +293,17 @@ export default class AnimationPanel extends Panel {
     const animationPanel = document.getElementById('animationPanel');
     const spreadDiv = document.getElementById('spread_div');
 
-    // Step 1: Capture the previous height and identify snapped panels
-    const previousHeight = animationPanel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels(); // Identify panels based on the current height
-
-    // Step 2: Toggle the visibility
     const isHidden = (spreadDiv.style.display === 'none');
 
-    // Update the toggle button icon
     if (isHidden) {
       spreadDiv.style.display = '';
     } else {
       spreadDiv.style.display = 'none';
     }
 
-    // need to re-apply the spread value now
     const element = this.panel.querySelector('#spread');
     const control = this.controls.find(c => c.id === 'spread');
     control.update(element.value);
-
-    if (propagate) {
-      // Step 3: Calculate the new height
-      const heightChange = animationPanel.offsetHeight - previousHeight;
-      // Step 4: Move snapped panels after the height change
-      snappedPanels.forEach((otherPanel) => {
-        otherPanel.moveSnappedPanels(heightChange);
-        const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-        otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-      });
-    }
   }
 
   attachShapeButtonListeners() {

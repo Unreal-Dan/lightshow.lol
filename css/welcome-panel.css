@@ -1,23 +1,26 @@
-/* welcome-panel.css */
-#welcomePanel {
-  top: 75px;
-  left: 50%; /* Center the div */
-  width: 900px;
-  transform: translate(-25%, 0%);
-  text-align: left;
-  z-index: 50;
+/* welcome-panel.css — full overhaul */
+
+/* ── Left side: title + intro + actions ── */
+#welcomePanel .welcome-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
-#welcomePanel label {
-  font-size: 20px;
-}
-#welcomePanel input {
-  height: 16px;
-  width: 16px;
+#welcomePanel .welcome-left {
+  width: 42%;
+  box-sizing: border-box;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-right: 1px solid #333;
 }
 
 #welcomePanel .welcome-title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 900;
   text-align: center;
   background: linear-gradient(135deg, #ff6600, #ffcc00, #ff6600);
@@ -27,192 +30,209 @@
   color: transparent;
   animation: bannerShimmer 3s ease-in-out infinite;
   text-shadow: none;
-  margin-bottom: 20px;
+  margin: 0;
   letter-spacing: 1px;
 }
 
 #welcomePanel .intro-text {
-  font-size: 20px;
-  line-height: 1.6;
-  color: #c8c4c0;
-  margin: 0 50px 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #b0acaa;
+  margin: 0;
   text-align: center;
+  padding: 0 8px;
 }
 
-#welcomePanel .intro-text:last-of-type {
-  margin: 0 50px 20px;
+/* ── Actions row: Wiki + Close buttons ── */
+#welcomePanel .welcome-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 6px;
 }
 
-#welcomePanel p {
-  font-size: 20px;
+#welcomePanel .wiki-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background: #28a745;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
 }
 
-#welcomePanel h2 {
-  margin-bottom: 0;
+#welcomePanel .wiki-button:hover {
+  background: #218838;
+  transform: translateY(-1px);
 }
 
-/* public/css/components/welcome-panel.css */
+#welcomePanel .wiki-button:active {
+  background: #1c7a3a;
+  transform: translateY(1px);
+}
 
-.features-container {
-  border: 1px solid #444;
+#welcomePanel .wiki-button .arrow {
+  font-size: 18px;
+  line-height: 1;
+}
+
+#welcomePanel .close-welcome-btn {
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #d8d4cf;
+  background: #3a3a3a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+  width: auto;
+}
+
+#welcomePanel .close-welcome-btn:hover {
+  background: #4a4a4a;
+  color: #fff;
+}
+
+/* ── Checkbox ── */
+#welcomePanel .checkbox-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 4px;
+}
+
+#welcomePanel .checkbox-container label {
+  font-size: 13px;
+  color: #999;
+}
+
+#welcomePanel .checkbox-container input[type="checkbox"] {
+  margin-right: 6px;
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Right side: News & Updates ── */
+#welcomePanel .welcome-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 10px;
+  background: #1e2022;
+  border: 1px solid #333;
   border-radius: 10px;
-  margin: 16px 0;
   overflow: hidden;
 }
 
-.features-container-title {
-  background: linear-gradient(135deg, #3a3a3a, #4a4a4a);
+#welcomePanel .features-container-title {
+  background: #2a2c2e;
   color: #f0ece8;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 700;
   text-align: center;
-  padding: 9px 0;
+  padding: 10px 0;
   letter-spacing: 1px;
-  border-bottom: 1px solid #555;
+  border-bottom: 1px solid #3a3a3a;
+  flex-shrink: 0;
 }
 
-.feature-scroll {
-  max-height: 340px;
+#welcomePanel .feature-scroll {
+  flex: 1;
   overflow-y: auto;
   padding: 8px 10px;
-  scrollbar-color: #777 transparent;
+  min-height: 0;
+  scrollbar-color: #555 transparent;
 }
 
-.feature-scroll::-webkit-scrollbar {
-  width: 10px;
+#welcomePanel .feature-scroll::-webkit-scrollbar {
+  width: 8px;
 }
-.feature-scroll::-webkit-scrollbar-track {
+
+#welcomePanel .feature-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
-.feature-scroll::-webkit-scrollbar-thumb {
-  background: #666;
-  border-radius: 5px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-.feature-scroll::-webkit-scrollbar-thumb:hover {
-  background: #888;
-  border: 2px solid transparent;
-  background-clip: content-box;
+
+#welcomePanel .feature-scroll::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
 }
 
-.feature-box {
-  background: #2a2a2a;
-  border: 1px solid #555;
-  border-left: 4px solid #ff4400;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin: 10px 0;
+#welcomePanel .feature-scroll::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* ── Feature cards ── */
+#welcomePanel .feature-box {
+  background: #252728;
+  border: 1px solid #3a3a3a;
+  border-left: 3px solid #ff4400;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  gap: 8px;
+  transition: border-color 0.25s, box-shadow 0.25s;
   cursor: pointer;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #c8c4c0;
 }
 
-.feature-box.seen {
-  border-left-color: #555;
+#welcomePanel .feature-box:last-child {
+  margin-bottom: 2px;
+}
+
+#welcomePanel .feature-box.seen {
+  border-left-color: #444;
+  opacity: 0.65;
   cursor: default;
 }
 
-.feature-box:not(.seen):hover {
+#welcomePanel .feature-box:not(.seen):hover {
   border-color: #ff6600;
-  box-shadow: 0 0 12px rgba(255, 68, 0, 0.25);
+  box-shadow: 0 0 10px rgba(255, 68, 0, 0.2);
 }
 
-.feature-badge {
+#welcomePanel .feature-badge {
   background: #ff4400;
   color: #fff;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 3px 8px;
-  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
   flex-shrink: 0;
   margin-top: 1px;
-  cursor: pointer;
-  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.feature-badge.pulse {
+#welcomePanel .feature-badge.pulse {
   animation: badgePulse 2s ease-in-out infinite;
 }
 
 @keyframes badgePulse {
   0%, 100% {
     background: #ff4400;
-    box-shadow: 0 0 6px rgba(255, 68, 0, 0.4);
+    box-shadow: 0 0 4px rgba(255, 68, 0, 0.3);
   }
   50% {
     background: #ff6600;
-    box-shadow: 0 0 14px rgba(255, 68, 0, 0.8);
+    box-shadow: 0 0 10px rgba(255, 68, 0, 0.6);
   }
 }
 
-.wiki-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 20px;
-  font-size: 18px;
-  font-weight: bold;
-  text-decoration: none;
-  color: white;
-  background-color: #28a745; /* Green color */
-  border-radius: 8px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  margin: 18px 0 0;
-}
-
-.wiki-button .arrow {
-  margin-left: 10px;
-  font-size: 20px;
-}
-
-.wiki-button:hover {
-  background-color: #218838; /* Darker green on hover */
-  transform: translateY(-2px);
-}
-
-.wiki-button:active {
-  background-color: #1e7e34; /* Even darker green on click */
-  transform: translateY(1px);
-}
-
-.close-welcome-btn {
-  display: block;
-  width: auto;
-  min-width: 120px;
-  margin: 18px auto 0;
-  padding: 10px 24px;
-  font-size: 15px;
-  font-weight: bold;
-  color: #ccc;
-  background: #3a3a3a;
-  border: 1px solid #555;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-
-.close-welcome-btn:hover {
-  background: #4a4a4a;
-  color: #fff;
-}
-
-/* Container for the checkbox to help with positioning */
-.checkbox-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 18px;
-}
-
-/* Label for the checkbox */
-.checkbox-container label {
-  font-size: 1rem;
-}
-
-/* Style for the checkbox itself */
-.checkbox-container input[type="checkbox"] {
-  margin-right: 10px;
+@keyframes bannerShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }

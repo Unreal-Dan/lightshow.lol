@@ -113,7 +113,19 @@ export default class DevicePanel extends Panel {
         return; // Do nothing if locked
       }
 
+      const wasShown = document.getElementById('deviceTypeOptions').classList.contains('show');
       document.getElementById('deviceTypeOptions').classList.toggle('show');
+      // Bump z-index when dropdown open so it overrides other floating panels
+      this._setHighZIndex(!wasShown);
+    });
+
+    // Close dropdown on outside click and restore z-index
+    document.addEventListener('click', (event) => {
+      const options = document.getElementById('deviceTypeOptions');
+      if (options.classList.contains('show') && !event.target.closest('#deviceTypeContainer') && !event.target.closest('#deviceTypeOptions')) {
+        options.classList.remove('show');
+        this._setHighZIndex(false);
+      }
     });
 
     // Brightness slider listener
@@ -374,13 +386,10 @@ export default class DevicePanel extends Panel {
     Notification.success("Successfully Connected " + deviceName);
   }
 
-  toggleDeviceInfo(brightness = 255, propagate = true) {
+  toggleDeviceInfo(brightness = 255) {
     const devicePanel = document.getElementById('devicePanel');
     const deviceInfoPanel = document.getElementById('deviceInfoPanel');
     const brightnessSlider = document.getElementById('brightnessSlider');
-
-    const previousHeight = devicePanel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels();
 
     if (deviceInfoPanel.style.display === '' || deviceInfoPanel.style.display === 'none') {
       deviceInfoPanel.style.display = 'flex';
@@ -388,22 +397,7 @@ export default class DevicePanel extends Panel {
       deviceInfoPanel.style.display = 'none';
     }
 
-    if (propagate) {
-      this.propagateHeightChange(previousHeight, snappedPanels);
-    }
-
     brightnessSlider.value = brightness;
-  }
-
-  // moves any snapped panels (eg. the modes list) when this panel grows or shrinks
-  propagateHeightChange(previousHeight, snappedPanels) {
-    const heightChange = this.panel.offsetHeight - previousHeight;
-    if (heightChange === 0) return;
-    snappedPanels.forEach((otherPanel) => {
-      otherPanel.moveSnappedPanels(heightChange);
-      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-    });
   }
 
   async onDeviceDisconnect() {
@@ -453,10 +447,7 @@ export default class DevicePanel extends Panel {
     const isVisible = container.style.display !== 'none';
     if (isVisible === visible) return;
 
-    const previousHeight = this.panel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels();
     container.style.display = visible ? 'flex' : 'none';
-    this.propagateHeightChange(previousHeight, snappedPanels);
   }
 
   async switchProfile(profile) {
@@ -500,6 +491,7 @@ export default class DevicePanel extends Panel {
 
     // ensure the dropdown is closed
     document.getElementById('deviceTypeOptions').classList.remove('show');
+    this._setHighZIndex(false);
 
     if (device === 'None') {
       // Update the UI of the dropdown to 'select device'
@@ -534,6 +526,48 @@ export default class DevicePanel extends Panel {
     // dispatch the device change event with the device name and version
     if (notify) {
       this.deviceChangeNotification('select', this.selectedDevice, this.editor.vortexPort.version);
+    }
+  }
+
+  _setHighZIndex(active) {
+    const options = document.getElementById('deviceTypeOptions');
+    const trigger = document.getElementById('deviceTypeSelected');
+    if (!options || !trigger) return;
+
+    if (active) {
+      const rect = trigger.getBoundingClientRect();
+      this._savedDropdownParent = options.parentNode;
+      this._savedDropdownNextSibling = options.nextSibling;
+      this._savedDropdownStyle = {
+        position: options.style.position,
+        left: options.style.left,
+        top: options.style.top,
+        width: options.style.width,
+        zIndex: options.style.zIndex,
+      };
+      document.body.appendChild(options);
+      options.style.position = 'fixed';
+      options.style.left = rect.left + 'px';
+      options.style.top = (rect.bottom + 2) + 'px';
+      options.style.width = rect.width + 'px';
+      options.style.zIndex = '9999';
+    } else {
+      const parent = this._savedDropdownParent;
+      if (parent) {
+        if (this._savedDropdownNextSibling) {
+          parent.insertBefore(options, this._savedDropdownNextSibling);
+        } else {
+          parent.appendChild(options);
+        }
+        options.style.position = this._savedDropdownStyle.position || '';
+        options.style.left = this._savedDropdownStyle.left || '';
+        options.style.top = this._savedDropdownStyle.top || '';
+        options.style.width = this._savedDropdownStyle.width || '';
+        options.style.zIndex = this._savedDropdownStyle.zIndex || '';
+        this._savedDropdownParent = null;
+        this._savedDropdownNextSibling = null;
+        this._savedDropdownStyle = null;
+      }
     }
   }
 
