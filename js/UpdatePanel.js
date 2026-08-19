@@ -412,17 +412,28 @@ export default class UpdatePanel extends Panel {
       return;
     }
 
+    const upgradeGuidePaths = {
+      gloves: '/vortex-devices/vortex-gloves/upgrade-guide.html',
+      orbit: '/vortex-devices/vortex-orbit/upgrade-guide.html',
+      handle: '/vortex-devices/omega-handles/upgrade-guide.html',
+      duo: '/vortex-devices/duo/programming-guide/chromalink-guide/upgrade-guide.html',
+      chromadeck: '/vortex-devices/chromadeck/upgrade-guide.html',
+      spark: '/vortex-devices/spark-handle/upgrade-guide.html',
+    };
+
+    const guidePath = upgradeGuidePaths[lowerDevice];
+
     if (lowerDevice === 'duo') {
       content += `
         <div class="firmware-buttons">
-          <a href="${wikiUrl('/' + lowerDevice + '_upgrade_guide.html')}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          <a href="${wikiUrl(guidePath)}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
     } else if (['orbit', 'handle', 'gloves'].includes(lowerDevice)) {
       content += `
         <div class="firmware-buttons">
           <a href="${downloadUrl}" target="_blank" class="btn-download">Download Latest Version</a>
-          <a href="${wikiUrl('/' + lowerDevice + '_upgrade_guide.html')}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
+          <a href="${wikiUrl(guidePath)}" target="_blank" class="btn-upgrade-guide">Read the Upgrade Guide</a>
         </div>
       `;
     } else if (['chromadeck', 'spark'].includes(lowerDevice)) {

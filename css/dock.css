@@ -236,33 +236,50 @@
   transition: background 0.15s ease;
 }
 
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: #3a3c3e;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resize-handle:hover::after,
+.resize-handle.active::after {
+  opacity: 1;
+}
+
 .resize-handle:hover,
 .resize-handle.active {
-  background: #3a7abd;
+  background: rgba(58, 122, 189, 0.15);
 }
 
 .resize-handle.vertical {
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 8px;
   cursor: col-resize;
 }
 
-.resize-handle.vertical:hover,
-.resize-handle.vertical.active {
-  width: 4px;
+.resize-handle.vertical::after {
+  width: 2px;
+  height: 32px;
 }
 
 .resize-handle.horizontal {
   left: 0;
   right: 0;
-  height: 4px;
+  height: 8px;
   cursor: row-resize;
 }
 
-.resize-handle.horizontal:hover,
-.resize-handle.horizontal.active {
-  height: 4px;
+.resize-handle.horizontal::after {
+  width: 32px;
+  height: 2px;
 }
 
 /* ── Floating Panels ── */

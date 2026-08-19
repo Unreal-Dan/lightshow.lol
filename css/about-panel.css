@@ -6,17 +6,18 @@
 }
 
 .about-pills {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
-  justify-content: center;
+  justify-items: stretch;
 }
 
 .pill-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px 14px;
+  padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
   color: #d8d4cf;
