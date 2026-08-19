@@ -27,12 +27,6 @@ jobs:
         cd VortexEngine/VortexEngine/VortexCLI
         make -j
 
-    # Install Emscripten dependencies
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3 nodejs cmake
-
     # Install Emscripten
     - name: Install Emscripten
       run: |

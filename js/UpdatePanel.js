@@ -467,6 +467,7 @@ export default class UpdatePanel extends Panel {
       // backup is offered unconditionally.
       this.backupDevice = lowerDevice;
       const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
+      this.forcedUpdate = !isRealVersion;
       const supportsProfiles = lowerDevice === 'chromadeck'
         && isRealVersion
         && this.editor.isVersionGreaterOrEqual(currentVersion, '1.5.53');
@@ -474,7 +475,7 @@ export default class UpdatePanel extends Panel {
 
       const backupHtml = canOfferBackup
         ? `<label for="backupModesCheckbox" style="display:flex;gap:.5em;align-items:center;margin-top:.9em;cursor:pointer;">
-             <input type="checkbox" id="backupModesCheckbox" checked>
+             <input type="checkbox" id="backupModesCheckbox"${isRealVersion ? ' checked' : ''}>
              <span>Back up modes first and restore them after the update</span>
            </label>`
         : '';
@@ -656,14 +657,14 @@ export default class UpdatePanel extends Panel {
       if (updateProgress) updateProgress.textContent = 'Initializing firmware update...';
       console.log('[UpdatePanel] handleFirmwareUpdate, backupModes =', backupModes);
 
-      // ensure a live connection to the current firmware first (needed for backup)
-      if (!(await this.ensureUpdateConnection())) {
-        throw new Error('Could not establish a connection with the device');
-      }
-
-      // cache the current modes across all profiles BEFORE anything is erased.
-      // if the backup fails we abort before flashing so the modes are never lost.
       if (backupModes) {
+        // ensure a live connection to the current firmware first (needed for backup)
+        if (!(await this.ensureUpdateConnection())) {
+          throw new Error('Could not establish a connection with the device');
+        }
+
+        // cache the current modes across all profiles BEFORE anything is erased.
+        // if the backup fails we abort before flashing so the modes are never lost.
         if (updateProgress) updateProgress.textContent = 'Backing up modes...';
         Notification.success('Backing up modes...');
         backup = await this.backupAllProfiles();
@@ -675,6 +676,19 @@ export default class UpdatePanel extends Panel {
           ? 'your current 16 modes'
           : `across ${backup.length} profiles`;
         Notification.success(`Backed up ${backedUpModes} modes ${backupScope}.`);
+      } else {
+        // no backup — just make sure we have a serial port for the ESP flasher
+        // without wasting time on a greeting handshake
+        if (!this.serialPort) {
+          if (!this.vortexPort.serialPort) {
+            this.serialPort = await navigator.serial.requestPort();
+            if (!this.serialPort) throw new Error('No serial port selected');
+            await this.serialPort.open({ baudRate: 115200 });
+            await this.serialPort.setSignals({ dataTerminalReady: true });
+          } else {
+            this.serialPort = this.vortexPort.serialPort;
+          }
+        }
       }
 
       this.editor.lightshow.stop();
@@ -684,8 +698,11 @@ export default class UpdatePanel extends Panel {
       await this.fetchAndFlashFirmware();
 
       // reconnect to the freshly-booted firmware so we see its new greeting
-      if (updateProgress) updateProgress.textContent = 'Reconnecting...';
-      await this.reconnectAfterFlash();
+      // skip for forced updates (Insert key) — the device was never connected
+      if (!this.forcedUpdate) {
+        if (updateProgress) updateProgress.textContent = 'Reconnecting...';
+        await this.reconnectAfterFlash();
+      }
 
       // push the cached modes back to each profile
       if (backup) {
