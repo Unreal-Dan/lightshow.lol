@@ -363,6 +363,18 @@ export default class DevicePanel extends Panel {
     // supports the profile switch command
     this.setProfileVisible(deviceName === 'Chromadeck' && this.editor.vortexPort.useNewProfileSwitch);
 
+    // fetch the current profile from the device and sync the selector
+    if (deviceName === 'Chromadeck' && this.editor.vortexPort.useNewGetProfile) {
+      try {
+        const profile = await this.editor.vortexPort.getProfile(this.editor.vortexLib);
+        if (profile >= 0) {
+          this.currentProfile = profile;
+          const profileSelect = document.getElementById('profileSelect');
+          if (profileSelect) profileSelect.value = String(profile);
+        }
+      } catch {}
+    }
+
     const transmitToggle = document.getElementById('transmitToggle');
     if (transmitToggle) {
       const isDuo = (deviceName === 'Duo');

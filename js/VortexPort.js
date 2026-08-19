@@ -44,6 +44,7 @@ export default class VortexPort {
   EDITOR_VERB_GET_GLOBAL_BRIGHTNESS = "M";
   EDITOR_VERB_SET_CHROMA_BRIGHTNESS = "N";
   EDITOR_VERB_SWITCH_PROFILE        = "O";
+  EDITOR_VERB_GET_PROFILE           = "P";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -236,6 +237,7 @@ export default class VortexPort {
             this.useNewPushPull = this.editor.isVersionGreaterOrEqual(this.version, '1.3.0');
             this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
             this.useNewProfileSwitch = this.editor.isVersionGreaterOrEqual(this.version, '1.5.53');
+            this.useNewGetProfile = this.editor.isVersionGreaterOrEqual(this.version, '1.5.54');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -627,6 +629,37 @@ export default class VortexPort {
       this.isTransmitting = null;
       if (this.debugLogging) console.log("switchProfile End");
     }
+  }
+
+  async getProfile(vortexLib) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      console.log('Already transmitting:' + this.isTransmitting);
+      return -1;
+    }
+    if (!this.useNewProfileSwitch) {
+      console.warn('Connected firmware does not support getting profile');
+      return -1;
+    }
+    if (this.debugLogging) console.log('getProfile Start');
+    this.isTransmitting = 'getProfile';
+    let profile = 0;
+    try {
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_GET_PROFILE);
+      const profileBuf = await this.readByteStream(vortexLib);
+      profile = (profileBuf['12'] | 0);
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      profile = -1;
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log('getProfile End');
+    }
+    return profile;
   }
 
   async pushEachToDevice(vortexLib, vortex, onProgress = null) {

@@ -266,6 +266,14 @@ export default class SettingsModal {
           option.textContent = `Profile ${i + 1}`;
           select.appendChild(option);
         }
+        try {
+          if (this.editor?.vortexPort?.useNewGetProfile) {
+            const currentProfile = await this.editor.vortexPort.getProfile(this.editor.vortexLib);
+            if (currentProfile >= 0) {
+              select.value = String(currentProfile);
+            }
+          }
+        } catch {}
       }
 
       this._bindProfileForCurrentSelect();
