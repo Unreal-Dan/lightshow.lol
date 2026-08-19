@@ -152,12 +152,21 @@ export default class WelcomePanel extends Panel {
 
     const doNotShowCheckbox = this.panel.querySelector('#doNotShowAgain');
 
+    const stored = localStorage.getItem(this.welcomeToken);
+    if (stored !== null) {
+      doNotShowCheckbox.checked = stored === 'false';
+    }
+
     doNotShowCheckbox.addEventListener('change', (event) => {
       localStorage.setItem(this.welcomeToken, (!event.target.checked).toString());
     });
 
     const showWelcome = localStorage.getItem(this.welcomeToken) !== 'false';
-    if (!showWelcome) this.hide();
+    if (showWelcome && !this.editor.detectMobile()) {
+      this.show();
+    } else if (!showWelcome) {
+      this.hide();
+    }
 
     if (this.editor.detectMobile()) {
       this.panel.querySelector('.checkbox-container').style.display = 'none';
