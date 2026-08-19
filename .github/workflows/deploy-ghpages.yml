@@ -33,29 +33,6 @@ jobs:
           path: VortexEngine
           ref: desktop
 
-      - name: Check runner tools
-        run: |
-          which node || true
-          node --version || true
-          which npm || true
-          npm --version || true
-          which cmake || true
-          cmake --version || true
-          which make || true
-          make --version || true
-          which g++ || true
-          g++ --version || true
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Build Vortex CLI Tool
         run: |
           cd VortexEngine/VortexEngine/VortexCLI
