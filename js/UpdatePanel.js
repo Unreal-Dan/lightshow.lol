@@ -467,6 +467,7 @@ export default class UpdatePanel extends Panel {
       // backup is offered unconditionally.
       this.backupDevice = lowerDevice;
       const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
+      this.forcedUpdate = !isRealVersion;
       const supportsProfiles = lowerDevice === 'chromadeck'
         && isRealVersion
         && this.editor.isVersionGreaterOrEqual(currentVersion, '1.5.53');
@@ -697,8 +698,11 @@ export default class UpdatePanel extends Panel {
       await this.fetchAndFlashFirmware();
 
       // reconnect to the freshly-booted firmware so we see its new greeting
-      if (updateProgress) updateProgress.textContent = 'Reconnecting...';
-      await this.reconnectAfterFlash();
+      // skip for forced updates (Insert key) — the device was never connected
+      if (!this.forcedUpdate) {
+        if (updateProgress) updateProgress.textContent = 'Reconnecting...';
+        await this.reconnectAfterFlash();
+      }
 
       // push the cached modes back to each profile
       if (backup) {
