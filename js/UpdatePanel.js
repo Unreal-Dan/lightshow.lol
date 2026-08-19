@@ -474,7 +474,7 @@ export default class UpdatePanel extends Panel {
 
       const backupHtml = canOfferBackup
         ? `<label for="backupModesCheckbox" style="display:flex;gap:.5em;align-items:center;margin-top:.9em;cursor:pointer;">
-             <input type="checkbox" id="backupModesCheckbox" checked>
+             <input type="checkbox" id="backupModesCheckbox"${isRealVersion ? ' checked' : ''}>
              <span>Back up modes first and restore them after the update</span>
            </label>`
         : '';
