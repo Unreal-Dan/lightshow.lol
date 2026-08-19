@@ -1,0 +1,118 @@
+/* layout-panel.css */
+
+#layoutPanel {
+  z-index: 3;
+}
+
+.layout-section {
+  margin-bottom: 4px;
+}
+
+.layout-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.layout-divider {
+  height: 1px;
+  background: #333;
+  margin: 8px 0;
+}
+
+/* ── Preset grid ── */
+.layout-presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.layout-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #c8c4c0;
+  background: #222426;
+  border: 1px solid #3a3c3e;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.layout-preset-btn i {
+  font-size: 16px;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.layout-preset-btn .layout-preset-name {
+  line-height: 1;
+}
+
+.layout-preset-btn:hover {
+  background: #2a2d30;
+  border-color: #5a7a9a;
+  color: #fff;
+}
+
+.layout-preset-btn:hover i {
+  color: #fff;
+}
+
+.layout-preset-btn.active {
+  background: #1e3a5f;
+  border-color: #5a9eff;
+  color: #fff;
+}
+
+.layout-preset-btn.active i {
+  color: #5a9eff;
+}
+
+/* ── Action buttons ── */
+.layout-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.layout-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d8d4cf;
+  background: #222426;
+  border: 1px solid #3a3c3e;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.layout-action-btn i {
+  font-size: 12px;
+}
+
+.layout-action-btn:hover {
+  background: #2a2d30;
+  border-color: #5a7a9a;
+  color: #fff;
+}
+
+.layout-action-danger:hover {
+  border-color: #9a5a5a;
+  color: #ff6666;
+}
