@@ -500,7 +500,7 @@ export default class Lightshow {
   feedHorizontalPoints() {
     const centerY = this._center.y;
     const numLines = Math.max(1, this.lines | 0);
-    const spacing = Math.max(1, (this.circleRadius | 0) / 20);
+    const spacing = Math.max(1, (this.spread | 0) / 20);
     const spreadDist = this.spread | 0;
 
     for (let i = 0; i < this.tickRate; i++) {
@@ -534,7 +534,7 @@ export default class Lightshow {
   feedVerticalPoints() {
     const centerX = this._center.x;
     const numLines = Math.max(1, this.lines | 0);
-    const spacing = Math.max(1, (this.circleRadius | 0) / 20);
+    const spacing = Math.max(1, (this.spread | 0));
     const spreadDist = this.spread | 0;
 
     for (let i = 0; i < this.tickRate; i++) {
@@ -550,7 +550,7 @@ export default class Lightshow {
       this.angle += 0.02 * this.direction;
 
       const sweepHeight = this.canvas.height;
-      const sweepY = ((this.angle * 200) % sweepHeight + sweepHeight) % sweepHeight;
+      const sweepY = ((this.angle * 200 + ((500 - this.circleRadius) * 2)) % sweepHeight + sweepHeight) % sweepHeight;
 
       const ledsPerLine = Math.ceil(leds.length / numLines);
 
