@@ -497,6 +497,74 @@ export default class Lightshow {
     }
   }
 
+  feedHorizontalPoints() {
+    const centerY = this._center.y;
+    const numLines = Math.max(1, this.lines | 0);
+    const spacing = Math.max(1, (this.spread | 0) / 20);
+    const spreadDist = this.spread | 0;
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this._readLedData();
+
+      if (!leds) continue;
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
+
+      while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
+
+      this.angle += 0.02 * this.direction;
+
+      const sweepWidth = this.canvas.width;
+      const sweepX = ((this.angle * (200 + ((500 - this.circleRadius) * 2))) % sweepWidth + sweepWidth) % sweepWidth;
+
+      const ledsPerLine = Math.ceil(leds.length / numLines);
+
+      leds.forEach((col, index) => {
+        if (!col) col = { red: 0, green: 0, blue: 0 };
+        const lineIndex = Math.floor(index / ledsPerLine);
+        const indexInLine = index % ledsPerLine;
+        const x = sweepX + lineIndex * spreadDist;
+        const y = centerY + (indexInLine - (ledsPerLine - 1) / 2) * spacing;
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
+  feedVerticalPoints() {
+    const centerX = this._center.x;
+    const numLines = Math.max(1, this.lines | 0);
+    const spacing = Math.max(1, (this.spread | 0));
+    const spreadDist = this.spread | 0;
+
+    for (let i = 0; i < this.tickRate; i++) {
+      const leds = this._readLedData();
+
+      if (!leds) continue;
+      const visualCount = this.visualLedCount();
+      if (leds.length > visualCount) leds.length = visualCount;
+
+      while (this.histories.length < leds.length) this.histories.push([]);
+      while (this.histories.length > leds.length) this.histories.pop();
+
+      this.angle += 0.02 * this.direction;
+
+      const sweepHeight = this.canvas.height;
+      const sweepY = ((this.angle * 200 + ((500 - this.circleRadius) * 2)) % sweepHeight + sweepHeight) % sweepHeight;
+
+      const ledsPerLine = Math.ceil(leds.length / numLines);
+
+      leds.forEach((col, index) => {
+        if (!col) col = { red: 0, green: 0, blue: 0 };
+        const lineIndex = Math.floor(index / ledsPerLine);
+        const indexInLine = index % ledsPerLine;
+        const x = centerX + (indexInLine - (ledsPerLine - 1) / 2) * spacing;
+        const y = sweepY + lineIndex * spreadDist;
+        this.histories[index].push({ x, y, color: col });
+      });
+    }
+  }
+
   draw() {
     this._updateSpringCenter();
 
@@ -515,6 +583,12 @@ export default class Lightshow {
         break;
       case 'orbit':
         this.feedOrbitPoints();
+        break;
+      case 'horizontal':
+        this.feedHorizontalPoints();
+        break;
+      case 'vertical':
+        this.feedVerticalPoints();
         break;
       default:
         console.warn('Unknown shape:', this.currentShape);
