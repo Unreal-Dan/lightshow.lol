@@ -32,11 +32,6 @@ jobs:
           path: VortexEngine
           ref: desktop
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 nodejs cmake make git npm
-
       - name: Build Vortex CLI Tool
         run: |
           cd VortexEngine/VortexEngine/VortexCLI
