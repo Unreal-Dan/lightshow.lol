@@ -3,7 +3,7 @@
 const CLICK_THRESHOLD = 5; // px — mouse move threshold to distinguish click vs drag
 const DOCK_HIT_SIZE = 40; // px — width/height of edge hit zones
 const MIN_DOCK_SIZE = 160; // px — minimum dock width/height
-const DEFAULT_DOCK_SIZE = 320; // px — default left/right dock width
+const DEFAULT_DOCK_SIZE = 400; // px — default left/right dock width (matches floating panel width)
 const DEFAULT_BOTTOM_SIZE = 200; // px
 const SNAP_DISTANCE = 12; // px — magnetic snap activation distance
 
@@ -484,13 +484,10 @@ export default class DockManager {
       handle.style.display = hasPanels ? '' : 'none';
     }
 
-    // Set dock width when visible
+    // Set dock size and reposition handle when visible
+    // (handles may be stale if dockSizes changed while this dock was empty)
     if (hasPanels) {
-      if (side === 'left' || side === 'right') {
-        area.style.width = this.dockSizes[side] + 'px';
-      } else {
-        area.style.height = this.dockSizes[side] + 'px';
-      }
+      this.applyDockSize(side);
     }
   }
 

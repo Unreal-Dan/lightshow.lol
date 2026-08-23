@@ -18,7 +18,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 320px;
+  width: 400px;
   box-shadow: inset -1px 0 0 #25282a;
 }
 
@@ -26,7 +26,7 @@
   right: 0;
   top: 0;
   bottom: 0;
-  width: 320px;
+  width: 400px;
   box-shadow: inset 1px 0 0 #25282a;
 }
 
@@ -232,7 +232,7 @@
 .resize-handle {
   position: fixed;
   z-index: 60;
-  background: transparent;
+  background: #1b1e21;
   transition: background 0.15s ease;
 }
 
@@ -243,19 +243,18 @@
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 2px;
-  background: #3a3c3e;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  background: #7d858e;
+  transition: background 0.15s ease;
 }
 
 .resize-handle:hover::after,
 .resize-handle.active::after {
-  opacity: 1;
+  background: #c9d1d9;
 }
 
 .resize-handle:hover,
 .resize-handle.active {
-  background: rgba(58, 122, 189, 0.15);
+  background: #26292d;
 }
 
 .resize-handle.vertical {
