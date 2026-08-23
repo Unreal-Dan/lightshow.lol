@@ -31,6 +31,7 @@ export default class DockManager {
     this._suppressSave = false; // batch-save guard for setup/reset
     this._floatingHeights = new Map(); // panelId -> last known height
     this._floatingObservers = new Map(); // panelId -> ResizeObserver
+    this._floatingRelPos = new Map(); // panelId -> { anchorX, anchorY, gapPx, gapRatioX, gapRatioY }
     this._stackingBusy = false; // prevent re-entrant chain propagation
     this._zCounter = 200; // stacking order for floating panels
     this._suppressStack = false; // suppress stack propagation during restore
@@ -79,6 +80,7 @@ export default class DockManager {
     this._floatingObservers.forEach(o => o.disconnect());
     this._floatingObservers.clear();
     this._floatingHeights.clear();
+    this._floatingRelPos.clear();
     this.drag = null;
     this.resize = null;
   }
@@ -272,7 +274,7 @@ export default class DockManager {
     this.saveLayout();
   }
 
-  floatPanel(id, x, y) {
+  floatPanel(id, x, y, posSpec = null) {
     const record = this.panels.get(id);
     if (!record) return;
 
@@ -286,9 +288,39 @@ export default class DockManager {
     // Style as floating
     const panelEl = record.panel.panel;
     panelEl.style.position = 'fixed';
-    panelEl.style.left = x + 'px';
-    panelEl.style.top = y + 'px';
     panelEl.style.width = Math.min(400, window.innerWidth - 40) + 'px';
+
+    // Resolve horizontal position: side anchors measure the gap between the
+    // anchored screen edge and the panel's nearest edge; ratios scale with
+    // the viewport so layouts survive different screen sizes.
+    const spec = posSpec || {};
+    const w = panelEl.offsetWidth;
+    let px = x;
+    if (spec.xr != null && Number.isFinite(spec.xr)) {
+      px = spec.anchorX === 'right'
+        ? window.innerWidth - spec.xr * window.innerWidth - w
+        : spec.xr * window.innerWidth;
+    } else if (spec.anchorX === 'right') {
+      px = window.innerWidth - x - w;
+    }
+    px = Math.round(Math.max(0, Math.min(px, Math.max(0, window.innerWidth - w))));
+    const py = Math.round(Math.max(0, Math.min(y, Math.max(0, window.innerHeight - 40))));
+    panelEl.style.left = px + 'px';
+    panelEl.style.top = py + 'px';
+
+    if (spec.anchorX || spec.yr != null) {
+      this._floatingRelPos.set(id, {
+        anchorX: spec.anchorX === 'right' ? 'right' : 'left',
+        anchorY: spec.anchorY === 'bottom' ? 'bottom' : 'top',
+        gapPxX: spec.anchorX === 'right' ? window.innerWidth - (px + w) : px,
+        gapRatioX: spec.xr != null ? spec.xr : null,
+        gapPxY: spec.anchorY === 'bottom' ? window.innerHeight - py : py,
+        gapRatioY: spec.yr != null ? spec.yr : null,
+      });
+    } else {
+      this._floatingRelPos.delete(id);
+    }
+
     this._zCounter++;
     panelEl.style.zIndex = String(this._zCounter);
     panelEl.classList.add('floating-panel');
@@ -986,6 +1018,36 @@ export default class DockManager {
     document.addEventListener('mouseup', (e) => {
       if (this.drag) this.onDragEnd(e);
       if (this.resize) this.onResizeEnd();
+    });
+
+    // Keep anchored floating panels pinned to their screen edge on resize
+    window.addEventListener('resize', () => this._reflowFloatingPanels());
+  }
+
+  _reflowFloatingPanels() {
+    this._floatingRelPos.forEach((info, id) => {
+      const record = this.panels.get(id);
+      if (!record || !record.floating) return;
+      const el = record.panel.panel;
+      const w = el.offsetWidth;
+
+      if (info.gapRatioX != null) {
+        const gap = info.gapRatioX * window.innerWidth;
+        el.style.left = Math.round(info.anchorX === 'right'
+          ? window.innerWidth - gap - w
+          : gap) + 'px';
+      } else if (info.anchorX === 'right') {
+        el.style.left = Math.round(window.innerWidth - info.gapPxX - w) + 'px';
+      }
+
+      if (info.gapRatioY != null) {
+        const gap = info.gapRatioY * window.innerHeight;
+        el.style.top = Math.round(info.anchorY === 'bottom'
+          ? window.innerHeight - gap - el.offsetHeight
+          : gap) + 'px';
+      } else if (info.anchorY === 'bottom') {
+        el.style.top = Math.round(window.innerHeight - info.gapPxY - el.offsetHeight) + 'px';
+      }
     });
   }
 

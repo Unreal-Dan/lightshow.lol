@@ -94,18 +94,19 @@ export default class ChromalinkPanel extends Panel {
       });
     });
 
-    this.hide();
+    this.setInactive('Requires a connected Chromadeck');
   }
 
   async onDeviceConnect(deviceName) {
     // if the device has UPDI support open a chromalink window
     if (deviceName === 'Chromadeck') {
       this.show();
+      this.setInactive(null);
     }
   }
 
   async onDeviceDisconnect(deviceName) {
-    this.hide();
+    this.setInactive('Requires a connected Chromadeck');
   }
 
   async onDeviceSelected(devicename) {
@@ -224,7 +225,7 @@ export default class ChromalinkPanel extends Panel {
       await this.disconnect();
     }
     if (this.editor.updatePanel.isVisible) {
-      this.editor.updatePanel.hide();
+      this.editor.updatePanel.setInactive('Requires a connected device');
     }
     // Hide the progress bar container after a short delay
     setTimeout(() => {

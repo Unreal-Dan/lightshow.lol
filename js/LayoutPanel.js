@@ -1,14 +1,15 @@
 /* LayoutPanel.js */
 import Panel from './Panel.js';
+import Notification from './Notification.js';
 
 const LAYOUT_PRESETS = {
-  default: {
-    name: 'Default',
+  condensedLeft: {
+    name: 'Condensed Left',
     desc: 'All panels docked left, collapsed',
-    icon: 'fa-solid fa-bars',
+    icon: 'fa-solid fa-align-left',
     data: {
       ver: 1,
-      dockSizes: { left: 320, right: 320, bottom: 200 },
+      dockSizes: { left: 400, right: 400, bottom: 200 },
       panels: {
         aboutPanel:              { collapsed: true, dock: 'left', index: 0 },
         animationPanel:          { collapsed: true, dock: 'left', index: 1 },
@@ -24,8 +25,30 @@ const LAYOUT_PRESETS = {
       },
     },
   },
-  editor: {
-    name: 'Editor',
+  condensedRight: {
+    name: 'Condensed Right',
+    desc: 'All panels docked right, collapsed',
+    icon: 'fa-solid fa-align-right',
+    data: {
+      ver: 1,
+      dockSizes: { left: 400, right: 400, bottom: 200 },
+      panels: {
+        aboutPanel:              { collapsed: true, dock: 'right', index: 0 },
+        animationPanel:          { collapsed: true, dock: 'right', index: 1 },
+        patternPanel:            { collapsed: true, dock: 'right', index: 2 },
+        colorsetPanel:           { collapsed: true, dock: 'right', index: 3 },
+        devicePanel:             { collapsed: true, dock: 'right', index: 4 },
+        modesPanel:              { collapsed: true, dock: 'right', index: 5 },
+        ledSelectPanel:          { collapsed: true, dock: 'right', index: 6 },
+        communityBrowserPanel:   { collapsed: true, dock: 'right', index: 7 },
+        layoutPanel:             { collapsed: true, dock: 'right', index: 8 },
+        updatePanel:             { collapsed: true, dock: 'right', index: 9 },
+        chromalinkPanel:         { collapsed: true, dock: 'right', index: 10 },
+      },
+    },
+  },
+  classic: {
+    name: 'Classic',
     desc: 'Key editing panels expanded on the left',
     icon: 'fa-solid fa-pen-ruler',
     data: {
@@ -46,25 +69,25 @@ const LAYOUT_PRESETS = {
       },
     },
   },
-  spread: {
-    name: 'Spread',
-    desc: 'Panels distributed across left and right docks',
+  modern: {
+    name: 'Modern',
+    desc: 'Editing panels left, control panels right',
     icon: 'fa-solid fa-arrows-left-right',
     data: {
       ver: 1,
-      dockSizes: { left: 320, right: 320, bottom: 200 },
+      dockSizes: { left: 400, right: 400, bottom: 200 },
       panels: {
         aboutPanel:              { collapsed: true,  dock: 'left',  index: 0 },
-        animationPanel:          { collapsed: false, dock: 'left',  index: 1 },
-        patternPanel:            { collapsed: false, dock: 'left',  index: 2 },
-        colorsetPanel:           { collapsed: false, dock: 'left',  index: 3 },
-        devicePanel:             { collapsed: true,  dock: 'right', index: 0 },
+        layoutPanel:             { collapsed: true,  dock: 'left',  index: 1 },
+        animationPanel:          { collapsed: true,  dock: 'left',  index: 2 },
+        patternPanel:            { collapsed: false, dock: 'left',  index: 3 },
+        colorsetPanel:           { collapsed: false, dock: 'left',  index: 4 },
+        communityBrowserPanel:   { collapsed: false, dock: 'left',  index: 5 },
+        updatePanel:             { collapsed: true,  dock: 'left',  index: 6 },
+        chromalinkPanel:         { collapsed: true,  dock: 'left',  index: 7 },
+        devicePanel:             { collapsed: false, dock: 'right', index: 0 },
         modesPanel:              { collapsed: false, dock: 'right', index: 1 },
-        ledSelectPanel:          { collapsed: true,  dock: 'right', index: 2 },
-        communityBrowserPanel:   { collapsed: true,  dock: 'right', index: 3 },
-        layoutPanel:             { collapsed: true,  dock: 'left',  index: 4 },
-        updatePanel:             { collapsed: true,  dock: 'left',  index: 5 },
-        chromalinkPanel:         { collapsed: true,  dock: 'left',  index: 6 },
+        ledSelectPanel:          { collapsed: false, dock: 'right', index: 2 },
       },
     },
   },
@@ -186,6 +209,14 @@ export default class LayoutPanel extends Panel {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => this.resetLayout());
     }
+
+    // Hotkey: Ctrl+Shift+L copies current layout JSON to clipboard
+    document.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        this.copyLayoutToClipboard();
+      }
+    });
   }
 
   applyPreset(key) {
@@ -281,9 +312,9 @@ export default class LayoutPanel extends Panel {
     this.highlightPreset(key);
   }
 
-  exportLayout() {
+  buildLayoutData() {
     const dm = this.editor.dockManager;
-    if (!dm) return;
+    if (!dm) return null;
 
     // Build layout data from current state
     const data = {
@@ -310,6 +341,25 @@ export default class LayoutPanel extends Panel {
 
       data.panels[id] = entry;
     });
+
+    return data;
+  }
+
+  async copyLayoutToClipboard() {
+    const data = this.buildLayoutData();
+    if (!data) return;
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      Notification.success('Layout copied to clipboard');
+    } catch (err) {
+      Notification.failure('Failed to copy layout to clipboard');
+    }
+  }
+
+  exportLayout() {
+    const data = this.buildLayoutData();
+    if (!data) return;
 
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -368,8 +418,8 @@ export default class LayoutPanel extends Panel {
     });
 
     // Reset dock sizes
-    dm.dockSizes.left = 320;
-    dm.dockSizes.right = 320;
+    dm.dockSizes.left = 400;
+    dm.dockSizes.right = 400;
     dm.dockSizes.bottom = 200;
 
     // Dock all on left, collapsed (skip floating-only panels)

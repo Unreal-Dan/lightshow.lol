@@ -210,6 +210,30 @@ export default class Panel {
     }
   }
 
+  /**
+   * Mark the panel as inactive: stays visible/docked but its controls are
+   * replaced by a note explaining what it needs to become active.
+   * Pass null to reactivate the panel.
+   */
+  setInactive(message) {
+    let note = this.contentContainer.querySelector(':scope > .panel-inactive-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'panel-inactive-note';
+      this.contentContainer.appendChild(note);
+    }
+    if (message) {
+      note.textContent = message;
+      this.panel.classList.add('panel-inactive');
+    } else {
+      this.panel.classList.remove('panel-inactive');
+    }
+  }
+
+  isInactive() {
+    return this.panel.classList.contains('panel-inactive');
+  }
+
   toggleCollapse() {
     this.isCollapsed = !this.isCollapsed;
     this.contentContainer.classList.toggle('collapsed', this.isCollapsed);

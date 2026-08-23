@@ -1,10 +1,6 @@
 /* chromalink-panel.css */
 #chromalinkPanel {
-  background-color: #181a1b;
-  border: 1px solid #3e4446;
-  border-radius: 5px;
   color: #d8d4cf;
-  padding: 10px;
 }
 
 #chromalinkPanel h2 {
