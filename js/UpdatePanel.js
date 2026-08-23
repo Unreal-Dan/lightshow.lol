@@ -659,6 +659,34 @@ export default class UpdatePanel extends Panel {
     return vp.portActive;
   }
 
+  // A forced update (Insert key) opens its own private serial port. Once the
+  // flash is done the device resets and re-enumerates USB, leaving that port
+  // handle stale — it must be closed and dropped, otherwise the next flash
+  // reuses the dead handle and fails with 'Failed to set control signals'.
+  async disconnectForcedPort() {
+    const vp = this.vortexPort;
+    const port = this.serialPort;
+    // if the editor connection is riding on this port, tear it down first so
+    // its read loop releases the port
+    if (vp && vp.serialPort === port) {
+      try { await vp.disconnect(); } catch (e) {}
+    }
+    // release any reader lock the ESP flasher still holds
+    try { this.espLoader?._reader?.releaseLock(); } catch (e) {}
+    // close the port so the next flash can request a fresh one
+    try {
+      if (port) {
+        await port.close();
+        console.log('[UpdatePanel] Disconnected forced-update serial port.');
+      }
+    } catch (e) {
+      console.warn('[UpdatePanel] Failed to close serial port:', e);
+    }
+    this.espLoader = null;
+    this.espStub = null;
+    this.serialPort = null;
+  }
+
   async handleFirmwareUpdate(backupModes = false) {
     const updateProgress = document.getElementById('updateProgress');
     let backup = null;
@@ -732,6 +760,12 @@ export default class UpdatePanel extends Panel {
       if (updateProgress) updateProgress.textContent = 'Firmware update failed.';
       Notification.failure('Firmware update failed: ' + error.message);
       console.error(error);
+    } finally {
+      // a forced update (Insert key) opened its own private serial port;
+      // disconnect it once done so the next flash starts with a fresh port
+      if (this.forcedUpdate) {
+        await this.disconnectForcedPort();
+      }
     }
   }
 }
