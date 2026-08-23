@@ -51,7 +51,6 @@ export default class UpdatePanel extends Panel {
   }
 
   initialize() {
-    this.toggleCollapse(false);
     this.setInactive('Requires a connected device');
   }
 

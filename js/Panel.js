@@ -235,11 +235,34 @@ export default class Panel {
   }
 
   toggleCollapse() {
-    this.isCollapsed = !this.isCollapsed;
-    this.contentContainer.classList.toggle('collapsed', this.isCollapsed);
+    this.setCollapsed(!this.isCollapsed);
+  }
+
+  /**
+   * Set the collapsed state directly. Pass `instant` to skip the expand/
+   * collapse animation (used by layout restore/preset/import so panels
+   * initialize settled without triggering resize cascades).
+   */
+  setCollapsed(collapsed, instant = false) {
+    const content = this.contentContainer;
     const btn = this.panel.querySelector('.collapse-btn');
+
+    if (instant) {
+      content.style.transition = 'none';
+      if (btn) btn.style.transition = 'none';
+    }
+
+    this.isCollapsed = collapsed;
+    content.classList.toggle('collapsed', collapsed);
     if (btn) {
-      btn.classList.toggle('collapsed', this.isCollapsed);
+      btn.classList.toggle('collapsed', collapsed);
+    }
+
+    if (instant) {
+      // Flush styles so the height change lands before transitions re-enable
+      void content.offsetHeight;
+      content.style.transition = '';
+      if (btn) btn.style.transition = '';
     }
   }
 

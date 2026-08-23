@@ -3,69 +3,25 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 const LAYOUT_PRESETS = {
-  condensedLeft: {
-    name: 'Condensed Left',
-    desc: 'All panels docked left, collapsed',
-    icon: 'fa-solid fa-align-left',
-    data: {
-      ver: 1,
-      dockSizes: { left: 400, right: 400, bottom: 200 },
-      panels: {
-        aboutPanel:              { collapsed: true, dock: 'left', index: 0 },
-        animationPanel:          { collapsed: true, dock: 'left', index: 1 },
-        patternPanel:            { collapsed: true, dock: 'left', index: 2 },
-        colorsetPanel:           { collapsed: true, dock: 'left', index: 3 },
-        devicePanel:             { collapsed: true, dock: 'left', index: 4 },
-        modesPanel:              { collapsed: true, dock: 'left', index: 5 },
-        ledSelectPanel:          { collapsed: true, dock: 'left', index: 6 },
-        communityBrowserPanel:   { collapsed: true, dock: 'left', index: 7 },
-        layoutPanel:             { collapsed: true, dock: 'left', index: 8 },
-        updatePanel:             { collapsed: true, dock: 'left', index: 9 },
-        chromalinkPanel:         { collapsed: true, dock: 'left', index: 10 },
-      },
-    },
-  },
-  condensedRight: {
-    name: 'Condensed Right',
-    desc: 'All panels docked right, collapsed',
-    icon: 'fa-solid fa-align-right',
-    data: {
-      ver: 1,
-      dockSizes: { left: 400, right: 400, bottom: 200 },
-      panels: {
-        aboutPanel:              { collapsed: true, dock: 'right', index: 0 },
-        animationPanel:          { collapsed: true, dock: 'right', index: 1 },
-        patternPanel:            { collapsed: true, dock: 'right', index: 2 },
-        colorsetPanel:           { collapsed: true, dock: 'right', index: 3 },
-        devicePanel:             { collapsed: true, dock: 'right', index: 4 },
-        modesPanel:              { collapsed: true, dock: 'right', index: 5 },
-        ledSelectPanel:          { collapsed: true, dock: 'right', index: 6 },
-        communityBrowserPanel:   { collapsed: true, dock: 'right', index: 7 },
-        layoutPanel:             { collapsed: true, dock: 'right', index: 8 },
-        updatePanel:             { collapsed: true, dock: 'right', index: 9 },
-        chromalinkPanel:         { collapsed: true, dock: 'right', index: 10 },
-      },
-    },
-  },
   classic: {
     name: 'Classic',
-    desc: 'Key editing panels expanded on the left',
+    desc: 'Editing panels stacked left, device panels right',
     icon: 'fa-solid fa-pen-ruler',
     data: {
       ver: 1,
-      dockSizes: { left: 380, right: 320, bottom: 200 },
+      dockSizes: { left: 400, right: 400, bottom: 200 },
       panels: {
-        aboutPanel:              { collapsed: true,  dock: 'left', index: 0 },
-        modesPanel:              { collapsed: false, dock: 'left', index: 1 },
-        animationPanel:          { collapsed: false, dock: 'left', index: 2 },
-        patternPanel:            { collapsed: false, dock: 'left', index: 3 },
-        colorsetPanel:           { collapsed: false, dock: 'left', index: 4 },
-        devicePanel:             { collapsed: true,  dock: 'left', index: 5 },
-        ledSelectPanel:          { collapsed: true,  dock: 'left', index: 6 },
-        communityBrowserPanel:   { collapsed: true,  dock: 'left', index: 7 },
-        layoutPanel:             { collapsed: true,  dock: 'left', index: 8 },
-        updatePanel:             { collapsed: true,  dock: 'left', index: 9 },
-        chromalinkPanel:         { collapsed: true,  dock: 'left', index: 10 },
+        aboutPanel:              { collapsed: true,  floating: true, x: 0,    y: 3   },
+        layoutPanel:             { collapsed: true,  floating: true, x: 0,    y: 37  },
+        animationPanel:          { collapsed: true,  floating: true, x: 0,    y: 71  },
+        patternPanel:            { collapsed: false, floating: true, x: 0,    y: 105 },
+        colorsetPanel:           { collapsed: false, floating: true, x: 0,    y: 239 },
+        communityBrowserPanel:   { collapsed: false, floating: true, x: 1,    y: 412 },
+        devicePanel:             { collapsed: false, floating: true, x: 1775, y: 3   },
+        updatePanel:             { collapsed: true,  floating: true, x: 1775, y: 101 },
+        chromalinkPanel:         { collapsed: true,  floating: true, x: 1775, y: 135 },
+        modesPanel:              { collapsed: false, floating: true, x: 1775, y: 169 },
+        ledSelectPanel:          { collapsed: false, floating: true, x: 1775, y: 493 },
       },
     },
   },
@@ -83,55 +39,55 @@ const LAYOUT_PRESETS = {
         patternPanel:            { collapsed: false, dock: 'left',  index: 3 },
         colorsetPanel:           { collapsed: false, dock: 'left',  index: 4 },
         communityBrowserPanel:   { collapsed: false, dock: 'left',  index: 5 },
-        updatePanel:             { collapsed: true,  dock: 'left',  index: 6 },
-        chromalinkPanel:         { collapsed: true,  dock: 'left',  index: 7 },
         devicePanel:             { collapsed: false, dock: 'right', index: 0 },
-        modesPanel:              { collapsed: false, dock: 'right', index: 1 },
-        ledSelectPanel:          { collapsed: false, dock: 'right', index: 2 },
+        updatePanel:             { collapsed: true,  dock: 'right', index: 1 },
+        chromalinkPanel:         { collapsed: true,  dock: 'right', index: 2 },
+        modesPanel:              { collapsed: false, dock: 'right', index: 3 },
+        ledSelectPanel:          { collapsed: false, dock: 'right', index: 4 },
       },
     },
   },
-  minimal: {
-    name: 'Minimal',
-    desc: 'Only modes and device panels visible',
-    icon: 'fa-solid fa-minimize',
+  condensedLeft: {
+    name: 'Condensed Left',
+    desc: 'All panels docked left, collapsed',
+    icon: 'fa-solid fa-align-left',
     data: {
       ver: 1,
-      dockSizes: { left: 320, right: 320, bottom: 200 },
+      dockSizes: { left: 400, right: 400, bottom: 200 },
       panels: {
-        aboutPanel:              { collapsed: true,  dock: 'left', index: 0 },
-        animationPanel:          { collapsed: true,  dock: 'left', index: 1 },
-        patternPanel:            { collapsed: true,  dock: 'left', index: 2 },
-        colorsetPanel:           { collapsed: true,  dock: 'left', index: 3 },
-        devicePanel:             { collapsed: false, dock: 'left', index: 4 },
-        modesPanel:              { collapsed: false, dock: 'left', index: 5 },
-        ledSelectPanel:          { collapsed: true,  dock: 'left', index: 6 },
-        communityBrowserPanel:   { collapsed: true,  dock: 'left', index: 7 },
-        layoutPanel:             { collapsed: true,  dock: 'left', index: 8 },
-        updatePanel:             { collapsed: true,  dock: 'left', index: 9 },
-        chromalinkPanel:         { collapsed: true,  dock: 'left', index: 10 },
+        aboutPanel:              { collapsed: true, dock: 'left', index: 0 },
+        layoutPanel:             { collapsed: true, dock: 'left', index: 1 },
+        animationPanel:          { collapsed: true, dock: 'left', index: 2 },
+        patternPanel:            { collapsed: true, dock: 'left', index: 3 },
+        colorsetPanel:           { collapsed: true, dock: 'left', index: 4 },
+        modesPanel:              { collapsed: true, dock: 'left', index: 5 },
+        ledSelectPanel:          { collapsed: true, dock: 'left', index: 6 },
+        communityBrowserPanel:   { collapsed: true, dock: 'left', index: 7 },
+        updatePanel:             { collapsed: true, dock: 'left', index: 8 },
+        devicePanel:             { collapsed: true, dock: 'left', index: 9 },
+        chromalinkPanel:         { collapsed: true, dock: 'left', index: 10 },
       },
     },
   },
-  floating: {
-    name: 'Floating',
-    desc: 'All panels floating over the canvas',
-    icon: 'fa-solid fa-up-right-and-down-left-from-center',
+  condensedRight: {
+    name: 'Condensed Right',
+    desc: 'All panels docked right, collapsed',
+    icon: 'fa-solid fa-align-right',
     data: {
       ver: 1,
-      dockSizes: { left: 320, right: 320, bottom: 200 },
+      dockSizes: { left: 400, right: 400, bottom: 200 },
       panels: {
-        aboutPanel:              { collapsed: false, floating: true, x: 40,   y: 40  },
-        animationPanel:          { collapsed: false, floating: true, x: 80,   y: 80  },
-        patternPanel:            { collapsed: false, floating: true, x: 120,  y: 120 },
-        colorsetPanel:           { collapsed: false, floating: true, x: 160,  y: 160 },
-        devicePanel:             { collapsed: true,  floating: true, x: 200,  y: 200 },
-        modesPanel:              { collapsed: false, floating: true, x: 240,  y: 240 },
-        ledSelectPanel:          { collapsed: true,  floating: true, x: 280,  y: 280 },
-        communityBrowserPanel:   { collapsed: true,  floating: true, x: 320,  y: 320 },
-        layoutPanel:             { collapsed: true,  dock: 'left',   index: 0 },
-        updatePanel:             { collapsed: true,  dock: 'left',   index: 1 },
-        chromalinkPanel:         { collapsed: true,  dock: 'left',   index: 2 },
+        aboutPanel:              { collapsed: true, dock: 'right', index: 0 },
+        layoutPanel:             { collapsed: true, dock: 'right', index: 1 },
+        animationPanel:          { collapsed: true, dock: 'right', index: 2 },
+        patternPanel:            { collapsed: true, dock: 'right', index: 3 },
+        colorsetPanel:           { collapsed: true, dock: 'right', index: 4 },
+        modesPanel:              { collapsed: true, dock: 'right', index: 5 },
+        ledSelectPanel:          { collapsed: true, dock: 'right', index: 6 },
+        communityBrowserPanel:   { collapsed: true, dock: 'right', index: 7 },
+        updatePanel:             { collapsed: true, dock: 'right', index: 8 },
+        devicePanel:             { collapsed: true, dock: 'right', index: 9 },
+        chromalinkPanel:         { collapsed: true, dock: 'right', index: 10 },
       },
     },
   },
@@ -157,19 +113,26 @@ export default class LayoutPanel extends Panel {
       </div>
       <div class="layout-divider"></div>
       <div class="layout-section">
-        <div class="layout-section-title">Custom</div>
+        <div class="layout-section-title">Custom Layouts</div>
+        <div id="customPresetList" class="custom-preset-list"></div>
         <div class="layout-actions">
-          <button id="layoutSaveBtn" class="layout-action-btn" title="Save current layout to a JSON file">
+          <button id="layoutSaveCurrentBtn" class="layout-action-btn" title="Save the current layout as a custom preset">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Save Current</span>
+          </button>
+        </div>
+      </div>
+      <div class="layout-divider"></div>
+      <div class="layout-section">
+        <div class="layout-section-title">Share</div>
+        <div class="layout-actions">
+          <button id="layoutSaveBtn" class="layout-action-btn" title="Export current layout to a JSON file">
             <i class="fa-solid fa-download"></i>
             <span>Export</span>
           </button>
-          <button id="layoutLoadBtn" class="layout-action-btn" title="Load a layout from a JSON file">
+          <button id="layoutLoadBtn" class="layout-action-btn" title="Import a layout from a JSON file">
             <i class="fa-solid fa-upload"></i>
             <span>Import</span>
-          </button>
-          <button id="layoutResetBtn" class="layout-action-btn layout-action-danger" title="Reset to factory default layout">
-            <i class="fa-solid fa-rotate-left"></i>
-            <span>Reset</span>
           </button>
         </div>
       </div>
@@ -204,11 +167,29 @@ export default class LayoutPanel extends Panel {
       fileInput.addEventListener('change', (e) => this.importLayout(e));
     }
 
-    // Reset
-    const resetBtn = document.getElementById('layoutResetBtn');
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => this.resetLayout());
+    // Save current layout as a custom preset
+    const saveCurrentBtn = document.getElementById('layoutSaveCurrentBtn');
+    if (saveCurrentBtn) {
+      saveCurrentBtn.addEventListener('click', () => this.saveCustomPreset());
     }
+
+    // Custom preset list (delegated — list is re-rendered on change)
+    const customList = document.getElementById('customPresetList');
+    if (customList) {
+      customList.addEventListener('click', (e) => {
+        const applyBtn = e.target.closest('.custom-preset-apply');
+        if (applyBtn) {
+          this.applyCustomPreset(applyBtn.dataset.presetId);
+          return;
+        }
+        const deleteBtn = e.target.closest('.custom-preset-delete');
+        if (deleteBtn) {
+          this.deleteCustomPreset(deleteBtn.dataset.presetId);
+        }
+      });
+    }
+
+    this.renderCustomPresets();
 
     // Hotkey: Ctrl+Shift+L copies current layout JSON to clipboard
     document.addEventListener('keydown', (event) => {
@@ -222,93 +203,7 @@ export default class LayoutPanel extends Panel {
   applyPreset(key) {
     const preset = LAYOUT_PRESETS[key];
     if (!preset) return;
-    const dm = this.editor.dockManager;
-    if (!dm) return;
-
-    dm._suppressSave = true;
-
-    // Clear existing layout
-    dm._clearLayoutCookie();
-
-    // Undock and unfloat all panels
-    const ids = Array.from(dm.panels.keys());
-    ids.forEach(id => {
-      const record = dm.panels.get(id);
-      if (!record) return;
-      dm.removePanel(id);
-      const panelEl = record.panel.panel;
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') {
-        if (panelEl.parentElement) panelEl.parentElement.removeChild(panelEl);
-      }
-      panelEl.style.position = '';
-      panelEl.style.left = '';
-      panelEl.style.top = '';
-      panelEl.style.width = '';
-      panelEl.style.zIndex = '';
-      panelEl.classList.remove('floating-panel');
-    });
-
-    // Apply dock sizes
-    if (preset.data.dockSizes) {
-      Object.assign(dm.dockSizes, preset.data.dockSizes);
-    }
-
-    // Apply panel positions — process docked panels in index order per side,
-    // then floating panels. This ensures correct ordering.
-    const dockedBySide = { left: [], right: [], bottom: [] };
-    const floating = [];
-
-    for (const [id, entry] of Object.entries(preset.data.panels)) {
-      if (entry.floating) {
-        floating.push({ id, entry });
-      } else if (entry.dock) {
-        dockedBySide[entry.dock].push({ id, entry });
-      }
-    }
-
-    // Sort each side by index
-    for (const side of ['left', 'right', 'bottom']) {
-      dockedBySide[side].sort((a, b) => a.entry.index - b.entry.index);
-      for (const { id, entry } of dockedBySide[side]) {
-        dm.dockPanel(id, side, entry.index);
-      }
-    }
-
-    // Float panels
-    for (const { id, entry } of floating) {
-      dm.floatPanel(id, entry.x || 0, entry.y || 0);
-    }
-
-    // Apply collapse states
-    for (const [id, entry] of Object.entries(preset.data.panels)) {
-      const record = dm.panels.get(id);
-      if (!record) continue;
-      const content = record.panel.panel.querySelector('.panel-content');
-      const isCollapsed = content?.classList.contains('collapsed') ?? false;
-      if (isCollapsed !== entry.collapsed) {
-        record.panel.toggleCollapse();
-      }
-    }
-
-    // Re-init floating observers
-    for (const fp of dm.floatingPanels) {
-      const id = fp.panel.panel.id;
-      dm._teardownFloatingObserver(id);
-      dm._setupFloatingObserver(id, fp.panel.panel);
-    }
-
-    // Apply dock sizes to visible docks
-    ['left', 'right', 'bottom'].forEach(side => {
-      if (dm.dockPanelOrder[side].length > 0) {
-        dm.updateDockVisibility(side);
-        dm.applyDockSize(side);
-      }
-    });
-
-    dm.updateCanvasLayout();
-    dm._suppressSave = false;
-    dm.saveLayout();
-
+    this._applyLayoutData(preset.data);
     this.highlightPreset(key);
   }
 
@@ -395,70 +290,104 @@ export default class LayoutPanel extends Panel {
     event.target.value = '';
   }
 
-  resetLayout() {
-    const dm = this.editor.dockManager;
-    if (!dm) return;
+  /* ── Custom (user-saved) Layout Presets ── */
 
-    dm._clearLayoutCookie();
-    dm._suppressSave = true;
+  _customPresetsKey() {
+    return 'lightshow_layout_presets_v1';
+  }
 
-    // Undock all
-    const ids = Array.from(dm.panels.keys());
-    ids.forEach(id => {
-      const record = dm.panels.get(id);
-      if (!record) return;
-      dm.removePanel(id);
-      const panelEl = record.panel.panel;
-      panelEl.style.position = '';
-      panelEl.style.left = '';
-      panelEl.style.top = '';
-      panelEl.style.width = '';
-      panelEl.style.zIndex = '';
-      panelEl.classList.remove('floating-panel');
+  _loadCustomPresets() {
+    try {
+      const raw = localStorage.getItem(this._customPresetsKey());
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      console.error('Failed to load custom layout presets:', e);
+      return [];
+    }
+  }
+
+  _persistCustomPresets(list) {
+    try {
+      localStorage.setItem(this._customPresetsKey(), JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to save custom layout presets:', e);
+      Notification.failure('Failed to save layout preset');
+    }
+  }
+
+  renderCustomPresets() {
+    const list = document.getElementById('customPresetList');
+    if (!list) return;
+
+    const presets = this._loadCustomPresets();
+    if (presets.length === 0) {
+      list.innerHTML = '<div class="custom-presets-empty">No saved layouts yet</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const preset of presets) {
+      const row = document.createElement('div');
+      row.className = 'custom-preset-row';
+
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'layout-action-btn custom-preset-apply';
+      applyBtn.dataset.presetId = preset.id;
+      applyBtn.title = `Apply '${preset.name}'`;
+      applyBtn.innerHTML = `<i class="fa-solid fa-object-group"></i><span></span>`;
+      applyBtn.querySelector('span').textContent = preset.name;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'custom-preset-delete';
+      deleteBtn.dataset.presetId = preset.id;
+      deleteBtn.title = `Delete '${preset.name}'`;
+      deleteBtn.textContent = '×';
+
+      row.appendChild(applyBtn);
+      row.appendChild(deleteBtn);
+      list.appendChild(row);
+    }
+  }
+
+  saveCustomPreset() {
+    const data = this.buildLayoutData();
+    if (!data) return;
+
+    const name = window.prompt('Name for this layout:', 'My Layout');
+    if (name === null) return;
+    const trimmed = name.trim();
+    if (!trimmed) {
+      Notification.failure('Layout name cannot be empty');
+      return;
+    }
+
+    const presets = this._loadCustomPresets();
+    presets.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: trimmed,
+      data,
     });
+    this._persistCustomPresets(presets);
+    this.renderCustomPresets();
+    Notification.success(`Layout '${trimmed}' saved`);
+  }
 
-    // Reset dock sizes
-    dm.dockSizes.left = 400;
-    dm.dockSizes.right = 400;
-    dm.dockSizes.bottom = 200;
-
-    // Dock all on left, collapsed (skip floating-only panels)
-    ids.forEach(id => {
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') {
-        const record = dm.panels.get(id);
-        if (!record) return;
-        const panelEl = record.panel.panel;
-        if (panelEl.parentElement) panelEl.parentElement.removeChild(panelEl);
-        panelEl.style.position = '';
-        panelEl.style.left = '';
-        panelEl.style.top = '';
-        panelEl.style.width = '';
-        panelEl.style.zIndex = '';
-        panelEl.classList.remove('floating-panel');
-        return;
-      }
-      dm.dockPanel(id, 'left');
-    });
-    ids.forEach(id => {
-      const record = dm.panels.get(id);
-      if (record && !record.panel.isCollapsed) {
-        record.panel.toggleCollapse();
-      }
-    });
-
-    ['left', 'right', 'bottom'].forEach(side => {
-      if (dm.dockPanelOrder[side].length > 0) {
-        dm.updateDockVisibility(side);
-        dm.applyDockSize(side);
-      }
-    });
-
-    dm.updateCanvasLayout();
-    dm._suppressSave = false;
-    dm.saveLayout();
-
-    // Clear highlight
+  applyCustomPreset(id) {
+    const preset = this._loadCustomPresets().find(p => p.id === id);
+    if (!preset) return;
+    this._applyLayoutData(preset.data);
     this.highlightPreset(null);
+  }
+
+  deleteCustomPreset(id) {
+    const preset = this._loadCustomPresets().find(p => p.id === id);
+    if (!preset) return;
+    if (!window.confirm(`Delete layout '${preset.name}'?`)) return;
+
+    this._persistCustomPresets(this._loadCustomPresets().filter(p => p.id !== id));
+    this.renderCustomPresets();
+    Notification.success(`Layout '${preset.name}' deleted`);
   }
 
   _applyLayoutData(data) {
@@ -491,6 +420,13 @@ export default class LayoutPanel extends Panel {
       Object.assign(dm.dockSizes, data.dockSizes);
     }
 
+    // Apply collapse states BEFORE positioning so panels initialize settled
+    for (const [id, entry] of Object.entries(data.panels)) {
+      const record = dm.panels.get(id);
+      if (!record) continue;
+      record.panel.setCollapsed(entry.collapsed, true);
+    }
+
     // Apply positions
     const dockedBySide = { left: [], right: [], bottom: [] };
     const floating = [];
@@ -514,23 +450,14 @@ export default class LayoutPanel extends Panel {
       dm.floatPanel(id, entry.x || 0, entry.y || 0);
     }
 
-    // Collapse states
-    for (const [id, entry] of Object.entries(data.panels)) {
-      const record = dm.panels.get(id);
-      if (!record) continue;
-      const content = record.panel.panel.querySelector('.panel-content');
-      const isCollapsed = content?.classList.contains('collapsed') ?? false;
-      if (isCollapsed !== entry.collapsed) {
-        record.panel.toggleCollapse();
-      }
-    }
-
     // Re-init floating observers
     for (const fp of dm.floatingPanels) {
       const id = fp.panel.panel.id;
       dm._teardownFloatingObserver(id);
       dm._setupFloatingObserver(id, fp.panel.panel);
     }
+
+    dm._settleFloatingStack();
 
     ['left', 'right', 'bottom'].forEach(side => {
       if (dm.dockPanelOrder[side].length > 0) {

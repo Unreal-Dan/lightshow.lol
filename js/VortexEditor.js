@@ -202,10 +202,9 @@ export default class VortexEditor {
 
       // Restore saved layout if available, otherwise collapse all by default
       const restored = this.dockManager.restoreLayout();
-      if (!restored) {
-        dockPanels.forEach(panel => {
-          if (panel && !panel.isCollapsed) panel.toggleCollapse();
-        });
+      if (!restored && this.layoutPanel) {
+        // Fresh load (no saved layout): default to the Classic preset
+        this.layoutPanel.applyPreset('classic');
       }
 
       // Floating-only panels go to body (not managed by dock manager)
@@ -282,12 +281,6 @@ export default class VortexEditor {
       items.push({
         label: 'Redo',
         action: () => this.vortex.redo()
-      });
-
-      items.push({ separator: true });
-      items.push({
-        label: 'Reset Window Layout',
-        action: () => this.dockManager.resetLayout()
       });
 
       items.push({ separator: true });
@@ -683,10 +676,9 @@ export default class VortexEditor {
 
       // Restore saved layout if available, otherwise collapse all
       const restored = this.dockManager.restoreLayout();
-      if (!restored) {
-        dockPanels.forEach(panel => {
-          if (panel && !panel.isCollapsed) panel.toggleCollapse();
-        });
+      if (!restored && this.layoutPanel) {
+        // Fresh load (no saved layout): default to the Classic preset
+        this.layoutPanel.applyPreset('classic');
       }
 
       // Floating-only panels go to body (not managed by dock manager)

@@ -271,6 +271,7 @@ export default class DockManager {
 
     this.updateDockVisibility(side);
     this.updateCanvasLayout();
+    this._updateStackClasses();
     this.saveLayout();
   }
 
@@ -456,6 +457,24 @@ export default class DockManager {
     this._updateStackClasses();
   }
 
+  /**
+   * Suppress stack propagation while collapse transitions settle (0.3s CSS),
+   * then reset all floating-height baselines to the final post-transition
+   * heights so the next observer fire sees delta ≈ 0. Call after bulk
+   * repositioning + collapsing of floating panels (restore/preset/import).
+   */
+  _settleFloatingStack() {
+    this._suppressStack = true;
+    setTimeout(() => {
+      for (const fp of this.floatingPanels) {
+        const id = fp.panel.panel.id;
+        this._floatingHeights.set(id, fp.panel.panel.offsetHeight);
+      }
+      this._suppressStack = false;
+      this._rebuildFloatingStack();
+    }, 350);
+  }
+
   _updateStackClasses() {
     const SNAP = SNAP_DISTANCE;
 
@@ -464,17 +483,25 @@ export default class DockManager {
       const r = el.getBoundingClientRect();
 
       let hasBelow = false;
+      let hasAbove = false;
       for (const other of this.floatingPanels) {
         if (other === fp) continue;
         const or = other.panel.panel.getBoundingClientRect();
-        if (Math.abs(or.top - r.bottom) > SNAP) continue;
-        const overlap = Math.min(r.right, or.right) - Math.max(r.left, or.left);
-        if (overlap <= 0) continue;
-        hasBelow = true;
-        break;
+        if (Math.abs(or.top - r.bottom) <= SNAP ||
+            Math.abs(r.top - or.bottom) <= SNAP) {
+          const overlap = Math.min(r.right, or.right) - Math.max(r.left, or.left);
+          if (overlap <= 0) continue;
+          if (Math.abs(or.top - r.bottom) <= SNAP) {
+            hasBelow = true;
+          } else {
+            hasAbove = true;
+          }
+          if (hasBelow && hasAbove) break;
+        }
       }
 
       el.classList.toggle('stacked-above', hasBelow);
+      el.classList.toggle('stacked-below', hasAbove);
     }
   }
 
@@ -1183,22 +1210,19 @@ export default class DockManager {
     ids.forEach(id => {
       const entry = data.panels[id];
       if (!entry) return;
+      const record = this.panels.get(id);
+      if (!record) return;
+
+      // Apply collapse state BEFORE placing the panel so it never paints
+      // expanded and then animates shut during load
+      record.panel.setCollapsed(entry.collapsed, true);
+
       if (entry.floating) {
         // Float at saved position
         this.floatPanel(id, entry.x || 0, entry.y || 0);
       } else if (entry.dock) {
         // Dock at saved position, maintaining order
         this.dockPanel(id, entry.dock, entry.index >= 0 ? entry.index : -1);
-      }
-
-      // Apply collapse state AFTER positioning (toggle if doesn't match)
-      const record = this.panels.get(id);
-      if (record) {
-        const content = record.panel.panel.querySelector('.panel-content');
-        const isCurrentlyCollapsed = content?.classList.contains('collapsed') ?? false;
-        if (isCurrentlyCollapsed !== entry.collapsed) {
-          record.panel.toggleCollapse();
-        }
       }
     });
 
@@ -1213,17 +1237,7 @@ export default class DockManager {
     // During the animation the ResizeObserver fires repeatedly with
     // intermediate heights, and propagating each would pull all panels
     // upward — causing overlap.
-    this._suppressStack = true;
-    setTimeout(() => {
-      // Reset all baselines to final (post-transition) heights so the
-      // first observer callback after re-enable sees delta ≈ 0.
-      for (const fp of this.floatingPanels) {
-        const id = fp.panel.panel.id;
-        this._floatingHeights.set(id, fp.panel.panel.offsetHeight);
-      }
-      this._suppressStack = false;
-      this._rebuildFloatingStack();
-    }, 350);
+    this._settleFloatingStack();
 
     this._rebuildFloatingStack();
 
@@ -1238,69 +1252,5 @@ export default class DockManager {
     this.updateCanvasLayout();
     console.log('restoreLayout complete — positions should now be final');
     return true;
-  }
-
-  resetLayout() {
-    this._clearLayoutCookie();
-
-    // Disable auto-save during reset to avoid intermediate saves
-    const origSave = this.saveLayout.bind(this);
-    this.saveLayout = () => {};
-
-    // Gather all registered panel IDs
-    const ids = Array.from(this.panels.keys());
-
-    // Undock and unfloat all panels
-    ids.forEach(id => {
-      const record = this.panels.get(id);
-      if (!record) return;
-      this.removePanel(id);
-      // Floating-only panels: strip state and detach from dock DOM so they
-      // don't remain visible in a dock from a previous layout
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') {
-        const panelEl = record.panel.panel;
-        if (panelEl.parentElement) {
-          panelEl.parentElement.removeChild(panelEl);
-        }
-        panelEl.style.position = '';
-        panelEl.style.left = '';
-        panelEl.style.top = '';
-        panelEl.style.width = '';
-        panelEl.style.zIndex = '';
-        panelEl.classList.remove('floating-panel');
-      }
-    });
-
-    // Reset dock sizes to defaults
-    this.dockSizes.left = DEFAULT_DOCK_SIZE;
-    this.dockSizes.right = DEFAULT_DOCK_SIZE;
-    this.dockSizes.bottom = DEFAULT_BOTTOM_SIZE;
-
-    // Dock all panels on left, collapsed (skip floating-only panels)
-    ids.forEach(id => {
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') return;
-      this.dockPanel(id, 'left');
-    });
-
-    // Collapse all using the header click handler (not toggleCollapse which saves)
-    ids.forEach(id => {
-      const record = this.panels.get(id);
-      if (record && !record.panel.isCollapsed) {
-        record.panel.toggleCollapse();
-      }
-    });
-
-    // Re-position resize handles and canvas for the reset dock sizes
-    ['left', 'right', 'bottom'].forEach(side => {
-      if (this.dockPanelOrder[side].length > 0) {
-        this.updateDockVisibility(side);
-        this.applyDockSize(side);
-      }
-    });
-    this.updateCanvasLayout();
-
-    // Re-enable and save final state
-    this.saveLayout = origSave;
-    this.saveLayout();
   }
 }

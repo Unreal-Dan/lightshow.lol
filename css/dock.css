@@ -315,6 +315,20 @@
   overflow-y: auto;
 }
 
+/* Tightly-stacked floating panels: suppress shadows and square off the
+   seams so neighbors don't appear layered over each other */
+.floating-panel.stacked-above {
+  box-shadow: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.floating-panel.stacked-below {
+  box-shadow: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 /* Color picker — floating panel */
 #colorPickerPanel {
   width: 560px !important;
