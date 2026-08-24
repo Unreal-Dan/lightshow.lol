@@ -167,35 +167,62 @@
   margin-top: 0;
 }
 
+#profileSelectWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+#profileDropdown {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-option {
+  justify-content: space-between;
+}
+
+.profile-option-label {
+  white-space: nowrap;
+}
+
+.profile-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background-color: #454545;
+  border: 1px solid #6a6a6a;
+  flex-shrink: 0;
+}
+
+.profile-color-input {
+  width: 26px;
+  height: 24px;
+  padding: 1px;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  background-color: #181a1b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profile-color-input::-webkit-color-swatch-wrapper {
+  padding: 1px;
+}
+
+.profile-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
+}
+
 #profileLabel {
   white-space: nowrap;
   padding-right: 0.5em;
   font-size: 0.75em;
   color: #ffffff;
-  opacity: 0.6;
-}
-
-.profile-select {
-  flex: 1;
-  min-width: 0;
-  padding: 3px 6px;
-  background-color: #181a1b;
-  color: #d8d4cf;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.profile-select:hover {
-  background-color: #3e4446;
-  color: #ffffff;
-}
-
-.profile-select:disabled {
-  background: #2a2a2a;
-  color: #888;
-  cursor: default;
   opacity: 0.6;
 }
 

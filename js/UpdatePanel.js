@@ -199,6 +199,16 @@ export default class UpdatePanel extends Panel {
     return { zipData, sourceUrl: firmwareZipUrl };
   }
 
+  // the chromadeck uses a custom partition table with an expanded nvs storage
+  // region which moves the ota data and app offsets, every other device keeps
+  // the default arduino partition layout offsets
+  offsetsForDevice(targetDevice) {
+    if (targetDevice === 'chromadeck') {
+      return { otadata: 0x29000, app: 0x30000 };
+    }
+    return { otadata: 0xE000, app: 0x10000 };
+  }
+
   async fetchAndFlashFirmware() {
     // Use the device selected in the Device Controls panel; the serial greeting
     // name (vortexPort.name) can be stale when flashing a different device.
@@ -226,7 +236,7 @@ export default class UpdatePanel extends Panel {
 
       console.log(`Firmware zip source: ${sourceUrl}`);
 
-      firmwareFiles = await this.unzipFirmware(zipData);
+      firmwareFiles = await this.unzipFirmware(zipData, this.offsetsForDevice(targetDevice));
 
       firmwareFiles.forEach((file) => {
         console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
@@ -241,7 +251,7 @@ export default class UpdatePanel extends Panel {
 
       const bootAppEntry = {
         path: bootAppUrl,
-        address: 0xE000,
+        address: this.offsetsForDevice(targetDevice).otadata,
         data: new Uint8Array(bootAppBuf),
       };
 
@@ -255,14 +265,14 @@ export default class UpdatePanel extends Panel {
     await this.flashFirmware(firmwareFiles);
   }
 
-  async unzipFirmware(zipData) {
+  async unzipFirmware(zipData, offsets) {
     const zip = await JSZip.loadAsync(zipData);
 
     const firmwareFiles = [];
     const fileMappings = {
       'build/VortexEngine.ino.bootloader.bin': 0x0,
       'build/VortexEngine.ino.partitions.bin': 0x8000,
-      'build/VortexEngine.ino.bin': 0x10000,
+      'build/VortexEngine.ino.bin': offsets.app,
     };
 
     for (const [fileName, address] of Object.entries(fileMappings)) {

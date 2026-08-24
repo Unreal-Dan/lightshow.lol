@@ -45,6 +45,8 @@ export default class VortexPort {
   EDITOR_VERB_SET_CHROMA_BRIGHTNESS = "N";
   EDITOR_VERB_SWITCH_PROFILE        = "O";
   EDITOR_VERB_GET_PROFILE           = "P";
+  EDITOR_VERB_SET_PROFILE_COLOR     = "Q";
+  EDITOR_VERB_GET_PROFILE_COLOR     = "R";
 
   accumulatedData = ""; // A buffer to store partial lines.
   reader = null;
@@ -238,6 +240,7 @@ export default class VortexPort {
             this.useNewBrightness = this.editor.isVersionGreaterOrEqual(this.version, '1.5.25');
             this.useNewProfileSwitch = this.editor.isVersionGreaterOrEqual(this.version, '1.5.53');
             this.useNewGetProfile = this.editor.isVersionGreaterOrEqual(this.version, '1.5.54');
+            this.useNewProfileColors = this.editor.isVersionGreaterOrEqual(this.version, '1.6.0');
             //if (this.useNewPushPull) {
             //  console.log('Detected 1.3.0+');
             //}
@@ -660,6 +663,74 @@ export default class VortexPort {
       if (this.debugLogging) console.log('getProfile End');
     }
     return profile;
+  }
+
+  async getProfileColors(vortexLib) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      console.log('Already transmitting:' + this.isTransmitting);
+      return [];
+    }
+    if (!this.useNewProfileColors) {
+      console.warn('Connected firmware does not support getting profile colors');
+      return [];
+    }
+    if (this.debugLogging) console.log('getProfileColors Start');
+    this.isTransmitting = 'getProfileColors';
+    let colors = [];
+    try {
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_GET_PROFILE_COLOR);
+      const colorsBuf = await this.readByteStream(vortexLib);
+      // the buffer has a 12 byte header then 3 bytes (r, g, b) per profile
+      for (let i = 12; (i + 2) < colorsBuf.length; i += 3) {
+        colors.push({ red: colorsBuf[i], green: colorsBuf[i + 1], blue: colorsBuf[i + 2] });
+      }
+    } catch (error) {
+      console.error('Error getting profile colors:', error);
+      colors = [];
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log('getProfileColors End');
+    }
+    return colors;
+  }
+
+  async setProfileColor(vortexLib, profile, color) {
+    if (!this.isActive()) {
+      throw new Error('Port not active');
+    }
+    if (this.isTransmitting) {
+      console.log('Already transmitting:' + this.isTransmitting);
+      return false;
+    }
+    if (!this.useNewProfileColors) {
+      console.warn('Connected firmware does not support setting profile colors');
+      return false;
+    }
+    if (this.debugLogging) console.log(`setProfileColor Start (profile: ${profile})`);
+    this.isTransmitting = 'setProfileColor';
+    try {
+      await this.cancelReading();
+      await this.sendCommand(this.EDITOR_VERB_SET_PROFILE_COLOR);
+      await this.expectData(this.EDITOR_VERB_READY, 3000);
+      // build the profile color packet (index + r, g, b)
+      let colorStream = new vortexLib.ByteStream();
+      vortexLib.createByteStreamFromData([ profile, color.red, color.green, color.blue ], colorStream);
+      await this.sendRaw(this.constructCustomBuffer(vortexLib, colorStream));
+      // no ack is sent after the device saves the color
+      return true;
+    } catch (error) {
+      console.error('Error setting profile color:', error);
+      return false;
+    } finally {
+      this.startReading();
+      this.isTransmitting = null;
+      if (this.debugLogging) console.log("setProfileColor End");
+    }
   }
 
   async pushEachToDevice(vortexLib, vortex, onProgress = null) {

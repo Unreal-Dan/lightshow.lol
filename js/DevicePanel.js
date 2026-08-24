@@ -41,10 +41,16 @@ export default class DevicePanel extends Panel {
             </div>
           </div>
           <div id="profileSelectContainer" style="display:none;">
-            <label for="profileSelect" id="profileLabel">Chromadeck Profile</label>
-            <select id="profileSelect" class="profile-select" title="Switch which profile the Chromadeck loads">
-              <!-- Profile options populated dynamically -->
-            </select>
+            <label id="profileLabel">Chromadeck Profile</label>
+            <div id="profileSelectWrapper">
+              <div id="profileDropdown" class="custom-dropdown" title="Switch which profile the Chromadeck loads">
+                <div id="profileSelected" class="custom-dropdown-select">Select Profile</div>
+                <div id="profileOptions" class="custom-dropdown-options">
+                  <!-- Profile options populated dynamically -->
+                </div>
+              </div>
+              <input type="color" id="profileColorInput" class="profile-color-input" value="#ffffff" title="Edit the profile color" style="display:none;" />
+            </div>
           </div>
           <!-- TODO: finish the duo mode button -->
         </div>
@@ -64,6 +70,11 @@ export default class DevicePanel extends Panel {
     // the number of profiles matches half the number of leds on the chromadeck
     this.numProfiles = 10;
     this.currentProfile = 0;
+    // profile colors pulled from the device (chromadeck only)
+    this.profileColors = [];
+    this.switchingProfiles = false;
+    this.pendingColorDemo = null;
+    this.savingProfileColor = false;
   }
 
   initialize() {
@@ -189,15 +200,40 @@ export default class DevicePanel extends Panel {
     if (chromadeck?.ledCount) {
       this.numProfiles = Math.floor(chromadeck.ledCount / 2);
     }
-    const profileSelect = document.getElementById('profileSelect');
+    const profileOptions = document.getElementById('profileOptions');
     for (let i = 0; i < this.numProfiles; ++i) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `Profile ${i + 1}`;
-      profileSelect.appendChild(option);
+      const option = document.createElement('div');
+      option.className = 'custom-dropdown-option profile-option';
+      option.dataset.value = i;
+      option.title = `Switch to Profile ${i + 1}`;
+      option.innerHTML = `<span class="profile-option-label">Profile ${i + 1}</span><span class="profile-color-swatch"></span>`;
+      profileOptions.appendChild(option);
     }
-    profileSelect.addEventListener('change', async () => {
-      await this.switchProfile(parseInt(profileSelect.value, 10));
+    document.getElementById('profileSelected').addEventListener('click', (event) => {
+      if (event.currentTarget.classList.contains('locked')) return;
+      profileOptions.classList.toggle('show');
+    });
+    profileOptions.addEventListener('click', async (event) => {
+      const opt = event.target.closest('.profile-option');
+      if (!opt || this.switchingProfiles) return;
+      profileOptions.classList.remove('show');
+      await this.switchProfile(parseInt(opt.dataset.value, 10));
+    });
+
+    // profile color editor (chromadeck only), demos the color on the device
+    // while picking then saves it to the device when the picker is closed
+    const profileColorInput = document.getElementById('profileColorInput');
+    let lastColorDemoAt = 0;
+    profileColorInput.addEventListener('input', () => {
+      // only demo while actively picking, throttled so we don't flood the port
+      const now = Date.now();
+      if (now - lastColorDemoAt < 90) return;
+      lastColorDemoAt = now;
+      const { red, green, blue } = DevicePanel.hexToRgb(profileColorInput.value);
+      this.startColorDemo(new this.editor.vortexLib.RGBColor(red, green, blue));
+    });
+    profileColorInput.addEventListener('change', async () => {
+      await this.saveProfileColor();
     });
     this.setProfileVisible(false);
 
@@ -381,10 +417,21 @@ export default class DevicePanel extends Panel {
         const profile = await this.editor.vortexPort.getProfile(this.editor.vortexLib);
         if (profile >= 0) {
           this.currentProfile = profile;
-          const profileSelect = document.getElementById('profileSelect');
-          if (profileSelect) profileSelect.value = String(profile);
         }
       } catch {}
+    }
+
+    // pull the profile colors from the device and show the color editor
+    // for chromadeck firmware that supports the profile color commands
+    this.setProfileColorsVisible(deviceName === 'Chromadeck' && this.editor.vortexPort.useNewProfileColors);
+    if (deviceName === 'Chromadeck' && this.editor.vortexPort.useNewProfileColors) {
+      try {
+        const colors = await this.editor.vortexPort.getProfileColors(this.editor.vortexLib);
+        if (colors && colors.length) {
+          this.profileColors = colors;
+        }
+      } catch {}
+      this.applyProfileColorUI();
     }
 
     const transmitToggle = document.getElementById('transmitToggle');
@@ -441,6 +488,8 @@ export default class DevicePanel extends Panel {
 
     // hide the profile selector
     this.setProfileVisible(false);
+    // reset and hide the profile color editor
+    this.setProfileColorsVisible(false);
   }
 
   async onDeviceSelected(deviceName) {
@@ -464,22 +513,115 @@ export default class DevicePanel extends Panel {
 
   async switchProfile(profile) {
     try {
-      this.setSwitching(true);
+      this.switchingProfiles = true;
       const success = await this.editor.vortexPort.switchProfile(this.editor.vortexLib, profile);
       if (success) {
         this.currentProfile = profile;
+        this.setProfileLabel(profile);
+        this.syncProfileColorInput();
         Notification.success(`Switched Chromadeck to Profile ${profile + 1}`);
       }
     } catch (error) {
       Notification.failure('Failed to switch profile: ' + error.message);
     } finally {
-      this.setSwitching(false);
+      this.switchingProfiles = false;
     }
   }
 
-  setSwitching(switching) {
-    const select = document.getElementById('profileSelect');
-    if (select) select.disabled = switching;
+  setProfileColorsVisible(visible) {
+    if (!visible) {
+      this.profileColors = [];
+    }
+    ['profileColorInput'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = visible ? '' : 'none';
+    });
+  }
+
+  // paints the profile swatches with their device colors and syncs the editor
+  applyProfileColorUI() {
+    for (let i = 0; i < this.numProfiles; ++i) {
+      this.paintProfileOption(i);
+    }
+    this.setProfileLabel(this.currentProfile);
+    this.syncProfileColorInput();
+  }
+
+  paintProfileOption(profile) {
+    const swatch = document.querySelector(`#profileOptions .profile-option[data-value="${profile}"] .profile-color-swatch`);
+    if (!swatch) return;
+    const col = this.profileColors[profile];
+    swatch.style.background = col ? `rgb(${col.red}, ${col.green}, ${col.blue})` : '';
+  }
+
+  // updates the collapsed dropdown selection text for the current profile
+  setProfileLabel(profile) {
+    const selected = document.getElementById('profileSelected');
+    if (!selected || profile < 0 || profile >= this.numProfiles) return;
+    selected.textContent = `Profile ${profile + 1}`;
+  }
+
+  // sets the editor input to the selected profile's saved color
+  syncProfileColorInput() {
+    const profileColorInput = document.getElementById('profileColorInput');
+    if (!profileColorInput) return;
+    const col = this.profileColors[this.currentProfile];
+    if (col) {
+      profileColorInput.value = DevicePanel.rgbToHex(col);
+    }
+  }
+
+  // demos the picked color on the device while the picker is open, keeping
+  // track of the in-flight demo so saving can wait for the port to be free
+  startColorDemo(color) {
+    const vortexPort = this.editor.vortexPort;
+    if (!vortexPort.isActive() || vortexPort.isTransmitting) return;
+    const demo = vortexPort.demoColor(this.editor.vortexLib, this.editor.vortex, color).catch(() => {});
+    this.pendingColorDemo = demo;
+  }
+
+  async waitForColorDemo() {
+    if (!this.pendingColorDemo) return;
+    await Promise.race([
+      this.pendingColorDemo,
+      new Promise(resolve => setTimeout(resolve, 2000)),
+    ]);
+    this.pendingColorDemo = null;
+  }
+
+  async saveProfileColor() {
+    const profileColorInput = document.getElementById('profileColorInput');
+    if (!profileColorInput || this.savingProfileColor) return;
+    const profile = this.currentProfile;
+    const { red, green, blue } = DevicePanel.hexToRgb(profileColorInput.value);
+    try {
+      this.savingProfileColor = true;
+      // wait for any in-flight color demo to finish before sending
+      await this.waitForColorDemo();
+      const success = await this.editor.vortexPort.setProfileColor(this.editor.vortexLib, profile, { red, green, blue });
+      if (success) {
+        this.profileColors[profile] = { red, green, blue };
+        this.paintProfileOption(profile);
+        Notification.success(`Saved Color for Profile ${profile + 1}`);
+      } else {
+        Notification.failure(`Failed to Save Color for Profile ${profile + 1}`);
+      }
+    } catch (error) {
+      console.error('Error saving profile color:', error);
+    } finally {
+      this.savingProfileColor = false;
+      // go back to demoing the current mode
+      await this.editor.demoModeOnDevice();
+    }
+  }
+
+  static rgbToHex(col) {
+    return `#${[col.red, col.green, col.blue].map(v => Number(v).toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  static hexToRgb(hex) {
+    const bigint = parseInt(String(hex).replace('#', ''), 16);
+    return { red: (bigint >> 16) & 255, green: (bigint >> 8) & 255, blue: bigint & 255 };
   }
 
   async onDeviceWaiting(deviceName) {
