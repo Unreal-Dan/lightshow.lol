@@ -200,6 +200,16 @@ export default class UpdatePanel extends Panel {
     return { zipData, sourceUrl: firmwareZipUrl };
   }
 
+  // the chromadeck uses a custom partition table with an expanded nvs storage
+  // region which moves the ota data and app offsets, every other device keeps
+  // the default arduino partition layout offsets
+  offsetsForDevice(targetDevice) {
+    if (targetDevice === 'chromadeck') {
+      return { otadata: 0x29000, app: 0x30000 };
+    }
+    return { otadata: 0xE000, app: 0x10000 };
+  }
+
   async fetchAndFlashFirmware() {
     // Use the device selected in the Device Controls panel; the serial greeting
     // name (vortexPort.name) can be stale when flashing a different device.
@@ -227,7 +237,7 @@ export default class UpdatePanel extends Panel {
 
       console.log(`Firmware zip source: ${sourceUrl}`);
 
-      firmwareFiles = await this.unzipFirmware(zipData);
+      firmwareFiles = await this.unzipFirmware(zipData, this.offsetsForDevice(targetDevice));
 
       firmwareFiles.forEach((file) => {
         console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
@@ -242,7 +252,7 @@ export default class UpdatePanel extends Panel {
 
       const bootAppEntry = {
         path: bootAppUrl,
-        address: 0xE000,
+        address: this.offsetsForDevice(targetDevice).otadata,
         data: new Uint8Array(bootAppBuf),
       };
 
@@ -256,14 +266,14 @@ export default class UpdatePanel extends Panel {
     await this.flashFirmware(firmwareFiles);
   }
 
-  async unzipFirmware(zipData) {
+  async unzipFirmware(zipData, offsets) {
     const zip = await JSZip.loadAsync(zipData);
 
     const firmwareFiles = [];
     const fileMappings = {
       'build/VortexEngine.ino.bootloader.bin': 0x0,
       'build/VortexEngine.ino.partitions.bin': 0x8000,
-      'build/VortexEngine.ino.bin': 0x10000,
+      'build/VortexEngine.ino.bin': offsets.app,
     };
 
     for (const [fileName, address] of Object.entries(fileMappings)) {
@@ -659,6 +669,34 @@ export default class UpdatePanel extends Panel {
     return vp.portActive;
   }
 
+  // A forced update (Insert key) opens its own private serial port. Once the
+  // flash is done the device resets and re-enumerates USB, leaving that port
+  // handle stale — it must be closed and dropped, otherwise the next flash
+  // reuses the dead handle and fails with 'Failed to set control signals'.
+  async disconnectForcedPort() {
+    const vp = this.vortexPort;
+    const port = this.serialPort;
+    // if the editor connection is riding on this port, tear it down first so
+    // its read loop releases the port
+    if (vp && vp.serialPort === port) {
+      try { await vp.disconnect(); } catch (e) {}
+    }
+    // release any reader lock the ESP flasher still holds
+    try { this.espLoader?._reader?.releaseLock(); } catch (e) {}
+    // close the port so the next flash can request a fresh one
+    try {
+      if (port) {
+        await port.close();
+        console.log('[UpdatePanel] Disconnected forced-update serial port.');
+      }
+    } catch (e) {
+      console.warn('[UpdatePanel] Failed to close serial port:', e);
+    }
+    this.espLoader = null;
+    this.espStub = null;
+    this.serialPort = null;
+  }
+
   async handleFirmwareUpdate(backupModes = false) {
     const updateProgress = document.getElementById('updateProgress');
     let backup = null;
@@ -732,6 +770,12 @@ export default class UpdatePanel extends Panel {
       if (updateProgress) updateProgress.textContent = 'Firmware update failed.';
       Notification.failure('Firmware update failed: ' + error.message);
       console.error(error);
+    } finally {
+      // a forced update (Insert key) opened its own private serial port;
+      // disconnect it once done so the next flash starts with a fresh port
+      if (this.forcedUpdate) {
+        await this.disconnectForcedPort();
+      }
     }
   }
 }

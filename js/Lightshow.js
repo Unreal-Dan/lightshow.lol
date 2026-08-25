@@ -516,7 +516,7 @@ export default class Lightshow {
       this.angle += 0.02 * this.direction;
 
       const sweepWidth = this.canvas.width;
-      const sweepX = ((this.angle * (200 + this.circleRadius * 0.5)) % sweepWidth + sweepWidth) % sweepWidth;
+      const sweepX = ((this.angle * (200 + ((500 - this.circleRadius) * 0.5))) % sweepWidth + sweepWidth) % sweepWidth;
 
       const ledsPerLine = Math.ceil(leds.length / numLines);
 
@@ -550,7 +550,7 @@ export default class Lightshow {
       this.angle += 0.02 * this.direction;
 
       const sweepHeight = this.canvas.height;
-      const sweepY = ((this.angle * (200 + this.circleRadius * 0.5)) % sweepHeight + sweepHeight) % sweepHeight;
+      const sweepY = ((this.angle * 200 + ((500 - this.circleRadius) * 0.5)) % sweepHeight + sweepHeight) % sweepHeight;
 
       const ledsPerLine = Math.ceil(leds.length / numLines);
 
