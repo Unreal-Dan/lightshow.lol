@@ -210,34 +210,7 @@ export default class LayoutPanel extends Panel {
   buildLayoutData() {
     const dm = this.editor.dockManager;
     if (!dm) return null;
-
-    // Build layout data from current state
-    const data = {
-      ver: 1,
-      dockSizes: { ...dm.dockSizes },
-      panels: {},
-    };
-
-    dm.panels.forEach((record, id) => {
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') return;
-      const panelEl = record.panel.panel;
-      const entry = {
-        collapsed: panelEl.querySelector('.panel-content')?.classList.contains('collapsed') ?? false,
-      };
-
-      if (record.floating) {
-        entry.floating = true;
-        entry.x = parseInt(panelEl.style.left) || 0;
-        entry.y = parseInt(panelEl.style.top) || 0;
-      } else if (record.dock) {
-        entry.dock = record.dock;
-        entry.index = dm.dockPanelOrder[record.dock].indexOf(id);
-      }
-
-      data.panels[id] = entry;
-    });
-
-    return data;
+    return dm.getLayoutData();
   }
 
   async copyLayoutToClipboard() {
@@ -392,81 +365,11 @@ export default class LayoutPanel extends Panel {
 
   _applyLayoutData(data) {
     const dm = this.editor.dockManager;
-    if (!dm) return;
+    if (!dm || !data || !data.panels) return;
 
     dm._suppressSave = true;
     dm._clearLayoutCookie();
-
-    // Undock all
-    const ids = Array.from(dm.panels.keys());
-    ids.forEach(id => {
-      const record = dm.panels.get(id);
-      if (!record) return;
-      dm.removePanel(id);
-      const panelEl = record.panel.panel;
-      if (id === 'welcomePanel' || id === 'colorPickerPanel') {
-        if (panelEl.parentElement) panelEl.parentElement.removeChild(panelEl);
-      }
-      panelEl.style.position = '';
-      panelEl.style.left = '';
-      panelEl.style.top = '';
-      panelEl.style.width = '';
-      panelEl.style.zIndex = '';
-      panelEl.classList.remove('floating-panel');
-    });
-
-    // Apply dock sizes
-    if (data.dockSizes) {
-      Object.assign(dm.dockSizes, data.dockSizes);
-    }
-
-    // Apply collapse states BEFORE positioning so panels initialize settled
-    for (const [id, entry] of Object.entries(data.panels)) {
-      const record = dm.panels.get(id);
-      if (!record) continue;
-      record.panel.setCollapsed(entry.collapsed, true);
-    }
-
-    // Apply positions
-    const dockedBySide = { left: [], right: [], bottom: [] };
-    const floating = [];
-
-    for (const [id, entry] of Object.entries(data.panels)) {
-      if (entry.floating) {
-        floating.push({ id, entry });
-      } else if (entry.dock) {
-        dockedBySide[entry.dock].push({ id, entry });
-      }
-    }
-
-    for (const side of ['left', 'right', 'bottom']) {
-      dockedBySide[side].sort((a, b) => a.entry.index - b.entry.index);
-      for (const { id, entry } of dockedBySide[side]) {
-        dm.dockPanel(id, side, entry.index);
-      }
-    }
-
-    for (const { id, entry } of floating) {
-      dm.floatPanel(id, entry.x || 0, entry.y || 0);
-    }
-
-    // Re-init floating observers
-    for (const fp of dm.floatingPanels) {
-      const id = fp.panel.panel.id;
-      dm._teardownFloatingObserver(id);
-      dm._setupFloatingObserver(id, fp.panel.panel);
-    }
-
-    dm._settleFloatingStack();
-
-    ['left', 'right', 'bottom'].forEach(side => {
-      if (dm.dockPanelOrder[side].length > 0) {
-        dm.updateDockVisibility(side);
-        dm.applyDockSize(side);
-      }
-    });
-
-    dm.updateCanvasLayout();
+    dm.applyLayoutData(data);
     dm._suppressSave = false;
     dm.saveLayout();
   }

@@ -69,11 +69,16 @@
   font-style: italic;
 }
 
-.draggable-panel.panel-inactive .panel-inactive-note {
+/* Inactive panels: visible + dockable, controls swapped for a note.
+   Selectors intentionally match drag ghosts too (.dock-ghost clones keep
+   their panel-inactive state class) */
+.draggable-panel.panel-inactive .panel-inactive-note,
+.dock-ghost.panel-inactive .panel-inactive-note {
   display: block;
 }
 
-.draggable-panel.panel-inactive > .panel-content > *:not(.panel-inactive-note) {
+.draggable-panel.panel-inactive > .panel-content > *:not(.panel-inactive-note),
+.dock-ghost.panel-inactive > .panel-content > *:not(.panel-inactive-note) {
   display: none !important;
 }
 

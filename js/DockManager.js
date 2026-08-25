@@ -315,7 +315,7 @@ export default class DockManager {
     this.saveLayout();
   }
 
-  floatPanel(id, x, y, posSpec = null) {
+  floatPanel(id, x, y) {
     const record = this.panels.get(id);
     if (!record) return;
 
@@ -331,36 +331,22 @@ export default class DockManager {
     panelEl.style.position = 'fixed';
     panelEl.style.width = Math.min(400, window.innerWidth - 40) + 'px';
 
-    // Resolve horizontal position: side anchors measure the gap between the
-    // anchored screen edge and the panel's nearest edge; ratios scale with
-    // the viewport so layouts survive different screen sizes.
-    const spec = posSpec || {};
     const w = panelEl.offsetWidth;
-    let px = x;
-    if (spec.xr != null && Number.isFinite(spec.xr)) {
-      px = spec.anchorX === 'right'
-        ? window.innerWidth - spec.xr * window.innerWidth - w
-        : spec.xr * window.innerWidth;
-    } else if (spec.anchorX === 'right') {
-      px = window.innerWidth - x - w;
-    }
-    px = Math.round(Math.max(0, Math.min(px, Math.max(0, window.innerWidth - w))));
+    const px = Math.round(Math.max(0, Math.min(x, Math.max(0, window.innerWidth - w))));
     const py = Math.round(Math.max(0, Math.min(y, Math.max(0, window.innerHeight - 40))));
     panelEl.style.left = px + 'px';
     panelEl.style.top = py + 'px';
 
-    if (spec.anchorX || spec.yr != null) {
-      this._floatingRelPos.set(id, {
-        anchorX: spec.anchorX === 'right' ? 'right' : 'left',
-        anchorY: spec.anchorY === 'bottom' ? 'bottom' : 'top',
-        gapPxX: spec.anchorX === 'right' ? window.innerWidth - (px + w) : px,
-        gapRatioX: spec.xr != null ? spec.xr : null,
-        gapPxY: spec.anchorY === 'bottom' ? window.innerHeight - py : py,
-        gapRatioY: spec.yr != null ? spec.yr : null,
-      });
-    } else {
-      this._floatingRelPos.delete(id);
-    }
+    // Anchor the panel to whichever horizontal screen edge it is closest to.
+    // Raw x/y coordinates don't survive different screen sizes; an edge gap
+    // does. Window resizes re-pin the panel via this anchor.
+    const rightGap = Math.round(window.innerWidth - px - w);
+    this._floatingRelPos.set(id, {
+      anchorX: px <= rightGap ? 'left' : 'right',
+      gapPxX: px <= rightGap ? px : rightGap,
+      anchorY: 'top',
+      gapPxY: py,
+    });
 
     this._zCounter++;
     panelEl.style.zIndex = String(this._zCounter);
@@ -514,8 +500,7 @@ export default class DockManager {
           this._floatingRelPos.delete(panelId);
           this._floatingRelPos.set(newMasterId, {
             ...rel,
-            gapPxY: rel.anchorY === 'bottom' ? rel.gapPxY + shift : rel.gapPxY - shift,
-            gapRatioY: null,
+            gapPxY: Math.max(0, rel.gapPxY - shift),
           });
         }
       }
@@ -572,6 +557,7 @@ export default class DockManager {
       const el = this.panels.get(stack[i])?.panel.panel;
       if (!el) continue;
       const prevRect = prevEl.getBoundingClientRect();
+      el.style.left = Math.round(prevRect.left) + 'px';
       el.style.top = Math.round(prevRect.bottom) + 'px';
       this._floatingHeights.set(stack[i], el.offsetHeight);
       prevEl = el;
@@ -837,12 +823,16 @@ export default class DockManager {
 
     const snapX = bestDistX <= SNAP_DISTANCE ? Math.round(rawX + snapOffsetX) : Math.round(rawX);
     let snapY = bestDistY <= SNAP_DISTANCE ? Math.round(rawY + snapOffsetY) : Math.round(rawY);
+    let guideXFinal = bestDistX <= SNAP_DISTANCE ? snapGuideX : null;
     let guideYFinal = bestDistY <= SNAP_DISTANCE ? snapGuideY : null;
 
-    // Panel-stack magnetization: when the ghost's top edge hovers near the
-    // bottom edge of another floating panel (with meaningful horizontal
-    // overlap), lock the vertical position flush and arm a stack drop. This
-    // overrides generic y-snapping so panels never land a few px off.
+    // Panel-stack magnetization: when the ghost's top edge nears the bottom
+    // edge of another floating panel (with meaningful horizontal overlap),
+    // apply an eased pull toward perfect alignment and arm a stack drop.
+    // The ghost ALWAYS tracks the cursor — the pull just dampens its motion
+    // as it approaches the seam, so it settles into alignment without ever
+    // locking up. The drop itself seats members exactly flush, so a panel
+    // can never join a stack misaligned by a few pixels.
     this.drag.pendingStackTarget = null;
     if (!this.drag.currentZone) {
       const exclude = new Set([this.drag.record.panel.panel.id]);
@@ -866,11 +856,12 @@ export default class DockManager {
       }
 
       if (bestTarget && bestStackDist <= STACK_SNAP_DISTANCE) {
-        snapY = Math.round(bestRect.bottom);
-        guideYFinal = bestRect.bottom;
-        if (this.drag.pendingStackTarget !== bestTarget) {
-          console.log(`[dock] stack snap armed → ${bestTarget} (dist ${Math.round(bestStackDist)}px)`);
-        }
+        // Preview-only magnetization. The ghost keeps following the cursor
+        // one-to-one — overriding its position mid-drag reads as a frozen,
+        // broken drag no matter how the transition is eased. The indicator
+        // and guide communicate the join instead, and completeDrag seats
+        // members exactly flush on drop, so a misaligned join is impossible.
+        guideYFinal = Math.round(bestRect.bottom);
         this.drag.pendingStackTarget = bestTarget;
       }
     }
@@ -880,7 +871,7 @@ export default class DockManager {
     return {
       x: snapX,
       y: snapY,
-      guideX: bestDistX <= SNAP_DISTANCE ? snapGuideX : null,
+      guideX: guideXFinal,
       guideY: guideYFinal,
     };
   }
@@ -930,9 +921,26 @@ export default class DockManager {
     if (this.drag.ghost) {
       const rawX = e.clientX - this.drag.offsetX;
       const rawY = e.clientY - this.drag.offsetY;
-      const snapped = this.applyMagneticSnap(rawX, rawY);
+      let snapped;
+      try {
+        snapped = this.applyMagneticSnap(rawX, rawY);
+      } catch (err) {
+        console.error('[snap] EXCEPTION in applyMagneticSnap:', err);
+        snapped = { x: rawX, y: rawY, guideX: null, guideY: null };
+      }
       this.drag.ghost.style.left = snapped.x + 'px';
       this.drag.ghost.style.top = snapped.y + 'px';
+
+      // Throttled drag-move log
+      const _now = performance.now();
+      if (!this._lastMoveLog || _now - this._lastMoveLog > 300) {
+        this._lastMoveLog = _now;
+        const g = this.drag.ghost;
+        console.log('[snap] MOVE raw:', Math.round(rawX), Math.round(rawY),
+          '→ snapped:', snapped.x, snapped.y,
+          'ghost.left:', g.style.left, 'ghost.top:', g.style.top,
+          'stackTarget:', snapped._stackTarget || this.drag.pendingStackTarget || null);
+      }
 
       // Update position label
       if (this.drag.posLabel) {
@@ -1012,7 +1020,8 @@ export default class DockManager {
       ghost = this._buildGroupGhost();
     } else {
       ghost = panelEl.cloneNode(true);
-      ghost.className = 'dock-ghost';
+      ghost.className = this._ghostClassName(panelEl);
+      this._mirrorInactiveState(ghost);
       ghost.style.width = panelEl.offsetWidth + 'px';
     }
 
@@ -1043,6 +1052,33 @@ export default class DockManager {
     for (const m of this.drag.stackMembers) {
       const rec = this.panels.get(m.id);
       if (rec) rec.panel.panel.style.opacity = '0';
+    }
+  }
+
+  /**
+   * Class list for a drag-ghost clone. Root-level state classes that control
+   * which content is visible (e.g. panel-inactive swaps controls for a
+   * "requires device" note) are preserved; layout classes are dropped since
+   * .dock-ghost supersedes them.
+   */
+  _ghostClassName(panelEl, extra = '') {
+    const classes = ['dock-ghost'];
+    if (panelEl.classList.contains('panel-inactive')) classes.push('panel-inactive');
+    if (extra) classes.push(extra);
+    return classes.join(' ');
+  }
+
+  /**
+   * Inactive panels swap their controls for a note via stylesheet rules.
+   * Mirror that state with inline styles on the ghost clone so the ghost
+   * renders correctly even if the relevant stylesheet is cached stale.
+   */
+  _mirrorInactiveState(clone) {
+    if (!clone.classList.contains('panel-inactive')) return;
+    const content = clone.querySelector(':scope > .panel-content');
+    if (!content) return;
+    for (const child of content.children) {
+      child.style.display = child.classList.contains('panel-inactive-note') ? 'block' : 'none';
     }
   }
 
@@ -1085,7 +1121,8 @@ export default class DockManager {
       m.relY = Math.round(r.top - uTop);
 
       const clone = this.panels.get(m.id).panel.panel.cloneNode(true);
-      clone.className = 'dock-ghost stack-ghost-item';
+      clone.className = this._ghostClassName(this.panels.get(m.id).panel.panel, 'stack-ghost-item');
+      this._mirrorInactiveState(clone);
       clone.style.position = 'absolute';
       clone.style.left = m.relX + 'px';
       clone.style.top = m.relY + 'px';
@@ -1479,10 +1516,12 @@ export default class DockManager {
     return this._loadLayoutCookie() !== null;
   }
 
-  saveLayout() {
-    if (this._suppressSave) return;
+  // Snapshot the current layout (same shape persisted to the cookie).
+  // Stacks serialize as top->bottom id arrays; only stack masters carry
+  // positioning data.
+  getLayoutData() {
     const data = {
-      ver: 2,
+      ver: 3,
       dockSizes: { ...this.dockSizes },
       panels: {},
     };
@@ -1496,8 +1535,25 @@ export default class DockManager {
 
       if (record.floating) {
         entry.floating = true;
-        entry.x = parseInt(panelEl.style.left) || 0;
-        entry.y = parseInt(panelEl.style.top) || 0;
+
+        // Grouped panels follow their master — only the master (topmost
+        // member of a stack) carries positioning data.
+        const info = this._findStackInfo(id);
+        if (!info || info.index === 0) {
+          const left = Math.round(parseFloat(panelEl.style.left)) || 0;
+          const w = panelEl.offsetWidth;
+          // Store X relative to whichever screen edge the panel is closest
+          // to so layouts stay portable across different screen sizes.
+          const rightGap = Math.round(window.innerWidth - left - w);
+          if (left <= rightGap) {
+            entry.edgeX = 'left';
+            entry.gapX = Math.max(0, left);
+          } else {
+            entry.edgeX = 'right';
+            entry.gapX = Math.max(0, rightGap);
+          }
+          entry.y = Math.round(parseFloat(panelEl.style.top)) || 0;
+        }
       } else if (record.dock) {
         entry.dock = record.dock;
         entry.index = this.dockPanelOrder[record.dock].indexOf(id);
@@ -1514,13 +1570,23 @@ export default class DockManager {
       }))
       .map(stack => stack.slice());
 
-    this._saveLayoutCookie(data);
+    return data;
+  }
+
+  saveLayout() {
+    if (this._suppressSave) return;
+    this._saveLayoutCookie(this.getLayoutData());
   }
 
   restoreLayout() {
     const data = this._loadLayoutCookie();
     if (!data || !data.panels) return false;
+    return this.applyLayoutData(data);
+  }
 
+  // Public: apply a layout snapshot produced by getLayoutData() (or a legacy
+  // ver<3 snapshot — absolute x/y with no stacks is handled gracefully).
+  applyLayoutData(data) {
     // Restore dock sizes
     if (data.dockSizes) {
       Object.assign(this.dockSizes, data.dockSizes);
@@ -1529,12 +1595,16 @@ export default class DockManager {
     // Process panels in order of their saved index
     const ids = Object.keys(data.panels);
 
+    // Undock every registered panel — not just the ones present in the
+    // snapshot — so applying a partial layout can't leave strays behind
+    const allIds = Array.from(this.panels.keys());
+
     // Suppress stack propagation during restore — heights haven't settled
     this._suppressStack = true;
     this._stacks = [];
 
     // First, undock all panels and reset their state
-    ids.forEach(id => {
+    allIds.forEach(id => {
       const record = this.panels.get(id);
       if (!record) return;
       this.removePanel(id);
@@ -1565,6 +1635,25 @@ export default class DockManager {
       panelEl.classList.remove('floating-panel');
     });
 
+    // Validate saved panel stacks up-front so stack children can be skipped
+    // during placement — they are positioned relative to their master after
+    // the masters exist.
+    const validStacks = [];
+    if (Array.isArray(data.stacks)) {
+      for (const saved of data.stacks) {
+        if (!Array.isArray(saved)) continue;
+        const valid = saved.filter(pid => {
+          const e = data.panels[pid];
+          return e && e.floating && this.panels.has(pid);
+        });
+        if (valid.length > 1) validStacks.push(valid);
+      }
+    }
+    const stackChildIds = new Set();
+    for (const stack of validStacks) {
+      for (const pid of stack.slice(1)) stackChildIds.add(pid);
+    }
+
     // Now re-apply saved positions
     ids.forEach(id => {
       const entry = data.panels[id];
@@ -1577,13 +1666,38 @@ export default class DockManager {
       record.panel.setCollapsed(entry.collapsed, true);
 
       if (entry.floating) {
-        // Float at saved position
-        this.floatPanel(id, entry.x || 0, entry.y || 0);
+        // Stack children follow their master — placed in a second pass below
+        if (stackChildIds.has(id)) return;
+
+        let fx;
+        if (entry.edgeX === 'left') {
+          // Stored as offset from left screen edge
+          fx = entry.gapX || 0;
+        } else if (entry.edgeX === 'right') {
+          // Stored as offset from right screen edge (panel right → screen right)
+          const w = Math.min(400, window.innerWidth - 40);
+          fx = window.innerWidth - w - (entry.gapX || 0);
+        } else {
+          fx = entry.x || 0; // legacy ver<3 cookie
+        }
+        this.floatPanel(id, fx, entry.y || 0);
       } else if (entry.dock) {
         // Dock at saved position, maintaining order
         this.dockPanel(id, entry.dock, entry.index >= 0 ? entry.index : -1);
       }
     });
+
+    // Place grouped panels flush below their predecessor. Only the master
+    // carried positioning data; children inherit its x and chain downwards.
+    for (const stack of validStacks) {
+      for (let i = 1; i < stack.length; i++) {
+        const crec = this.panels.get(stack[i]);
+        const prevRec = this.panels.get(stack[i - 1]);
+        if (!crec || !prevRec) break;
+        const prevRect = prevRec.panel.panel.getBoundingClientRect();
+        this.floatPanel(stack[i], prevRect.left, prevRect.bottom);
+      }
+    }
 
     // Re-init floating observers.
     for (const fp of this.floatingPanels) {
@@ -1592,22 +1706,12 @@ export default class DockManager {
       this._setupFloatingObserver(id, fp.panel.panel);
     }
 
-    // Re-apply saved panel stacks. Saved positions are already flush, but
-    // re-align to absorb any rounding drift; members drop stale anchoring
-    // since they follow their master.
-    this._stacks = [];
-    if (Array.isArray(data.stacks)) {
-      for (const saved of data.stacks) {
-        if (!Array.isArray(saved)) continue;
-        const valid = saved.filter(id => {
-          const r = this.panels.get(id);
-          return r && r.floating;
-        });
-        if (valid.length < 2) continue;
-        this._stacks.push(valid);
-        for (const id of valid.slice(1)) this._floatingRelPos.delete(id);
-        this._alignStack(valid);
-      }
+    // Register restored stacks and absorb any rounding drift; members drop
+    // stale anchoring since they follow their master.
+    this._stacks = validStacks;
+    for (const stack of validStacks) {
+      for (const id of stack.slice(1)) this._floatingRelPos.delete(id);
+      this._alignStack(stack);
     }
 
     // Keep stack suppressed until collapse transitions finish (0.3s CSS).
@@ -1627,7 +1731,7 @@ export default class DockManager {
     });
 
     this.updateCanvasLayout();
-    console.log('restoreLayout complete — positions should now be final');
+    console.log('applyLayoutData complete — positions should now be final');
     return true;
   }
 }
