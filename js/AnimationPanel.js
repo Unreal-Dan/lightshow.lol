@@ -77,6 +77,12 @@ export default class AnimationPanel extends Panel {
         <button class="animation-button" id="renderOrbitButton" title="Orbit">
           <i class="fa-solid fa-satellite"></i>
         </button>
+        <button class="animation-button" id="renderHorizontalButton" title="Horizontal Line">
+          <i class="fa-solid fa-arrows-left-right"></i>
+        </button>
+        <button class="animation-button" id="renderVerticalButton" title="Vertical Line">
+          <i class="fa-solid fa-arrows-up-down"></i>
+        </button>
       </div>
       <!-- TODO: make this dropdown visible? -->
       <div id="animationPresetsContainer" style="display:none;">
@@ -313,6 +319,8 @@ export default class AnimationPanel extends Panel {
       { id: 'renderHeartButton', shape: 'heart', label: 'Heart' },
       { id: 'renderBoxButton', shape: 'box', label: 'Box' },
       { id: 'renderOrbitButton', shape: 'orbit', label: 'Orbit' },
+      { id: 'renderHorizontalButton', shape: 'horizontal', label: 'Horizontal' },
+      { id: 'renderVerticalButton', shape: 'vertical', label: 'Vertical' },
     ];
 
     shapes.forEach(({ id, shape, label }) => {
