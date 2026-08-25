@@ -8,7 +8,11 @@ export default class ChromalinkPanel extends Panel {
   constructor(editor) {
     const content = `
       <div id="chromalinkOptions">
-        <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo">Connect Duo</button>
+        <div class="chromalink-actions">
+          <button id="chromalinkConnect" class="chromalink-button" title="Connect to a chromalinked Duo"><i class="fa-solid fa-link"></i> Connect</button>
+          <button id="chromalinkFlash" class="chromalink-button" title="Flash a custom Duo firmware"><i class="fa-solid fa-microchip"></i> Custom FW</button>
+          <button id="chromalinkUpdate" class="chromalink-button" title="Flash latest Duo firmware"><i class="fa-solid fa-arrow-up"></i> Update</button>
+        </div>
         <div id="chromalinkDetails" style="display: none;">
           <div class="duo-device-info">
             <img src="public/images/duo-logo-square-64.png" alt="Duo Icon" id="duoIcon">
@@ -19,8 +23,6 @@ export default class ChromalinkPanel extends Panel {
             </div>
           </div>
         </div>
-        <button id="chromalinkFlash" class="chromalink-button" title="Flash a custom Duo firmware">Flash Custom Firmware</button>
-        <button id="chromalinkUpdate" class="chromalink-button" title="Flash latest Duo firmware">Update Firmware</button>
         <div class="chromalink-update-progress-container">
           <div id="firmwareProgress" class="chromalink-update-progress-bar">
             <div id="firmwareProgressBar"></div>
@@ -128,7 +130,7 @@ export default class ChromalinkPanel extends Panel {
       this.isConnected = true;
       await this.editor.checkVersion('Duo', this.duoHeader.version);
       const connectButton = document.getElementById('chromalinkConnect');
-      connectButton.innerHTML = 'Disconnect Duo'
+      connectButton.innerHTML = '<i class="fa-solid fa-link-slash"></i> Disconnect'
       if (this.editor.lightshow.vortex.numModes() > 0) {
         this.oldModes = new this.editor.vortexLib.ByteStream();
         if (!this.editor.lightshow.vortex.getModes(this.oldModes)) {
@@ -163,7 +165,7 @@ export default class ChromalinkPanel extends Panel {
     try {
       // Use the connect function from VortexPort
       const connectButton = document.getElementById('chromalinkConnect');
-      connectButton.innerHTML = 'Connect Duo'
+      connectButton.innerHTML = '<i class="fa-solid fa-link"></i> Connect'
       this.isConnected = false;
       this.editor.lightshow.vortex.clearModes();
       this.editor.lightshow.setLedCount(20);

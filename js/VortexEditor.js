@@ -203,8 +203,8 @@ export default class VortexEditor {
       // Restore saved layout if available, otherwise collapse all by default
       const restored = this.dockManager.restoreLayout();
       if (!restored && this.layoutPanel) {
-        // Fresh load (no saved layout): default to the Classic preset
-        this.layoutPanel.applyPreset('classic');
+        // Fresh load (no saved layout): default to the Classic Floating preset
+        this.layoutPanel.applyPreset('classicFloating');
       }
 
       // Floating-only panels go to body (not managed by dock manager)
@@ -677,8 +677,8 @@ export default class VortexEditor {
       // Restore saved layout if available, otherwise collapse all
       const restored = this.dockManager.restoreLayout();
       if (!restored && this.layoutPanel) {
-        // Fresh load (no saved layout): default to the Classic preset
-        this.layoutPanel.applyPreset('classic');
+        // Fresh load (no saved layout): default to the Classic Floating preset
+        this.layoutPanel.applyPreset('classicFloating');
       }
 
       // Floating-only panels go to body (not managed by dock manager)

@@ -319,6 +319,9 @@ export default class DockManager {
     const record = this.panels.get(id);
     if (!record) return;
 
+    const oldLeft = record.panel.panel.style.left;
+    const oldTop = record.panel.panel.style.top;
+
     // Remove from current location
     this.removePanel(id);
 
@@ -329,24 +332,36 @@ export default class DockManager {
     // Style as floating
     const panelEl = record.panel.panel;
     panelEl.style.position = 'fixed';
-    panelEl.style.width = Math.min(400, window.innerWidth - 40) + 'px';
+    const intendedW = Math.min(400, window.innerWidth - 40);
+    panelEl.style.width = intendedW + 'px';
 
-    const w = panelEl.offsetWidth;
+    // The panel may still be inside a hidden dock (display:none) at this
+    // point, which makes offsetWidth return 0.  Use the intended width we
+    // just set so the anchor-gap calculation is correct.
+    const w = panelEl.offsetWidth || intendedW;
     const px = Math.round(Math.max(0, Math.min(x, Math.max(0, window.innerWidth - w))));
     const py = Math.round(Math.max(0, Math.min(y, Math.max(0, window.innerHeight - 40))));
     panelEl.style.left = px + 'px';
     panelEl.style.top = py + 'px';
 
+    if (oldLeft !== '' && oldLeft !== panelEl.style.left) {
+      console.log(`[dock] floatPanel ${id}: left ${oldLeft} → ${panelEl.style.left} (requested x=${x})`);
+    }
+
     // Anchor the panel to whichever horizontal screen edge it is closest to.
     // Raw x/y coordinates don't survive different screen sizes; an edge gap
     // does. Window resizes re-pin the panel via this anchor.
     const rightGap = Math.round(window.innerWidth - px - w);
+    const anchorX = px <= rightGap ? 'left' : 'right';
+    const gapPxX = px <= rightGap ? px : rightGap;
     this._floatingRelPos.set(id, {
-      anchorX: px <= rightGap ? 'left' : 'right',
-      gapPxX: px <= rightGap ? px : rightGap,
+      anchorX,
+      gapPxX,
+      cssWidth: intendedW,
       anchorY: 'top',
       gapPxY: py,
     });
+    console.log(`[dock] floatPanel ${id}: px=${px} w=${w} anchorX=${anchorX} gapPxX=${gapPxX} rightGap=${rightGap}`);
 
     this._zCounter++;
     panelEl.style.zIndex = String(this._zCounter);
@@ -588,6 +603,10 @@ export default class DockManager {
     // shifting by a computed delta — avoids subpixel drift.
     const info = this._findStackInfo(panelId);
     if (info) {
+      const masterEl = this.panels.get(info.stack[0])?.panel.panel;
+      if (masterEl) {
+        console.log(`[dock] propagateDelta from ${panelId} — stack master ${info.stack[0]} left=${masterEl.style.left}`);
+      }
       this._alignStack(info.stack);
       this._keepStackOnScreen(info.stack, panelId);
     }
@@ -1439,15 +1458,31 @@ export default class DockManager {
 
     // Keep anchored floating panels pinned to their screen edge on resize
     window.addEventListener('resize', () => this._reflowFloatingPanels());
+
+    // When the user switches browser tabs and comes back, the browser may
+    // recalculate layout or resume frozen CSS transitions.  Re-anchor all
+    // floating panels so they stay pinned to their correct screen edge.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[dock] tab visible — reflowing floating panels');
+        this._reflowFloatingPanels();
+      }
+    });
   }
 
   _reflowFloatingPanels() {
+    console.log('[dock] _reflowFloatingPanels called — stacks:', this._stacks.length, 'floatingRelPos entries:', this._floatingRelPos.size);
+
     // Remember where each stack master sits so carried members can follow
     // any anchor-driven horizontal shift
     const masterLeftBefore = new Map();
     this._stacks.forEach(stack => {
       const m = this.panels.get(stack[0]);
-      if (m && m.floating) masterLeftBefore.set(stack, m.panel.panel.getBoundingClientRect().left);
+      if (m && m.floating) {
+        const left = m.panel.panel.getBoundingClientRect().left;
+        console.log(`[dock] reflow pre: stack master ${stack[0]} left=${left} style.left=${m.panel.panel.style.left}`);
+        masterLeftBefore.set(stack, left);
+      }
     });
 
     this._floatingRelPos.forEach((info, id) => {
@@ -1456,7 +1491,10 @@ export default class DockManager {
       // Non-master stack members follow their master instead
       if (!this._isStackMaster(id)) return;
       const el = record.panel.panel;
-      const w = el.offsetWidth;
+      // Use the CSS width stored at float time so the gap stays consistent;
+      // offsetWidth includes borders and may differ by a few pixels.
+      const w = info.cssWidth || el.offsetWidth;
+      const oldLeft = el.style.left;
 
       if (info.gapRatioX != null) {
         const gap = info.gapRatioX * window.innerWidth;
@@ -1465,6 +1503,8 @@ export default class DockManager {
           : gap) + 'px';
       } else if (info.anchorX === 'right') {
         el.style.left = Math.round(window.innerWidth - info.gapPxX - w) + 'px';
+      } else if (info.anchorX === 'left') {
+        el.style.left = Math.round(info.gapPxX) + 'px';
       }
 
       if (info.gapRatioY != null) {
@@ -1475,6 +1515,10 @@ export default class DockManager {
       } else if (info.anchorY === 'bottom') {
         el.style.top = Math.round(window.innerHeight - info.gapPxY - el.offsetHeight) + 'px';
       }
+
+      if (oldLeft !== el.style.left) {
+        console.log(`[dock] reflow moved ${id}: left ${oldLeft} → ${el.style.left} (anchorX=${info.anchorX} gapPxX=${info.gapPxX} w=${w})`);
+      }
     });
 
     // Re-seat every stack member flush below its predecessor, preserving
@@ -1482,7 +1526,12 @@ export default class DockManager {
     this._stacks.forEach(stack => {
       const m = this.panels.get(stack[0]);
       if (!m || !m.floating) return;
-      const dx = m.panel.panel.getBoundingClientRect().left - (masterLeftBefore.get(stack) ?? 0);
+      const newLeft = m.panel.panel.getBoundingClientRect().left;
+      const oldLeft = masterLeftBefore.get(stack) ?? 0;
+      const dx = newLeft - oldLeft;
+      if (Math.abs(dx) > 0.5) {
+        console.log(`[dock] reflow stack ${stack[0]}: dx=${dx.toFixed(1)} (was ${oldLeft.toFixed(1)}, now ${newLeft.toFixed(1)})`);
+      }
       this._alignStack(stack, dx);
     });
   }
@@ -1597,7 +1646,20 @@ export default class DockManager {
 
   saveLayout() {
     if (this._suppressSave) return;
-    this._saveLayoutCookie(this.getLayoutData());
+    const data = this.getLayoutData();
+    // Log floating master positions for diagnosis
+    const floatingMasters = [];
+    this._stacks.forEach(stack => {
+      const m = this.panels.get(stack[0]);
+      if (m && m.floating) {
+        const el = m.panel.panel;
+        floatingMasters.push(`${stack[0]}:left=${el.style.left}`);
+      }
+    });
+    if (floatingMasters.length > 0) {
+      console.log(`[dock] saveLayout — floating masters: ${floatingMasters.join(', ')}`);
+    }
+    this._saveLayoutCookie(data);
   }
 
   restoreLayout() {

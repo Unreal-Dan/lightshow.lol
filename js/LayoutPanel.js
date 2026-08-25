@@ -3,9 +3,9 @@ import Panel from './Panel.js';
 import Notification from './Notification.js';
 
 const LAYOUT_PRESETS = {
-  classic: {
-    name: 'Classic',
-    desc: 'Editing panels stacked left, device panels right',
+  classicFloating: {
+    name: 'Classic Floating',
+    desc: 'Two floating stacks — editing left, device panels right',
     icon: 'fa-solid fa-pen-ruler',
     data: {
       ver: 3,
@@ -29,9 +29,9 @@ const LAYOUT_PRESETS = {
       ],
     },
   },
-  modern: {
-    name: 'Modern',
-    desc: 'Editing panels left, control panels right',
+  classicDocked: {
+    name: 'Classic Docked',
+    desc: 'Editing panels docked left, device panels docked right',
     icon: 'fa-solid fa-arrows-left-right',
     data: {
       ver: 1,
@@ -51,8 +51,8 @@ const LAYOUT_PRESETS = {
       },
     },
   },
-  condensedLeft: {
-    name: 'Condensed Left',
+  condensedDockedLeft: {
+    name: 'Condensed Docked Left',
     desc: 'All panels docked left, collapsed',
     icon: 'fa-solid fa-align-left',
     data: {
@@ -73,8 +73,8 @@ const LAYOUT_PRESETS = {
       },
     },
   },
-  condensedRight: {
-    name: 'Condensed Right',
+  condensedDockedRight: {
+    name: 'Condensed Docked Right',
     desc: 'All panels docked right, collapsed',
     icon: 'fa-solid fa-align-right',
     data: {
@@ -93,6 +93,56 @@ const LAYOUT_PRESETS = {
         devicePanel:             { collapsed: true, dock: 'right', index: 9 },
         chromalinkPanel:         { collapsed: true, dock: 'right', index: 10 },
       },
+    },
+  },
+  condensedFloatingLeft: {
+    name: 'Condensed Floating Left',
+    desc: 'All panels collapsed in a single floating stack on the left',
+    icon: 'fa-solid fa-align-left',
+    data: {
+      ver: 3,
+      dockSizes: { left: 400, right: 400, bottom: 200 },
+      panels: {
+        aboutPanel:              { collapsed: true, floating: true, edgeX: 'left', gapX: 1, y: 0 },
+        layoutPanel:             { collapsed: true, floating: true },
+        animationPanel:          { collapsed: true, floating: true },
+        patternPanel:            { collapsed: true, floating: true },
+        colorsetPanel:           { collapsed: true, floating: true },
+        communityBrowserPanel:   { collapsed: true, floating: true },
+        devicePanel:             { collapsed: true, floating: true },
+        updatePanel:             { collapsed: true, floating: true },
+        chromalinkPanel:         { collapsed: true, floating: true },
+        modesPanel:              { collapsed: true, floating: true },
+        ledSelectPanel:          { collapsed: true, floating: true },
+      },
+      stacks: [
+        ['aboutPanel', 'layoutPanel', 'animationPanel', 'patternPanel', 'colorsetPanel', 'communityBrowserPanel', 'devicePanel', 'updatePanel', 'chromalinkPanel', 'modesPanel', 'ledSelectPanel'],
+      ],
+    },
+  },
+  condensedFloatingRight: {
+    name: 'Condensed Floating Right',
+    desc: 'All panels collapsed in a single floating stack on the right',
+    icon: 'fa-solid fa-align-right',
+    data: {
+      ver: 3,
+      dockSizes: { left: 400, right: 400, bottom: 200 },
+      panels: {
+        aboutPanel:              { collapsed: true, floating: true, edgeX: 'right', gapX: 0, y: 0 },
+        layoutPanel:             { collapsed: true, floating: true },
+        animationPanel:          { collapsed: true, floating: true },
+        patternPanel:            { collapsed: true, floating: true },
+        colorsetPanel:           { collapsed: true, floating: true },
+        communityBrowserPanel:   { collapsed: true, floating: true },
+        devicePanel:             { collapsed: true, floating: true },
+        updatePanel:             { collapsed: true, floating: true },
+        chromalinkPanel:         { collapsed: true, floating: true },
+        modesPanel:              { collapsed: true, floating: true },
+        ledSelectPanel:          { collapsed: true, floating: true },
+      },
+      stacks: [
+        ['aboutPanel', 'layoutPanel', 'animationPanel', 'patternPanel', 'colorsetPanel', 'communityBrowserPanel', 'devicePanel', 'updatePanel', 'chromalinkPanel', 'modesPanel', 'ledSelectPanel'],
+      ],
     },
   },
 };
