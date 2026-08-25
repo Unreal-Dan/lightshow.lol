@@ -596,9 +596,58 @@ export default class DockManager {
       this._floatingHeights.set(id, el.offsetHeight);
     }
 
+    // If the stack now extends off-screen, collapse panels from the bottom
+    // up (skipping the panel that just grew) until it fits.
+    const info = this._findStackInfo(panelId);
+    if (info) this._keepStackOnScreen(info.stack, panelId);
+
     this._stackingBusy = false;
     this._updateStackClasses();
     this.saveLayout();
+  }
+
+  /**
+   * Ensure a stack fits within the viewport. When a panel grows and pushes
+   * the group below the screen, collapse other panels starting from the
+   * bottom — but never the panel that just grew (it expanded for a reason).
+   * After each collapse, panels below shift up so the re-check is accurate.
+   */
+  _keepStackOnScreen(stack, triggeredBy) {
+    if (!stack || stack.length <= 1) return;
+    const lastId = stack[stack.length - 1];
+    const lastEl = this.panels.get(lastId)?.panel.panel;
+    if (!lastEl) return;
+    if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) return;
+
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const pid = stack[i];
+      if (pid === triggeredBy) continue;
+      const rec = this.panels.get(pid);
+      if (!rec) continue;
+      const el = rec.panel.panel;
+      const content = el.querySelector(':scope > .panel-content');
+      if (content && content.classList.contains('collapsed')) continue;
+
+      const oldHeight = el.offsetHeight;
+      const contentEl = el.querySelector(':scope > .panel-content');
+      const contentHeight = contentEl ? contentEl.offsetHeight : 0;
+      rec.panel.setCollapsed(true, false);
+      const heightDelta = contentHeight;
+
+      // Shift every panel below this one up by the height we just reclaimed
+      if (heightDelta > 0) {
+        for (let j = i + 1; j < stack.length; j++) {
+          const belowRec = this.panels.get(stack[j]);
+          if (!belowRec) continue;
+          const belowEl = belowRec.panel.panel;
+          const r = belowEl.getBoundingClientRect();
+          belowEl.style.top = Math.round(r.top - heightDelta) + 'px';
+        }
+      }
+      this._floatingHeights.set(pid, oldHeight - contentHeight);
+
+      if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) break;
+    }
   }
 
   _rebuildFloatingStack() {

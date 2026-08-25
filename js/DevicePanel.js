@@ -137,6 +137,11 @@ export default class DevicePanel extends Panel {
         options.classList.remove('show');
         this._setHighZIndex(false);
       }
+      const profileOpts = document.getElementById('profileOptions');
+      if (profileOpts.classList.contains('show') && !event.target.closest('#profileDropdown') && !event.target.closest('#profileOptions')) {
+        profileOpts.classList.remove('show');
+        this._setHighZIndex(false, 'profileOptions', 'profileSelected');
+      }
     });
 
     // Brightness slider listener
@@ -211,12 +216,15 @@ export default class DevicePanel extends Panel {
     }
     document.getElementById('profileSelected').addEventListener('click', (event) => {
       if (event.currentTarget.classList.contains('locked')) return;
+      const wasShown = profileOptions.classList.contains('show');
       profileOptions.classList.toggle('show');
+      this._setHighZIndex(!wasShown, 'profileOptions', 'profileSelected');
     });
     profileOptions.addEventListener('click', async (event) => {
       const opt = event.target.closest('.profile-option');
       if (!opt || this.switchingProfiles) return;
       profileOptions.classList.remove('show');
+      this._setHighZIndex(false, 'profileOptions', 'profileSelected');
       await this.switchProfile(parseInt(opt.dataset.value, 10));
     });
 
@@ -683,9 +691,9 @@ export default class DevicePanel extends Panel {
     }
   }
 
-  _setHighZIndex(active) {
-    const options = document.getElementById('deviceTypeOptions');
-    const trigger = document.getElementById('deviceTypeSelected');
+  _setHighZIndex(active, optionsId = 'deviceTypeOptions', triggerId = 'deviceTypeSelected') {
+    const options = document.getElementById(optionsId);
+    const trigger = document.getElementById(triggerId);
     if (!options || !trigger) return;
 
     if (active) {
