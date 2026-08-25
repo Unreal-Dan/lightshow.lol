@@ -6,6 +6,8 @@ const MIN_DOCK_SIZE = 160; // px — minimum dock width/height
 const DEFAULT_DOCK_SIZE = 400; // px — default left/right dock width (matches floating panel width)
 const DEFAULT_BOTTOM_SIZE = 200; // px
 const SNAP_DISTANCE = 12; // px — magnetic snap activation distance
+const STACK_SNAP_DISTANCE = 18; // px — magnetization range for panel-stack snapping
+const MIN_STACK_OVERLAP = 24; // px — horizontal overlap required to stack onto a panel
 
 export default class DockManager {
   constructor(editor) {
@@ -36,6 +38,8 @@ export default class DockManager {
     this._zCounter = 200; // stacking order for floating panels
     this._suppressStack = false; // suppress stack propagation during restore
     this._observerVersions = new Map(); // panelId -> counter to invalidate stale observer callbacks
+    this._stacks = []; // explicit panel stacks: arrays of floating ids, [0] = master (topmost)
+    this.stackDropIndicator = null;
   }
 
   /* ── Initialization ── */
@@ -48,7 +52,11 @@ export default class DockManager {
     this.createResizeHandles();
     this.createDropZonePreviews();
     this.createInsertIndicator();
+    this.createStackDropIndicator();
     this.bindGlobalListeners();
+
+    const hasStackSystem = typeof this._createStack === 'function' && typeof this._insertIntoStack === 'function';
+    console.debug(`[dock] DockManager ready — panel-stack system ${hasStackSystem ? 'active' : 'MISSING (stale cache?)'}`);
   }
 
   destroy() {
@@ -58,7 +66,9 @@ export default class DockManager {
       const re = document.getElementById(`resize-${side}`);
       if (re) re.remove();
     });
-    document.querySelectorAll('.dock-zone-preview, .dock-insert-indicator').forEach(el => el.remove());
+    document.querySelectorAll('.dock-zone-preview, .dock-insert-indicator, .stack-drop-indicator').forEach(el => el.remove());
+    this.stackDropIndicator = null;
+    this._stacks = [];
 
     // Remove drag listeners from all registered panel headers
     this.panels.forEach((record) => {
@@ -187,6 +197,36 @@ export default class DockManager {
     el.className = 'dock-insert-indicator';
     this.container.appendChild(el);
     this.insertIndicator = el;
+  }
+
+  createStackDropIndicator() {
+    const el = document.createElement('div');
+    el.className = 'stack-drop-indicator';
+    this.container.appendChild(el);
+    this.stackDropIndicator = el;
+  }
+
+  _updateStackDropIndicator() {
+    if (!this.stackDropIndicator) return;
+    const targetId = this.drag?.pendingStackTarget;
+    if (!targetId || this.drag.currentZone) {
+      this.stackDropIndicator.classList.remove('active');
+      return;
+    }
+    const rec = this.panels.get(targetId);
+    if (!rec || !rec.floating) {
+      this.stackDropIndicator.classList.remove('active');
+      return;
+    }
+    const r = rec.panel.panel.getBoundingClientRect();
+    this.stackDropIndicator.style.top = (r.bottom - 1.5) + 'px';
+    this.stackDropIndicator.style.left = r.left + 'px';
+    this.stackDropIndicator.style.width = r.width + 'px';
+    this.stackDropIndicator.classList.add('active');
+  }
+
+  _hideStackIndicator() {
+    if (this.stackDropIndicator) this.stackDropIndicator.classList.remove('active');
   }
 
   /* ── Panel Registration ── */
@@ -340,8 +380,15 @@ export default class DockManager {
   }
 
   _bringFloatingToFront(panelEl) {
-    this._zCounter++;
-    panelEl.style.zIndex = String(this._zCounter);
+    // Raise the whole stack together so stacked panels keep their order
+    const info = this._findStackInfo(panelEl.id);
+    const ids = info ? info.stack : [panelEl.id];
+    for (const id of ids) {
+      const rec = this.panels.get(id);
+      if (!rec || !rec.floating) continue;
+      this._zCounter++;
+      rec.panel.panel.style.zIndex = String(this._zCounter);
+    }
   }
 
   /* ── Stacking Chain (floating panels) ── */
@@ -390,49 +437,174 @@ export default class DockManager {
     this._floatingHeights.delete(panelId);
   }
 
-  _findStackBelow(panelId, delta = 0) {
-    const below = new Set();
-    let queue = [panelId];
+  /* ── Panel Stacks (explicit) ──
+   *
+   * A panel stack is an ordered array of floating panel ids, [0] being the
+   * master (topmost). The master owns group movement: dragging it moves the
+   * entire stack. Any height change in a member propagates downward so the
+   * members below stay flush. Stacks are created by magnetically snapping a
+   * dragged panel onto the bottom edge of another floating panel. */
 
-    while (queue.length > 0) {
-      const nextQueue = [];
+  _findStackInfo(panelId) {
+    for (const stack of this._stacks) {
+      const index = stack.indexOf(panelId);
+      if (index !== -1) return { stack, index };
+    }
+    return null;
+  }
 
-      for (const topId of queue) {
-        const topRecord = this.panels.get(topId);
-        if (!topRecord) continue;
-        const topRect = topRecord.panel.panel.getBoundingClientRect();
-        if (!topRect) continue;
+  _isStackMaster(panelId) {
+    const info = this._findStackInfo(panelId);
+    return !!(info && info.index === 0);
+  }
 
-        // The source panel's height already changed; use its old bottom
-        // to detect the pre-change stacking:
-        //   oldBottom = rect.bottom - delta
-        //   (for chained panels that haven't moved yet, delta=0, bottom is unchanged)
-        const bottomToCheck = topId === panelId ? topRect.bottom - delta : topRect.bottom;
+  _getMembersBelow(panelId) {
+    const info = this._findStackInfo(panelId);
+    if (!info) return [];
+    return info.stack.slice(info.index + 1);
+  }
 
-        for (const fp of this.floatingPanels) {
-          const fpId = fp.panel.panel.id;
-          if (below.has(fpId) || fpId === panelId) continue;
+  /**
+   * Create a stack from an ordered id list (top -> bottom). All ids must be
+   * currently floating. Re-flushes vertical alignment and refreshes classes.
+   */
+  _createStack(ids) {
+    const members = ids.filter(id => {
+      const rec = this.panels.get(id);
+      return rec && rec.floating;
+    });
+    if (members.length < 2) return null;
+    this._stacks.push(members);
+    this._alignStack(members);
+    // Non-master members follow the master; drop any stale edge anchoring
+    for (const id of members.slice(1)) this._floatingRelPos.delete(id);
+    this._updateStackClasses();
+    this.saveLayout();
+    console.log(`[dock] panel stack created: ${members.join(' → ')}`);
+    return members;
+  }
 
-          const fpRect = fp.panel.panel.getBoundingClientRect();
-          if (Math.abs(fpRect.top - bottomToCheck) > SNAP_DISTANCE) continue;
-          const overlap = Math.min(topRect.right, fpRect.right) - Math.max(topRect.left, fpRect.left);
-          if (overlap <= 0) continue;
+  /**
+   * Remove a panel from its stack. When shiftBelow is true the members that
+   * were below it slide up by the removed panel's height to close the gap.
+   * If the master was removed, the next member is promoted and inherits the
+   * screen-edge anchor so window resizes keep pinning the stack.
+   */
+  _removeFromStack(panelId, shiftBelow = false) {
+    const info = this._findStackInfo(panelId);
+    if (!info) return null;
 
-          below.add(fpId);
-          nextQueue.push(fpId);
-        }
-      }
+    const { stack, index } = info;
+    stack.splice(index, 1);
 
-      queue = nextQueue;
+    let shift = 0;
+    if (shiftBelow) {
+      const rec = this.panels.get(panelId);
+      if (rec) shift = rec.panel.panel.offsetHeight;
     }
 
-    return below;
+    if (stack.length === 0) {
+      this._stacks.splice(this._stacks.indexOf(stack), 1);
+    } else {
+      if (index === 0) {
+        // Promote new master and transfer edge anchoring adjusted for the shift
+        const newMasterId = stack[0];
+        const rel = this._floatingRelPos.get(panelId);
+        if (rel) {
+          this._floatingRelPos.delete(panelId);
+          this._floatingRelPos.set(newMasterId, {
+            ...rel,
+            gapPxY: rel.anchorY === 'bottom' ? rel.gapPxY + shift : rel.gapPxY - shift,
+            gapRatioY: null,
+          });
+        }
+      }
+      if (shiftBelow && shift > 0) {
+        for (const belowId of stack.slice(index)) {
+          const brec = this.panels.get(belowId);
+          if (!brec) continue;
+          const bel = brec.panel.panel;
+          const br = bel.getBoundingClientRect();
+          bel.style.top = Math.round(br.top - shift) + 'px';
+          this._floatingHeights.set(belowId, bel.offsetHeight);
+        }
+      }
+      this._updateStackClasses();
+    }
+
+    return { index };
+  }
+
+  /**
+   * Insert one or more panels directly below targetId in the stack. Creates a
+   * new stack when the target isn't stacked yet. Positions the incoming
+   * panels flush beneath the target chain.
+   */
+  _insertIntoStack(targetId, incomingIds) {
+    const incoming = incomingIds.filter(id => id !== targetId && (() => {
+      const rec = this.panels.get(id);
+      return rec && rec.floating;
+    })());
+    if (incoming.length === 0) return;
+
+    const tRec = this.panels.get(targetId);
+    if (!tRec || !tRec.floating) return;
+
+    let info = this._findStackInfo(targetId);
+    let startIndex;
+    if (info) {
+      info.stack.splice(info.index + 1, 0, ...incoming);
+      startIndex = info.index + 1;
+    } else {
+      const stack = [targetId, ...incoming];
+      this._stacks.push(stack);
+      info = { stack, index: 0 };
+      startIndex = 1;
+    }
+
+    // Drop stale edge anchoring on non-master members
+    for (const id of incoming) this._floatingRelPos.delete(id);
+
+    // Position incoming members flush below their predecessor
+    const { stack } = info;
+    let prevEl = this.panels.get(stack[startIndex - 1]).panel.panel;
+    for (let i = startIndex; i < stack.length; i++) {
+      const el = this.panels.get(stack[i])?.panel.panel;
+      if (!el) continue;
+      const prevRect = prevEl.getBoundingClientRect();
+      el.style.top = Math.round(prevRect.bottom) + 'px';
+      this._floatingHeights.set(stack[i], el.offsetHeight);
+      prevEl = el;
+    }
+
+    this._updateStackClasses();
+    this.saveLayout();
+    console.log(`[dock] ${incoming.join(', ')} joined stack: ${stack.join(' → ')}`);
+  }
+
+  /**
+   * Re-seat every member of a stack flush below its predecessor, preserving
+   * each member's horizontal offset. Applies dx to keep members locked to a
+   * horizontally-moving master.
+   */
+  _alignStack(stack, dx = 0) {
+    for (let i = 1; i < stack.length; i++) {
+      const prevRec = this.panels.get(stack[i - 1]);
+      const rec = this.panels.get(stack[i]);
+      if (!prevRec || !rec || !prevRec.floating || !rec.floating) continue;
+      const prevEl = prevRec.panel.panel;
+      const el = rec.panel.panel;
+      const prevRect = prevEl.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      if (dx !== 0) el.style.left = Math.round(rect.left + dx) + 'px';
+      el.style.top = Math.round(prevRect.bottom) + 'px';
+    }
   }
 
   _propagateStackDelta(panelId, delta) {
     this._stackingBusy = true;
 
-    const below = this._findStackBelow(panelId, delta);
+    const below = this._getMembersBelow(panelId);
 
     for (const id of below) {
       const rec = this.panels.get(id);
@@ -476,32 +648,18 @@ export default class DockManager {
   }
 
   _updateStackClasses() {
-    const SNAP = SNAP_DISTANCE;
-
     for (const fp of this.floatingPanels) {
-      const el = fp.panel.panel;
-      const r = el.getBoundingClientRect();
+      fp.panel.panel.classList.remove('stacked-above', 'stacked-below');
+    }
 
-      let hasBelow = false;
-      let hasAbove = false;
-      for (const other of this.floatingPanels) {
-        if (other === fp) continue;
-        const or = other.panel.panel.getBoundingClientRect();
-        if (Math.abs(or.top - r.bottom) <= SNAP ||
-            Math.abs(r.top - or.bottom) <= SNAP) {
-          const overlap = Math.min(r.right, or.right) - Math.max(r.left, or.left);
-          if (overlap <= 0) continue;
-          if (Math.abs(or.top - r.bottom) <= SNAP) {
-            hasBelow = true;
-          } else {
-            hasAbove = true;
-          }
-          if (hasBelow && hasAbove) break;
-        }
+    for (const stack of this._stacks) {
+      for (let i = 0; i < stack.length - 1; i++) {
+        const upper = this.panels.get(stack[i]);
+        const lower = this.panels.get(stack[i + 1]);
+        if (!upper || !lower || !upper.floating || !lower.floating) continue;
+        upper.panel.panel.classList.add('stacked-above');
+        lower.panel.panel.classList.add('stacked-below');
       }
-
-      el.classList.toggle('stacked-above', hasBelow);
-      el.classList.toggle('stacked-below', hasAbove);
     }
   }
 
@@ -524,8 +682,12 @@ export default class DockManager {
     if (fi !== -1) {
       this.floatingPanels.splice(fi, 1);
       record.panel.panel.classList.remove('floating-panel');
+      record.panel.panel.classList.remove('stacked-above', 'stacked-below');
       this._teardownFloatingObserver(id);
     }
+
+    // Detach from any panel stack (no shifting — callers handle reflow)
+    this._removeFromStack(id, false);
 
     record.dock = null;
     record.floating = false;
@@ -593,8 +755,10 @@ export default class DockManager {
     });
 
     // Other floating panels
+    const carried = new Set((this.drag?.stackMembers || []).map(m => m.id));
     for (const fp of this.floatingPanels) {
       if (this.drag && fp === this.drag.record) continue;
+      if (carried.has(fp.panel.panel.id)) continue;
       const el = fp.panel.panel;
       const r = el.getBoundingClientRect();
       targets.push({
@@ -672,13 +836,52 @@ export default class DockManager {
     }
 
     const snapX = bestDistX <= SNAP_DISTANCE ? Math.round(rawX + snapOffsetX) : Math.round(rawX);
-    const snapY = bestDistY <= SNAP_DISTANCE ? Math.round(rawY + snapOffsetY) : Math.round(rawY);
+    let snapY = bestDistY <= SNAP_DISTANCE ? Math.round(rawY + snapOffsetY) : Math.round(rawY);
+    let guideYFinal = bestDistY <= SNAP_DISTANCE ? snapGuideY : null;
+
+    // Panel-stack magnetization: when the ghost's top edge hovers near the
+    // bottom edge of another floating panel (with meaningful horizontal
+    // overlap), lock the vertical position flush and arm a stack drop. This
+    // overrides generic y-snapping so panels never land a few px off.
+    this.drag.pendingStackTarget = null;
+    if (!this.drag.currentZone) {
+      const exclude = new Set([this.drag.record.panel.panel.id]);
+      for (const m of (this.drag.stackMembers || [])) exclude.add(m.id);
+
+      let bestTarget = null;
+      let bestRect = null;
+      let bestStackDist = STACK_SNAP_DISTANCE + 1;
+      for (const fp of this.floatingPanels) {
+        const fid = fp.panel.panel.id;
+        if (exclude.has(fid)) continue;
+        const fr = fp.panel.panel.getBoundingClientRect();
+        const overlap = Math.min(gRight, fr.right) - Math.max(gLeft, fr.left);
+        if (overlap < MIN_STACK_OVERLAP) continue;
+        const dist = Math.abs(gTop - fr.bottom);
+        if (dist < bestStackDist) {
+          bestStackDist = dist;
+          bestTarget = fid;
+          bestRect = fr;
+        }
+      }
+
+      if (bestTarget && bestStackDist <= STACK_SNAP_DISTANCE) {
+        snapY = Math.round(bestRect.bottom);
+        guideYFinal = bestRect.bottom;
+        if (this.drag.pendingStackTarget !== bestTarget) {
+          console.log(`[dock] stack snap armed → ${bestTarget} (dist ${Math.round(bestStackDist)}px)`);
+        }
+        this.drag.pendingStackTarget = bestTarget;
+      }
+    }
+
+    this._updateStackDropIndicator();
 
     return {
       x: snapX,
       y: snapY,
       guideX: bestDistX <= SNAP_DISTANCE ? snapGuideX : null,
-      guideY: bestDistY <= SNAP_DISTANCE ? snapGuideY : null,
+      guideY: guideYFinal,
     };
   }
 
@@ -703,6 +906,9 @@ export default class DockManager {
       currentZone: null,
       insertIndex: -1,
       insertSide: null,
+      stackSnapshot: null, // original top->bottom order when dragging a master group
+      stackMembers: null, // [{ id, relX, relY }] relative to ghost origin during drag
+      pendingStackTarget: null, // floating panel id the ghost is magnetized onto
     };
   }
 
@@ -753,10 +959,11 @@ export default class DockManager {
     // Detect drop zone
     this.detectDropZones(e);
 
-    // Hide snap guides while hovering over a drop zone
+    // Hide snap guides and stack indicator while hovering over a drop zone
     if (this.drag.snapGuides && this.drag.currentZone) {
       this.drag.snapGuides.vertical.classList.remove('visible');
       this.drag.snapGuides.horizontal.classList.remove('visible');
+      this._hideStackIndicator();
     }
   }
 
@@ -776,11 +983,39 @@ export default class DockManager {
   beginDragVisuals(e) {
     const { record } = this.drag;
     const panelEl = record.panel.panel;
+    const id = panelEl.id;
+
+    // ── Stack detachment ──
+    // Master with members below: lift the entire stack as one group.
+    // Any other stacked member: leave the stack, closing the gap below it.
+    const info = this._findStackInfo(id);
+    if (info) {
+      if (info.index === 0 && info.stack.length > 1) {
+        this.drag.stackSnapshot = info.stack.slice();
+        this._stacks.splice(this._stacks.indexOf(info.stack), 1);
+        console.log(`[dock] lifting stack as group: ${this.drag.stackSnapshot.join(' → ')}`);
+      } else {
+        this._removeFromStack(id, true);
+        console.log(`[dock] ${id} left its stack`);
+      }
+      this._updateStackClasses();
+    }
+
+    // Members carried by this drag (leader first). A plain drag carries only
+    // itself; a master drag carries the whole former stack.
+    const carryIds = this.drag.stackSnapshot || [id];
+    this.drag.stackMembers = carryIds.map(pid => ({ id: pid, relX: 0, relY: 0 }));
 
     // Create ghost element
-    const ghost = panelEl.cloneNode(true);
-    ghost.className = 'dock-ghost';
-    ghost.style.width = panelEl.offsetWidth + 'px';
+    let ghost;
+    if (this.drag.stackMembers.length > 1) {
+      ghost = this._buildGroupGhost();
+    } else {
+      ghost = panelEl.cloneNode(true);
+      ghost.className = 'dock-ghost';
+      ghost.style.width = panelEl.offsetWidth + 'px';
+    }
+
     const initX = Math.round(e.clientX - this.drag.offsetX);
     const initY = Math.round(e.clientY - this.drag.offsetY);
     ghost.style.left = initX + 'px';
@@ -804,8 +1039,63 @@ export default class DockManager {
     this.container.appendChild(label);
     this.drag.posLabel = label;
 
-    // Hide original panel during drag
-    panelEl.style.opacity = '0';
+    // Hide original panels during drag
+    for (const m of this.drag.stackMembers) {
+      const rec = this.panels.get(m.id);
+      if (rec) rec.panel.panel.style.opacity = '0';
+    }
+  }
+
+  /**
+   * Build a combined ghost representing an entire panel stack so a master
+   * drag visually moves the whole column. The ghost origin becomes the union
+   * bounding box top-left; drag offsets are rebased so cursor math keeps
+   * working, and each member records its offset inside the box.
+   */
+  _buildGroupGhost() {
+    const members = this.drag.stackMembers;
+
+    // Union bounds across all carried panels
+    let uLeft = Infinity, uTop = Infinity, uRight = -Infinity, uBottom = -Infinity;
+    const rects = new Map();
+    for (const m of members) {
+      const rec = this.panels.get(m.id);
+      const r = rec.panel.panel.getBoundingClientRect();
+      rects.set(m.id, r);
+      uLeft = Math.min(uLeft, r.left);
+      uTop = Math.min(uTop, r.top);
+      uRight = Math.max(uRight, r.right);
+      uBottom = Math.max(uBottom, r.bottom);
+    }
+
+    // Rebase drag offsets onto the union origin so cursor math keeps the
+    // same grip while the ghost origin tracks the bounding box
+    const leaderRect = rects.get(members[0].id);
+    this.drag.offsetX += leaderRect.left - uLeft;
+    this.drag.offsetY += leaderRect.top - uTop;
+
+    const ghost = document.createElement('div');
+    ghost.className = 'dock-ghost dock-ghost-group';
+    ghost.style.width = Math.round(uRight - uLeft) + 'px';
+    ghost.style.height = Math.round(uBottom - uTop) + 'px';
+
+    members.forEach((m, i) => {
+      const r = rects.get(m.id);
+      m.relX = Math.round(r.left - uLeft);
+      m.relY = Math.round(r.top - uTop);
+
+      const clone = this.panels.get(m.id).panel.panel.cloneNode(true);
+      clone.className = 'dock-ghost stack-ghost-item';
+      clone.style.position = 'absolute';
+      clone.style.left = m.relX + 'px';
+      clone.style.top = m.relY + 'px';
+      clone.style.width = r.width + 'px';
+      clone.style.zIndex = String(i + 1);
+      clone.style.opacity = '';
+      ghost.appendChild(clone);
+    });
+
+    return ghost;
   }
 
   detectDropZones(e) {
@@ -924,13 +1214,22 @@ export default class DockManager {
       snapGuides.vertical.remove();
       snapGuides.horizontal.remove();
     }
+    this._hideStackIndicator();
 
     // Restore original opacity
-    record.panel.panel.style.opacity = '';
+    for (const m of (this.drag.stackMembers || [{ id }])) {
+      const rec = this.panels.get(m.id);
+      if (rec) rec.panel.panel.style.opacity = '';
+    }
 
     if (currentZone) {
-      // Dock to zone
-      this.dockPanel(id, currentZone, insertIndex);
+      // Dock to zone — a carried stack docks as a column in original order
+      const order = this.drag.stackSnapshot || [id];
+      let idx = insertIndex;
+      for (const pid of order) {
+        this.dockPanel(pid, currentZone, idx);
+        if (idx >= 0) idx++;
+      }
     } else {
       // Float at drop position with magnetic snap
       const rawX = e.clientX - this.drag.offsetX;
@@ -942,7 +1241,34 @@ export default class DockManager {
         fx = parseInt(ghost.style.left) || fx;
         fy = parseInt(ghost.style.top) || fy;
       }
-      this.floatPanel(id, Math.max(0, fx), Math.max(0, fy));
+      fx = Math.max(0, fx);
+      fy = Math.max(0, fy);
+
+      const members = this.drag.stackMembers || [{ id, relX: 0, relY: 0 }];
+      if (members.length > 1) {
+        // Drop the whole carried group, then rebuild (or merge) its stack
+        for (const m of members) {
+          this.floatPanel(m.id, fx + m.relX, fy + m.relY);
+        }
+        const order = this.drag.stackSnapshot;
+        const targetId = this.drag.pendingStackTarget;
+        const targetRec = targetId ? this.panels.get(targetId) : null;
+        if (targetRec && targetRec.floating) {
+          this._insertIntoStack(targetId, order);
+        } else {
+          this._createStack(order);
+        }
+        this._updateStackClasses();
+      } else {
+        this.floatPanel(id, fx, fy);
+        // Magnetized onto another panel's bottom edge → join its stack.
+        // _insertIntoStack re-seats the panel flush so no pixel drifts.
+        const targetId = this.drag.pendingStackTarget;
+        const targetRec = targetId ? this.panels.get(targetId) : null;
+        if (targetRec && targetRec.floating) {
+          this._insertIntoStack(targetId, [id]);
+        }
+      }
     }
   }
 
@@ -955,8 +1281,13 @@ export default class DockManager {
         this.drag.snapGuides.horizontal.remove();
       }
       if (this.drag.record) this.drag.record.panel.panel.style.opacity = '';
+      for (const m of (this.drag.stackMembers || [])) {
+        const rec = this.panels.get(m.id);
+        if (rec) rec.panel.panel.style.opacity = '';
+      }
     }
     this.hideInsertIndicator();
+    this._hideStackIndicator();
     Object.values(this.dropZonePreviews).forEach(p => p.classList.remove('active'));
     this.drag = null;
   }
@@ -1052,9 +1383,19 @@ export default class DockManager {
   }
 
   _reflowFloatingPanels() {
+    // Remember where each stack master sits so carried members can follow
+    // any anchor-driven horizontal shift
+    const masterLeftBefore = new Map();
+    this._stacks.forEach(stack => {
+      const m = this.panels.get(stack[0]);
+      if (m && m.floating) masterLeftBefore.set(stack, m.panel.panel.getBoundingClientRect().left);
+    });
+
     this._floatingRelPos.forEach((info, id) => {
       const record = this.panels.get(id);
       if (!record || !record.floating) return;
+      // Non-master stack members follow their master instead
+      if (!this._isStackMaster(id)) return;
       const el = record.panel.panel;
       const w = el.offsetWidth;
 
@@ -1075,6 +1416,15 @@ export default class DockManager {
       } else if (info.anchorY === 'bottom') {
         el.style.top = Math.round(window.innerHeight - info.gapPxY - el.offsetHeight) + 'px';
       }
+    });
+
+    // Re-seat every stack member flush below its predecessor, preserving
+    // each member's horizontal offset relative to a moved master
+    this._stacks.forEach(stack => {
+      const m = this.panels.get(stack[0]);
+      if (!m || !m.floating) return;
+      const dx = m.panel.panel.getBoundingClientRect().left - (masterLeftBefore.get(stack) ?? 0);
+      this._alignStack(stack, dx);
     });
   }
 
@@ -1132,7 +1482,7 @@ export default class DockManager {
   saveLayout() {
     if (this._suppressSave) return;
     const data = {
-      ver: 1,
+      ver: 2,
       dockSizes: { ...this.dockSizes },
       panels: {},
     };
@@ -1156,6 +1506,14 @@ export default class DockManager {
       data.panels[id] = entry;
     });
 
+    // Persist explicit panel stacks (top -> bottom), floating members only
+    data.stacks = this._stacks
+      .filter(stack => stack.length > 1 && stack.every(id => {
+        const r = this.panels.get(id);
+        return r && r.floating;
+      }))
+      .map(stack => stack.slice());
+
     this._saveLayoutCookie(data);
   }
 
@@ -1173,6 +1531,7 @@ export default class DockManager {
 
     // Suppress stack propagation during restore — heights haven't settled
     this._suppressStack = true;
+    this._stacks = [];
 
     // First, undock all panels and reset their state
     ids.forEach(id => {
@@ -1231,6 +1590,24 @@ export default class DockManager {
       const id = fp.panel.panel.id;
       this._teardownFloatingObserver(id);
       this._setupFloatingObserver(id, fp.panel.panel);
+    }
+
+    // Re-apply saved panel stacks. Saved positions are already flush, but
+    // re-align to absorb any rounding drift; members drop stale anchoring
+    // since they follow their master.
+    this._stacks = [];
+    if (Array.isArray(data.stacks)) {
+      for (const saved of data.stacks) {
+        if (!Array.isArray(saved)) continue;
+        const valid = saved.filter(id => {
+          const r = this.panels.get(id);
+          return r && r.floating;
+        });
+        if (valid.length < 2) continue;
+        this._stacks.push(valid);
+        for (const id of valid.slice(1)) this._floatingRelPos.delete(id);
+        this._alignStack(valid);
+      }
     }
 
     // Keep stack suppressed until collapse transitions finish (0.3s CSS).

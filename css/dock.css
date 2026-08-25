@@ -188,6 +188,53 @@
   opacity: 0.4;
 }
 
+/* ── Panel Stack Group Ghost ──
+   Combined ghost shown while dragging a stack master; the container itself
+   is an invisible bounding box, each stacked panel renders as a card inside */
+.dock-ghost.dock-ghost-group {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dock-ghost.stack-ghost-item {
+  position: absolute;
+  background: #181a1b;
+  border: 1px solid #3a3c3e;
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+}
+
+.dock-ghost.stack-ghost-item.stacked-above,
+.dock-ghost.stack-ghost-item.stacked-below {
+  box-shadow: none;
+}
+
+/* ── Stack Drop Indicator ──
+   Glowing bar at a target panel's bottom edge while a dragged panel is
+   magnetized into becoming part of its panel stack */
+.stack-drop-indicator {
+  position: fixed;
+  z-index: 999;
+  height: 3px;
+  background: #5a9eff;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  box-shadow: 0 0 8px rgba(90, 158, 255, 0.8);
+  animation: stack-indicator-pulse 1s ease-in-out infinite;
+}
+
+.stack-drop-indicator.active {
+  opacity: 1;
+}
+
+@keyframes stack-indicator-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(90, 158, 255, 0.5); }
+  50% { box-shadow: 0 0 12px rgba(90, 158, 255, 1); }
+}
+
 /* ── Drag Position Label ── */
 .drag-position-label {
   position: fixed;
