@@ -500,7 +500,7 @@ export default class Lightshow {
   feedHorizontalPoints() {
     const centerY = this._center.y;
     const numLines = Math.max(1, this.lines | 0);
-    const spacing = Math.max(1, (this.spread | 0) / 20);
+    const spacing = Math.max(1, (this.spread | 0));
     const spreadDist = this.spread | 0;
 
     for (let i = 0; i < this.tickRate; i++) {
