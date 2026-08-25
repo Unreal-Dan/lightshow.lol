@@ -410,7 +410,7 @@ export default class DockManager {
       const delta = newHeight - oldHeight;
       this._floatingHeights.set(panelId, Math.round(newHeight));
       if (Math.abs(delta) < 0.5) return;
-      this._propagateStackDelta(panelId, Math.round(delta));
+      this._propagateStackDelta(panelId);
     });
 
     observer.observe(panelEl);
@@ -581,25 +581,16 @@ export default class DockManager {
     }
   }
 
-  _propagateStackDelta(panelId, delta) {
+  _propagateStackDelta(panelId) {
     this._stackingBusy = true;
 
-    const below = this._getMembersBelow(panelId);
-
-    for (const id of below) {
-      const rec = this.panels.get(id);
-      if (!rec) continue;
-      const el = rec.panel.panel;
-      const r = el.getBoundingClientRect();
-      el.style.top = (r.top + delta) + 'px';
-      // Update stored height reference since position changed
-      this._floatingHeights.set(id, el.offsetHeight);
-    }
-
-    // If the stack now extends off-screen, collapse panels from the bottom
-    // up (skipping the panel that just grew) until it fits.
+    // Re-seat every member flush below its predecessor rather than
+    // shifting by a computed delta — avoids subpixel drift.
     const info = this._findStackInfo(panelId);
-    if (info) this._keepStackOnScreen(info.stack, panelId);
+    if (info) {
+      this._alignStack(info.stack);
+      this._keepStackOnScreen(info.stack, panelId);
+    }
 
     this._stackingBusy = false;
     this._updateStackClasses();
@@ -610,7 +601,8 @@ export default class DockManager {
    * Ensure a stack fits within the viewport. When a panel grows and pushes
    * the group below the screen, collapse other panels starting from the
    * bottom — but never the panel that just grew (it expanded for a reason).
-   * After each collapse, panels below shift up so the re-check is accurate.
+   * After each collapse the entire stack is re-seated flush so the
+   * re-check reflects the true final positions.
    */
   _keepStackOnScreen(stack, triggeredBy) {
     if (!stack || stack.length <= 1) return;
@@ -628,23 +620,10 @@ export default class DockManager {
       const content = el.querySelector(':scope > .panel-content');
       if (content && content.classList.contains('collapsed')) continue;
 
-      const oldHeight = el.offsetHeight;
-      const contentEl = el.querySelector(':scope > .panel-content');
-      const contentHeight = contentEl ? contentEl.offsetHeight : 0;
-      rec.panel.setCollapsed(true, false);
-      const heightDelta = contentHeight;
-
-      // Shift every panel below this one up by the height we just reclaimed
-      if (heightDelta > 0) {
-        for (let j = i + 1; j < stack.length; j++) {
-          const belowRec = this.panels.get(stack[j]);
-          if (!belowRec) continue;
-          const belowEl = belowRec.panel.panel;
-          const r = belowEl.getBoundingClientRect();
-          belowEl.style.top = Math.round(r.top - heightDelta) + 'px';
-        }
-      }
-      this._floatingHeights.set(pid, oldHeight - contentHeight);
+      rec.panel.setCollapsed(true, true);
+      // Re-seat the whole stack from the master downward so every panel
+      // sits flush below its predecessor — no stale deltas.
+      this._alignStack(stack);
 
       if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) break;
     }
