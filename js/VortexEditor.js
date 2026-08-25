@@ -16,7 +16,7 @@ import CommunityBrowserPanel from './CommunityBrowserPanel.js';
 import DuoEditorPanel from './DuoEditorPanel.js';
 import UpdatePanel from './UpdatePanel.js';
 import LayoutPanel from './LayoutPanel.js';
-import DockManager from './DockManager.js?v=panel-stacks-4';
+import DockManager from './DockManager.js';
 import Notification from './Notification.js';
 import VortexLib from './VortexLib.js';
 import ContextMenu from './ContextMenu.js';

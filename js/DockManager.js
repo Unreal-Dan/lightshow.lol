@@ -398,7 +398,7 @@ export default class DockManager {
       // spurious delta on the very first observation.
       if (!baselineFired) {
         baselineFired = true;
-        this._floatingHeights.set(panelId, newHeight);
+        this._floatingHeights.set(panelId, Math.round(newHeight));
         return;
       }
 
@@ -408,7 +408,7 @@ export default class DockManager {
       const oldHeight = this._floatingHeights.get(panelId);
       if (oldHeight === undefined) return;
       const delta = newHeight - oldHeight;
-      this._floatingHeights.set(panelId, newHeight);
+      this._floatingHeights.set(panelId, Math.round(newHeight));
       if (Math.abs(delta) < 0.5) return;
       this._propagateStackDelta(panelId, Math.round(delta));
     });
@@ -483,36 +483,30 @@ export default class DockManager {
     const { stack, index } = info;
     stack.splice(index, 1);
 
-    let shift = 0;
-    if (shiftBelow) {
-      const rec = this.panels.get(panelId);
-      if (rec) shift = rec.panel.panel.offsetHeight;
-    }
-
     if (stack.length === 0) {
       this._stacks.splice(this._stacks.indexOf(stack), 1);
     } else {
       if (index === 0) {
-        // Promote new master and transfer edge anchoring adjusted for the shift
+        // Promote new master and re-anchor to its current screen position
         const newMasterId = stack[0];
-        const rel = this._floatingRelPos.get(panelId);
-        if (rel) {
-          this._floatingRelPos.delete(panelId);
+        this._floatingRelPos.delete(panelId);
+        const el = this.panels.get(newMasterId)?.panel.panel;
+        if (el) {
+          const r = el.getBoundingClientRect();
+          const topGap = Math.round(r.top);
+          const botGap = Math.round(window.innerHeight - r.bottom);
+          const anchorY = topGap <= botGap ? 'top' : 'bottom';
           this._floatingRelPos.set(newMasterId, {
-            ...rel,
-            gapPxY: Math.max(0, rel.gapPxY - shift),
+            anchorX: 'left', gapPxX: Math.round(r.left),
+            anchorY, gapPxY: anchorY === 'top' ? topGap : botGap,
           });
         }
-      }
-      if (shiftBelow && shift > 0) {
-        for (const belowId of stack.slice(index)) {
-          const brec = this.panels.get(belowId);
-          if (!brec) continue;
-          const bel = brec.panel.panel;
-          const br = bel.getBoundingClientRect();
-          bel.style.top = Math.round(br.top - shift) + 'px';
-          this._floatingHeights.set(belowId, bel.offsetHeight);
-        }
+      } else if (index < stack.length) {
+        // Middle removal: split the remainder into its own stack. The lower
+        // panel becomes a master — it no longer has a panel above it so the
+        // gap should not close.
+        const lower = stack.splice(index);
+        if (lower.length > 0) this._stacks.push(lower);
       }
       this._updateStackClasses();
     }
