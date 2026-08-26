@@ -40,6 +40,12 @@ export default class DockManager {
     this._observerVersions = new Map(); // panelId -> counter to invalidate stale observer callbacks
     this._stacks = []; // explicit panel stacks: arrays of floating ids, [0] = master (topmost)
     this.stackDropIndicator = null;
+    this._debug = false; // toggle with dockManager._debug = true
+    this._stackProtected = new Set(); // panels shielded from auto-collapse during overflow resolution
+  }
+
+  _log(...args) {
+    if (this._debug) console.log('[dock]', ...args);
   }
 
   /* ── Initialization ── */
@@ -345,7 +351,7 @@ export default class DockManager {
     panelEl.style.top = py + 'px';
 
     if (oldLeft !== '' && oldLeft !== panelEl.style.left) {
-      console.log(`[dock] floatPanel ${id}: left ${oldLeft} → ${panelEl.style.left} (requested x=${x})`);
+      this._log(`floatPanel ${id}: left ${oldLeft} → ${panelEl.style.left} (requested x=${x})`);
     }
 
     // Anchor the panel to whichever horizontal screen edge it is closest to.
@@ -361,7 +367,7 @@ export default class DockManager {
       anchorY: 'top',
       gapPxY: py,
     });
-    console.log(`[dock] floatPanel ${id}: px=${px} w=${w} anchorX=${anchorX} gapPxX=${gapPxX} rightGap=${rightGap}`);
+    this._log(`floatPanel ${id}: px=${px} w=${w} anchorX=${anchorX} gapPxX=${gapPxX} rightGap=${rightGap}`);
 
     this._zCounter++;
     panelEl.style.zIndex = String(this._zCounter);
@@ -481,7 +487,7 @@ export default class DockManager {
     for (const id of members.slice(1)) this._floatingRelPos.delete(id);
     this._updateStackClasses();
     this.saveLayout();
-    console.log(`[dock] panel stack created: ${members.join(' → ')}`);
+    this._log(`panel stack created: ${members.join(' → ')}`);
     return members;
   }
 
@@ -574,7 +580,7 @@ export default class DockManager {
 
     this._updateStackClasses();
     this.saveLayout();
-    console.log(`[dock] ${incoming.join(', ')} joined stack: ${stack.join(' → ')}`);
+    this._log(`${incoming.join(', ')} joined stack: ${stack.join(' → ')}`);
   }
 
   /**
@@ -605,7 +611,7 @@ export default class DockManager {
     if (info) {
       const masterEl = this.panels.get(info.stack[0])?.panel.panel;
       if (masterEl) {
-        console.log(`[dock] propagateDelta from ${panelId} — stack master ${info.stack[0]} left=${masterEl.style.left}`);
+        this._log(`propagateDelta from ${panelId} — stack master ${info.stack[0]} left=${masterEl.style.left}`);
       }
       this._alignStack(info.stack);
       this._keepStackOnScreen(info.stack, panelId);
@@ -618,33 +624,69 @@ export default class DockManager {
 
   /**
    * Ensure a stack fits within the viewport. When a panel grows and pushes
-   * the group below the screen, collapse other panels starting from the
-   * bottom — but never the panel that just grew (it expanded for a reason).
-   * After each collapse the entire stack is re-seated flush so the
-   * re-check reflects the true final positions.
+   * the group below the screen, collapse the minimum number of other
+   * panels needed to bring the stack back on-screen.  Among panels that
+   * save the same amount of height, older (top-of-stack) panels are
+   * preferred.  The panel that triggered the overflow and any panel
+   * currently being expanded across ResizeObserver cascades
+   * (_stackProtected) are never collapsed.
    */
   _keepStackOnScreen(stack, triggeredBy) {
     if (!stack || stack.length <= 1) return;
     const lastId = stack[stack.length - 1];
     const lastEl = this.panels.get(lastId)?.panel.panel;
     if (!lastEl) return;
-    if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) return;
 
-    for (let i = stack.length - 1; i >= 0; i--) {
+    const bottom = lastEl.getBoundingClientRect().bottom;
+    if (bottom <= window.innerHeight) {
+      this._stackProtected.clear();
+      return;
+    }
+
+    this._stackProtected.add(triggeredBy);
+    const overflow = bottom - window.innerHeight;
+
+    // Collect eligible panels with their estimated height savings
+    const candidates = [];
+    for (let i = 0; i < stack.length; i++) {
       const pid = stack[i];
-      if (pid === triggeredBy) continue;
+      if (this._stackProtected.has(pid)) continue;
       const rec = this.panels.get(pid);
       if (!rec) continue;
       const el = rec.panel.panel;
       const content = el.querySelector(':scope > .panel-content');
-      if (content && content.classList.contains('collapsed')) continue;
+      if (!content || content.classList.contains('collapsed')) continue;
 
-      rec.panel.setCollapsed(true, true);
-      // Re-seat the whole stack from the master downward so every panel
-      // sits flush below its predecessor — no stale deltas.
-      this._alignStack(stack);
+      // Savings ≈ content area height (what collapsing removes)
+      const savings = content.scrollHeight + parseFloat(getComputedStyle(content).paddingTop)
+        + parseFloat(getComputedStyle(content).paddingBottom);
+      candidates.push({ rec, index: i, savings });
+    }
 
-      if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) break;
+    if (candidates.length === 0) return;
+
+    // Sort: most height saved first (fewest collapses), oldest first as tiebreaker
+    candidates.sort((a, b) => b.savings - a.savings || a.index - b.index);
+
+    // Greedily pick panels until overflow is resolved
+    let freed = 0;
+    const toCollapse = [];
+    for (const c of candidates) {
+      toCollapse.push(c);
+      freed += c.savings;
+      if (freed >= overflow) break;
+    }
+
+    if (freed < overflow) return; // even collapsing everything won't fit
+
+    // Collapse chosen panels, then re-seat the whole stack
+    for (const c of toCollapse) {
+      c.rec.panel.setCollapsed(true, true);
+    }
+    this._alignStack(stack);
+
+    if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) {
+      this._stackProtected.clear();
     }
   }
 
@@ -1042,10 +1084,10 @@ export default class DockManager {
       if (info.index === 0 && info.stack.length > 1) {
         this.drag.stackSnapshot = info.stack.slice();
         this._stacks.splice(this._stacks.indexOf(info.stack), 1);
-        console.log(`[dock] lifting stack as group: ${this.drag.stackSnapshot.join(' → ')}`);
+        this._log(`lifting stack as group: ${this.drag.stackSnapshot.join(' → ')}`);
       } else {
         this._removeFromStack(id, true);
-        console.log(`[dock] ${id} left its stack`);
+        this._log(`${id} left its stack`);
       }
       this._updateStackClasses();
     }
@@ -1464,14 +1506,14 @@ export default class DockManager {
     // floating panels so they stay pinned to their correct screen edge.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        console.log('[dock] tab visible — reflowing floating panels');
+        this._log('tab visible — reflowing floating panels');
         this._reflowFloatingPanels();
       }
     });
   }
 
   _reflowFloatingPanels() {
-    console.log('[dock] _reflowFloatingPanels called — stacks:', this._stacks.length, 'floatingRelPos entries:', this._floatingRelPos.size);
+    this._log('_reflowFloatingPanels called — stacks:', this._stacks.length, 'floatingRelPos entries:', this._floatingRelPos.size);
 
     // Remember where each stack master sits so carried members can follow
     // any anchor-driven horizontal shift
@@ -1480,7 +1522,7 @@ export default class DockManager {
       const m = this.panels.get(stack[0]);
       if (m && m.floating) {
         const left = m.panel.panel.getBoundingClientRect().left;
-        console.log(`[dock] reflow pre: stack master ${stack[0]} left=${left} style.left=${m.panel.panel.style.left}`);
+        this._log(`reflow pre: stack master ${stack[0]} left=${left} style.left=${m.panel.panel.style.left}`);
         masterLeftBefore.set(stack, left);
       }
     });
@@ -1517,7 +1559,7 @@ export default class DockManager {
       }
 
       if (oldLeft !== el.style.left) {
-        console.log(`[dock] reflow moved ${id}: left ${oldLeft} → ${el.style.left} (anchorX=${info.anchorX} gapPxX=${info.gapPxX} w=${w})`);
+        this._log(`reflow moved ${id}: left ${oldLeft} → ${el.style.left} (anchorX=${info.anchorX} gapPxX=${info.gapPxX} w=${w})`);
       }
     });
 
@@ -1530,7 +1572,7 @@ export default class DockManager {
       const oldLeft = masterLeftBefore.get(stack) ?? 0;
       const dx = newLeft - oldLeft;
       if (Math.abs(dx) > 0.5) {
-        console.log(`[dock] reflow stack ${stack[0]}: dx=${dx.toFixed(1)} (was ${oldLeft.toFixed(1)}, now ${newLeft.toFixed(1)})`);
+        this._log(`reflow stack ${stack[0]}: dx=${dx.toFixed(1)} (was ${oldLeft.toFixed(1)}, now ${newLeft.toFixed(1)})`);
       }
       this._alignStack(stack, dx);
     });
@@ -1657,7 +1699,7 @@ export default class DockManager {
       }
     });
     if (floatingMasters.length > 0) {
-      console.log(`[dock] saveLayout — floating masters: ${floatingMasters.join(', ')}`);
+      this._log(`saveLayout — floating masters: ${floatingMasters.join(', ')}`);
     }
     this._saveLayoutCookie(data);
   }
