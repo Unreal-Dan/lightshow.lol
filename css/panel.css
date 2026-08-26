@@ -1,43 +1,18 @@
-/* panel.css */
+/* panel.css - Base panel styles (used in both desktop sidebars and mobile) */
 
 .draggable-panel {
-  position: absolute;
-  border: 1px solid #3e4446;
-  border-radius: 5px;
   background-color: #181a1b;
   user-select: none;
   color: #d8d4cf;
-  padding: 5px;
-  width: 370px;
-  z-index: 3;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px;
-  padding-left: 7px;
   background-color: #292c2e;
-  border-bottom: 1px solid #3e4446;
-  cursor: move;
-  border-radius: 5px;
   position: relative;
   z-index: 1;
-}
-
-.collapse-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0 5px;
-  width: auto;
-}
-
-.collapse-btn:hover {
-  color: #66ff66;
 }
 
 .panel-title {
@@ -46,12 +21,65 @@
   color: #d8d4cf;
 }
 
+.collapse-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 5px;
+  width: auto;
+  transition: transform 0.2s ease, color 0.2s ease;
+  transform: rotate(0deg);
+}
+
+.collapse-btn.collapsed {
+  transform: rotate(-90deg);
+}
+
+.collapse-btn:hover {
+  color: #66ff66;
+}
+
 .panel-content {
   display: flex;
   flex-direction: column;
-  height: auto;
-  padding-top: 10px;
+  gap: 8px;
+  max-height: 2000px;
+  overflow: hidden;
   padding: 10px;
+  opacity: 1;
+  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.2s ease;
+}
+
+.panel-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+/* Inactive panels: visible + dockable, controls swapped for a note */
+.panel-inactive-note {
+  display: none;
+  padding: 6px 2px;
+  font-size: 12px;
+  color: #8a9199;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Inactive panels: visible + dockable, controls swapped for a note.
+   Selectors intentionally match drag ghosts too (.dock-ghost clones keep
+   their panel-inactive state class) */
+.draggable-panel.panel-inactive .panel-inactive-note,
+.dock-ghost.panel-inactive .panel-inactive-note {
+  display: block;
+}
+
+.draggable-panel.panel-inactive > .panel-content > *:not(.panel-inactive-note),
+.dock-ghost.panel-inactive > .panel-content > *:not(.panel-inactive-note) {
+  display: none !important;
 }
 
 .close-btn {
@@ -71,7 +99,7 @@
   color: red;
   text-decoration: none;
   cursor: pointer;
-  user-select:none;
+  user-select: none;
 }
 
 .close {
@@ -88,5 +116,3 @@
   text-decoration: none;
   cursor: pointer;
 }
-
-

@@ -4,7 +4,6 @@
   border: 1px solid #3e4446;
   border-radius: 5px;
   color: #d8d4cf;
-  position: absolute;
   z-index: 2;
   transition: transform 0.4s ease; /* Sliding animation */
 }
@@ -150,5 +149,3 @@
   outline: none;
   border-color: #888; /* Highlight border on focus */
 }
-
-

@@ -1,15 +1,14 @@
 /* modes-panel.css */
-#modesPanel {
-  top: 111px;
-  right: 5px;
-}
 
 #modeButtonsSection {
   display: flex;
+  gap: 4px;
   padding: 3px;
-  flex-direction: row;
-  justify-content: space-between;
   margin-bottom: 10px;
+}
+
+#modeButtonsSection .mode-list-btn {
+  flex: 1;
 }
 
 .mode-list-btn:hover {

@@ -141,24 +141,13 @@ export default class ColorsetPanel extends Panel {
   }
 
   toggleGenerator() {
-    const panel = document.getElementById('colorsetPanel');
     const gen = document.getElementById('colorsetGenerator');
     const btn = document.getElementById('toggleColorsetGenerator');
     const icon = btn.querySelector('i');
 
-    const previousHeight = panel.offsetHeight;
-    const snappedPanels = this.getSnappedPanels();
-
     const isHidden = gen.classList.toggle('hidden');
     icon.classList.toggle('fa-chevron-down', isHidden);
     icon.classList.toggle('fa-chevron-up', !isHidden);
-
-    const heightChange = panel.offsetHeight - previousHeight;
-    snappedPanels.forEach((otherPanel) => {
-      otherPanel.moveSnappedPanels(heightChange);
-      const currentTop = parseFloat(otherPanel.panel.style.top || otherPanel.panel.getBoundingClientRect().top);
-      otherPanel.panel.style.top = `${currentTop + heightChange}px`;
-    });
   }
 
   generateColorset() {
