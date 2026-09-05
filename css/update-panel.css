@@ -75,6 +75,34 @@
   margin-top: 15px;
 }
 
+.firmware-upload {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.btn-upload {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.btn-upload:hover {
+  background-color: #5a6268;
+}
+
+.firmware-upload-status {
+  font-size: 13px;
+  color: #d8d4cf;
+}
+
 .btn-download {
   background-color: #007bff;
 }

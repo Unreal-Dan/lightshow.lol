@@ -42,6 +42,11 @@ export default class UpdatePanel extends Panel {
     // this tracks whether the serialport was forced open with insert or not
     this.forcedUpdate = false;
 
+    // a firmware zip uploaded through the update form — when set it is flashed
+    // instead of the locally/remotely hosted official zip
+    this.uploadedZipData = null;
+    this.uploadedZipName = null;
+
     // this is used for the updating process
     this.espStub = null;
     this.espLoader = null;
@@ -229,11 +234,12 @@ export default class UpdatePanel extends Panel {
     let firmwareFiles;
 
     try {
-      const local = this.isLocalServer();
-
-      const { zipData, sourceUrl } = local
-        ? await this.fetchLocalFirmwareZip(targetDevice)
-        : await this.fetchRemoteFirmwareZip(targetDevice);
+      // an explicitly uploaded firmware zip takes priority over the official one
+      const { zipData, sourceUrl } = this.uploadedZipData
+        ? { zipData: this.uploadedZipData, sourceUrl: this.uploadedZipName || 'uploaded' }
+        : this.isLocalServer()
+          ? await this.fetchLocalFirmwareZip(targetDevice)
+          : await this.fetchRemoteFirmwareZip(targetDevice);
 
       console.log(`Firmware zip source: ${sourceUrl}`);
 
@@ -243,18 +249,22 @@ export default class UpdatePanel extends Panel {
         console.log(`Fetched file: ${file.path}, Size: ${file.data.length} bytes`);
       });
 
-      // Add boot_app0.bin from ../public/data/ (works both local + hosted)
-      const bootAppUrl = this.publicDataUrl('boot_app0.bin');
-      const bootAppBuf = await this.fetchArrayBufferOrThrow(
-        bootAppUrl,
-        'Failed to fetch boot_app0.bin'
-      );
-
-      const bootAppEntry = {
-        path: bootAppUrl,
-        address: this.offsetsForDevice(targetDevice).otadata,
-        data: new Uint8Array(bootAppBuf),
-      };
+      // The firmware zips pack boot_app0.bin (all 4 firmware files). Prefer the
+      // zip's own copy; fall back to the one in ../public/data/ if it's missing.
+      let bootAppEntry = firmwareFiles.find((file) => file.path.endsWith('boot_app0.bin'));
+      firmwareFiles = firmwareFiles.filter((file) => file !== bootAppEntry);
+      if (!bootAppEntry) {
+        const bootAppUrl = this.publicDataUrl('boot_app0.bin');
+        const bootAppBuf = await this.fetchArrayBufferOrThrow(
+          bootAppUrl,
+          'Failed to fetch boot_app0.bin'
+        );
+        bootAppEntry = {
+          path: bootAppUrl,
+          address: this.offsetsForDevice(targetDevice).otadata,
+          data: new Uint8Array(bootAppBuf),
+        };
+      }
 
       // Insert boot_app0.bin as the 3rd item in the list
       firmwareFiles.splice(2, 0, bootAppEntry);
@@ -268,21 +278,60 @@ export default class UpdatePanel extends Panel {
 
   async unzipFirmware(zipData, offsets) {
     const zip = await JSZip.loadAsync(zipData);
+    const basename = (path) => path.split('/').pop().split('\\').pop();
 
-    const firmwareFiles = [];
-    const fileMappings = {
-      'build/VortexEngine.ino.bootloader.bin': 0x0,
-      'build/VortexEngine.ino.partitions.bin': 0x8000,
-      'build/VortexEngine.ino.bin': offsets.app,
+    const findFile = (predicate) => {
+      const files = Object.keys(zip.files)
+        .map((name) => zip.files[name])
+        .filter((f) => !f.dir);
+      return files.find(predicate) || null;
     };
 
-    for (const [fileName, address] of Object.entries(fileMappings)) {
-      const file = zip.file(fileName);
+    const firmwareFiles = [];
+    const fileMappings = [
+      // prefer the exact build/ paths the official zips use, then fall back to
+      // any file with the expected name (custom zips may keep the 4 firmware
+      // files at the root or in a different folder)
+      {
+        path: 'build/VortexEngine.ino.bootloader.bin',
+        names: ['VortexEngine.ino.bootloader.bin', 'bootloader.bin'],
+        address: 0x0,
+      },
+      {
+        path: 'build/VortexEngine.ino.partitions.bin',
+        names: ['VortexEngine.ino.partitions.bin', 'partitions.bin'],
+        address: 0x8000,
+      },
+      {
+        path: 'build/VortexEngine.ino.bin',
+        names: ['VortexEngine.ino.bin'],
+        address: offsets.app,
+      },
+    ];
+
+    for (const mapping of fileMappings) {
+      const file =
+        zip.file(mapping.path) ||
+        findFile((f) => mapping.names.some((n) => basename(f.name) === n));
       if (!file) {
-        throw new Error(`Missing firmware file: ${fileName}`);
+        throw new Error(
+          `Missing firmware file: ${mapping.names[0]}. Zip contains: ${Object.keys(zip.files).join(', ')}`
+        );
       }
       const fileData = await file.async('arraybuffer');
-      firmwareFiles.push({ path: fileName, address, data: new Uint8Array(fileData) });
+      firmwareFiles.push({ path: file.name, address: mapping.address, data: new Uint8Array(fileData) });
+    }
+
+    // the firmware zips also pack boot_app0.bin (at some nested path) — pull it
+    // out by name so the zip's own copy can be flashed
+    const bootAppFile = findFile((file) => basename(file.name) === 'boot_app0.bin');
+    if (bootAppFile) {
+      const fileData = await bootAppFile.async('arraybuffer');
+      firmwareFiles.push({
+        path: bootAppFile.name,
+        address: offsets.otadata,
+        data: new Uint8Array(fileData),
+      });
     }
 
     return firmwareFiles;
@@ -393,6 +442,10 @@ export default class UpdatePanel extends Panel {
     const lowerDevice = device.toLowerCase();
     const deviceIconUrl = `./public/images/${lowerDevice}-logo-square-64.png`;
 
+    // each fresh form starts with no uploaded zip
+    this.uploadedZipData = null;
+    this.uploadedZipName = null;
+
     let content = `
       <div class="device-update-labels">
         <div>
@@ -447,13 +500,26 @@ export default class UpdatePanel extends Panel {
         </div>
       `;
     } else if (['chromadeck', 'spark'].includes(lowerDevice)) {
+      const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
+      this.forcedUpdate = !isRealVersion;
       const local = this.isLocalServer();
       const hint = local
         ? `<div class="text-secondary" style="margin-top: 6px;">Local server detected — flashing from <code>../public/data/</code></div>`
         : '';
 
+      // a forced update (Insert key) may be bypassing the official distribution —
+      // let the user flash their own zip containing the 4 firmware files instead
+      const uploadHtml = this.forcedUpdate ? `
+        <div class="firmware-upload">
+          <label for="firmwareZipUpload" class="btn-upload">Upload Firmware ZIP</label>
+          <input type="file" id="firmwareZipUpload" accept=".zip,application/zip" hidden>
+          <span id="firmwareUploadStatus" class="firmware-upload-status"></span>
+        </div>
+      ` : '';
+
       content += `
         <button id="updateFlash" class="update-button">Update Firmware Now</button>
+        ${uploadHtml}
         ${hint}
         <div class="update-progress-container">
           <div id="overallProgress" class="update-progress-bar">
@@ -488,7 +554,6 @@ export default class UpdatePanel extends Panel {
       // backup is offered unconditionally.
       this.backupDevice = lowerDevice;
       const isRealVersion = /^\d+\.\d+(\.\d+)?$/.test(String(currentVersion));
-      this.forcedUpdate = !isRealVersion;
       const supportsProfiles = lowerDevice === 'chromadeck'
         && isRealVersion
         && this.editor.isVersionGreaterOrEqual(currentVersion, '1.5.53');
@@ -526,6 +591,29 @@ export default class UpdatePanel extends Panel {
           ],
         });
       });
+
+      const zipInput = document.getElementById('firmwareZipUpload');
+      if (zipInput) {
+        zipInput.addEventListener('change', async () => {
+          const file = zipInput.files && zipInput.files[0];
+          if (!file) return;
+          if (!/\.zip$/i.test(file.name)) {
+            Notification.failure('Please select a .zip firmware file');
+            zipInput.value = '';
+            return;
+          }
+          try {
+            this.uploadedZipData = await file.arrayBuffer();
+            this.uploadedZipName = file.name;
+            const status = document.getElementById('firmwareUploadStatus');
+            if (status) status.textContent = `Will flash: ${file.name}`;
+            Notification.success(`Firmware zip selected: ${file.name}`);
+          } catch (error) {
+            console.error('Failed to read uploaded firmware zip:', error);
+            Notification.failure('Failed to read the firmware zip');
+          }
+        });
+      }
     }
 
     this.show();
@@ -776,6 +864,14 @@ export default class UpdatePanel extends Panel {
       if (this.forcedUpdate) {
         await this.disconnectForcedPort();
       }
+
+      // clear any uploaded zip so the next update starts fresh
+      this.uploadedZipData = null;
+      this.uploadedZipName = null;
+      const zipInput = document.getElementById('firmwareZipUpload');
+      if (zipInput) zipInput.value = '';
+      const zipStatus = document.getElementById('firmwareUploadStatus');
+      if (zipStatus) zipStatus.textContent = '';
     }
   }
 }
