@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spectra Hub Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #181a1b; color: #d8d4cf; padding: 20px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 12px; }
+    h2 { font-size: 1.1rem; margin: 16px 0 8px; }
+    .status {
+      background: #292c2e; border: 1px solid #3e4446; border-radius: 6px;
+      padding: 12px; margin-bottom: 16px; font-family: monospace; font-size: 13px;
+      min-height: 60px; white-space: pre-wrap;
+    }
+    .btn {
+      background: #3a3c3e; color: #d8d4cf; border: 1px solid #555;
+      border-radius: 4px; padding: 8px 16px; cursor: pointer; font-size: 13px;
+      margin: 3px; display: inline-block;
+    }
+    .btn:hover { background: #4a4c4e; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn.primary { background: #1a6b3c; border-color: #2a8b4c; }
+    .btn.primary:hover { background: #2a8b4c; }
+    .btn.danger { background: #6b1a1a; border-color: #8b2a2a; }
+    .btn.danger:hover { background: #8b2a2a; }
+    .btn-row { margin: 8px 0; }
+    .color-swatch {
+      display: inline-block; width: 30px; height: 30px; border-radius: 4px;
+      border: 1px solid #555; margin: 2px; cursor: pointer; vertical-align: middle;
+    }
+    .color-swatch:hover { border-color: #fff; }
+    pre { font-size: 11px; color: #aaa; margin-top: 8px; }
+    #log { max-height: 300px; overflow-y: auto; }
+    .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+    .info-grid dt { color: #888; }
+    .info-grid dd { color: #d8d4cf; }
+    input[type="number"] {
+      background: #292c2e; border: 1px solid #3e4446; color: #d8d4cf;
+      padding: 4px 8px; border-radius: 4px; width: 60px; font-size: 13px;
+    }
+    label { font-size: 13px; margin-right: 4px; }
+    .section {
+      background: #202324; border: 1px solid #3e4446; border-radius: 6px;
+      padding: 12px; margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Spectra Hub Integration Test</h1>
+
+  <div class="section">
+    <div class="info-grid">
+      <dt>Status:</dt><dd id="statusText">Idle</dd>
+      <dt>Hub:</dt><dd id="hubInfo">Not connected</dd>
+      <dt>Vortex:</dt><dd id="vortexInfo">Loading...</dd>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Connection</h2>
+    <div class="btn-row">
+      <button class="btn primary" id="scanBtn"><i class="fa-brands fa-bluetooth-b"></i> Scan & Connect</button>
+      <button class="btn danger" id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Test Mode</h2>
+    <div class="btn-row">
+      <label>Pattern:</label>
+      <input type="number" id="patternInput" value="1" min="1" max="47">
+      <label>Colors:</label>
+      <input type="number" id="colorCountInput" value="3" min="1" max="7">
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="redBtn" style="background:#c33;border-color:#c33;">Red</button>
+      <button class="btn" id="greenBtn" style="background:#3c3;border-color:#3c3;">Green</button>
+      <button class="btn" id="blueBtn" style="background:#33c;border-color:#33c;">Blue</button>
+      <button class="btn" id="whiteBtn" style="background:#ccc;border-color:#ccc;color:#000;">White</button>
+      <button class="btn" id="offBtn">Off</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="syncBtn" disabled>Sync Mode to Hub</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Mode Editor</h2>
+    <p style="font-size:13px;color:#aaa;margin-bottom:8px;">
+      Click color swatches to cycle through preset colors for each slot.
+    </p>
+    <div id="colorSwatches"></div>
+  </div>
+
+  <div class="section">
+    <h2>Log</h2>
+    <div id="log" class="status" style="min-height:80px;">Ready.</div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "./spectra.js": "./js/spectra.js"
+    }
+  }
+  </script>
+  <script type="module">
+    import VortexLib from './js/VortexLib.js';
+    import { SpectraHub, getDefaultHub } from './js/spectra.js';
+
+    const $ = id => document.getElementById(id);
+
+    const logEl = $('log');
+    function log(msg) {
+      const t = new Date().toLocaleTimeString();
+      logEl.textContent += `[${t}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(msg);
+    }
+
+    function setStatus(msg) {
+      $('statusText').textContent = msg;
+    }
+
+    const PRESET_COLORS = [
+      { r: 255, g: 0, b: 0, name: 'Red' },
+      { r: 0, g: 255, b: 0, name: 'Green' },
+      { r: 0, g: 0, b: 255, name: 'Blue' },
+      { r: 255, g: 255, b: 0, name: 'Yellow' },
+      { r: 255, g: 0, b: 255, name: 'Magenta' },
+      { r: 0, g: 255, b: 255, name: 'Cyan' },
+      { r: 255, g: 128, b: 0, name: 'Orange' },
+    ];
+
+    let vortexLib = null;
+    let vortex = null;
+    let hub = getDefaultHub();
+    let colorSlots = [
+      { r: 255, g: 0, b: 0 },
+      { r: 0, g: 255, b: 0 },
+      { r: 0, g: 0, b: 255 },
+    ];
+
+    function renderSwatches() {
+      const container = $('colorSwatches');
+      const n = parseInt($('colorCountInput').value) || 3;
+      while (colorSlots.length < n) colorSlots.push({ r: 128, g: 128, b: 128 });
+      while (colorSlots.length > n) colorSlots.pop();
+
+      container.innerHTML = colorSlots.map((c, i) => {
+        const hex = '#' + [c.r, c.g, c.b].map(v => v.toString(16).padStart(2, '0')).join('');
+        return `<div class="color-swatch" style="background:${hex}" data-index="${i}" title="Slot ${i+1}: RGB(${c.r},${c.g},${c.b})"></div>`;
+      }).join('');
+
+      container.querySelectorAll('.color-swatch').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.dataset.index);
+          const preset = PRESET_COLORS[(PRESET_COLORS.findIndex(p => p.r === colorSlots[idx].r && p.g === colorSlots[idx].g && p.b === colorSlots[idx].b) + 1) % PRESET_COLORS.length];
+          colorSlots[idx] = { r: preset.r, g: preset.g, b: preset.b };
+          renderSwatches();
+        });
+      });
+    }
+
+    $('colorCountInput').addEventListener('change', renderSwatches);
+
+    function updateUIBasedOnConnection() {
+      const connected = hub.isConnected();
+      $('scanBtn').disabled = connected;
+      $('disconnectBtn').disabled = !connected;
+      $('syncBtn').disabled = !connected;
+      $('hubInfo').textContent = connected ? 'Connected' : 'Not connected';
+    }
+
+    async function initVortex() {
+      try {
+        vortexLib = await VortexLib();
+        vortex = new vortexLib.Vortex();
+        vortex.init();
+        vortex.setLedCount(10);
+        vortexLib.RunTick(vortex);
+
+        const version = vortex.getVersion();
+        $('vortexInfo').textContent = `VortexLib v${version}`;
+        log(`VortexLib initialized: v${version}`);
+        return true;
+      } catch (err) {
+        $('vortexInfo').textContent = 'Failed: ' + err.message;
+        log('ERROR: ' + err.message);
+        return false;
+      }
+    }
+
+    function buildTestMode(patternID, colors) {
+      const pat = vortexLib.intToPatternID(patternID);
+      const args = new vortexLib.PatternArgs();
+      args.addArgs(5); args.addArgs(8); // strobeLength, gapLength
+      const set = new vortexLib.Colorset();
+      for (const c of colors) {
+        const rgb = new vortexLib.RGBColor(c.r, c.g, c.b);
+        set.addColor(rgb);
+      }
+      const mode = vortexLib.createMode(vortex, pat, args, set);
+      mode.init();
+      return mode;
+    }
+
+    async function handleScan() {
+      setStatus('Scanning for Spectra Hub...');
+      log('Scanning... (look for the browser Bluetooth pairing dialog)');
+      try {
+        const found = await hub.scan();
+        if (!found) {
+          setStatus('No hub found (dialog dismissed)');
+          log('Scan cancelled or no device selected');
+          return;
+        }
+        setStatus('Connecting...');
+        log('Device selected, connecting...');
+        const ok = await hub.connect();
+        if (!ok) {
+          setStatus('Connection failed');
+          log('ERROR: Connection failed');
+          return;
+        }
+        setStatus('Connected!');
+        log('Spectra Hub connected successfully!');
+        hub.onDisconnect(() => {
+          setStatus('Disconnected');
+          log('Hub disconnected');
+          updateUIBasedOnConnection();
+        });
+        updateUIBasedOnConnection();
+      } catch (err) {
+        setStatus('Error: ' + err.message);
+        log('ERROR: ' + err.message);
+      }
+    }
+
+    async function handleDisconnect() {
+      await hub.disconnect();
+      setStatus('Disconnected');
+      log('Disconnected from Spectra Hub');
+      updateUIBasedOnConnection();
+    }
+
+    async function handleSync() {
+      if (!hub.isConnected() || !vortex) return;
+      const patternID = parseInt($('patternInput').value) || 1;
+      const nColors = parseInt($('colorCountInput').value) || 1;
+      const colors = colorSlots.slice(0, nColors);
+      if (colors.length === 0) colors.push({ r: 255, g: 0, b: 0 });
+
+      setStatus(`Building mode (pattern ${patternID}, ${colors.length} colors)...`);
+      log(`Building mode: pattern=${patternID}, colors=${colors.length}`);
+
+      try {
+        const mode = buildTestMode(patternID, colors);
+        vortex.engine().modes().clearModes();
+        const stream = new vortexLib.ByteStream();
+        mode.saveToBuffer(stream, vortex.engine().leds().ledCount());
+        vortex.addNewMode(stream, true);
+        vortex.setCurMode(0, false);
+
+        setStatus('Syncing to Spectra Hub...');
+        log('Syncing mode to hub...');
+
+        await hub.syncVortexMode(vortexLib, vortex, 1);
+        setStatus('Mode sent!');
+        log('SUCCESS: Mode synced to Spectra Hub!');
+      } catch (err) {
+        setStatus('Sync failed');
+        log('ERROR: ' + err.message);
+      }
+    }
+
+    async function handleColor(r, g, b) {
+      if (!hub.isConnected()) {
+        log('Not connected - cannot send color');
+        return;
+      }
+      try {
+        if (r === 0 && g === 0 && b === 0) {
+          await hub.stopPreview();
+          log('Preview stopped');
+        } else {
+          await hub.previewColor(r, g, b);
+          log(`Color: RGB(${r},${g},${b})`);
+        }
+      } catch (err) {
+        log('ERROR: ' + err.message);
+      }
+    }
+
+    // Initialize
+    renderSwatches();
+    const ok = await initVortex();
+    if (ok) {
+      log('Vortex ready. Click "Scan & Connect" to start.');
+      setStatus('Ready - scan for a Spectra Hub');
+    }
+
+    // Wire UI
+    $('scanBtn').addEventListener('click', handleScan);
+    $('disconnectBtn').addEventListener('click', handleDisconnect);
+    $('syncBtn').addEventListener('click', handleSync);
+    $('redBtn').addEventListener('click', () => handleColor(255, 0, 0));
+    $('greenBtn').addEventListener('click', () => handleColor(0, 255, 0));
+    $('blueBtn').addEventListener('click', () => handleColor(0, 0, 255));
+    $('whiteBtn').addEventListener('click', () => handleColor(255, 255, 255));
+    $('offBtn').addEventListener('click', () => handleColor(0, 0, 0));
+
+    updateUIBasedOnConnection();
+  </script>
+</body>
+</html>
