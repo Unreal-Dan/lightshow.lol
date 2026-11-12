@@ -422,7 +422,7 @@ export default class LayoutPanel extends Panel {
     if (!dm || !data || !data.panels) return;
 
     dm._suppressSave = true;
-    dm._clearLayoutCookie();
+    dm.clearSavedLayout();
     dm.applyLayoutData(data);
     dm._suppressSave = false;
     dm.saveLayout();

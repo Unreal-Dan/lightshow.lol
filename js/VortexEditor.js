@@ -173,54 +173,7 @@ export default class VortexEditor {
 
     // Desktop: initialize dock manager, register panels, attach overlays to body
     if (!this.detectMobile()) {
-      await this.dockManager.initialize();
-
-      // Suppress auto-save during initial setup — we'll save once at the end
-      this.dockManager._suppressSave = true;
-
-      // Register panels with DockManager — all on left side
-      const dockPanels = [
-        this.aboutPanel,
-        this.animationPanel,
-        this.patternPanel,
-        this.colorsetPanel,
-        this.devicePanel,
-        this.modesPanel,
-        this.ledSelectPanel,
-        this.communityBrowserPanel,
-        this.layoutPanel,
-        this.updatePanel,
-        this.chromalinkPanel,
-      ];
-      dockPanels.forEach(panel => {
-        if (panel) this.dockManager.register(panel, 'left');
-      });
-
-      // Register floating-only panels (not docked)
-      if (this.welcomePanel) this.dockManager.register(this.welcomePanel, null);
-      if (this.colorPickerPanel) this.dockManager.register(this.colorPickerPanel, null);
-
-      // Restore saved layout if available, otherwise collapse all by default
-      const restored = this.dockManager.restoreLayout();
-      if (!restored && this.layoutPanel) {
-        // Fresh load (no saved layout): default to the Classic Floating preset
-        this.layoutPanel.applyPreset('classicFloating');
-      }
-
-      // Floating-only panels go to body (not managed by dock manager)
-      const floatingPanels = [
-        this.welcomePanel,
-        this.colorPickerPanel,
-      ];
-      floatingPanels.forEach(panel => {
-        if (panel && panel.panel) document.body.appendChild(panel.panel);
-      });
-
-      // Re-enable saves and persist final state
-      this.dockManager._suppressSave = false;
-      this.dockManager.saveLayout();
-
-      this.dockManager.updateCanvasLayout();
+      await this.setupDesktopDock();
     } else {
       // Mobile: append all panels to the mobile panel container
       const panelContainer = document.querySelector('.mobile-panel-content');
@@ -630,6 +583,61 @@ export default class VortexEditor {
     return navigator.bluetooth !== undefined;
   }
 
+  /**
+   * Desktop only: create the dock areas, register every panel with the
+   * DockManager, then restore the saved layout (or apply the default preset).
+   */
+  async setupDesktopDock() {
+    const dm = this.dockManager;
+    await dm.initialize();
+
+    // Suppress auto-save during setup — we'll save once at the end
+    dm._suppressSave = true;
+
+    // Dockable panels register on the left; the layout restore below moves
+    // them to their real positions
+    const dockPanels = [
+      this.aboutPanel,
+      this.animationPanel,
+      this.patternPanel,
+      this.colorsetPanel,
+      this.devicePanel,
+      this.modesPanel,
+      this.ledSelectPanel,
+      this.communityBrowserPanel,
+      this.layoutPanel,
+      this.updatePanel,
+      this.chromalinkPanel,
+    ];
+    dockPanels.forEach(panel => {
+      if (panel) dm.register(panel, 'left');
+    });
+
+    // Floating-only panels (never docked)
+    const floatingOnly = [this.welcomePanel, this.colorPickerPanel];
+    floatingOnly.forEach(panel => {
+      if (panel) dm.register(panel, null);
+    });
+
+    // Restore saved layout; fresh load defaults to the Classic Floating preset
+    const restored = dm.restoreLayout();
+    if (!restored && this.layoutPanel) {
+      this.layoutPanel.applyPreset('classicFloating');
+    }
+
+    // Floating-only panels live on body (shown/floated on demand)
+    floatingOnly.forEach(panel => {
+      if (panel && panel.panel && !document.body.contains(panel.panel)) {
+        document.body.appendChild(panel.panel);
+      }
+    });
+
+    // Re-enable saves and persist final state
+    dm._suppressSave = false;
+    dm.saveLayout();
+    dm.updateCanvasLayout();
+  }
+
   async applyLayout() {
     const isNowMobile = this.detectMobile();
     if (isNowMobile === this.isMobile) {
@@ -652,50 +660,7 @@ export default class VortexEditor {
       this.canvas.style.height = '';
     } else {
       // Switching to desktop: initialize dock manager
-      await this.dockManager.initialize();
-
-      this.dockManager._suppressSave = true;
-
-      // Register panels with DockManager — all on left side
-      const dockPanels = [
-        this.aboutPanel,
-        this.animationPanel,
-        this.patternPanel,
-        this.colorsetPanel,
-        this.devicePanel,
-        this.modesPanel,
-        this.ledSelectPanel,
-        this.communityBrowserPanel,
-        this.layoutPanel,
-        this.updatePanel,
-        this.chromalinkPanel,
-      ];
-      dockPanels.forEach(panel => {
-        if (panel) this.dockManager.register(panel, 'left');
-      });
-
-      // Restore saved layout if available, otherwise collapse all
-      const restored = this.dockManager.restoreLayout();
-      if (!restored && this.layoutPanel) {
-        // Fresh load (no saved layout): default to the Classic Floating preset
-        this.layoutPanel.applyPreset('classicFloating');
-      }
-
-      // Floating-only panels go to body (not managed by dock manager)
-      const floatingPanels = [
-        this.welcomePanel,
-        this.colorPickerPanel,
-      ];
-      floatingPanels.forEach(panel => {
-        if (panel && panel.panel && !document.body.contains(panel.panel)) {
-          document.body.appendChild(panel.panel);
-        }
-      });
-
-      this.dockManager._suppressSave = false;
-      this.dockManager.saveLayout();
-
-      this.dockManager.updateCanvasLayout();
+      await this.setupDesktopDock();
     }
 
     this.panels.forEach(panel => {
