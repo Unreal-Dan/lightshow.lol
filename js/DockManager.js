@@ -32,7 +32,6 @@ export default class DockManager {
     this.drag = null; // current drag state
     this.resize = null; // current resize state
     this._suppressSave = false; // batch-save guard for setup/reset
-    this._floatingHeights = new Map(); // panelId -> last known height
     this._floatingObservers = new Map(); // panelId -> ResizeObserver
     this._floatingRelPos = new Map(); // panelId -> { anchorX, gapPxX, anchorY, gapPxY }
     this._stackingBusy = false; // prevent re-entrant chain propagation
@@ -93,7 +92,6 @@ export default class DockManager {
     this.panels.clear();
     this._floatingObservers.forEach(o => o.disconnect());
     this._floatingObservers.clear();
-    this._floatingHeights.clear();
     this._floatingRelPos.clear();
     this.drag = null;
     this.resize = null;
@@ -443,7 +441,7 @@ export default class DockManager {
   _setupFloatingObserver(panelId, panelEl) {
     this._teardownFloatingObserver(panelId);
 
-    let baselineFired = false;
+    let firstFire = true;
 
     const observerVersion = (this._observerVersions.get(panelId) || 0) + 1;
     this._observerVersions.set(panelId, observerVersion);
@@ -452,25 +450,22 @@ export default class DockManager {
       // Stale observer callback from before re-init — ignore
       if (this._observerVersions.get(panelId) !== observerVersion) return;
 
-      const newHeight = entries[0].contentRect.height;
+      if (this._stackingBusy) return;
 
-      // First fire just sets the baseline — offsetHeight includes borders
-      // while contentRect.height doesn't, so pre-setting would give a
-      // spurious delta on the very first observation.
-      if (!baselineFired) {
-        baselineFired = true;
-        this._floatingHeights.set(panelId, Math.round(newHeight));
+      // Re-seating a stack is idempotent (each member goes flush below its
+      // predecessor), so ALWAYS do it — even on the first observation and
+      // while restore suppression is active. Panels fill in their content
+      // after a layout restore (device state, update info, etc.); skipping
+      // those height changes is what left gaps in stacks after a refresh.
+      // Only the side effects (auto-collapse on overflow, saving) wait
+      // until things have settled.
+      const quiet = firstFire || this._suppressStack;
+      firstFire = false;
+      if (quiet) {
+        const info = this._findStackInfo(panelId);
+        if (info) this._alignStack(info.stack);
         return;
       }
-
-      if (this._stackingBusy) return;
-      if (this._suppressStack) return;
-
-      const oldHeight = this._floatingHeights.get(panelId);
-      if (oldHeight === undefined) return;
-      const delta = newHeight - oldHeight;
-      this._floatingHeights.set(panelId, Math.round(newHeight));
-      if (Math.abs(delta) < 0.5) return;
       this._propagateStackDelta(panelId);
     });
 
@@ -481,7 +476,6 @@ export default class DockManager {
   _teardownFloatingObserver(panelId) {
     const obs = this._floatingObservers.get(panelId);
     if (obs) { obs.disconnect(); this._floatingObservers.delete(panelId); }
-    this._floatingHeights.delete(panelId);
   }
 
   /* ── Panel Stacks (explicit) ──
@@ -602,7 +596,6 @@ export default class DockManager {
       const prevRect = prevEl.getBoundingClientRect();
       el.style.left = Math.round(prevRect.left) + 'px';
       el.style.top = Math.round(prevRect.bottom) + 'px';
-      this._floatingHeights.set(stack[i], el.offsetHeight);
       prevEl = el;
     }
 
@@ -719,27 +712,22 @@ export default class DockManager {
   }
 
   _rebuildFloatingStack() {
-    // Don't pre-set heights here — the ResizeObserver's first callback
-    // sets the baseline from contentRect.height (which excludes borders).
-    // Using offsetHeight here would cause a spurious delta on the next
-    // observer fire, compounding on every refresh.
     this._updateStackClasses();
   }
 
   /**
-   * Suppress stack propagation while collapse transitions settle (0.3s CSS),
-   * then reset all floating-height baselines to the final post-transition
-   * heights so the next observer fire sees delta ≈ 0. Call after bulk
+   * Suppress overflow auto-collapse and saving while a restored layout
+   * settles (collapse transitions, panels filling in content), then re-seat
+   * every stack once more so they end up flush. Call after bulk
    * repositioning + collapsing of floating panels (restore/preset/import).
    */
   _settleFloatingStack() {
     this._suppressStack = true;
-    setTimeout(() => {
-      for (const fp of this.floatingPanels) {
-        const id = fp.panel.panel.id;
-        this._floatingHeights.set(id, fp.panel.panel.offsetHeight);
-      }
+    clearTimeout(this._settleTimer);
+    this._settleTimer = setTimeout(() => {
+      this._settleTimer = null;
       this._suppressStack = false;
+      for (const stack of this._stacks) this._alignStack(stack);
       this._rebuildFloatingStack();
     }, 350);
   }
