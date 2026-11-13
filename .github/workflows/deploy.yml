@@ -92,19 +92,27 @@ jobs:
         echo "Generated Version: $VERSION"
 
     - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.5.3
+      uses: webfactory/ssh-agent@v0.9.0
       with:
-        ssh-private-key: ${{ secrets.NEW_DEPLOY_KEY }}
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
 
-    - name: Add Linode to known_hosts
-      run: ssh-keyscan 198.74.48.18 >> ~/.ssh/known_hosts
-
-    - name: Deploy to Linode
+    # Pinned host key (no ssh-keyscan trust-on-first-use on every run)
+    - name: Add server to known_hosts
       run: |
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js vortex@198.74.48.18:/home/vortex/lightshow.lol/js/VortexLib.js
-        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm vortex@198.74.48.18:/home/vortex/lightshow.lol/js/VortexLib.wasm
-        scp VortexEngine/VortexEngine/VortexCLI/vortex vortex@198.74.48.18:/home/vortex/vortex
-        scp version.js vortex@198.74.48.18:/home/vortex/lightshow.lol/js/version.js
-        ssh vortex@198.74.48.18 'sudo mv /home/vortex/vortex /usr/local/bin/vortex'
-        ssh vortex@198.74.48.18 'cd /home/vortex/lightshow.lol && chmod +x ./tools/deploy.sh && ./tools/deploy.sh'
+        mkdir -p ~/.ssh
+        echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+
+    - name: Deploy to server
+      env:
+        DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      run: |
+        DEST="$DEPLOY_USER@$DEPLOY_HOST"
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.js "$DEST:$DEPLOY_PATH/js/VortexLib.js"
+        scp VortexEngine/VortexEngine/VortexLib/VortexLib.wasm "$DEST:$DEPLOY_PATH/js/VortexLib.wasm"
+        scp VortexEngine/VortexEngine/VortexCLI/vortex "$DEST:vortex"
+        scp version.js "$DEST:$DEPLOY_PATH/js/version.js"
+        ssh "$DEST" 'sudo mv ~/vortex /usr/local/bin/vortex'
+        ssh "$DEST" "cd '$DEPLOY_PATH' && chmod +x ./tools/deploy.sh && ./tools/deploy.sh"
 
