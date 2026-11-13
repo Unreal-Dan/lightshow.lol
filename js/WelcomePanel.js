@@ -57,23 +57,47 @@ export default class WelcomePanel extends Panel {
         </div>`;
     }
 
+    const isMobile = editor.detectMobile();
+    const action = (key, icon, title, desc, tag = 'button', extra = '') => `
+      <${tag} class="welcome-action" data-action="${key}" ${extra}>
+        <span class="welcome-action-icon"><i class="${icon}"></i></span>
+        <span class="welcome-action-text">
+          <span class="welcome-action-title">${title}</span>
+          <span class="welcome-action-desc">${desc}</span>
+        </span>
+        <i class="fa-solid fa-chevron-right welcome-action-chevron"></i>
+      </${tag}>`;
+
     const content = `
       <div class="welcome-split">
         <div class="welcome-left">
-          <h1 class="welcome-title">Welcome to lightshow.lol</h1>
-          <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
-          <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
-
-          <div class="welcome-actions">
-            <a href="${wikiUrl('/lightshow-lol/')}" target="_blank" class="wiki-button">
-              <span>See Wiki</span>
-              <span class="arrow">→</span>
-            </a>
-            <button class="close-welcome-btn">Close</button>
+          <div class="welcome-intro">
+            <h1 class="welcome-title">Welcome to lightshow.lol</h1>
+            <p class="intro-text">Design light modes for Vortex gloves and devices, preview them live, then send them straight to your device.</p>
           </div>
 
-          <div class="checkbox-container">
-            <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
+          <div class="welcome-start">
+            <div class="welcome-section-title">Get started</div>
+            ${action('connect', isMobile ? 'fa-brands fa-bluetooth-b' : 'fa-brands fa-usb', 'Connect a device',
+              isMobile ? 'Pair over Bluetooth to edit its modes' : 'Plug in over USB to edit its modes')}
+            ${action('community', 'fa-solid fa-globe', 'Browse community modes', 'Try modes and patterns other people have shared')}
+            ${isMobile ? '' : action('layout', 'fa-solid fa-table-columns', 'Choose a panel layout', 'Float, dock or stack the editor panels')}
+            ${action('wiki', 'fa-solid fa-book-open', 'Read the guide', 'New here? Start with the getting-started wiki',
+              'a', `href="${wikiUrl(isMobile ? '/lightshow-lol/getting-started-mobile.html' : '/lightshow-lol/getting-started.html')}" target="_blank" rel="noopener"`)}
+          </div>
+
+          <div class="welcome-unread">
+            <span class="welcome-unread-dot"></span>
+            <span class="welcome-unread-text"></span>
+            <button class="welcome-mark-read">Mark all read</button>
+          </div>
+
+          <div class="welcome-footer">
+            <button class="close-welcome-btn">Start creating</button>
+            <label class="checkbox-container">
+              <input type="checkbox" id="doNotShowAgain">
+              <span>Don't show again until the next update</span>
+            </label>
           </div>
         </div>
         <div class="welcome-right">
@@ -120,20 +144,74 @@ export default class WelcomePanel extends Panel {
     }
   }
 
+  markBoxSeen(box) {
+    WelcomePanel.markSeen(box.dataset.key);
+    box.classList.add('seen');
+    const badge = box.querySelector('.feature-badge');
+    if (badge) badge.remove();
+  }
+
+  updateUnread() {
+    const unread = this.panel.querySelectorAll('.feature-box:not(.seen)').length;
+    const row = this.panel.querySelector('.welcome-unread');
+    const text = row.querySelector('.welcome-unread-text');
+    row.classList.toggle('caught-up', unread === 0);
+    text.textContent = unread === 0
+      ? "You're all caught up"
+      : `${unread} new update${unread === 1 ? '' : 's'}`;
+  }
+
+  /**
+   * Close the welcome panel and bring another panel into view: expand it,
+   * raise it if floating (or switch to its tab on mobile) and briefly
+   * highlight it so the user can see where it is.
+   */
+  revealPanel(panel) {
+    if (!panel) return;
+    this.hide();
+    if (this.editor.detectMobile()) {
+      this.editor.setActiveTab(panel.panel.id);
+      return;
+    }
+    if (panel.isCollapsed) panel.toggleCollapse();
+    const dm = this.editor.dockManager;
+    if (dm.panels.get(panel.panel.id)?.floating) {
+      dm._bringFloatingToFront(panel.panel);
+    } else {
+      panel.panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    panel.panel.classList.remove('panel-attention');
+    void panel.panel.offsetWidth; // restart the animation if re-triggered
+    panel.panel.classList.add('panel-attention');
+    setTimeout(() => panel.panel.classList.remove('panel-attention'), 1600);
+  }
+
   initialize() {
-    const boxes = this.panel.querySelectorAll('.feature-box:not(.seen)');
-
-    for (const box of boxes) {
-      const key = box.dataset.key;
-
+    for (const box of this.panel.querySelectorAll('.feature-box:not(.seen)')) {
       box.addEventListener('click', () => {
-        WelcomePanel.markSeen(key);
-        box.classList.add('seen');
-
-        const badge = box.querySelector('.feature-badge');
-        if (badge) badge.remove();
+        if (box.classList.contains('seen')) return;
+        this.markBoxSeen(box);
+        this.updateUnread();
       });
     }
+
+    this.panel.querySelector('.welcome-mark-read').addEventListener('click', () => {
+      for (const box of this.panel.querySelectorAll('.feature-box:not(.seen)')) this.markBoxSeen(box);
+      this.updateUnread();
+    });
+    this.updateUnread();
+
+    // Quick-start actions (the wiki entry is a plain link)
+    this.panel.querySelector('[data-action="connect"]').addEventListener('click', () => {
+      this.hide();
+      this.editor.devicePanel.connectDevice();
+    });
+    this.panel.querySelector('[data-action="community"]').addEventListener('click', () => {
+      this.revealPanel(this.editor.communityBrowserPanel);
+    });
+    this.panel.querySelector('[data-action="layout"]')?.addEventListener('click', () => {
+      this.revealPanel(this.editor.layoutPanel);
+    });
 
     this.scrollEl = this.panel.querySelector('.feature-scroll');
     this.startAutoScroll();

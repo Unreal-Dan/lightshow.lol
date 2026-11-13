@@ -1,6 +1,6 @@
 /* welcome-panel.css — full overhaul */
 
-/* ── Left side: title + intro + actions ── */
+/* ── Layout ── */
 #welcomePanel .welcome-split {
   display: flex;
   flex: 1;
@@ -10,19 +10,23 @@
 #welcomePanel .welcome-left {
   width: 42%;
   box-sizing: border-box;
-  padding: 32px 28px;
+  padding: 28px 28px 22px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 22px;
   border-right: 1px solid #333;
+  overflow-y: auto;
+}
+
+#welcomePanel .welcome-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 #welcomePanel .welcome-title {
   font-size: 28px;
   font-weight: 900;
-  text-align: center;
   background: linear-gradient(135deg, #ff6600, #ffcc00, #ff6600);
   background-size: 200% 200%;
   -webkit-background-clip: text;
@@ -31,94 +35,211 @@
   animation: bannerShimmer 3s ease-in-out infinite;
   text-shadow: none;
   margin: 0;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
 #welcomePanel .intro-text {
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
   color: #b0acaa;
   margin: 0;
-  text-align: center;
-  padding: 0 8px;
 }
 
-/* ── Actions row: Wiki + Close buttons ── */
-#welcomePanel .welcome-actions {
+/* ── Quick-start actions ── */
+#welcomePanel .welcome-start {
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 6px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-#welcomePanel .wiki-button {
-  display: inline-flex;
+#welcomePanel .welcome-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #7d7976;
+  margin-bottom: 2px;
+}
+
+#welcomePanel .welcome-action {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  background: #222426;
+  border: 1px solid #34373a;
+  border-radius: 10px;
+  color: #e6e2de;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+#welcomePanel .welcome-action:hover {
+  background: #2a2c2f;
+  border-color: #ff6600;
+  transform: translateX(2px);
+}
+
+#welcomePanel .welcome-action:focus-visible {
+  outline: 2px solid #ff8a33;
+  outline-offset: 2px;
+}
+
+#welcomePanel .welcome-action-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 102, 0, 0.12);
+  color: #ff8a33;
+  font-size: 17px;
+}
+
+#welcomePanel .welcome-action-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#welcomePanel .welcome-action-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#welcomePanel .welcome-action-desc {
+  font-size: 12.5px;
+  color: #8f8b88;
+  line-height: 1.35;
+}
+
+#welcomePanel .welcome-action-chevron {
+  color: #5c5956;
+  font-size: 12px;
+  transition: color 0.15s;
+}
+
+#welcomePanel .welcome-action:hover .welcome-action-chevron {
+  color: #ff8a33;
+}
+
+/* ── Unread updates summary ── */
+#welcomePanel .welcome-unread {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 22px;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: none;
-  color: #fff;
-  background: #28a745;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 68, 0, 0.08);
+  border: 1px solid rgba(255, 68, 0, 0.25);
+  font-size: 13px;
+  color: #e6c9b8;
+}
+
+#welcomePanel .welcome-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4400;
+  flex-shrink: 0;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+#welcomePanel .welcome-unread-text {
+  flex: 1;
+  font-weight: 600;
+}
+
+#welcomePanel .welcome-mark-read {
+  background: none;
   border: none;
-  border-radius: 8px;
+  padding: 2px 0;
+  width: auto;
+  color: #ff8a33;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-  white-space: nowrap;
 }
 
-#welcomePanel .wiki-button:hover {
-  background: #218838;
-  transform: translateY(-1px);
+#welcomePanel .welcome-mark-read:hover {
+  color: #ffb070;
+  text-decoration: underline;
 }
 
-#welcomePanel .wiki-button:active {
-  background: #1c7a3a;
-  transform: translateY(1px);
+#welcomePanel .welcome-unread.caught-up {
+  background: transparent;
+  border-color: #333;
+  color: #8f8b88;
 }
 
-#welcomePanel .wiki-button .arrow {
-  font-size: 18px;
-  line-height: 1;
+#welcomePanel .welcome-unread.caught-up .welcome-unread-dot {
+  background: #3fa34d;
+  animation: none;
+}
+
+#welcomePanel .welcome-unread.caught-up .welcome-mark-read {
+  display: none;
+}
+
+/* ── Footer: primary close + do-not-show ── */
+#welcomePanel .welcome-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
 }
 
 #welcomePanel .close-welcome-btn {
-  padding: 10px 22px;
+  width: 100%;
+  padding: 12px 22px;
   font-size: 15px;
   font-weight: 700;
-  color: #d8d4cf;
-  background: #3a3a3a;
-  border: 1px solid #555;
-  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff5500, #ff8a00);
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  white-space: nowrap;
-  width: auto;
+  transition: filter 0.15s, transform 0.15s;
 }
 
 #welcomePanel .close-welcome-btn:hover {
-  background: #4a4a4a;
-  color: #fff;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
 }
 
-/* ── Checkbox ── */
+#welcomePanel .close-welcome-btn:active {
+  transform: translateY(1px);
+}
+
 #welcomePanel .checkbox-container {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-top: 4px;
-}
-
-#welcomePanel .checkbox-container label {
+  justify-content: center;
+  gap: 8px;
   font-size: 13px;
-  color: #999;
+  color: #8f8b88;
+  cursor: pointer;
+  user-select: none;
 }
 
 #welcomePanel .checkbox-container input[type="checkbox"] {
-  margin-right: 6px;
-  width: 16px;
-  height: 16px;
+  margin: 0;
+  width: 15px;
+  height: 15px;
+  accent-color: #ff6600;
+  cursor: pointer;
 }
 
 /* ── Right side: News & Updates ── */
