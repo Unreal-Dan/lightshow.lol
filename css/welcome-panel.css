@@ -34,18 +34,27 @@
   line-height: 1.2;
 }
 
+/* title + LED strip, sized to the title so the strip spans it exactly */
+#welcomePanel .welcome-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
 /* LED strip under the title: plain dots, each one a step behind its
    neighbour, so the colorset chases along like a pattern on a device. */
 #welcomePanel .welcome-leds {
-  --led-1: #ff3d7f;
-  --led-2: #8b5cff;
-  --led-3: #1ec8ff;
-  --led-4: #3dffa2;
+  --led-1: #ff6600;
+  --led-2: #ff1f3d;
+  --led-3: #2b6bff;
+  --led-4: #33ee22;
   --led-off: #2a2d30;
   display: flex;
-  gap: 5px;
+  justify-content: space-between;
   height: 8px;
-  margin-top: -2px;
+  overflow: hidden;
 }
 
 #welcomePanel .welcome-leds i {
