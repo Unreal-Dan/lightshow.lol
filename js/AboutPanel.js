@@ -1,5 +1,6 @@
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import { communityUrl } from './community-url.js';
 
 const GITHUB_URL = 'https://github.com/StoneOrbits/VortexEngine';
 
@@ -23,7 +24,9 @@ export default class AboutPanel extends Panel {
     `;
     super(editor, 'aboutPanel', content, 'Help & About');
     this.editor = editor;
-    this.wikiUrl = wikiUrl('/lightshow-lol/');
+    // right-click → Help explains this panel; the Wiki button opens the main guide
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/help-about');
+    this.guideUrl = wikiUrl('/lightshow-lol/');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
   }
@@ -49,11 +52,11 @@ export default class AboutPanel extends Panel {
   }
 
   gotoCommunity() {
-    window.open('/community', '_blank');
+    window.open(communityUrl('/community'), '_blank');
   }
 
   gotoWiki() {
-    window.open(this.wikiUrl, '_blank');
+    window.open(this.guideUrl, '_blank');
   }
 
   gotoGithub() {

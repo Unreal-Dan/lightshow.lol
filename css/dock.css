@@ -378,7 +378,7 @@
 
 /* Color picker — floating panel */
 #colorPickerPanel {
-  width: 560px !important;
+  width: max-content !important;
   max-height: 90vh;
   display: flex;
   flex-direction: column;

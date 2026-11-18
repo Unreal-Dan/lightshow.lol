@@ -25,7 +25,7 @@ export default class CommunityBrowserPanel extends Panel {
     `;
     super(editor, 'communityBrowserPanel', initialHTML, 'Community Browser');
     this.editor = editor;
-    this.wikiUrl = wikiUrl('/vortex-community/');
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/community-browser');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.activeTab = 'modes';

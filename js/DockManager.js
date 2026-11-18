@@ -42,6 +42,7 @@ export default class DockManager {
     this.stackDropIndicator = null;
     this._debug = false; // toggle with dockManager._debug = true
     this._stackProtected = new Set(); // panels shielded from auto-collapse during overflow resolution
+    this._keepOpen = new Set(); // panels that must never be auto-collapsed (e.g. the one a tutorial step is showing)
     this._saveTimer = null; // pending debounced layout save
   }
 
@@ -671,7 +672,7 @@ export default class DockManager {
     const candidates = [];
     for (let i = 0; i < stack.length; i++) {
       const pid = stack[i];
-      if (this._stackProtected.has(pid)) continue;
+      if (this._stackProtected.has(pid) || this._keepOpen.has(pid)) continue;
       const rec = this.panels.get(pid);
       if (!rec) continue;
       const el = rec.panel.panel;
@@ -709,6 +710,12 @@ export default class DockManager {
     if (lastEl.getBoundingClientRect().bottom <= window.innerHeight) {
       this._stackProtected.clear();
     }
+  }
+
+  /** Exempt a panel from overflow auto-collapse (or lift the exemption). */
+  setKeepOpen(panelId, keep = true) {
+    if (keep) this._keepOpen.add(panelId);
+    else this._keepOpen.delete(panelId);
   }
 
   _rebuildFloatingStack() {

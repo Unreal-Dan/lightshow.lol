@@ -1,5 +1,6 @@
 /* LayoutPanel.js */
 import Panel from './Panel.js';
+import { wikiUrl } from './wiki-url.js';
 import Notification from './Notification.js';
 
 const LAYOUT_PRESETS = {
@@ -194,6 +195,7 @@ export default class LayoutPanel extends Panel {
     `;
 
     super(editor, 'layoutPanel', content, 'Layout');
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/layout');
     this.editor = editor;
   }
 

@@ -863,7 +863,7 @@ export default class VortexEditor {
 
   showHelpPopup(url = wikiUrl('/lightshow-lol/'), title = 'Help') {
     const existing = document.querySelector('.help-popup-overlay');
-    if (existing) existing.remove();
+    if (existing) (existing._close || (() => existing.remove()))();
 
     const overlay = document.createElement('div');
     overlay.className = 'help-popup-overlay';
@@ -874,7 +874,6 @@ export default class VortexEditor {
     const header = document.createElement('div');
     header.className = 'help-popup-header';
     header.innerHTML = `<span>${title}</span><span class="help-popup-close">&times;</span>`;
-    header.querySelector('.help-popup-close').onclick = () => overlay.remove();
 
     const iframe = document.createElement('iframe');
     iframe.src = url;
@@ -889,8 +888,29 @@ export default class VortexEditor {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
+    // Esc closes the popup. Listen in the capture phase and stop the event so
+    // nothing underneath (e.g. the tutorial, which also closes on Esc) reacts.
+    const close = () => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey, true);
+    };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      e.preventDefault();
+      close();
+    };
+    document.addEventListener('keydown', onKey, true);
+    overlay._close = close;
+    header.querySelector('.help-popup-close').onclick = close;
+    // after clicking into the page, keys go to the iframe; catch Esc there too
+    // (only possible when the wiki is served from the same origin)
+    iframe.addEventListener('load', () => {
+      try { iframe.contentWindow.addEventListener('keydown', onKey, true); } catch { /* cross-origin */ }
+    });
+
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) close();
     });
   }
 

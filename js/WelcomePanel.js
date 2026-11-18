@@ -1,6 +1,8 @@
 /* WelcomePanel.js */
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import Tutorial from './Tutorial.js';
+import { communityUrl } from './community-url.js';
 
 // FNV-1a 32-bit checksum of the whole feature list. Because the welcome
 // "seen" token is derived from the list contents itself, any change to the
@@ -81,10 +83,12 @@ export default class WelcomePanel extends Panel {
 
           <div class="welcome-start">
             <div class="welcome-section-title">Get started</div>
+            ${action('tutorial', 'fa-solid fa-route', 'Take a tour', 'Step-by-step guides to making and saving modes')}
             ${action('connect', isMobile ? 'fa-brands fa-bluetooth-b' : 'fa-brands fa-usb', 'Connect a device',
               isMobile ? 'Pair over Bluetooth to edit its modes' : 'Plug in over USB to edit its modes')}
-            ${action('community', 'fa-solid fa-globe', 'Browse community modes', 'Try modes and patterns other people have shared')}
-            ${isMobile ? '' : action('layout', 'fa-solid fa-table-columns', 'Choose a panel layout', 'Float, dock or stack the editor panels')}
+            ${action('community', 'fa-solid fa-globe', 'Browse community modes', 'Find and share modes on Vortex Community',
+              'a', `href="${communityUrl('/community')}" target="_blank" rel="noopener"`)}
+            ${isMobile ? '' : action('layout', 'fa-solid fa-table-columns', 'Explore the New Layouts', 'Returning user? Try the new layout feature to float, dock or stack the panels')}
             ${action('wiki', 'fa-solid fa-book-open', 'Read the guide', 'New here? Start with the getting-started wiki',
               'a', `href="${wikiUrl(isMobile ? '/lightshow-lol/getting-started-mobile.html' : '/lightshow-lol/getting-started.html')}" target="_blank" rel="noopener"`)}
           </div>
@@ -204,13 +208,15 @@ export default class WelcomePanel extends Panel {
     });
     this.updateUnread();
 
-    // Quick-start actions (the wiki entry is a plain link)
+    // Quick-start actions (the wiki and community entries are plain links)
+    this.panel.querySelector('[data-action="tutorial"]').addEventListener('click', () => {
+      this.hide();
+      if (!this.editor.tutorial) this.editor.tutorial = new Tutorial(this.editor);
+      this.editor.tutorial.start();
+    });
     this.panel.querySelector('[data-action="connect"]').addEventListener('click', () => {
       this.hide();
       this.editor.devicePanel.connectDevice();
-    });
-    this.panel.querySelector('[data-action="community"]').addEventListener('click', () => {
-      this.revealPanel(this.editor.communityBrowserPanel);
     });
     this.panel.querySelector('[data-action="layout"]')?.addEventListener('click', () => {
       this.revealPanel(this.editor.layoutPanel);
