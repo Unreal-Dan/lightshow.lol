@@ -25,7 +25,7 @@ export default class CommunityBrowserPanel extends Panel {
     `;
     super(editor, 'communityBrowserPanel', initialHTML, 'Community Browser');
     this.editor = editor;
-    this.wikiUrl = wikiUrl('/vortex-community/');
+    this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/community-browser');
     this.lightshow = editor.lightshow;
     this.vortexPort = editor.vortexPort;
     this.activeTab = 'modes';
@@ -88,6 +88,15 @@ export default class CommunityBrowserPanel extends Panel {
     });
 
     this._loadTab(this.activeTab);
+
+    // Adapt filter grid columns to container width
+    this._filterResizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        filterContainer.style.gridTemplateColumns = w >= 300 ? 'repeat(6, 1fr)' : 'repeat(3, 1fr)';
+      }
+    });
+    this._filterResizeObserver.observe(filterContainer);
   }
 
   async _loadTab(tab) {

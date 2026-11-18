@@ -1,6 +1,8 @@
 /* WelcomePanel.js */
 import Panel from './Panel.js';
 import { wikiUrl } from './wiki-url.js';
+import Tutorial from './Tutorial.js';
+import { communityUrl } from './community-url.js';
 
 // FNV-1a 32-bit checksum of the whole feature list. Because the welcome
 // "seen" token is derived from the list contents itself, any change to the
@@ -57,31 +59,64 @@ export default class WelcomePanel extends Panel {
         </div>`;
     }
 
-    const content = `
-      <h1 class="welcome-title">Welcome to lightshow.lol</h1>
-      <p class="intro-text">Hello! If you found this website then you're likely a flow artist or glover.</p>
-      <p class="intro-text">If you have no idea what that means, then welcome to your first lightshow!</p>
+    const isMobile = editor.detectMobile();
+    const action = (key, icon, title, desc, tag = 'button', extra = '') => `
+      <${tag} class="welcome-action" data-action="${key}" ${extra}>
+        <span class="welcome-action-icon"><i class="${icon}"></i></span>
+        <span class="welcome-action-text">
+          <span class="welcome-action-title">${title}</span>
+          <span class="welcome-action-desc">${desc}</span>
+        </span>
+        <i class="fa-solid fa-chevron-right welcome-action-chevron"></i>
+      </${tag}>`;
 
-      <div class="features-container">
-        <div class="features-container-title">News & Updates</div>
-        <div class="feature-scroll">
-          ${featuresHtml}
+    const content = `
+      <div class="welcome-split">
+        <div class="welcome-left">
+          <div class="welcome-intro">
+            <div class="welcome-heading">
+              <h1 class="welcome-title">Welcome to lightshow.lol</h1>
+              <div class="welcome-leds" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
+            </div>
+            <p class="intro-text">Design light modes for Vortex gloves and devices, preview them live, then send them straight to your device.</p>
+          </div>
+
+          <div class="welcome-start">
+            <div class="welcome-section-title">Get started</div>
+            ${action('tutorial', 'fa-solid fa-route', 'Take a tour', 'Step-by-step guides to making and saving modes')}
+            ${action('connect', isMobile ? 'fa-brands fa-bluetooth-b' : 'fa-brands fa-usb', 'Connect a device',
+              isMobile ? 'Pair over Bluetooth to edit its modes' : 'Plug in over USB to edit its modes')}
+            ${action('community', 'fa-solid fa-globe', 'Browse community modes', 'Find and share modes on Vortex Community',
+              'a', `href="${communityUrl('/community')}" target="_blank" rel="noopener"`)}
+            ${isMobile ? '' : action('layout', 'fa-solid fa-table-columns', 'Explore the New Layouts', 'Returning user? Try the new layout feature to float, dock or stack the panels')}
+            ${action('wiki', 'fa-solid fa-book-open', 'Read the guide', 'New here? Start with the getting-started wiki',
+              'a', `href="${wikiUrl(isMobile ? '/lightshow-lol/getting-started-mobile.html' : '/lightshow-lol/getting-started.html')}" target="_blank" rel="noopener"`)}
+          </div>
+
+          <div class="welcome-unread">
+            <span class="welcome-unread-dot"></span>
+            <span class="welcome-unread-text"></span>
+            <button class="welcome-mark-read">Mark all read</button>
+          </div>
+
+          <div class="welcome-footer">
+            <button class="close-welcome-btn">Start creating</button>
+            <label class="checkbox-container">
+              <input type="checkbox" id="doNotShowAgain">
+              <span>Don't show again until the next update</span>
+            </label>
+          </div>
+        </div>
+        <div class="welcome-right">
+          <div class="features-container-title">News & Updates</div>
+          <div class="feature-scroll">
+            ${featuresHtml}
+          </div>
         </div>
       </div>
-
-      <a href="${wikiUrl('/lightshow-lol/')}" target="_blank" class="wiki-button">
-        <span>See Wiki</span>
-        <span class="arrow">→</span>
-      </a>
-
-      <div class="checkbox-container">
-        <label><input type="checkbox" id="doNotShowAgain"> Do not show again until next update</label>
-      </div>
-
-      <button class="close-welcome-btn">Close</button>
     `;
 
-    super(editor, 'welcomePanel', content, '', { showCloseButton: true });
+    super(editor, 'welcomePanel', content, 'Welcome', { showCloseButton: true });
 
     this.welcomeToken = WELCOME_VERSION;
     this.editor = editor;
@@ -116,20 +151,76 @@ export default class WelcomePanel extends Panel {
     }
   }
 
+  markBoxSeen(box) {
+    WelcomePanel.markSeen(box.dataset.key);
+    box.classList.add('seen');
+    const badge = box.querySelector('.feature-badge');
+    if (badge) badge.remove();
+  }
+
+  updateUnread() {
+    const unread = this.panel.querySelectorAll('.feature-box:not(.seen)').length;
+    const row = this.panel.querySelector('.welcome-unread');
+    const text = row.querySelector('.welcome-unread-text');
+    row.classList.toggle('caught-up', unread === 0);
+    text.textContent = unread === 0
+      ? "You're all caught up"
+      : `${unread} new update${unread === 1 ? '' : 's'}`;
+  }
+
+  /**
+   * Close the welcome panel and bring another panel into view: expand it,
+   * raise it if floating (or switch to its tab on mobile) and briefly
+   * highlight it so the user can see where it is.
+   */
+  revealPanel(panel) {
+    if (!panel) return;
+    this.hide();
+    if (this.editor.detectMobile()) {
+      this.editor.setActiveTab(panel.panel.id);
+      return;
+    }
+    if (panel.isCollapsed) panel.toggleCollapse();
+    const dm = this.editor.dockManager;
+    if (dm.panels.get(panel.panel.id)?.floating) {
+      dm._bringFloatingToFront(panel.panel);
+    } else {
+      panel.panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    panel.panel.classList.remove('panel-attention');
+    void panel.panel.offsetWidth; // restart the animation if re-triggered
+    panel.panel.classList.add('panel-attention');
+    setTimeout(() => panel.panel.classList.remove('panel-attention'), 1600);
+  }
+
   initialize() {
-    const boxes = this.panel.querySelectorAll('.feature-box:not(.seen)');
-
-    for (const box of boxes) {
-      const key = box.dataset.key;
-
+    for (const box of this.panel.querySelectorAll('.feature-box:not(.seen)')) {
       box.addEventListener('click', () => {
-        WelcomePanel.markSeen(key);
-        box.classList.add('seen');
-
-        const badge = box.querySelector('.feature-badge');
-        if (badge) badge.remove();
+        if (box.classList.contains('seen')) return;
+        this.markBoxSeen(box);
+        this.updateUnread();
       });
     }
+
+    this.panel.querySelector('.welcome-mark-read').addEventListener('click', () => {
+      for (const box of this.panel.querySelectorAll('.feature-box:not(.seen)')) this.markBoxSeen(box);
+      this.updateUnread();
+    });
+    this.updateUnread();
+
+    // Quick-start actions (the wiki and community entries are plain links)
+    this.panel.querySelector('[data-action="tutorial"]').addEventListener('click', () => {
+      this.hide();
+      if (!this.editor.tutorial) this.editor.tutorial = new Tutorial(this.editor);
+      this.editor.tutorial.start();
+    });
+    this.panel.querySelector('[data-action="connect"]').addEventListener('click', () => {
+      this.hide();
+      this.editor.devicePanel.connectDevice();
+    });
+    this.panel.querySelector('[data-action="layout"]')?.addEventListener('click', () => {
+      this.revealPanel(this.editor.layoutPanel);
+    });
 
     this.scrollEl = this.panel.querySelector('.feature-scroll');
     this.startAutoScroll();
@@ -148,15 +239,32 @@ export default class WelcomePanel extends Panel {
 
     const doNotShowCheckbox = this.panel.querySelector('#doNotShowAgain');
 
+    const stored = localStorage.getItem(this.welcomeToken);
+    if (stored !== null) {
+      doNotShowCheckbox.checked = stored === 'false';
+    }
+
     doNotShowCheckbox.addEventListener('change', (event) => {
       localStorage.setItem(this.welcomeToken, (!event.target.checked).toString());
     });
 
     const showWelcome = localStorage.getItem(this.welcomeToken) !== 'false';
-    if (!showWelcome) this.hide();
+    if (showWelcome && !this.editor.detectMobile()) {
+      this.show();
+    } else if (!showWelcome) {
+      this.hide();
+    }
 
     if (this.editor.detectMobile()) {
       this.panel.querySelector('.checkbox-container').style.display = 'none';
+    }
+  }
+
+  show() {
+    super.show();
+    if (!this.editor.detectMobile()) {
+      this.editor.dockManager.floatPanel(this.id, Math.max(10, (window.innerWidth - 1050) / 2), 20);
+      this.panel.style.width = '';
     }
   }
 

@@ -14,14 +14,10 @@ export default class ColorPickerPanel extends Panel {
 
   initialize() {
     this.initColorPickerContent();
-
-    // Automatically append to the document body
-    this.appendTo(document.body);
-    this.hide(); // Initially hide the panel
+    this.hide();
   }
 
   initColorPickerContent() {
-    // Create and structure the content container for the color picker
     this.contentContainer.innerHTML = `<div class="color-picker-controls"></div>`;
   }
 
@@ -40,12 +36,61 @@ export default class ColorPickerPanel extends Panel {
     setTimeout(() => {
       this.initColorPickerControls(updateColorCallback);
       this.initHueCircle(h);
+      this.renderHistory();
     }, 0);
+  }
+
+  show() {
+    super.show();
+    if (!this.editor.detectMobile() && this.editor.dockManager) {
+      this.editor.dockManager.floatPanel(this.id, Math.max(10, (window.innerWidth - 560) / 2), 80);
+      this.panel.style.width = '';
+    }
   }
 
   hide() {
     this.editor.demoModeOnDevice();
     super.hide();
+  }
+
+  // ── recent colors ──
+
+  static HISTORY_KEY = 'colorPickerHistory';
+  static HISTORY_MAX = 12;
+
+  getHistory() {
+    try {
+      const list = JSON.parse(localStorage.getItem(ColorPickerPanel.HISTORY_KEY) || '[]');
+      return Array.isArray(list) ? list.filter((c) => /^#[0-9a-f]{6}$/.test(c)) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Newest first, no duplicates: a new color goes on the left and the oldest
+  // drops off the right once the list is full. Picking a color that's already
+  // in the list moves it to the front.
+  addToHistory(hex) {
+    hex = hex.toLowerCase();
+    const list = [hex, ...this.getHistory().filter((c) => c !== hex)].slice(0, ColorPickerPanel.HISTORY_MAX);
+    try { localStorage.setItem(ColorPickerPanel.HISTORY_KEY, JSON.stringify(list)); } catch { /* storage blocked */ }
+    this.renderHistory();
+  }
+
+  // save the current color: called once at the end of each pick (drag
+  // released, typed value confirmed), never on every step of a drag or keypress
+  recordColor() {
+    const { r, g, b } = this.colorState;
+    this.addToHistory(`#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`);
+  }
+
+  renderHistory() {
+    const box = this.contentContainer.querySelector('.color-history-swatches');
+    if (!box) return;
+    const list = this.getHistory();
+    box.innerHTML = list.length
+      ? list.map((c) => `<button class="color-history-swatch" style="background:${c}" data-color="${c}" title="${c}"></button>`).join('')
+      : '<span class="color-history-empty">Colors you pick show up here</span>';
   }
 
   rgbToHsv(r, g, b) {
@@ -61,10 +106,19 @@ export default class ColorPickerPanel extends Panel {
   }
 
   createColorPickerHTML(h, s, v, col) {
+    const hex = `#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}`;
+    const slider = (id, label, value, color) => `
+          <div class="slider-group">
+            <label for="${id}">${label}</label>
+            <input type="range" id="${id}" min="0" max="255" value="${value}" style="--slider-color: ${color};">
+          </div>`;
+    const input = (id, label, value) => `
+            <label for="${id}">${label}</label>
+            <input type="text" id="${id}" class="color-input" value="${value}">`;
     return `
       <div class="color-picker-top-section">
         <div class="sv-box-container">
-          <label for="svSelector">Saturation x Brightness</label>
+          <label for="svSelector">Saturation × Brightness</label>
           <div class="sv-box" style="background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(${(h / 255) * 360}, 100%, 50%));">
             <div id="svSelector" class="sv-selector" style="left: ${(s / 255) * 100}%; top: ${(1 - v / 255) * 100}%;"></div>
           </div>
@@ -75,60 +129,43 @@ export default class ColorPickerPanel extends Panel {
             <div id="hueSelector" class="hue-selector" style="top: ${(h / 255) * 100}%;"></div>
           </div>
         </div>
-        <div class="sliders-section">
-          <div class="rgb-sliders">
-            <div class="slider-group">
-              <label for="redSlider">R</label>
-              <input type="range" id="redSlider" min="0" max="255" value="${col.red}" style="--slider-color: rgb(255,0,0);">
-            </div>
-            <div class="slider-group">
-              <label for="greenSlider">G</label>
-              <input type="range" id="greenSlider" min="0" max="255" value="${col.green}" style="--slider-color: rgb(0,255,0);">
-            </div>
-            <div class="slider-group">
-              <label for="blueSlider">B</label>
-              <input type="range" id="blueSlider" min="0" max="255" value="${col.blue}" style="--slider-color: rgb(0,0,255);">
-            </div>
-          </div>
+        <div class="rgb-sliders">
+          ${slider('redSlider', 'R', col.red, 'rgb(255,0,0)')}
+          ${slider('greenSlider', 'G', col.green, 'rgb(0,255,0)')}
+          ${slider('blueSlider', 'B', col.blue, 'rgb(0,0,255)')}
         </div>
       </div>
       <div class="color-picker-bottom-section">
-        <div class="radial-hue-cone-container">
-          <div class="radial-hue-cone">
-            <div class="radial-hue-inner-circle"></div>
-            <div class="hue-indicator hue-selector-animate"></div>
-          </div>
-          <div class="hue-labels">
-            <div class="hue-label hue-label-red">R</div>
-            <div class="hue-label hue-label-yellow">Y</div>
-            <div class="hue-label hue-label-lime">G</div>
-            <div class="hue-label hue-label-cyan">C</div>
-            <div class="hue-label hue-label-blue">B</div>
-            <div class="hue-label hue-label-magenta">P</div>
+        <div class="color-picker-bottom-left">
+          <div class="radial-hue-cone-container">
+            <div class="radial-hue-cone">
+              <div class="hue-indicator"></div>
+            </div>
+            <div class="hue-labels">
+              <div class="hue-label hue-label-red">R</div>
+              <div class="hue-label hue-label-yellow">Y</div>
+              <div class="hue-label hue-label-lime">G</div>
+              <div class="hue-label hue-label-cyan">C</div>
+              <div class="hue-label hue-label-blue">B</div>
+              <div class="hue-label hue-label-magenta">P</div>
+            </div>
           </div>
         </div>
         <div class="input-box-container">
-          <div class="input-group">
-            <label for="redInput">R:</label>
-            <input type="text" id="redInput" class="color-input" min="0" max="255" value="${col.red}">
-            <label for="greenInput">G:</label>
-            <input type="text" id="greenInput" class="color-input" min="0" max="255" value="${col.green}">
-            <label for="blueInput">B:</label>
-            <input type="text" id="blueInput" class="color-input" min="0" max="255" value="${col.blue}">
+          <div class="input-group">${input('redInput', 'R', col.red)}${input('greenInput', 'G', col.green)}${input('blueInput', 'B', col.blue)}
           </div>
-          <div class="input-group">
-            <label for="hueInput">H:</label>
-            <input type="text" id="hueInput" class="color-input" min="0" max="255" value="${h}">
-            <label for="satInput">S:</label>
-            <input type="text" id="satInput" class="color-input" min="0" max="255" value="${s}">
-            <label for="valInput">V:</label>
-            <input type="text" id="valInput" class="color-input" min="0" max="255" value="${v}">
+          <div class="input-group">${input('hueInput', 'H', h)}${input('satInput', 'S', s)}${input('valInput', 'V', v)}
           </div>
           <div class="hex-input-group">
-            <label for="hexInput" id="hexInputLabel">Hex:</label>
-            <input type="text" id="hexInput" class="color-input" value="#${((1 << 24) + (col.red << 16) + (col.green << 8) + col.blue).toString(16).slice(1)}">
+            <label for="hexInput" id="hexInputLabel">Hex</label>
+            <input type="text" id="hexInput" class="color-input" value="${hex}">
+            <div class="color-preview" style="background: ${hex};" title="Current color"></div>
           </div>
         </div>
+      </div>
+      <div class="color-history">
+        <span class="color-history-label">Recent</span>
+        <div class="color-history-swatches"></div>
       </div>
     `;
   }
@@ -150,6 +187,8 @@ export default class ColorPickerPanel extends Panel {
     const hexInput = document.getElementById('hexInput');
     const hueCone = document.querySelector('.radial-hue-cone');
     const hueIndicator = document.querySelector('.hue-indicator');
+    const preview = this.contentContainer.querySelector('.color-preview');
+    const historyBox = this.contentContainer.querySelector('.color-history-swatches');
 
     if (
       !hueSlider ||
@@ -189,6 +228,8 @@ export default class ColorPickerPanel extends Panel {
       this.updateSvSelector(s, v);
       this.setHueSlider(h);
       this.setHueIndicator(h);
+      const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+      if (preview) preview.style.background = hex;
 
       // Release the guard before the async callback so subsequent user
       // interactions (clicking another slider, SV box, hue slider) are
@@ -302,18 +343,45 @@ export default class ColorPickerPanel extends Panel {
       updateColorUI(isDragging);
     };
 
+    // Run a drag handler at most once per animation frame, always with the
+    // newest pointer position. Each update does real work (re-inits the mode,
+    // redraws the colorset, sends the color to a connected device); handling
+    // every mousemove made the picker fall behind the pointer.
+    const perFrame = (fn) => {
+      let pending = null;
+      let raf = 0;
+      const run = () => {
+        raf = 0;
+        const e = pending;
+        pending = null;
+        if (e) fn(e);
+      };
+      return {
+        push(e) {
+          pending = e;
+          if (!raf) raf = requestAnimationFrame(run);
+        },
+        // apply anything still waiting (e.g. right before the drag ends)
+        flush() {
+          if (raf) cancelAnimationFrame(raf);
+          run();
+        },
+      };
+    };
+
     const startMoveListener = (event, moveHandler) => {
       let isDragging = true;
 
-      const moveEventHandler = (moveEvent) => {
-        moveHandler(moveEvent, isDragging);
-      };
+      const moves = perFrame((moveEvent) => moveHandler(moveEvent, isDragging));
+      const moveEventHandler = (moveEvent) => moves.push(moveEvent);
 
       const stopDragging = async () => {
+        moves.flush();
         isDragging = false;
         document.removeEventListener('mousemove', moveEventHandler);
         document.removeEventListener('mouseup', stopDragging);
         updateColorUI(false); // Final update after dragging ends
+        this.recordColor();
         await this.editor.demoModeOnDevice();
       };
 
@@ -344,17 +412,20 @@ export default class ColorPickerPanel extends Panel {
 
       let isDragging = false;
 
-      const handleRgbDrag = (e) => {
+      const drags = perFrame((e) => {
         isDragging = true;
         setValueFromY(e.clientY);
         handler(true);
-      };
+      });
+      const handleRgbDrag = (e) => drags.push(e);
 
       const stopRgbDragging = (e) => {
+        drags.flush();
         document.removeEventListener('mousemove', handleRgbDrag);
         document.removeEventListener('mouseup', stopRgbDragging);
         setValueFromY(e.clientY);
         handler(false);
+        this.recordColor();
       };
 
       // Immediate update on click
@@ -407,6 +478,23 @@ export default class ColorPickerPanel extends Panel {
 
     hexInput.addEventListener('input', handleHexInputChange);
 
+    // typed values are saved to Recent once confirmed (Enter or leaving the field)
+    for (const el of [redInput, greenInput, blueInput, hueInput, satInput, valInput, hexInput]) {
+      el.addEventListener('change', () => this.recordColor());
+    }
+
+    // clicking a recent color applies it
+    historyBox?.addEventListener('click', (event) => {
+      const sw = event.target.closest('.color-history-swatch');
+      if (!sw) return;
+      const n = parseInt(sw.dataset.color.slice(1), 16);
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      const { h, s, v } = this.rgbToHsv(r, g, b);
+      this.colorState = { r, g, b, h, s, v };
+      updateColorUI(false);
+      this.addToHistory(sw.dataset.color); // reusing a color moves it to the front
+    });
+
     const startTouchMoveListener = async (event, moveHandler) => {
       let isDragging = true;
       moveHandler(event.touches[0], isDragging);
@@ -418,6 +506,7 @@ export default class ColorPickerPanel extends Panel {
         document.removeEventListener('touchmove', moveEventHandler);
         document.removeEventListener('touchend', stopDragging);
         await updateColorUI(false); // Final update after dragging ends
+        this.recordColor();
         await this.editor.demoModeOnDevice();
       };
       document.addEventListener('touchmove', moveEventHandler);
@@ -453,6 +542,7 @@ export default class ColorPickerPanel extends Panel {
         document.removeEventListener('touchmove', handleTouchMove);
         document.removeEventListener('touchend', stopTouchDragging);
         handler(false);
+        this.recordColor();
       };
 
       setValueFromY(event.touches[0].clientY);

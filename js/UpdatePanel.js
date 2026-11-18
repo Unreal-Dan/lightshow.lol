@@ -24,7 +24,7 @@ export default class UpdatePanel extends Panel {
       </div>
     `;
 
-    super(editor, 'updatePanel', content, 'Device Updates', { showCloseButton: true });
+    super(editor, 'updatePanel', content, 'Device Updates');
 
     this.editor = editor;
     this.wikiUrl = wikiUrl('/lightshow-lol/control-panels/update-panel');
@@ -51,8 +51,7 @@ export default class UpdatePanel extends Panel {
   }
 
   initialize() {
-    this.toggleCollapse(false);
-    this.hide();
+    this.setInactive('Requires a connected device');
   }
 
   async onDeviceConnect(deviceName, deviceVersion) {
@@ -61,7 +60,7 @@ export default class UpdatePanel extends Panel {
   }
 
   async onDeviceDisconnect(deviceName) {
-    this.hide();
+    this.setInactive('Requires a connected device');
   }
 
   async onDeviceSelected(devicename) {
@@ -390,6 +389,7 @@ export default class UpdatePanel extends Panel {
   }
 
   displayFirmwareUpdateInfo(device, currentVersion, latestVersion, downloadUrl) {
+    this.setInactive(null);
     const lowerDevice = device.toLowerCase();
     const deviceIconUrl = `./public/images/${lowerDevice}-logo-square-64.png`;
 

@@ -1,0 +1,285 @@
+/* tutorial.css — guided tour ring + step card (js/Tutorial.js) */
+
+.tutorial-ring {
+  position: fixed;
+  /* the 2px border sits inside the rect the JS sets, so the ring is centered
+     on the target instead of hanging 4px off its right and bottom */
+  box-sizing: border-box;
+  z-index: 9000;
+  pointer-events: none;
+  border: 2px solid #ff6600;
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.18), 0 0 22px rgba(255, 102, 0, 0.45);
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+  animation: tutorialRing 1.6s ease-in-out infinite;
+}
+
+@keyframes tutorialRing {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.18), 0 0 22px rgba(255, 102, 0, 0.45); }
+  50% { box-shadow: 0 0 0 7px rgba(255, 102, 0, 0.08), 0 0 30px rgba(255, 102, 0, 0.6); }
+}
+
+.tutorial-card {
+  position: fixed;
+  z-index: 9001;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  padding: 14px 16px 12px;
+  background: #1e2022;
+  border: 1px solid #3a3d40;
+  border-top: 3px solid #ff6600;
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  color: #d8d4d0;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: left 0.25s ease, top 0.25s ease;
+}
+
+.tutorial-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.tutorial-count {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #8a8682;
+}
+
+.tutorial-close {
+  width: auto;
+  padding: 0 4px;
+  margin: 0;
+  background: none;
+  border: none;
+  color: #8a8682;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tutorial-close:hover {
+  color: #fff;
+}
+
+.tutorial-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0ece8;
+  margin-bottom: 6px;
+}
+
+.tutorial-text b {
+  color: #ffb070;
+  font-weight: 600;
+}
+
+.tutorial-dots {
+  display: flex;
+  gap: 5px;
+  margin: 12px 0 10px;
+}
+
+.tutorial-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3a3d40;
+}
+
+.tutorial-dots i.past {
+  background: #8a5a3a;
+}
+
+.tutorial-dots i.now {
+  background: #ff6600;
+  box-shadow: 0 0 5px #ff6600;
+}
+
+.tutorial-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-hint {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #8a8682;
+}
+
+.tutorial-hint .fa-check {
+  color: #33ee22;
+}
+
+.tutorial-nav button {
+  width: auto;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tutorial-back {
+  background: none;
+  border: 1px solid #3a3d40;
+  color: #c8c4c0;
+}
+
+.tutorial-back:hover {
+  border-color: #5a5d60;
+  color: #fff;
+}
+
+.tutorial-next {
+  background: linear-gradient(135deg, #ff5500, #ff8a00);
+  border: none;
+  color: #fff;
+}
+
+.tutorial-next:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.tutorial-next:disabled {
+  background: #3a3d40;
+  color: #8a8682;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-ring { animation: none; transition: none; }
+  .tutorial-card { transition: none; }
+}
+
+/* ── tour picker ── */
+.tutorial-card.picking {
+  width: 380px;
+}
+
+.tutorial-card.picking .tutorial-dots,
+.tutorial-card.picking .tutorial-nav {
+  display: none;
+}
+
+.tutorial-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  background: #252728;
+  border: 1px solid #3a3d40;
+  border-radius: 8px;
+  color: #d8d4d0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tutorial-choice:hover,
+.tutorial-choice:focus-visible {
+  background: #2a2c2f;
+  border-color: #ff6600;
+  outline: none;
+}
+
+.tutorial-choice > i {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 102, 0, 0.12);
+  color: #ff8a33;
+  font-size: 16px;
+}
+
+.tutorial-choice b {
+  display: block;
+  color: #f0ece8;
+  font-size: 13.5px;
+}
+
+.tutorial-choice small {
+  display: block;
+  color: #8a8682;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* step text lists (e.g. the LED selection controls) */
+.tutorial-text ul {
+  margin: 6px 0 6px;
+  padding-left: 16px;
+}
+
+.tutorial-text li {
+  margin: 2px 0;
+}
+
+/* LED swatches matching the LED Selection legend */
+.tutorial-led {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: -1px;
+}
+
+.tutorial-led.green {
+  background: rgb(83, 255, 0);
+  box-shadow: 0 0 5px rgb(83, 255, 0);
+}
+
+.tutorial-led.yellow {
+  background: rgb(180, 180, 0);
+  box-shadow: 0 0 5px rgb(180, 180, 0);
+}
+
+/* "Read more" — opens the step's panel page from the wiki in the help popup */
+.tutorial-wiki {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  margin: 0 6px 0 auto;
+  padding: 2px 8px;
+  background: rgba(255, 102, 0, 0.1);
+  border: 1px solid rgba(255, 102, 0, 0.35);
+  border-radius: 999px;
+  color: #ff8a33;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.tutorial-wiki i {
+  font-size: 10px;
+}
+
+.tutorial-wiki:hover,
+.tutorial-wiki:focus-visible {
+  background: rgba(255, 102, 0, 0.2);
+  border-color: #ff6600;
+  color: #ffb070;
+  outline: none;
+}

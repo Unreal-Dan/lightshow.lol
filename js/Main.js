@@ -31,9 +31,14 @@ async function reloadIfNewBuild() {
 }
 
 if (!(await reloadIfNewBuild())) {
+  // Dev servers (python http.server etc.) send no cache headers and deploys
+  // substitute __CACHE_BUSTER__ textually — so bust aggressively when running
+  // locally and leave the placeholder for the deploy script otherwise.
+  const localDev = ['localhost', '127.0.0.1', ''].includes(location.hostname);
+  const bust = localDev ? `dev${Date.now()}` : '__CACHE_BUSTER__';
   if (isMobile()) {
-    await import(`./mobile/VortexEditorMobile.js?v=__CACHE_BUSTER__`);
+    await import(`./mobile/VortexEditorMobile.js?v=${bust}`);
   } else {
-    await import(`./VortexEditor.js?v=__CACHE_BUSTER__`);
+    await import(`./VortexEditor.js?v=${bust}`);
   }
 }

@@ -1,158 +1,54 @@
-/* Color Picker Panel Specific Styles */
+/* Color Picker Panel */
 #colorPickerPanel {
-  top: 417px;
-  left: 392px;
-  width: 480px;
-  z-index: 5; /* Ensure it stacks above other UI elements */
+  width: auto;
+  z-index: 5;
 }
 
 .color-picker-controls {
-  margin: 0px;
-  margin-top: 0px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 4px 4px;
 }
 
-.color-picker-panel .color-picker-top-section,
-.color-picker-panel .color-picker-bottom-section {
-  width: 100%;
+.color-picker-controls label {
+  font-size: 12px;
+  color: #b8b4b0;
+  margin: 0;
 }
 
-.color-picker-panel .sv-box-container,
-.color-picker-panel .sliders-section,
-.color-picker-panel .radial-hue-cone-container,
-.color-picker-panel .input-box-container {
-  margin-bottom: 10px;
-}
-
-.color-picker-panel .sv-box-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.sv-box-container label {
-  text-align: center;
-}
-
-.color-picker-panel .input-group {
-  display: flex;
-  justify-content: space-between;
-}
-
-#hexInputLabel {
-  /* make the word 'Hex' line up with 'H' and 'R' */
-  margin-left: -10px;
-}
-
+/* ── Top: SV square, hue bar, RGB bars ── */
 .color-picker-top-section {
   display: flex;
-  width: 100%;
-  justify-content: space-between; /* Distribute space between SV box and sliders */
-  flex-wrap: wrap; /* Ensure elements wrap to the next line if necessary */
-  position: relative;
-  z-index: 1;
-}
-
-.color-picker-bottom-section {
-  display: flex;
-  width: 100%;
-  margin-top: 15px;
-  justify-content: space-between; /* Align hue circle and input boxes */
-  align-items: center;
+  gap: 14px;
+  align-items: stretch;
   flex-wrap: wrap;
-  position: relative;
-  z-index: 3;
 }
 
-.color-picker-bottom-section label {
-  margin-left: 5px;
-  z-index: 3;
-}
-
-.color-input {
-  width: 34px;
-  height: 24px;
-  padding: 3px;
-  background-color: #292c2e;
-  border: 1px solid #454545;
-  border-radius: 4px;
-  color: #d8d4cf;
-  text-align: center; /* Center text for visual balance */
-  user-select: text;
-  appearance: none;
-}
-
-.input-box-container label {
-  width: 18px;
-}
-
-.input-box-container {
-  position: relative;
+.sv-box-container,
+.hue-slider-container,
+.slider-group {
   display: flex;
-  padding-top: 20px;
-  flex-direction: column; /* Stack input groups vertically */
-  gap: 25px; /* Add space between input groups */
-  justify-content: center; /* Align items to the left */
-  align-items: flex-end;
-}
-
-.input-group {
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-end; /* Align labels and inputs to the right */
+  gap: 5px;
 }
 
-.hex-input-group label {
-  width: 36px;
-  margin-right: 5px;
-  margin-left: 5px;
-}
-
-#hexInput {
-  width: 100%;
-}
-
-.hex-input-group {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* Align labels and inputs to the right */
-}
-
-.input-group label {
-  margin-top: 3px;
-  margin-right: 5px;
-}
-
-.sliders-section {
-  padding: 0;
-  margin-left: 65px;
-}
-
+/* the square grows to fill whatever width the bottom row sets */
 .sv-box-container {
-  display: flex;
-  flex-direction: column; /* Stack label and slider */
-  align-items: left;
-  width: 200px; /* Minimum width to prevent squishing */
-  height: auto;
-  margin-right: 15px;
-  position: relative;
-}
-
-.sv-box-container label {
-  margin-bottom: 5px;
+  flex: 1;
+  min-width: 190px;
 }
 
 .sv-box {
   width: 100%;
-  height: 100%;
+  height: 190px;
+  box-sizing: border-box;
   background: linear-gradient(to top, black, transparent), linear-gradient(to right, white, hsl(0, 100%, 50%));
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: crosshair;
   position: relative;
-  border: 1px solid #a3a3a3;
+  border: 1px solid #454545;
 }
 
 .sv-selector {
@@ -161,221 +57,247 @@
   height: 12px;
   border: 2px solid white;
   border-radius: 50%;
-  background: none;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
 .hue-slider-container {
-  display: flex;
-  flex-direction: column; /* Stack label and slider */
-  align-items: center;
-  width: 30px;
-}
-
-.hue-slider-container label {
-  margin-bottom: 5px;
+  width: 24px;
 }
 
 .hue-slider {
   position: relative;
-  width: 100%;
-  height: 100%;
+  width: 24px;
+  height: 190px;
+  box-sizing: border-box;
   border: 1px solid #454545;
   background: linear-gradient(to bottom, red, yellow, lime, cyan, blue, magenta, red);
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .hue-selector {
   position: absolute;
-  width: 30px;
-  height: 10px;
+  left: 50%;
+  width: 26px;
+  height: 8px;
   border: 2px solid white;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
   transform: translate(-50%, -50%);
   pointer-events: none;
-  left: 50%;
 }
 
 .rgb-sliders {
   display: flex;
-  flex-direction: row; /* Align sliders horizontally */
-  gap: 20px; /* Space between sliders */
-  justify-content: flex-start; /* Align sliders to the left */
-}
-
-.slider-group {
-  display: flex;
-  flex-direction: column; /* Stack label and slider */
-  align-items: center;
-}
-
-.slider-group label {
-  margin-bottom: 5px;
+  gap: 12px;
 }
 
 .slider-group input[type="range"] {
-  width: 30px; /* Narrow width for the vertical slider */
-  height: 200px; /* Height for the vertical slider */
-  writing-mode: vertical-lr; /* Vertical writing mode for sliders */
+  width: 24px;
+  height: 190px;
+  margin: 0;
+  writing-mode: vertical-lr;
   direction: rtl;
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to top, #000, var(--slider-color)); /* Gradient background */
-  border-radius: 5px; /* Rounded corners */
+  background: linear-gradient(to top, #000, var(--slider-color));
+  border: 1px solid #454545;
+  border-radius: 6px;
   cursor: pointer;
 }
 
 .slider-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: #fff;
   cursor: pointer;
   border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
 }
 
 .slider-group input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background: #fff;
   cursor: pointer;
+  border: none;
   border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.7);
 }
 
-#redSlider {
-  margin: 0;
-  background: linear-gradient(to top, black, rgb(255, 0, 0)); /* Red gradient */
-  border: 1px solid #454545;
+/* ── Bottom: hue ring + number inputs ── */
+.color-picker-bottom-section {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
-#greenSlider {
-  margin: 0;
-  background: linear-gradient(to top, black, rgb(0, 255, 0)); /* Green gradient */
-  border: 1px solid #454545;
+.color-picker-bottom-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-#blueSlider {
-  margin: 0;
-  background: linear-gradient(to top, black, rgb(0, 0, 255)); /* Blue gradient */
-  border: 1px solid #454545;
-}
-
-#redSlider::-webkit-slider-thumb,
-#greenSlider::-webkit-slider-thumb,
-#blueSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  cursor: pointer;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
-#redSlider::-moz-range-thumb,
-#greenSlider::-moz-range-thumb,
-#blueSlider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  cursor: pointer;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-}
-
+/* room around the ring for the R/Y/G/C/B/P labels */
 .radial-hue-cone-container {
   position: relative;
+  width: 160px;
+  height: 160px;
   display: flex;
-  justify-content: flex-start; /* Align items to the left */
-  z-index: 1; /* Lower z-index to ensure it's behind inputs */
-  margin-left: 10px;
+  align-items: center;
+  justify-content: center;
 }
 
+/* The ring is cut out with a mask instead of a border/inner circle painted
+   in the panel color, so it stays clean on any background (Dark Reader
+   recolors borders, which used to show as a white outline). */
 .radial-hue-cone {
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  border: 20px solid #181a1b;
-  background: conic-gradient(from 90deg, red, magenta, blue, cyan, lime, yellow, red);
   position: relative;
-  cursor: pointer;
-  z-index: 1; /* Lower than input fields */
-}
-
-.radial-hue-inner-circle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100px; /* Slimmer inner circle */
-  height: 100px;
-  background-color: #181a1b; /* Match the modal's background */
+  width: 124px;
+  height: 124px;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2; /* Above the hue cone */
+  background: conic-gradient(from 90deg, red, magenta, blue, cyan, lime, yellow, red);
+  -webkit-mask: radial-gradient(circle, transparent 41px, #000 42px);
+  mask: radial-gradient(circle, transparent 41px, #000 42px);
+  cursor: pointer;
 }
 
 .hue-indicator {
   position: absolute;
   left: 50%;
-  width: 2px; /* Line width */
-  height: 75px; /* Extend to the outer edge of the hue cone */
+  top: 0;
+  width: 3px;
+  height: 50%;
+  margin-left: -1.5px;
   background-color: #fff;
-  transform-origin: 50% 100%; /* Set origin to the center bottom */
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+  transform-origin: 50% 100%;
   pointer-events: none;
-  z-index: 1;
-  transform: rotate(0deg); /* Initial position */
 }
 
 .hue-labels {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 100%; /* Ensure the container covers the whole circle */
-  height: 100%;
+  inset: 0;
   pointer-events: none;
-  z-index: 3;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .hue-label {
   position: absolute;
-  font-size: 16px;
+  left: 50%;
+  top: 50%;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a8682;
+}
+
+/* 73px from the center, one label every 60deg (hue runs counter-clockwise) */
+.hue-label-red     { transform: translate(-50%, -50%) translate(73px, 0); }
+.hue-label-yellow  { transform: translate(-50%, -50%) translate(36.5px, -63px); }
+.hue-label-lime    { transform: translate(-50%, -50%) translate(-36.5px, -63px); }
+.hue-label-cyan    { transform: translate(-50%, -50%) translate(-73px, 0); }
+.hue-label-blue    { transform: translate(-50%, -50%) translate(-36.5px, 63px); }
+.hue-label-magenta { transform: translate(-50%, -50%) translate(36.5px, 63px); }
+
+/* One grid for all three rows so the R/G/B, H/S/V and Hex boxes share
+   columns: the Hex box runs from under R/H to under G/S, and the color
+   preview sits under B/V. Label columns are fixed so the wide Hex input
+   can't stretch them. */
+.input-box-container {
+  display: grid;
+  grid-template-columns: max-content 38px 12px 38px 12px 38px;
+  column-gap: 6px;
+  row-gap: 10px;
+  align-items: center;
+}
+
+.input-group,
+.hex-input-group {
+  display: contents;
+}
+
+.input-box-container label {
+  text-align: right;
+}
+
+.color-input {
+  width: 38px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 0;
+  background-color: #292c2e;
+  border: 1px solid #454545;
+  border-radius: 5px;
   color: #d8d4cf;
-  transform-origin: 50% 50%;
-  white-space: nowrap;
+  font-size: 12px;
+  text-align: center;
+  user-select: text;
+  appearance: none;
 }
 
-.hue-label-red {
-  transform: translate(85px, 0px) translate(-50%, -50%);
+#hexInput {
+  grid-column: 2 / 6;
+  width: 100%;
+  min-width: 0;
 }
 
-.hue-label-yellow {
-  transform: translate(45px, -78px) translate(-50%, -50%);
+.color-preview {
+  grid-column: 6;
+  width: 38px;
+  height: 26px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border: 1px solid #454545;
+  border-radius: 5px;
 }
 
-.hue-label-lime {
-  transform: translate(-45px, -78px) translate(-50%, -50%);
+/* ── Recent colors ── */
+.color-history {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
 }
 
-.hue-label-cyan {
-  transform: translate(-90px, 0px) translate(-50%, -50%);
+.color-history-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #b8b4b0;
 }
 
-.hue-label-blue {
-  transform: translate(-45px, 78px) translate(-50%, -50%);
+.color-history-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 22px;
+  align-items: center;
 }
 
-.hue-label-magenta {
-  transform: translate(45px, 78px) translate(-50%, -50%);
+.color-history-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #454545;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform 0.1s;
 }
 
+.color-history-swatch:hover {
+  transform: scale(1.12);
+  border-color: #d8d4cf;
+}
 
+.color-history-empty {
+  font-size: 11.5px;
+  color: #6f6b67;
+}

@@ -533,11 +533,7 @@ export default class ModesPanel extends Panel {
         this.importModeFromData(detected.value, true);
         break;
       default:
-        try {
-          this.decodeAndImportMode(data, true);
-        } catch {
-          Notification.failure("Unrecognized clipboard data");
-        }
+        this.decodeAndImportMode(data, true);
     }
   }
 
@@ -1217,8 +1213,7 @@ export default class ModesPanel extends Panel {
 
       return this.importModeFromData(modeJson, addNew);
     } catch (error) {
-      Notification.failure("Failed to import mode");
-      console.error("Error decoding and importing mode:", error);
+      Notification.failure("Failed to import mode: " + error.message);
       return false;
     }
   }
