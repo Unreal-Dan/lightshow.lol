@@ -73,6 +73,7 @@ export default class WelcomePanel extends Panel {
         <div class="welcome-left">
           <div class="welcome-intro">
             <h1 class="welcome-title">Welcome to lightshow.lol</h1>
+            <div class="welcome-leds" aria-hidden="true">${Array.from({ length: 24 }, (_, i) => `<i style="--i:${i}"></i>`).join('')}</div>
             <p class="intro-text">Design light modes for Vortex gloves and devices, preview them live, then send them straight to your device.</p>
           </div>
 

@@ -27,16 +27,35 @@
 #welcomePanel .welcome-title {
   font-size: 28px;
   font-weight: 900;
-  background: linear-gradient(135deg, #ff6600, #ffcc00, #ff6600);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: bannerShimmer 3s ease-in-out infinite;
+  color: #f0ece8;
   text-shadow: none;
   margin: 0;
   letter-spacing: 0.5px;
   line-height: 1.2;
+}
+
+/* LED strip under the title: plain dots, each one a step behind its
+   neighbour, so the colorset chases along like a pattern on a device. */
+#welcomePanel .welcome-leds {
+  --led-1: #ff3d7f;
+  --led-2: #8b5cff;
+  --led-3: #1ec8ff;
+  --led-4: #3dffa2;
+  --led-off: #2a2d30;
+  display: flex;
+  gap: 5px;
+  height: 8px;
+  margin-top: -2px;
+}
+
+#welcomePanel .welcome-leds i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--led-off);
+  animation: ledChase 1.2s steps(1) infinite;
+  animation-delay: calc(var(--i) * 0.2s - 6s);
 }
 
 #welcomePanel .intro-text {
@@ -353,7 +372,14 @@
   }
 }
 
-@keyframes bannerShimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+@keyframes ledChase {
+  0%      { background: var(--led-1); box-shadow: 0 0 5px var(--led-1); }
+  16.667% { background: var(--led-2); box-shadow: 0 0 5px var(--led-2); }
+  33.333% { background: var(--led-3); box-shadow: 0 0 5px var(--led-3); }
+  50%     { background: var(--led-4); box-shadow: 0 0 5px var(--led-4); }
+  66.667% { background: var(--led-off); box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #welcomePanel .welcome-leds i { animation: none; }
 }
